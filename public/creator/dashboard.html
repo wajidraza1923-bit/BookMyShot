@@ -1,0 +1,3952 @@
+  <!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <title>Creator Dashboard — BookMyShot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <link href="/css/premium-homepage.css" rel="stylesheet">
+  <!-- FullCalendar CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/main.min.css" rel="stylesheet">
+  <style>
+    /* ═══════════════════════════════════════════════════════════════════════
+       BookMyShot — Creator Dashboard (Premium SaaS)
+       ═══════════════════════════════════════════════════════════════════════ */
+
+    :root {
+      --sidebar-w: 260px;
+      --sidebar-collapsed: 72px;
+      --header-h: 72px;
+      --gold: #D4AF37;
+      --gold-light: #e8d5a3;
+      --gold-dark: #b8960c;
+      --orange: #FF8C42;
+      --danger: #ef4444;
+      --success: #10b981;
+      --info: #3b82f6;
+      --warning: #f59e0b;
+      --card-bg: #171717;
+      --card-border: rgba(255,255,255,0.07);
+      --card-hover-border: rgba(212,175,55,0.3);
+      --card-radius: 16px;
+      --transition: 0.3s cubic-bezier(0.22,1,0.36,1);
+      --text: #F5F5F5;
+      --text-muted: #A0A0A0;
+      --bg-deep: #0f0f0f;
+      --bg-card: #171717;
+      --bg-hover: rgba(255,255,255,0.06);
+      --bg-elevated: #1a1a1a;
+      --bg-dark: #0f0f0f;
+      --border: rgba(255,255,255,0.08);
+      --gold-dim: rgba(212,175,55,0.12);
+      --gold-glow: rgba(212,175,55,0.15);
+      --cream: #F5F5F5;
+      --font-display: 'Playfair Display', serif;
+      --ease: cubic-bezier(0.22,1,0.36,1);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Outfit', system-ui, sans-serif;
+      background: #0f0f0f;
+      color: #F5F5F5;
+      overflow-x: hidden;
+    }
+
+    /* ─── Scrollbar ─── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+    /* ─── Sidebar ─── */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: var(--sidebar-w);
+      height: 100vh;
+      background: #0a0a0a;
+      backdrop-filter: blur(20px);
+      border-right: 1px solid rgba(255,255,255,0.05);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.3s var(--transition);
+    }
+
+    .sidebar-brand {
+      padding: 1.2rem 1.5rem;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .sidebar-brand a {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: var(--gold-light);
+      text-decoration: none;
+    }
+
+    .sidebar-brand a span { color: var(--gold); }
+
+    .sidebar-nav {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.75rem 0;
+    }
+
+    .nav-section-label {
+      padding: 0.6rem 1.5rem 0.3rem;
+      font-size: 0.6rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: rgba(255,255,255,0.2);
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      width: 100%;
+      padding: 0.65rem 1.5rem;
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.55);
+      font-size: 0.85rem;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s var(--transition);
+      text-align: left;
+    }
+
+    .nav-item:hover { background: rgba(255,255,255,0.03); color: var(--gold-light); }
+    .nav-item.active { background: rgba(212,175,55,0.06); color: var(--gold-light); border-right: none; border-left: 3px solid var(--gold); box-shadow: inset 0 0 20px rgba(212,175,55,0.04); }
+    .nav-item .icon { font-size: 0.85rem; width: 24px; text-align: center; }
+
+    .sidebar-footer {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .sidebar-footer .nav-item { padding: 0.5rem 0; }
+
+    /* ─── Main Layout ─── */
+    .main-wrapper {
+      margin-left: var(--sidebar-w);
+      min-height: 100vh;
+    }
+
+    .top-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2rem;
+      height: var(--header-h);
+      background: rgba(15,15,15,0.9);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .menu-toggle {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--gold-light);
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 0.25rem;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .header-left h2 {
+      font-family: 'Playfair Display', serif;
+      font-weight: 400;
+      font-size: 1.1rem;
+      color: var(--gold-light);
+      margin: 0;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .header-right .btn-icon {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.5);
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 0.4rem;
+      border-radius: 50%;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .header-right .btn-icon:hover { background: rgba(255,255,255,0.05); color: var(--gold-light); }
+
+    .notif-badge {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background: var(--danger);
+      color: #fff;
+      font-size: 0.55rem;
+      font-weight: 700;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .notif-badge.visible {
+      display: flex;
+    }
+
+    .header-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid rgba(201,169,98,0.2);
+      cursor: pointer;
+    }
+
+    .main-content {
+      padding: 2rem;
+      max-width: 1200px;
+    }
+
+    /* ─── Panels ─── */
+    .panel-content { display: none; }
+    .panel-content.active { display: block; }
+
+    .welcome-section {
+      margin-bottom: 1.5rem;
+    }
+
+    .welcome-section h1 {
+      font-family: 'Playfair Display', serif;
+      font-weight: 500;
+      font-size: 1.6rem;
+      color: var(--gold-light);
+      margin: 0 0 0.3rem;
+    }
+
+    .welcome-section p {
+      margin: 0;
+      color: rgba(255,255,255,0.35);
+      font-size: 0.85rem;
+    }
+
+    /* ─── Cards ─── */
+    .card-panel {
+      background: #171717;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: var(--card-radius);
+      padding: 1.5rem;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+      background: #171717;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: var(--card-radius);
+      padding: 1.2rem 1.5rem;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--gold), var(--orange));
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .stat-card:hover { border-color: var(--card-hover-border); }
+    .stat-card:hover::before { opacity: 1; }
+
+    .stat-icon { font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--gold); }
+    .stat-value { font-size: 1.6rem; font-weight: 600; color: var(--gold-light); }
+    .stat-label { font-size: 0.75rem; color: rgba(255,255,255,0.35); margin-top: 0.2rem; }
+
+    /* ─── Buttons ─── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.55rem 1.2rem;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      transition: var(--transition);
+      border: 1px solid transparent;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #D4AF37, #b8960c);
+      color: #0a0806;
+      border-color: #D4AF37;
+    }
+    .btn-primary:hover { background: linear-gradient(135deg, #e8d5a3, #D4AF37); box-shadow: 0 4px 16px rgba(212,175,55,0.25); }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--gold-light);
+      border-color: rgba(201,169,98,0.3);
+    }
+    .btn-outline:hover { border-color: var(--gold); background: rgba(201,169,98,0.06); }
+
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-success:hover { opacity: 0.9; }
+
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-danger:hover { opacity: 0.9; }
+
+    .btn-sm { padding: 0.35rem 0.8rem; font-size: 0.75rem; border-radius: 8px; }
+
+    /* ─── Empty State ─── */
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+    }
+
+    .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+    .empty-state h3 { font-family: 'Playfair Display', serif; color: var(--gold-light); margin: 0 0 0.5rem; }
+    .empty-state p { color: rgba(255,255,255,0.3); font-size: 0.85rem; margin: 0; }
+
+    /* ─── Booking Cards ─── */
+    .booking-card {
+      background: #171717;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: var(--card-radius);
+      padding: 1rem 1.2rem;
+      transition: var(--transition);
+    }
+
+    .booking-card:hover { border-color: rgba(212,175,55,0.25); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+
+    .booking-card .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.75rem;
+    }
+
+    .booking-card .top h4 { margin: 0; font-size: 0.9rem; color: var(--gold-light); }
+    .booking-card .details {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 0.5rem;
+    }
+
+    .booking-card .details .item { }
+    .booking-card .details .lbl { font-size: 0.65rem; color: rgba(255,255,255,0.3); }
+    .booking-card .details .val { font-size: 0.8rem; color: var(--text); }
+
+    .booking-card .actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    /* ─── Status Badges ─── */
+    .status-badge {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 20px;
+      font-size: 0.65rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .status-submitted, .status-pending { background: rgba(245,158,11,0.12); color: #f59e0b; }
+    .status-approved, .status-verified { background: rgba(16,185,129,0.12); color: #10b981; }
+    .status-rejected { background: rgba(239,68,68,0.12); color: #ef4444; }
+    .status-completed { background: rgba(59,130,246,0.12); color: #3b82f6; }
+
+    /* ─── Toast ─── */
+    .toast-container {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .toast-msg {
+      padding: 0.75rem 1.2rem;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      animation: slideIn 0.3s ease;
+      max-width: 360px;
+    }
+
+    .toast-msg.success { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.2); color: #10b981; }
+    .toast-msg.error { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.2); color: #ef4444; }
+    .toast-msg.info { background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.2); color: #3b82f6; }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─── Premium Popup System ─── */
+    .bms-popup-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(8px);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .bms-popup-overlay.show { opacity: 1; }
+    .bms-popup-overlay.show .bms-popup-card { transform: scale(1) translateY(0); }
+
+    .bms-popup-card {
+      background: #0f0f0f;
+      border: 1.5px solid #D4AF37;
+      border-radius: 20px;
+      padding: 2rem 2rem 1.75rem;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 0 40px rgba(212, 175, 55, 0.08);
+      position: relative;
+      text-align: center;
+      transform: scale(0.9) translateY(20px);
+      transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .bms-popup-close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.3);
+      font-size: 1.1rem;
+      cursor: pointer;
+      padding: 0.25rem;
+      transition: color 0.2s;
+    }
+    .bms-popup-close:hover { color: #D4AF37; }
+
+    .bms-popup-icon {
+      font-size: 2rem;
+      color: #D4AF37;
+      margin-bottom: 0.75rem;
+    }
+
+    .bms-popup-title {
+      font-family: 'Playfair Display', serif;
+      color: #D4AF37;
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin: 0 0 0.6rem;
+    }
+
+    .bms-popup-message {
+      color: rgba(255, 255, 255, 0.75);
+      font-size: 0.88rem;
+      line-height: 1.6;
+      margin: 0 0 1.5rem;
+    }
+
+    .bms-popup-actions {
+      display: flex;
+      gap: 0.6rem;
+      justify-content: center;
+    }
+
+    .bms-popup-btn {
+      padding: 0.55rem 1.3rem;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      background: transparent;
+      color: #D4AF37;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .bms-popup-btn:hover { background: rgba(212, 175, 55, 0.08); border-color: #D4AF37; }
+    .bms-popup-btn.primary {
+      background: linear-gradient(135deg, #D4AF37, #F4C542);
+      color: #111;
+      border: none;
+    }
+    .bms-popup-btn.primary:hover { box-shadow: 0 4px 16px rgba(212, 175, 55, 0.35); }
+
+    /* ─── Loader ─── */
+    .loader {
+      width: 32px;
+      height: 32px;
+      border: 3px solid rgba(201,169,98,0.1);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 2rem auto;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── Profile Edit Form ─── */
+    .profile-edit-form { max-width: 700px; }
+
+    .profile-header-section {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .profile-avatar-edit { text-align: center; }
+
+    .profile-avatar-edit img {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid rgba(201,169,98,0.3);
+    }
+
+    .profile-header-info h3 {
+      margin: 0 0 0.2rem;
+      font-family: 'Playfair Display', serif;
+      color: var(--text);
+      font-size: 1.2rem;
+    }
+
+    .profile-header-info p {
+      margin: 0;
+      color: rgba(255,255,255,0.4);
+      font-size: 0.85rem;
+    }
+
+    .profile-section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--gold-light);
+      margin: 1.2rem 0 0.8rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .profile-fields {
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+    }
+
+    .profile-fields .form-group { margin-bottom: 0; }
+
+    .profile-fields .form-group label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 0.3rem;
+    }
+
+    .profile-fields .form-group input,
+    .profile-fields .form-group textarea {
+      width: 100%;
+      padding: 0.55rem 0.8rem;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 0.85rem;
+      outline: none;
+      transition: var(--transition);
+    }
+
+    .profile-fields .form-group input:focus,
+    .profile-fields .form-group textarea:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 12px rgba(201,169,98,0.1);
+    }
+
+    .profile-fields .form-group textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 1024px) {
+      .grid-2col { grid-template-columns: 1fr; }
+      .grid-3col { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        transform: translateX(-100%);
+      }
+      .sidebar.open {
+        transform: translateX(0);
+      }
+      .main-wrapper { margin-left: 0; }
+      .menu-toggle { display: block; }
+      .top-header { padding: 0 1rem; }
+      .main-content { padding: 1.2rem; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
+      .grid-3col { grid-template-columns: 1fr; }
+      .reel-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0.6rem; }
+      .notif-panel { width: 300px; right: -60px; }
+      .btn-view-profile .label { display: none; }
+    }
+
+    @media (max-width: 480px) {
+      .stats-grid { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+      .stat-card { padding: 0.8rem 1rem; }
+      .stat-card .stat-value { font-size: 1.2rem; }
+    }
+
+    /* ─── Modal ─── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(8px);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .modal-content {
+      background: #0a0806;
+      border: 1px solid rgba(201,169,98,0.2);
+      border-radius: 16px;
+      padding: 2rem;
+      max-width: 520px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .modal-content h2 {
+      font-family: 'Playfair Display', serif;
+      color: var(--gold-light);
+      margin: 0 0 1.2rem;
+      font-size: 1.3rem;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.4);
+      font-size: 1.5rem;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .modal-close:hover { color: var(--gold-light); }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 0.3rem;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 0.55rem 0.8rem;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 0.85rem;
+      outline: none;
+      transition: var(--transition);
+      font-family: inherit;
+    }
+
+    .form-input:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 12px rgba(201,169,98,0.1);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    .category-options {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .category-option {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.4rem 0.8rem;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: var(--transition);
+      color: rgba(255,255,255,0.5);
+    }
+
+    .category-option:hover {
+      border-color: rgba(201,169,98,0.3);
+      color: var(--text);
+    }
+
+    .category-option.active {
+      border-color: var(--gold);
+      background: rgba(201,169,98,0.1);
+      color: var(--gold-light);
+    }
+
+    .category-option .cat-icon { font-size: 0.9rem; }
+
+    /* ─── FullCalendar Overrides (Premium Luxury) ─── */
+    .fc { background: #1A1A1A !important; border-radius: 16px !important; padding: 0.5rem !important; }
+
+    /* Calendar Header / Title */
+    .fc .fc-toolbar { margin-bottom: 1.5rem !important; }
+    .fc .fc-toolbar-title {
+      font-family: 'Playfair Display', serif !important;
+      color: #D4AF37 !important;
+      font-size: 32px !important;
+      font-weight: 700 !important;
+      text-shadow: 0 0 20px rgba(212,175,55,0.3) !important;
+    }
+
+    /* Buttons (Month/List/Today/Prev/Next) */
+    .fc .fc-button {
+      background: #1E1E1E !important;
+      border: 1px solid rgba(212,175,55,0.3) !important;
+      color: #D4AF37 !important;
+      font-family: 'Outfit', sans-serif !important;
+      font-size: 0.8rem !important;
+      font-weight: 500 !important;
+      padding: 0.4rem 0.9rem !important;
+      border-radius: 10px !important;
+      transition: all 0.25s cubic-bezier(0.22,1,0.36,1) !important;
+    }
+    .fc .fc-button:hover {
+      background: rgba(212,175,55,0.15) !important;
+      border-color: #D4AF37 !important;
+      color: #F4C95D !important;
+      transform: translateY(-1px) !important;
+      box-shadow: 0 4px 14px rgba(212,175,55,0.2) !important;
+    }
+    .fc .fc-button:focus { box-shadow: 0 0 0 2px rgba(212,175,55,0.25) !important; }
+    .fc .fc-button-primary:not(:disabled).fc-button-active {
+      background: linear-gradient(135deg, #D4AF37, #F4C95D) !important;
+      border-color: #D4AF37 !important;
+      color: #111 !important;
+      font-weight: 600 !important;
+      box-shadow: 0 4px 16px rgba(212,175,55,0.35) !important;
+    }
+
+    /* Column Headers (Mon, Tue...) */
+    .fc .fc-col-header-cell {
+      background: rgba(212,175,55,0.06) !important;
+      border-color: rgba(212,175,55,0.15) !important;
+    }
+    .fc .fc-col-header-cell-cushion {
+      color: #D4AF37 !important;
+      font-size: 0.78rem !important;
+      font-weight: 600 !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.05em !important;
+      padding: 0.6rem 0 !important;
+    }
+
+    /* Grid Borders */
+    .fc .fc-scrollgrid { border-color: rgba(212,175,55,0.2) !important; }
+    .fc .fc-scrollgrid-section > td { border-color: rgba(212,175,55,0.2) !important; }
+    .fc td, .fc th { border-color: rgba(212,175,55,0.12) !important; }
+
+    /* Day Cells */
+    .fc .fc-daygrid-day {
+      background: #1A1A1A !important;
+      border-color: rgba(212,175,55,0.12) !important;
+      transition: all 0.2s ease !important;
+    }
+    .fc .fc-daygrid-day:hover {
+      background: rgba(212,175,55,0.06) !important;
+      box-shadow: inset 0 0 16px rgba(212,175,55,0.08) !important;
+    }
+    .fc .fc-daygrid-day-frame { min-height: 85px !important; }
+
+    /* Day Numbers */
+    .fc .fc-daygrid-day-number {
+      color: #F5F5F5 !important;
+      font-size: 0.85rem !important;
+      font-weight: 600 !important;
+      padding: 8px 10px !important;
+    }
+
+    /* Today */
+    .fc .fc-day-today {
+      background: rgba(255,140,0,0.08) !important;
+      box-shadow: inset 0 0 0 1px rgba(255,140,0,0.3) !important;
+    }
+    .fc .fc-day-today .fc-daygrid-day-number {
+      background: #FF8C00 !important;
+      color: #fff !important;
+      border-radius: 10px !important;
+      font-weight: 700 !important;
+      width: 30px !important;
+      height: 30px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      box-shadow: 0 2px 10px rgba(255,140,0,0.35) !important;
+    }
+
+    /* Selected Day Highlight */
+    .fc .fc-highlight {
+      background: rgba(212,175,55,0.12) !important;
+      border: 1px solid rgba(212,175,55,0.4) !important;
+      border-radius: 12px !important;
+    }
+
+    /* Other Month Days */
+    .fc .fc-day-other { background: #141414 !important; }
+    .fc .fc-day-other .fc-daygrid-day-number { color: rgba(255,255,255,0.18) !important; font-weight: 400 !important; }
+
+    /* Event Labels (Premium Gradient) */
+    .fc .fc-event {
+      background: linear-gradient(135deg, #D4AF37, #F4C95D) !important;
+      border: none !important;
+      color: #111 !important;
+      font-weight: 600 !important;
+      border-radius: 8px !important;
+      padding: 6px 10px !important;
+      font-size: 0.72rem !important;
+      cursor: pointer !important;
+      box-shadow: 0 2px 8px rgba(212,175,55,0.25) !important;
+      transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+    }
+    .fc .fc-event:hover {
+      transform: translateY(-1px) !important;
+      box-shadow: 0 4px 16px rgba(212,175,55,0.4) !important;
+    }
+    .fc .fc-event.event-unavailable {
+      background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+      color: #fff !important;
+      box-shadow: 0 2px 8px rgba(239,68,68,0.25) !important;
+    }
+    .fc .fc-daygrid-event { white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+    .fc .fc-daygrid-more-link { color: #FF8C00 !important; font-size: 0.72rem !important; font-weight: 600 !important; }
+
+    /* List View */
+    .fc .fc-list-day-cushion { background: rgba(212,175,55,0.08) !important; border-color: rgba(212,175,55,0.15) !important; }
+    .fc .fc-list-day-text { color: #D4AF37 !important; font-weight: 600 !important; }
+    .fc .fc-list-day-side-text { color: #D4AF37 !important; }
+    .fc .fc-list-event-title { font-size: 0.85rem !important; color: #F5F5F5 !important; }
+    .fc .fc-list-event-time { font-size: 0.78rem !important; color: rgba(255,255,255,0.5) !important; }
+    .fc .fc-list-event-dot { border-color: #D4AF37 !important; }
+    .fc .fc-list-table { border-color: rgba(212,175,55,0.12) !important; }
+    .fc .fc-list-event:hover td { background: rgba(212,175,55,0.06) !important; }
+
+    /* Non-business */
+    .fc .fc-non-business { background: transparent !important; }
+
+    /* Calendar "+" add button in each day cell */
+    .cal-add-btn {
+      position: absolute;
+      bottom: 4px;
+      right: 4px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(212,175,55,0.15);
+      color: #D4AF37;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s, background 0.2s, transform 0.15s;
+      z-index: 5;
+    }
+    .fc .fc-daygrid-day:hover .cal-add-btn { opacity: 1; }
+    .cal-add-btn:hover {
+      background: #D4AF37;
+      color: #111;
+      transform: scale(1.15);
+      box-shadow: 0 2px 8px rgba(212,175,55,0.4);
+    }
+
+    /* ─── Premium Personal Calendar Panel ─── */
+    .calendar-premium-panel {
+      border: 1px solid rgba(212,175,55,0.2);
+      background: #121212;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(212,175,55,0.08);
+      padding: 1.5rem;
+    }
+
+    /* ─── Selected Date Details Panel ─── */
+    .calendar-date-details {
+      border: 1px solid rgba(212,175,55,0.2);
+      background: #121212;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+    }
+
+    .date-details-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .date-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #D4AF37;
+      color: #171717;
+      border-radius: 10px;
+      padding: 0.45rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      box-shadow: 0 2px 10px rgba(212,175,55,0.3);
+    }
+
+    .date-badge i { font-size: 0.9rem; }
+
+    .date-details-title {
+      font-family: 'Playfair Display', serif;
+      color: var(--gold-light);
+      font-size: 1.1rem;
+      font-weight: 500;
+      margin: 0;
+    }
+
+    .date-details-body {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .date-event-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 14px;
+      padding: 1.2rem 1.5rem;
+      transition: all 0.25s var(--ease);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .date-event-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      width: 3px;
+      background: linear-gradient(180deg, var(--gold), var(--orange));
+      border-radius: 3px 0 0 3px;
+      opacity: 0;
+      transition: opacity 0.25s;
+    }
+
+    .date-event-card:hover {
+      border-color: rgba(212,175,55,0.2);
+      background: rgba(255,255,255,0.04);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    .date-event-card:hover::before { opacity: 1; }
+
+    .date-event-card .event-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.8rem;
+    }
+
+    .date-event-card .event-card-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--gold-light);
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .date-event-card .event-card-title i {
+      color: var(--gold);
+      font-size: 0.9rem;
+    }
+
+    .date-event-card .event-card-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.2rem 0.7rem;
+      border-radius: 20px;
+      font-size: 0.65rem;
+      font-weight: 600;
+    }
+
+    .date-event-card .event-card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 0.6rem;
+    }
+
+    .date-event-card .event-detail-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .date-event-card .event-detail-item i {
+      color: var(--gold);
+      font-size: 0.75rem;
+      margin-top: 0.2rem;
+      width: 16px;
+      text-align: center;
+    }
+
+    .date-event-card .event-detail-item .detail-label {
+      font-size: 0.65rem;
+      color: rgba(255,255,255,0.35);
+      display: block;
+    }
+
+    .date-event-card .event-detail-item .detail-value {
+      font-size: 0.82rem;
+      color: var(--text);
+      font-weight: 500;
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <a href="/">BookMyShot<span>.</span></a>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <button class="nav-item active" data-panel="dashboard">
+        <span class="icon"><i class="fa-solid fa-chart-line"></i></span> Dashboard
+      </button>
+      <button class="nav-item" data-panel="profile">
+        <span class="icon"><i class="fa-solid fa-user"></i></span> My Profile
+      </button>
+      <button class="nav-item" data-panel="bookings">
+        <span class="icon"><i class="fa-solid fa-calendar-check"></i></span> Bookings
+      </button>
+      <button class="nav-item" data-panel="calendar-private">
+        <span class="icon"><i class="fa-solid fa-calendar-days"></i></span> Personal Calendar
+      </button>
+      <button class="nav-item" data-panel="calendar-public">
+        <span class="icon"><i class="fa-solid fa-clock"></i></span> Availability Calendar
+      </button>
+      <div class="nav-section-label">Portfolio</div>
+      <button class="nav-item" data-panel="reels">
+        <span class="icon"><i class="fa-solid fa-video"></i></span> Reels & Videos
+      </button>
+      <button class="nav-item" data-panel="photos">
+        <span class="icon"><i class="fa-solid fa-images"></i></span> Photos & Portfolio
+      </button>
+      <button class="nav-item" data-panel="packages">
+        <span class="icon"><i class="fa-solid fa-gem"></i></span> Packages
+      </button>
+
+      <div class="nav-section-label">Business</div>
+      <button class="nav-item" data-panel="booking-requests">
+        <span class="icon"><i class="fa-solid fa-clipboard-list"></i></span> Booking Requests
+      </button>
+      <button class="nav-item" data-panel="inquiries">
+        <span class="icon"><i class="fa-solid fa-envelope-open-text"></i></span> Inquiries
+      </button>
+      <button class="nav-item" data-panel="payment-proofs">
+        <span class="icon"><i class="fa-solid fa-credit-card"></i></span> Payment Proofs
+      </button>
+      <button class="nav-item" data-panel="earnings">
+        <span class="icon"><i class="fa-solid fa-indian-rupee-sign"></i></span> Earnings
+      </button>
+      <button class="nav-item" data-panel="promotions">
+        <span class="icon"><i class="fa-solid fa-trophy"></i></span> Promotions
+      </button>
+      <button class="nav-item" data-panel="messages">
+        <span class="icon"><i class="fa-solid fa-comments"></i></span> Messages
+      </button>
+
+      <div class="nav-section-label">Revenue</div>
+      <button class="nav-item" data-panel="revenue">
+        <span class="icon"><i class="fa-solid fa-chart-pie"></i></span> Revenue & Subscription
+      </button>
+
+      <div class="nav-section-label">Settings</div>
+      <button class="nav-item" data-panel="settings">
+        <span class="icon"><i class="fa-solid fa-gear"></i></span> Settings
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="nav-item" id="logoutBtn">
+        <span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span> Logout
+      </button>
+    </div>
+  </aside>
+
+  <!-- ═══ MAIN ═══ -->
+  <div class="main-wrapper">
+    <header class="top-header">
+      <div class="header-left">
+        <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
+        <h2 id="pageTitle">Dashboard</h2>
+      </div>
+      <div class="header-right">
+        <button class="btn-icon" id="notifBtn">
+          <i class="fa-solid fa-bell"></i>
+          <span class="notif-badge" id="notifCount" hidden>0</span>
+        </button>
+        <a id="viewPublicProfile" href="#" target="_blank" class="btn btn-outline btn-sm">
+          <span>👁️</span>
+          <span class="label">View Public Profile</span>
+        </a>
+        <img id="headerAvatar" class="header-avatar" src="https://images.unsplash.com/photo-1554048612-b6a482b17f70?w=100" alt="Avatar">
+      </div>
+    </header>
+
+    <main class="main-content">
+
+      <!-- ─── DASHBOARD PANEL ─── -->
+      <div class="panel-content" id="panel-dashboard" style="display:block">
+        <div class="welcome-section">
+          <h1 id="welcomeName">Welcome back</h1>
+          <p>Here's your creator overview</p>
+        </div>
+        <div class="stats-grid" id="statsGrid">
+          <div class="stat-card"><div class="stat-icon"><i class="fas fa-calendar-days"></i></div><div class="stat-value">0</div><div class="stat-label">Upcoming Bookings</div></div>
+          <div class="stat-card"><div class="stat-icon"><i class="fas fa-video"></i></div><div class="stat-value">0</div><div class="stat-label">Uploaded Reels</div></div>
+          <div class="stat-card"><div class="stat-icon"><i class="fas fa-star"></i></div><div class="stat-value">0</div><div class="stat-label">Reviews</div></div>
+          <div class="stat-card"><div class="stat-icon"><i class="fas fa-indian-rupee-sign"></i></div><div class="stat-value">₹0</div><div class="stat-label">Total Earnings</div></div>
+        </div>
+        <div class="card-panel">
+          <h3 style="font-family:'Playfair Display',serif;color:var(--gold-light);margin:0 0 1rem">Upcoming Events</h3>
+          <div id="upcomingEventsList"><p style="color:rgba(255,255,255,0.3)">No upcoming events</p></div>
+        </div>
+      </div>
+
+      <!-- ─── PROFILE PANEL ─── -->
+      <div class="panel-content" id="panel-profile" style="display:none">
+        <div class="welcome-section">
+          <h1>My Profile</h1>
+          <p>Manage your public creator profile</p>
+        </div>
+        <div class="card-panel" id="profileContent">
+          <div class="empty-state">
+            <div class="empty-icon">👤</div>
+            <h3>Loading profile...</h3>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── BOOKINGS PANEL ─── -->
+      <div class="panel-content" id="panel-bookings" style="display:none">
+        <div class="welcome-section">
+          <h1>Bookings</h1>
+          <p>Manage your booking requests and confirmed shoots</p>
+        </div>
+        <div class="card-panel" id="bookingsContent">
+          <div class="empty-state">
+            <div class="empty-icon">📅</div>
+            <h3>No bookings yet</h3>
+            <p>When clients send booking requests, they'll appear here</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── PERSONAL CALENDAR PANEL ─── -->
+      <div class="panel-content" id="panel-calendar-private" style="display:none">
+        <div class="welcome-section">
+          <h1>Personal Calendar</h1>
+          <p>Schedule shoots, meetings, and personal events — only visible to you</p>
+        </div>
+        <div class="card-panel calendar-premium-panel">
+          <div id="privateCalendar"></div>
+        </div>
+
+        <!-- Selected Date Details Panel -->
+        <div class="card-panel calendar-date-details" id="calendarDateDetails" style="display:none;margin-top:1.5rem">
+          <div class="date-details-header">
+            <div class="date-badge" id="selectedDateBadge">
+              <i class="fas fa-calendar-day"></i>
+              <span id="selectedDateText">--</span>
+            </div>
+            <h3 class="date-details-title">Events On Selected Date</h3>
+          </div>
+          <div class="date-details-body" id="dateDetailsBody">
+            <div class="empty-state">
+              <div class="empty-icon"><i class="fas fa-calendar-xmark"></i></div>
+              <h3>No bookings scheduled for this date.</h3>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── AVAILABILITY CALENDAR PANEL ─── -->
+      <div class="panel-content" id="panel-calendar-public" style="display:none">
+        <div class="welcome-section">
+          <h1>Availability Calendar</h1>
+          <p>Mark dates as unavailable — they appear <strong style="color:var(--danger)">RED</strong> to users</p>
+        </div>
+        <div class="card-panel">
+          <div style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap">
+            <input type="date" id="unavailDate" class="form-input" style="flex:1;min-width:140px">
+            <input type="text" id="unavailReason" class="form-input" placeholder="Reason (optional)" style="flex:1;min-width:140px">
+            <button class="btn btn-danger btn-sm" id="markUnavailableBtn">🚫 Mark Unavailable</button>
+          </div>
+          <div id="availabilityCalendar"></div>
+          <div style="margin-top:1rem;border-top:1px solid rgba(255,255,255,0.06);padding-top:1rem">
+            <h4 style="font-family:Playfair Display,serif;color:var(--gold-light);margin:0 0 0.5rem;font-size:0.9rem">Currently Blocked Dates</h4>
+            <div id="availabilityList"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── REELS PANEL ─── -->
+      <div class="panel-content" id="panel-reels" style="display:none">
+        <div class="welcome-section">
+          <h1>Reels & Videos</h1>
+          <p>Upload and manage your video portfolio</p>
+        </div>
+        <div class="card-panel" id="reelsContent">
+          <div class="empty-state">
+            <div class="empty-icon">🎬</div>
+            <h3>No reels yet</h3>
+            <p>Upload your cinematic reels and videos</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── PHOTOS PANEL ─── -->
+      <div class="panel-content" id="panel-photos" style="display:none">
+        <div class="welcome-section">
+          <h1>Photos & Portfolio</h1>
+          <p>Showcase your best work</p>
+        </div>
+        <div class="card-panel" id="photosContent">
+          <div class="empty-state">
+            <div class="empty-icon">📸</div>
+            <h3>No photos yet</h3>
+            <p>Upload your portfolio photos</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── PACKAGES PANEL ─── -->
+      <div class="panel-content" id="panel-packages" style="display:none">
+        <div class="welcome-section">
+          <h1>Packages</h1>
+          <p>Manage your service packages and pricing</p>
+        </div>
+        <div class="card-panel" id="packagesContent">
+          <div class="empty-state">
+            <div class="empty-icon">💎</div>
+            <h3>No packages yet</h3>
+            <p>Create packages to showcase your services</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── BOOKING REQUESTS PANEL ─── -->
+      <div class="panel-content" id="panel-booking-requests" style="display:none">
+        <div class="welcome-section">
+          <h1>Booking Requests</h1>
+          <p>Review and manage incoming booking requests</p>
+        </div>
+        <div class="card-panel" id="bookingRequestsContent">
+          <div class="empty-state">
+            <div class="empty-icon">📋</div>
+            <h3>No booking requests yet</h3>
+            <p>When clients send you booking requests, they will appear here for you to accept or decline</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── INQUIRIES PANEL ─── -->
+      <div class="panel-content" id="panel-inquiries" style="display:none">
+        <div class="welcome-section" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:0.5rem">
+          <div>
+            <h1>Inquiries</h1>
+            <p>Respond to client inquiries</p>
+          </div>
+          <button class="btn btn-primary" onclick="window.openCreateInquiryModal()"><i class="fas fa-plus"></i> Create Inquiry</button>
+        </div>
+        <div class="card-panel" id="inquiriesContent">
+          <div class="empty-state">
+            <div class="empty-icon"><i class="fas fa-envelope-open-text" style="color:var(--gold);font-size:2.5rem"></i></div>
+            <h3>No inquiries yet</h3>
+            <p>When users send inquiries about your services, they will appear here</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── PAYMENT PROOFS PANEL ─── -->
+      <div class="panel-content" id="panel-payment-proofs" style="display:none">
+        <div class="welcome-section">
+          <h1>Payment Proofs</h1>
+          <p>Verify client payment submissions</p>
+        </div>
+        <div class="card-panel" id="paymentProofsContent">
+          <div class="empty-state">
+            <div class="empty-icon">💳</div>
+            <h3>No payment proofs yet</h3>
+            <p>When clients submit payment proofs, they will appear here for verification</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── EARNINGS PANEL ─── -->
+      <div class="panel-content" id="panel-earnings" style="display:none">
+        <div class="welcome-section">
+          <h1>Earnings</h1>
+          <p>Track your income and payments</p>
+        </div>
+        <div class="stats-grid" id="earningsStats">
+          <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-value">₹0</div><div class="stat-label">Total Earnings</div></div>
+          <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-value">₹0</div><div class="stat-label">Pending</div></div>
+          <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value">₹0</div><div class="stat-label">Completed</div></div>
+        </div>
+      </div>
+
+      <!-- ─── MESSAGES PANEL ─── -->
+      <div class="panel-content" id="panel-messages" style="display:none">
+        <div class="welcome-section">
+          <h1>Messages</h1>
+          <p>Chat with your clients</p>
+        </div>
+        <div class="card-panel" id="messagesContent">
+          <div class="empty-state">
+            <div class="empty-icon">💬</div>
+            <h3>No messages yet</h3>
+            <p>When clients message you, conversations will appear here</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── REVENUE & SUBSCRIPTION PANEL ─── -->
+      <div class="panel-content" id="panel-revenue" style="display:none">
+        <div class="welcome-section">
+          <h1>Revenue & Subscription</h1>
+          <p>Track your earnings, commissions and subscription status</p>
+        </div>
+        <div id="revenueContent"><div class="loader"></div></div>
+      </div>
+
+      <!-- ─── PROMOTION PLANS PANEL ─── -->
+      <div class="panel-content" id="panel-promotions" style="display:none">
+        <div class="welcome-section">
+          <h1>Promotion Plans</h1>
+          <p>Boost your visibility with promotion plans</p>
+        </div>
+        <div id="promotionPlansContent"><div class="loader"></div></div>
+        <div style="margin-top:2rem">
+          <h3 style="color:var(--gold-light);font-family:var(--font-display);margin-bottom:1rem">My Requests</h3>
+          <div id="myPromotionRequests"><div class="loader"></div></div>
+        </div>
+      </div>
+
+      <!-- ─── SETTINGS PANEL ─── -->
+      <div class="panel-content" id="panel-settings" style="display:none">
+        <div class="welcome-section">
+          <h1>Settings</h1>
+          <p>Manage your account settings</p>
+        </div>
+        <div class="card-panel" id="settingsContent">
+          <div class="empty-state">
+            <div class="empty-icon">⚙️</div>
+            <h3>Settings</h3>
+            <p>Account management coming soon</p>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ═══ TOAST CONTAINER ═══ -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- FullCalendar JS -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/utils.js"></script>
+  <script>
+  // ═══════════════════════════════════════════════════════════════════════════
+  //  BookMyShot — Creator Dashboard (Premium SaaS)
+  //  All sections use REAL data from the API. No fake/demo data.
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  (function() {
+    'use strict';
+
+    // ─── State ──────────────────────────────────────────────────────────────
+
+    let currentUser = null;
+    let creatorProfile = null;
+    let currentPanel = 'dashboard';
+
+    // ─── Auth Check ─────────────────────────────────────────────────────────
+
+    const authUser = Utils.requireAuth(['creator']);
+    if (!authUser) return;
+
+    // ─── Helpers ────────────────────────────────────────────────────────────
+
+    function esc(s) {
+      if (!s) return '';
+      return String(s).replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>').replace(/"/g,'"').replace(/'/g,'&#039;');
+    }
+
+    function toast(msg, type) {
+      type = type || 'success';
+      var c = document.getElementById('toastContainer');
+      if (!c) { c = document.createElement('div'); c.id = 'toastContainer'; c.className = 'toast-container'; document.body.appendChild(c); }
+      var el = document.createElement('div');
+      el.className = 'toast-msg ' + type;
+      el.textContent = msg;
+      c.appendChild(el);
+      setTimeout(function() { el.remove(); }, 3000);
+    }
+
+    // ─── Init ───────────────────────────────────────────────────────────────
+
+    var isSubscriptionExpired = false;
+
+    // Platform config loaded from database (replaces hardcoded values)
+    var platformConfig = {
+      subscription: { monthlyPlanPrice: 299 },
+      commission: { bmsLeadPercent: 5, creatorLeadPercent: 3 },
+      platform: { currency: 'INR' }
+    };
+
+    async function loadPlatformConfig() {
+      try {
+        var res = await API.get('/config/public');
+        if (res && res.success) platformConfig = res;
+      } catch (e) { /* use defaults */ }
+    }
+
+    async function init() {
+      try {
+        // Load platform config first (pricing, commissions from DB)
+        await loadPlatformConfig();
+
+        const me = await API.get('/auth/me');
+        currentUser = me.user;
+        creatorProfile = me.creator;
+
+        if (!creatorProfile || creatorProfile.status !== 'approved') {
+          window.location.href = '/creator/pending.html';
+          return;
+        }
+
+        // Check subscription expiry
+        checkSubscriptionStatus();
+
+        updateHeader();
+        loadDashboard();
+        loadNotifications();
+      } catch (e) {
+        toast(e.message || 'Failed to load profile', 'error');
+      }
+    }
+
+    function checkSubscriptionStatus() {
+      if (!creatorProfile) return;
+      var subStatus = creatorProfile.subscriptionStatus || '';
+      var endDate = creatorProfile.subscriptionEndDate ? new Date(creatorProfile.subscriptionEndDate) : null;
+
+      // Check if expired by date even if status hasn't been updated
+      if (endDate && endDate < new Date() && subStatus !== 'active') {
+        isSubscriptionExpired = true;
+      }
+      if (subStatus === 'expired' || subStatus === 'overdue' || subStatus === 'suspended') {
+        isSubscriptionExpired = true;
+      }
+
+      if (isSubscriptionExpired) {
+        showRenewalBanner();
+      }
+    }
+
+    function showRenewalBanner() {
+      var banner = document.createElement('div');
+      banner.id = 'expiredBanner';
+      banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(135deg,#b91c1c,#dc2626);padding:0.75rem 1.5rem;display:flex;align-items:center;justify-content:center;gap:1rem;flex-wrap:wrap';
+      banner.innerHTML = '<span style="color:#fff;font-size:0.85rem;font-weight:500"><i class="fas fa-exclamation-triangle" style="margin-right:0.4rem"></i>Your subscription has expired. New bookings, inquiries, and events are disabled.</span>' +
+        '<button onclick="window.renewSubscription()" style="background:#fff;color:#b91c1c;border:none;padding:0.4rem 1rem;border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer">Renew Now ₹' + platformConfig.subscription.monthlyPlanPrice + '/month</button>';
+      document.body.prepend(banner);
+      // Push content down
+      document.body.style.paddingTop = '48px';
+    }
+
+    function checkExpiredBlock(actionName) {
+      if (isSubscriptionExpired) {
+        toast('Subscription expired. ' + (actionName || 'This action') + ' is disabled. Please renew.', 'error');
+        return true;
+      }
+      return false;
+    }
+
+    // ─── Sidebar Navigation ─────────────────────────────────────────────────
+
+    document.querySelectorAll('.nav-item[data-panel]').forEach(function(item) {
+      item.addEventListener('click', function() {
+        var panel = item.dataset.panel;
+        switchPanel(panel);
+      });
+    });
+
+    function switchPanel(panel) {
+      currentPanel = panel;
+
+      // Update nav
+      document.querySelectorAll('.nav-item[data-panel]').forEach(function(n) {
+        n.classList.toggle('active', n.dataset.panel === panel);
+      });
+
+      // Update panels
+      document.querySelectorAll('.panel-content').forEach(function(p) {
+        p.style.display = p.id === 'panel-' + panel ? 'block' : 'none';
+      });
+
+      // Update title
+      var titles = {
+        dashboard: 'Dashboard',
+        profile: 'My Profile',
+        bookings: 'Bookings',
+        'booking-requests': 'Booking Requests',
+        inquiries: 'Inquiries',
+        'payment-proofs': 'Payment Proofs',
+        'calendar-private': 'Personal Calendar',
+        'calendar-public': 'Availability Calendar',
+        reels: 'Reels & Videos',
+        photos: 'Photos & Portfolio',
+        packages: 'Packages',
+        earnings: 'Earnings',
+        messages: 'Messages',
+        revenue: 'Revenue & Subscription',
+        promotions: 'Promotion Plans',
+        settings: 'Settings'
+      };
+      document.getElementById('pageTitle').textContent = titles[panel] || 'Dashboard';
+
+      // Load panel data
+      loadPanel(panel);
+
+      // Close mobile sidebar
+      document.getElementById('sidebar').classList.remove('open');
+    }
+
+    // ─── Menu Toggle ────────────────────────────────────────────────────────
+
+    document.getElementById('menuToggle').addEventListener('click', function() {
+      document.getElementById('sidebar').classList.toggle('open');
+    });
+
+    // ─── Logout ─────────────────────────────────────────────────────────────
+
+    document.getElementById('logoutBtn').addEventListener('click', function() {
+      if (typeof API !== 'undefined' && API.clearAuth) API.clearAuth();
+      localStorage.removeItem('bms_user');
+      window.location.href = '/login.html';
+    });
+
+    // ─── Load Panel ─────────────────────────────────────────────────────────
+
+    function loadPanel(panel) {
+      switch(panel) {
+        case 'dashboard': loadDashboard(); break;
+        case 'profile': loadProfile(); break;
+        case 'bookings': loadBookings(); break;
+        case 'booking-requests': loadBookingRequests(); break;
+        case 'inquiries': loadInquiries(); break;
+        case 'payment-proofs': loadPaymentProofs(); break;
+        case 'calendar-private': loadPrivateCalendar(); break;
+        case 'calendar-public': loadPublicCalendar(); break;
+        case 'reels': renderReelGrid(); break;
+        case 'photos': loadPhotos(); break;
+        case 'packages': loadPackages(); break;
+        case 'earnings': loadEarnings(); break;
+        case 'messages': loadMessages(); break;
+        case 'revenue': loadRevenue(); break;
+        case 'promotions': loadPromotions(); break;
+        case 'settings': loadSettings(); break;
+      }
+    }
+
+    // ─── Dashboard ──────────────────────────────────────────────────────────
+
+    function loadDashboard() {
+      var nameEl = document.getElementById('welcomeName');
+      if (currentUser && currentUser.name) {
+        nameEl.textContent = 'Welcome back, ' + currentUser.name.split(' ')[0];
+      }
+
+      // Load stats from API
+      API.get('/creator/analytics')
+        .then(function(result) {
+          var stats = result.stats || {};
+          var statsGrid = document.getElementById('statsGrid');
+          statsGrid.innerHTML =
+            '<div class="stat-card"><div class="stat-icon"><i class="fas fa-calendar-check"></i></div><div class="stat-value">' + (stats.totalBookings || 0) + '</div><div class="stat-label">Total Bookings</div></div>' +
+            '<div class="stat-card"><div class="stat-icon"><i class="fas fa-hourglass-half"></i></div><div class="stat-value">' + (stats.pending || 0) + '</div><div class="stat-label">Pending Payments</div></div>' +
+            '<div class="stat-card"><div class="stat-icon"><i class="fas fa-calendar-days"></i></div><div class="stat-value">' + (stats.upcoming || 0) + '</div><div class="stat-label">Upcoming Events</div></div>' +
+            '<div class="stat-card"><div class="stat-icon"><i class="fas fa-indian-rupee-sign"></i></div><div class="stat-value">₹' + ((stats.earnings || 0).toLocaleString('en-IN')) + '</div><div class="stat-label">Total Earnings</div></div>';
+
+          // Upcoming events
+          var upcoming = result.upcomingEvents || [];
+          var upcomingEl = document.getElementById('upcomingEventsList');
+          if (upcoming.length > 0) {
+            upcomingEl.innerHTML = upcoming.map(function(b) {
+              return '<p>📅 ' + (b.eventDate ? new Date(b.eventDate).toLocaleDateString() : 'TBD') + ' — ' + esc(b.clientName || 'Client') + ' (' + esc(b.eventType || 'Event') + ')</p>';
+            }).join('');
+          } else {
+            upcomingEl.innerHTML = '<p style="color:rgba(255,255,255,0.3)">No upcoming events</p>';
+          }
+        })
+        .catch(function() {
+          // Stats failed to load, keep defaults
+        });
+
+      updateHeader();
+    }
+
+    // ─── Header ─────────────────────────────────────────────────────────────
+
+    function updateHeader() {
+      var avatar = document.getElementById('headerAvatar');
+      if (currentUser && currentUser.avatar) {
+        avatar.src = currentUser.avatar;
+      }
+
+      var profileLink = document.getElementById('viewPublicProfile');
+      if (creatorProfile && creatorProfile._id) {
+        profileLink.href = '/creator-portfolio.html?id=' + creatorProfile._id;
+      }
+    }
+
+    // ─── Notifications ──────────────────────────────────────────────────────
+
+    var notifPanel = null;
+    var notifData = [];
+
+    async function loadNotifications() {
+      try {
+        var result = await API.get('/notifications');
+        notifData = result.notifications || [];
+
+        // Calculate unread count client-side
+        var unread = 0;
+        for (var i = 0; i < notifData.length; i++) {
+          if (!notifData[i].read) unread++;
+        }
+
+        // Update bell badge
+        var badge = document.getElementById('notifCount');
+        if (badge) {
+          if (unread > 0) {
+            badge.textContent = unread > 9 ? '9+' : String(unread);
+            badge.classList.add('visible');
+          } else {
+            badge.classList.remove('visible');
+          }
+        }
+
+        // Check for important unread notifications (popup on load)
+        checkImportantPopup();
+      } catch (e) {
+        console.log('[Notifications] Load error:', e.message);
+      }
+    }
+
+    function checkImportantPopup() {
+      // Show popup for ALL unread notifications from admin
+      // This covers: direct messages, warnings, reminders, broadcasts, alerts
+      var now = new Date();
+      for (var i = 0; i < notifData.length; i++) {
+        var n = notifData[i];
+        if (n.read) continue;
+
+        // Check if this notification should trigger a popup
+        var shouldPopup = false;
+
+        // Important types always popup
+        var alwaysPopupTypes = ['announcement', 'admin-alert', 'subscription', 'payment-failed'];
+        if (alwaysPopupTypes.indexOf(n.type) !== -1) {
+          shouldPopup = true;
+        }
+
+        // Any notification created in the last 2 minutes (just arrived while online)
+        if (n.createdAt) {
+          var created = new Date(n.createdAt);
+          var ageSeconds = (now - created) / 1000;
+          if (ageSeconds < 120) {
+            shouldPopup = true;
+          }
+        }
+
+        // Any admin-sent notification on login (unread, any type)
+        // Admin notifications have types: system, announcement, admin-alert, subscription, payment-failed
+        var adminTypes = ['system', 'announcement', 'admin-alert', 'subscription', 'payment-failed', 'payment', 'warning'];
+        if (adminTypes.indexOf(n.type) !== -1) {
+          shouldPopup = true;
+        }
+
+        if (shouldPopup) {
+          showPremiumPopup(n);
+          break; // Show one at a time
+        }
+      }
+
+      // Also check subscription expiry from creator profile
+      if (creatorProfile && creatorProfile.subscriptionEndDate) {
+        var endDate = new Date(creatorProfile.subscriptionEndDate);
+        var now = new Date();
+        var daysLeft = Math.ceil((endDate - now) / 86400000);
+        if (daysLeft <= 5 && daysLeft > 0) {
+          var subKey = 'bms_sub_reminder_' + daysLeft;
+          if (!sessionStorage.getItem(subKey)) {
+            sessionStorage.setItem(subKey, '1');
+            showPremiumPopup({
+              _id: 'sub_' + daysLeft,
+              title: 'Subscription Reminder',
+              message: 'Your BookMyShot subscription will expire in ' + daysLeft + ' day' + (daysLeft > 1 ? 's' : '') + '. Renew now to continue receiving inquiries and bookings.',
+              type: 'subscription',
+            });
+          }
+        } else if (daysLeft <= 0 && (creatorProfile.subscriptionStatus === 'expired' || creatorProfile.subscriptionStatus === 'overdue')) {
+          var expKey = 'bms_sub_expired';
+          if (!sessionStorage.getItem(expKey)) {
+            sessionStorage.setItem(expKey, '1');
+            showPremiumPopup({
+              _id: 'sub_expired',
+              title: 'Subscription Expired',
+              message: 'Your BookMyShot subscription has expired. Renew now to continue receiving inquiries and bookings.',
+              type: 'subscription',
+              showRenew: true,
+            });
+          }
+        }
+      }
+    }
+
+    function showPremiumPopup(notification) {
+      // Don't show if already shown this session
+      var shownKey = 'bms_popup_' + (notification._id || Date.now());
+      if (sessionStorage.getItem(shownKey)) return;
+      sessionStorage.setItem(shownKey, '1');
+
+      // Choose icon based on type
+      var iconMap = {
+        'announcement': '<i class="fas fa-bullhorn"></i>',
+        'admin-alert': '<i class="fas fa-shield-halved"></i>',
+        'subscription': '<i class="fas fa-crown"></i>',
+        'payment-failed': '<i class="fas fa-credit-card"></i>',
+      };
+      var icon = iconMap[notification.type] || '<i class="fas fa-bell"></i>';
+      var showRenew = notification.showRenew || notification.type === 'subscription' || notification.type === 'payment-failed';
+
+      var overlay = document.createElement('div');
+      overlay.className = 'bms-popup-overlay';
+      overlay.innerHTML = '<div class="bms-popup-card">' +
+        '<button class="bms-popup-close" onclick="this.closest(\'.bms-popup-overlay\').remove()"><i class="fas fa-times"></i></button>' +
+        '<div class="bms-popup-icon">' + icon + '</div>' +
+        '<h3 class="bms-popup-title">' + esc(notification.title) + '</h3>' +
+        '<p class="bms-popup-message">' + esc(notification.message) + '</p>' +
+        '<div class="bms-popup-actions">' +
+          (showRenew ? '<button class="bms-popup-btn primary" onclick="this.closest(\'.bms-popup-overlay\').remove();switchPanel(\'revenue\')">Renew Now</button>' : '') +
+          '<button class="bms-popup-btn" onclick="this.closest(\'.bms-popup-overlay\').remove()">Mark As Read</button>' +
+        '</div>' +
+      '</div>';
+      document.body.appendChild(overlay);
+
+      // Trigger animation
+      requestAnimationFrame(function() { overlay.classList.add('show'); });
+
+      // Mark as read in DB
+      if (notification._id && !notification._id.startsWith('sub_')) {
+        try { API.patch('/notifications/' + notification._id + '/read', {}); } catch (e) {}
+      }
+    }
+
+    // Bell click - show notification dropdown
+    document.getElementById('notifBtn').addEventListener('click', async function() {
+      if (notifPanel && notifPanel.style.display === 'block') {
+        notifPanel.style.display = 'none';
+        return;
+      }
+
+      if (!notifPanel) {
+        notifPanel = document.createElement('div');
+        notifPanel.style.cssText = 'position:absolute;top:60px;right:0;width:340px;max-height:420px;overflow-y:auto;background:#171717;border:1px solid rgba(212,175,55,0.2);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.6);z-index:200;padding:0.75rem';
+        document.querySelector('.header-right').style.position = 'relative';
+        document.querySelector('.header-right').appendChild(notifPanel);
+      }
+
+      notifPanel.style.display = 'block';
+
+      // Always refresh data when opening
+      try {
+        var result = await API.get('/notifications');
+        notifData = result.notifications || [];
+      } catch (e) {
+        notifData = [];
+      }
+
+      renderNotificationPanel();
+
+      // Mark all as read
+      try {
+        await API.patch('/notifications/read-all', {});
+      } catch (e) {
+        // Fallback: mark individually
+        for (var m = 0; m < Math.min(notifData.length, 10); m++) {
+          if (!notifData[m].read) {
+            try { await API.patch('/notifications/' + notifData[m]._id + '/read', {}); } catch (e2) { break; }
+          }
+        }
+      }
+
+      // Update badge to 0
+      var badge = document.getElementById('notifCount');
+      if (badge) { badge.classList.remove('visible'); }
+
+      // Mark local data as read
+      for (var j = 0; j < notifData.length; j++) {
+        notifData[j].read = true;
+      }
+      renderNotificationPanel();
+    });
+
+    function renderNotificationPanel() {
+      if (!notifPanel) return;
+
+      if (notifData.length === 0) {
+        notifPanel.innerHTML = '<div style="text-align:center;padding:2rem"><i class="fas fa-bell-slash" style="font-size:1.5rem;color:rgba(255,255,255,0.15);margin-bottom:0.5rem;display:block"></i><p style="color:rgba(255,255,255,0.3);font-size:0.82rem;margin:0">No notifications available</p></div>';
+        return;
+      }
+
+      var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;padding-bottom:0.5rem;border-bottom:1px solid rgba(255,255,255,0.06)">' +
+        '<span style="font-size:0.8rem;color:var(--gold-light);font-weight:500"><i class="fas fa-bell" style="margin-right:0.3rem"></i>Notifications</span>' +
+        '<button style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:0.68rem;cursor:pointer;text-decoration:underline" onclick="clearAllNotifications()">Clear all</button>' +
+      '</div>';
+
+      notifData.slice(0, 20).forEach(function(n) {
+        var isUnread = !n.read;
+        var timeAgo = getTimeAgo(n.createdAt);
+        var typeIcon = getNotifIcon(n.type);
+        html += '<div style="padding:0.5rem 0.4rem;border-radius:8px;margin-bottom:0.2rem;background:' + (isUnread ? 'rgba(212,175,55,0.04)' : 'transparent') + ';border-left:2px solid ' + (isUnread ? 'var(--gold)' : 'transparent') + '">' +
+          '<div style="display:flex;gap:0.4rem;align-items:flex-start">' +
+            '<span style="font-size:0.75rem;margin-top:0.1rem">' + typeIcon + '</span>' +
+            '<div style="flex:1">' +
+              '<div style="font-size:0.78rem;color:' + (isUnread ? '#F5F5F5' : 'rgba(255,255,255,0.5)') + ';font-weight:' + (isUnread ? '500' : '400') + '">' + esc(n.title || 'Notification') + '</div>' +
+              '<div style="font-size:0.7rem;color:rgba(255,255,255,0.3);margin-top:0.1rem;line-height:1.3">' + esc(n.message || '').substring(0, 100) + '</div>' +
+              '<div style="font-size:0.6rem;color:rgba(255,255,255,0.18);margin-top:0.2rem">' + timeAgo + '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      });
+
+      notifPanel.innerHTML = html;
+    }
+
+    function getNotifIcon(type) {
+      var icons = {
+        'booking': '<i class="fas fa-calendar-check" style="color:var(--gold)"></i>',
+        'payment': '<i class="fas fa-credit-card" style="color:#10b981"></i>',
+        'inquiry': '<i class="fas fa-envelope" style="color:#3b82f6"></i>',
+        'subscription': '<i class="fas fa-crown" style="color:#f59e0b"></i>',
+        'announcement': '<i class="fas fa-bullhorn" style="color:var(--gold)"></i>',
+        'admin-alert': '<i class="fas fa-shield" style="color:#ef4444"></i>',
+        'system': '<i class="fas fa-cog" style="color:rgba(255,255,255,0.3)"></i>',
+      };
+      return icons[type] || '<i class="fas fa-bell" style="color:rgba(255,255,255,0.25)"></i>';
+    }
+
+    window.clearAllNotifications = async function() {
+      if (!confirm('Clear all notifications?')) return;
+      try {
+        await API.patch('/notifications/read-all', {});
+      } catch (e) { /* silent */ }
+      var badge = document.getElementById('notifCount');
+      if (badge) { badge.classList.remove('visible'); }
+      notifData = [];
+      renderNotificationPanel();
+      toast('Notifications cleared successfully', 'success');
+    };
+
+    window.markAllNotificationsRead = window.clearAllNotifications;
+
+    function getTimeAgo(dateStr) {
+      if (!dateStr) return '';
+      var now = new Date();
+      var date = new Date(dateStr);
+      var diff = Math.floor((now - date) / 1000);
+      if (diff < 0) return 'Just now';
+      if (diff < 60) return 'Just now';
+      if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+      if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+      if (diff < 604800) return Math.floor(diff / 86400) + 'd ago';
+      return date.toLocaleDateString('en-IN');
+    }
+
+    // Poll for new notifications every 30 seconds + instant popup for important
+    var lastNotifCount = 0;
+    setInterval(function() {
+      var prevCount = notifData.length;
+      loadNotifications().then(function() {
+        // If new notifications arrived, check for important popups
+        if (notifData.length > prevCount) {
+          checkImportantPopup();
+        }
+      });
+    }, 30000);
+
+    // ─── Profile ────────────────────────────────────────────────────────────
+
+    async function loadProfile() {
+      var container = document.getElementById('profileContent');
+
+      // If user/creator not loaded yet, fetch fresh from API
+      if (!currentUser || !creatorProfile) {
+        try {
+          var me = await API.get('/auth/me');
+          currentUser = me.user;
+          creatorProfile = me.creator;
+        } catch (e) {
+          container.innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><h3>Failed to load profile</h3><p>' + esc(e.message || 'Please refresh the page') + '</p></div>';
+          return;
+        }
+      }
+
+      if (!currentUser || !creatorProfile) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><h3>Profile unavailable</h3><p>Please refresh the page or log in again.</p></div>';
+        return;
+      }
+
+      var u = currentUser;
+      var c = creatorProfile;
+      var social = c.social || {};
+
+      container.innerHTML =
+        '<div class="profile-edit-form">' +
+
+        // Avatar + Header
+        '<div class="profile-header-section">' +
+        '<div class="profile-avatar-edit">' +
+        '<img id="profileAvatarImg" src="' + (u.avatar || 'https://images.unsplash.com/photo-1554048612-b6a482b17f70?w=200') + '" alt="Avatar">' +
+        '<button class="btn btn-outline" id="profileAvatarBtn" style="font-size:0.7rem;padding:0.25rem 0.7rem;margin-top:0.5rem">🔄 Change Photo</button>' +
+        '<input type="file" id="profileAvatarInput" accept="image/*" style="display:none">' +
+        '</div>' +
+        '<div class="profile-header-info">' +
+        '<h3 style="margin:0 0 0.2rem;font-family:Playfair Display,serif;color:var(--text);font-size:1.2rem">' + esc(u.name) + '</h3>' +
+        '<p style="margin:0;color:rgba(255,255,255,0.4);font-size:0.85rem">' + esc(u.email) + '</p>' +
+        '<p style="margin:0.3rem 0 0;color:rgba(255,255,255,0.2);font-size:0.7rem">⭐ ' + (c.rating || 5.0).toFixed(1) + ' · ' + (c.reviewCount || 0) + ' reviews · ' + (c.weddingsCount || 0) + ' weddings</p>' +
+        '</div>' +
+        '</div>' +
+
+        // Edit Fields
+        '<div class="profile-fields">' +
+        '<div class="form-group"><label>Full Name</label><input type="text" id="pfName" value="' + esc(u.name || '') + '"></div>' +
+        '<div class="form-group"><label>Email</label><input type="email" id="pfEmail" value="' + esc(u.email || '') + '" readonly style="opacity:0.6;cursor:not-allowed"></div>' +
+        '<div class="form-group"><label>Phone</label><input type="text" id="pfPhone" value="' + esc(u.phone || '') + '"></div>' +
+        '<div class="form-group"><label>Profession / Specialty</label><input type="text" id="pfProfession" value="' + esc(c.specialty || '') + '" placeholder="e.g. Wedding Photographer"></div>' +
+        '<div class="form-group"><label>City / Location</label><input type="text" id="pfCity" value="' + esc(c.city || '') + '" placeholder="e.g. Mumbai, India"></div>' +
+        '<div class="form-group"><label>Location Details</label><input type="text" id="pfLocation" value="' + esc(c.location || '') + '" placeholder="e.g. Napa Valley, CA"></div>' +
+        '<div class="form-group"><label>Experience</label><input type="text" id="pfExperience" value="' + esc(c.experience || '') + '" placeholder="e.g. 10+ years"></div>' +
+        '<div class="form-group"><label>Bio</label><textarea id="pfBio" rows="3" placeholder="Tell clients about yourself...">' + esc(c.bio || '') + '</textarea></div>' +
+        '</div>' +
+
+        // Social Links
+        '<div class="profile-section-title">🌐 Social Links</div>' +
+        '<div class="profile-fields">' +
+        '<div class="form-group"><label>Instagram URL</label><input type="url" id="pfInstagram" value="' + esc(social.instagram || '') + '" placeholder="https://instagram.com/yourprofile"></div>' +
+        '<div class="form-group"><label>YouTube URL</label><input type="url" id="pfYoutube" value="' + esc(social.youtube || '') + '" placeholder="https://youtube.com/@yourchannel"></div>' +
+        '<div class="form-group"><label>Website URL</label><input type="url" id="pfWebsite" value="' + esc(social.website || '') + '" placeholder="https://yourwebsite.com"></div>' +
+        '<div class="form-group"><label>Twitter / X URL</label><input type="url" id="pfTwitter" value="' + esc(social.twitter || '') + '" placeholder="https://twitter.com/yourhandle"></div>' +
+        '</div>' +
+
+        // Save Button
+        '<div style="margin-top:1.5rem;display:flex;gap:0.6rem">' +
+        '<button class="btn btn-primary" id="profileSaveBtn">💾 Save Profile</button>' +
+        '</div>' +
+        '</div>';
+
+      // Bind avatar upload
+      var avatarInput = document.getElementById('profileAvatarInput');
+      var avatarBtn = document.getElementById('profileAvatarBtn');
+      if (avatarBtn && avatarInput) {
+        avatarBtn.addEventListener('click', function() { avatarInput.click(); });
+        avatarInput.addEventListener('change', function(e) {
+          var file = e.target.files[0];
+          if (!file) return;
+          var reader = new FileReader();
+          reader.onload = function(ev) {
+            document.getElementById('profileAvatarImg').src = ev.target.result;
+          };
+          reader.readAsDataURL(file);
+
+          // Upload to server
+          var fd = new FormData();
+          fd.append('avatar', file);
+          API.upload('/creators/upload/avatar', fd)
+            .then(function(res) {
+              if (res && res.url) {
+                currentUser.avatar = res.url;
+                updateHeader();
+              }
+              toast('Profile photo updated', 'success');
+            })
+            .catch(function(err) {
+              toast(err.message || 'Failed to upload avatar', 'error');
+            });
+          avatarInput.value = '';
+        });
+      }
+
+      // Save profile
+      document.getElementById('profileSaveBtn').addEventListener('click', function() {
+        var data = {
+          name: document.getElementById('pfName').value.trim(),
+          phone: document.getElementById('pfPhone').value.trim(),
+          specialty: document.getElementById('pfProfession').value.trim(),
+          city: document.getElementById('pfCity').value.trim(),
+          location: document.getElementById('pfLocation').value.trim(),
+          experience: document.getElementById('pfExperience').value.trim(),
+          bio: document.getElementById('pfBio').value.trim(),
+          social: {
+            instagram: document.getElementById('pfInstagram').value.trim(),
+            youtube: document.getElementById('pfYoutube').value.trim(),
+            website: document.getElementById('pfWebsite').value.trim(),
+            twitter: document.getElementById('pfTwitter').value.trim()
+          }
+        };
+
+        API.put('/creators/profile', data)
+          .then(function(res) {
+            if (res && res.creator) {
+              creatorProfile = res.creator;
+              // Update currentUser name/phone
+              if (data.name) currentUser.name = data.name;
+              if (data.phone) currentUser.phone = data.phone;
+            }
+            updateHeader();
+            toast('Profile saved successfully!', 'success');
+          })
+          .catch(function(err) {
+            toast(err.message || 'Failed to save profile', 'error');
+          });
+      });
+    }
+
+    // ─── Bookings ───────────────────────────────────────────────────────────
+
+    function loadBookings() {
+      var container = document.getElementById('bookingsContent');
+      container.innerHTML = '<div class="loader"></div>';
+
+      API.get('/bookings/creator')
+        .then(async function(res) {
+          var bookings = res.bookings || [];
+          if (!bookings.length) {
+            container.innerHTML =
+              '<div class="empty-state"><div class="empty-icon">📭</div><h3>No bookings yet</h3><p>Accepted bookings will appear here with payment tracking</p></div>';
+            return;
+          }
+
+          // Fetch payment records for all bookings to get accurate paid amounts
+          var paymentSummaries = {};
+          await Promise.all(bookings.map(async function(b) {
+            try {
+              var result = await API.get('/payment-records/booking/' + b._id);
+              paymentSummaries[b._id] = result.summary || {};
+            } catch (e) {
+              paymentSummaries[b._id] = {};
+            }
+          }));
+
+          var html = '<div style="display:flex;flex-direction:column;gap:1rem">';
+          bookings.forEach(function(b) {
+            var statusClass = 'status-' + (b.status || 'pending').toLowerCase().replace(/\s+/g, '-');
+            var statusLabel = b.status || 'Pending';
+            var eventDate = b.eventDate ? new Date(b.eventDate).toLocaleDateString() : '—';
+            var amount = b.amount || b.budget || 0;
+            var clientName = (b.user && b.user.name) || b.clientName || 'Client';
+            var clientEmail = (b.user && b.user.email) || b.clientEmail || '';
+
+            // Use payment records summary as the single source of truth
+            var pSummary = paymentSummaries[b._id] || {};
+            var totalAmount = pSummary.totalAmount || amount;
+            var advance = pSummary.totalPaid || 0;
+            var remaining = pSummary.remaining != null ? pSummary.remaining : Math.max(0, totalAmount - advance);
+            var progress = totalAmount > 0 ? Math.round((advance / totalAmount) * 100) : 0;
+            var payStatus = progress >= 100 ? 'paid' : advance > 0 ? 'partial' : (b.paymentStatus || 'unpaid');
+
+            // Payment status badge
+            var payBadge = '';
+            if (payStatus === 'paid') payBadge = '<span style="background:rgba(16,185,129,0.1);color:#10b981;padding:0.15rem 0.5rem;border-radius:8px;font-size:0.65rem;font-weight:600">✅ Fully Paid</span>';
+            else if (payStatus === 'partial') payBadge = '<span style="background:rgba(245,158,11,0.1);color:#f59e0b;padding:0.15rem 0.5rem;border-radius:8px;font-size:0.65rem;font-weight:600">◐ Partial</span>';
+            else if (payStatus === 'proof-submitted') payBadge = '<span style="background:rgba(59,130,246,0.1);color:#3b82f6;padding:0.15rem 0.5rem;border-radius:8px;font-size:0.65rem;font-weight:600">📋 Proof Submitted</span>';
+            else if (payStatus === 'rejected') payBadge = '<span style="background:rgba(239,68,68,0.1);color:#ef4444;padding:0.15rem 0.5rem;border-radius:8px;font-size:0.65rem;font-weight:600">❌ Rejected</span>';
+            else payBadge = '<span style="background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.4);padding:0.15rem 0.5rem;border-radius:8px;font-size:0.65rem">Unpaid</span>';
+
+            // Progress bar
+            var progressBar = '<div style="margin-top:0.5rem;background:rgba(255,255,255,0.06);border-radius:6px;height:6px;overflow:hidden">' +
+              '<div style="width:' + progress + '%;height:100%;background:linear-gradient(90deg,var(--gold-dark),var(--gold));border-radius:6px;transition:width 0.3s"></div></div>' +
+              '<div style="display:flex;justify-content:space-between;margin-top:0.25rem;font-size:0.65rem;color:rgba(255,255,255,0.35)">' +
+                '<span>₹' + advance.toLocaleString('en-IN') + ' paid</span>' +
+                '<span>' + progress + '%</span>' +
+                '<span>₹' + remaining.toLocaleString('en-IN') + ' due</span>' +
+              '</div>';
+
+            // Action buttons
+            var actions = '<div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.75rem">';
+            if (b.status !== 'rejected' && b.status !== 'Booking Created') {
+              actions += '<button class="btn btn-outline btn-sm" onclick="window.openPaymentManager(\'' + b._id + '\')">💰 Payments</button>';
+              actions += '<button class="btn btn-outline btn-sm" onclick="window.creatorAddPayment(\'' + b._id + '\')">➕ Add Record</button>';
+              if (payStatus !== 'paid') {
+                actions += '<button class="btn btn-outline btn-sm" onclick="window.setBookingAmount(\'' + b._id + '\',' + totalAmount + ')">✏️ Set Amount</button>';
+                actions += '<button class="btn btn-success btn-sm" onclick="window.markFullyPaid(\'' + b._id + '\')">✅ Mark Paid</button>';
+              }
+            }
+            actions += '</div>';
+
+            // "By Creator" / "By User" badge
+            var creatorBadge = (b.creatorNotes === 'Created by creator') ?
+              '<span style="background:rgba(212,175,55,0.12);color:#D4AF37;padding:0.15rem 0.5rem;border-radius:8px;font-size:0.6rem;font-weight:600;margin-left:0.3rem"><i class="fas fa-user-pen" style="margin-right:0.2rem"></i>By Creator</span>' :
+              '<span style="background:rgba(59,130,246,0.08);color:#3b82f6;padding:0.15rem 0.5rem;border-radius:8px;font-size:0.6rem;font-weight:600;margin-left:0.3rem"><i class="fas fa-user" style="margin-right:0.2rem"></i>By User</span>';
+
+            html += '<div class="booking-card" style="padding:1.2rem">' +
+              '<div class="top">' +
+                '<div><h4>' + esc(clientName) + ' · ' + esc(b.packageName || b.eventType || 'Booking') + creatorBadge + '</h4>' +
+                '<span style="font-size:0.7rem;color:rgba(255,255,255,0.3)">' + esc(clientEmail) + (b.clientPhone ? ' · ' + esc(b.clientPhone) : '') + '</span></div>' +
+                '<div style="display:flex;gap:0.4rem;align-items:center"><span class="status-badge ' + statusClass + '">' + esc(statusLabel) + '</span>' + payBadge + '</div>' +
+              '</div>' +
+              '<div class="details" style="margin-top:0.6rem">' +
+                '<div class="item"><div class="lbl">Event Date</div><div class="val">' + eventDate + '</div></div>' +
+                '<div class="item"><div class="lbl">Location</div><div class="val">' + esc(b.eventLocation || '—') + '</div></div>' +
+                '<div class="item"><div class="lbl">Total</div><div class="val" style="color:var(--gold-light)">₹' + totalAmount.toLocaleString('en-IN') + '</div></div>' +
+                '<div class="item"><div class="lbl">Paid</div><div class="val" style="color:var(--success)">₹' + advance.toLocaleString('en-IN') + '</div></div>' +
+                '<div class="item"><div class="lbl">Remaining</div><div class="val" style="color:' + (remaining > 0 ? 'var(--gold)' : 'var(--success)') + '">₹' + remaining.toLocaleString('en-IN') + '</div></div>' +
+                (b.leadSource ? '<div class="item"><div class="lbl">Lead Source</div><div class="val">' + (b.leadSource === 'bookmyshot' ? '<i class="fas fa-globe" style="color:var(--gold)"></i> BookMyShot' : '<i class="fas fa-user-plus" style="color:#3b82f6"></i> Creator') + '</div></div>' : '') +
+                (b.commissionAmount ? '<div class="item"><div class="lbl">Platform Fee (' + (b.commissionPercent || 0) + '%)</div><div class="val" style="color:var(--danger)">₹' + b.commissionAmount.toLocaleString('en-IN') + '</div></div>' : '') +
+                (b.creatorReceivable ? '<div class="item"><div class="lbl">Creator Receivable</div><div class="val" style="color:var(--success)">₹' + b.creatorReceivable.toLocaleString('en-IN') + '</div></div>' : '') +
+              '</div>' +
+              progressBar +
+              actions +
+              '<div style="margin-top:0.6rem;display:flex;gap:0.4rem;flex-wrap:wrap">' +
+                '<button class="btn btn-outline btn-sm" onclick="window.viewBookingEvents(\'' + b._id + '\')"><i class="fas fa-calendar-days"></i> View Events</button>' +
+                '<button class="btn btn-outline btn-sm" onclick="window.openAddEventModal(\'' + b._id + '\',\'' + (b.eventDate ? b.eventDate.slice(0, 10) : '') + '\')"><i class="fas fa-plus"></i> Add Event</button>' +
+              '</div>' +
+              '<div id="eventsPanel_' + b._id + '" style="display:none;margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid rgba(255,255,255,0.06)"></div>' +
+              '<div id="paymentPanel_' + b._id + '" style="display:none;margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid rgba(255,255,255,0.06)"></div>' +
+            '</div>';
+          });
+          html += '</div>';
+          container.innerHTML = html;
+        })
+        .catch(function(err) {
+          container.innerHTML =
+            '<div class="empty-state"><div class="empty-icon">⚠️</div><h3>Error loading bookings</h3><p>' + (err.message || 'Please try again') + '</p></div>';
+        });
+    }
+
+    // ─── PAYMENT MANAGEMENT HANDLERS ────────────────────────────────────────
+
+    window.openPaymentManager = async function(bookingId) {
+      var panel = document.getElementById('paymentPanel_' + bookingId);
+      if (!panel) return;
+      if (panel.style.display === 'block') { panel.style.display = 'none'; return; }
+      panel.innerHTML = '<div class="loader" style="margin:0.5rem auto"></div>';
+      panel.style.display = 'block';
+
+      try {
+        var result = await API.get('/payment-records/booking/' + bookingId);
+        var records = result.records || [];
+        var summary = result.summary || {};
+
+        // Progress bar for the payment panel
+        var panelProgress = summary.totalAmount > 0 ? (summary.progress || 0) : 0;
+
+        var html = '<div style="margin-bottom:0.75rem">' +
+          '<h4 style="font-size:0.85rem;color:var(--gold-light);margin:0 0 0.5rem;font-family:Playfair Display,serif"><i class="fas fa-receipt" style="color:var(--gold);margin-right:0.4rem"></i>Unified Payment History</h4>' +
+          '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.5rem;margin-bottom:0.5rem">' +
+            '<div style="text-align:center;padding:0.5rem;background:rgba(255,255,255,0.03);border-radius:10px;border:1px solid rgba(255,255,255,0.04)"><div style="font-size:0.6rem;color:rgba(255,255,255,0.3)">Total</div><div style="font-size:0.85rem;color:var(--gold-light);font-weight:600">₹' + (summary.totalAmount || 0).toLocaleString('en-IN') + '</div></div>' +
+            '<div style="text-align:center;padding:0.5rem;background:rgba(16,185,129,0.05);border-radius:10px;border:1px solid rgba(16,185,129,0.1)"><div style="font-size:0.6rem;color:rgba(255,255,255,0.3)">Paid</div><div style="font-size:0.85rem;color:var(--success);font-weight:600">₹' + (summary.totalPaid || 0).toLocaleString('en-IN') + '</div></div>' +
+            '<div style="text-align:center;padding:0.5rem;background:rgba(212,175,55,0.05);border-radius:10px;border:1px solid rgba(212,175,55,0.1)"><div style="font-size:0.6rem;color:rgba(255,255,255,0.3)">Remaining</div><div style="font-size:0.85rem;color:var(--gold);font-weight:600">₹' + (summary.remaining || 0).toLocaleString('en-IN') + '</div></div>' +
+            '<div style="text-align:center;padding:0.5rem;background:rgba(255,255,255,0.03);border-radius:10px;border:1px solid rgba(255,255,255,0.04)"><div style="font-size:0.6rem;color:rgba(255,255,255,0.3)">Progress</div><div style="font-size:0.85rem;color:var(--text);font-weight:600">' + panelProgress + '%</div></div>' +
+          '</div>' +
+          '<div style="background:rgba(255,255,255,0.06);border-radius:6px;height:6px;overflow:hidden;margin-bottom:0.5rem">' +
+            '<div style="width:' + panelProgress + '%;height:100%;background:linear-gradient(90deg,var(--gold-dark),var(--gold));border-radius:6px;transition:width 0.3s"></div>' +
+          '</div>' +
+        '</div>';
+
+        if (records.length === 0) {
+          html += '<p style="color:rgba(255,255,255,0.3);font-size:0.8rem;text-align:center;padding:0.5rem"><i class="fas fa-info-circle" style="margin-right:0.3rem"></i>No payment records yet</p>';
+        } else {
+          records.forEach(function(r) {
+            var statusColor = r.status === 'approved' ? 'var(--success)' : r.status === 'rejected' ? 'var(--danger)' : 'var(--gold)';
+            var statusIcon = r.status === 'approved' ? '<i class="fas fa-check-circle"></i>' : r.status === 'rejected' ? '<i class="fas fa-times-circle"></i>' : '<i class="fas fa-hourglass-half"></i>';
+            var date = r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—';
+
+            // Source label
+            var sourceLabel = '';
+            if (r.addedBy === 'user' && r.proof) {
+              sourceLabel = '<span style="background:rgba(59,130,246,0.1);color:#3b82f6;padding:0.1rem 0.4rem;border-radius:6px;font-size:0.6rem;font-weight:600">User Payment Proof</span>';
+            } else if (r.addedBy === 'user') {
+              sourceLabel = '<span style="background:rgba(59,130,246,0.1);color:#3b82f6;padding:0.1rem 0.4rem;border-radius:6px;font-size:0.6rem;font-weight:600">User Payment</span>';
+            } else if (r.paymentType === 'advance') {
+              sourceLabel = '<span style="background:rgba(212,175,55,0.1);color:#D4AF37;padding:0.1rem 0.4rem;border-radius:6px;font-size:0.6rem;font-weight:600">Advance</span>';
+            } else {
+              sourceLabel = '<span style="background:rgba(16,185,129,0.1);color:#10b981;padding:0.1rem 0.4rem;border-radius:6px;font-size:0.6rem;font-weight:600">Creator Manual</span>';
+            }
+
+            // Proof thumbnail
+            var proofThumb = '';
+            if (r.proof) {
+              proofThumb = '<img src="' + r.proof + '" alt="Proof" style="width:36px;height:36px;border-radius:6px;object-fit:cover;border:1px solid rgba(255,255,255,0.1);cursor:pointer;margin-right:0.5rem" onclick="window.open(\'' + r.proof + '\',\'_blank\')">';
+            }
+
+            var approveBtn = r.status === 'pending' ?
+              '<button class="btn btn-success btn-sm" style="padding:0.2rem 0.5rem;font-size:0.65rem" onclick="window.approvePaymentRecord(\'' + r._id + '\',\'' + bookingId + '\')"><i class="fas fa-check"></i> Approve</button> ' +
+              '<button class="btn btn-danger btn-sm" style="padding:0.2rem 0.5rem;font-size:0.65rem" onclick="window.rejectPaymentRecord(\'' + r._id + '\',\'' + bookingId + '\')"><i class="fas fa-times"></i> Reject</button>' : '';
+
+            html += '<div style="padding:0.6rem;border-bottom:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;gap:0.5rem">' +
+              proofThumb +
+              '<div style="flex:1">' +
+                '<div style="display:flex;align-items:center;gap:0.4rem;margin-bottom:0.2rem">' +
+                  '<span style="font-size:0.8rem;color:var(--text);font-weight:500">' + statusIcon + ' ₹' + r.amount.toLocaleString('en-IN') + '</span>' +
+                  '<span style="color:rgba(255,255,255,0.3);font-size:0.7rem">(' + (r.paymentType || 'other') + ')</span>' +
+                  sourceLabel +
+                '</div>' +
+                '<div style="font-size:0.65rem;color:rgba(255,255,255,0.3)">' + date + (r.notes ? ' · ' + esc(r.notes.substring(0, 50)) : '') + '</div>' +
+              '</div>' +
+              '<div style="display:flex;align-items:center;gap:0.3rem;flex-shrink:0">' +
+                '<span style="color:' + statusColor + ';font-size:0.7rem;font-weight:500">' + r.status + '</span> ' +
+                approveBtn +
+              '</div>' +
+            '</div>';
+          });
+        }
+
+        panel.innerHTML = html;
+      } catch (e) {
+        panel.innerHTML = '<p style="color:var(--danger);font-size:0.8rem"><i class="fas fa-exclamation-triangle"></i> Failed to load payments</p>';
+      }
+    };
+
+    window.creatorAddPayment = async function(bookingId) {
+      if (checkExpiredBlock('Adding payments')) return;
+      var amount = prompt('Enter payment amount (₹):');
+      if (!amount || isNaN(amount)) return;
+      var type = prompt('Payment type (advance / partial / final / other):') || 'other';
+      var notes = prompt('Notes (optional):') || '';
+      try {
+        await API.post('/payment-records/creator', { bookingId: bookingId, amount: parseInt(amount), paymentType: type, notes: notes });
+        toast('Payment record added', 'success');
+        loadBookings();
+      } catch (e) { toast(e.message || 'Failed to add record', 'error'); }
+    };
+
+    window.setBookingAmount = async function(bookingId, currentAmount) {
+      var newAmount = prompt('Set total project amount (₹):', currentAmount);
+      if (!newAmount || isNaN(newAmount)) return;
+      try {
+        await API.patch('/payment-records/booking/' + bookingId + '/amount', { amount: parseInt(newAmount) });
+        toast('Amount updated to ₹' + parseInt(newAmount).toLocaleString('en-IN'), 'success');
+        loadBookings();
+      } catch (e) { toast(e.message || 'Failed to update amount', 'error'); }
+    };
+
+    window.markFullyPaid = async function(bookingId) {
+      if (!confirm('Mark this booking as fully paid?')) return;
+      try {
+        await API.patch('/payment-records/booking/' + bookingId + '/mark-paid', {});
+        toast('Booking marked as fully paid!', 'success');
+        loadBookings();
+      } catch (e) { toast(e.message || 'Failed to mark paid', 'error'); }
+    };
+
+    window.approvePaymentRecord = async function(recordId, bookingId) {
+      try {
+        await API.patch('/payment-records/' + recordId + '/approve', {});
+        toast('Payment approved!', 'success');
+        // Refresh bookings (re-fetches payment records for accurate summary)
+        await loadBookings();
+        // Re-open the payment panel for this booking
+        var panel = document.getElementById('paymentPanel_' + bookingId);
+        if (panel) { panel.style.display = 'none'; window.openPaymentManager(bookingId); }
+      } catch (e) { toast(e.message || 'Failed to approve', 'error'); }
+    };
+
+    window.rejectPaymentRecord = async function(recordId, bookingId) {
+      var reason = prompt('Rejection reason:') || '';
+      try {
+        await API.patch('/payment-records/' + recordId + '/reject', { reason: reason });
+        toast('Payment rejected', 'info');
+        // Refresh bookings (re-fetches payment records for accurate summary)
+        await loadBookings();
+        // Re-open the payment panel for this booking
+        var panel = document.getElementById('paymentPanel_' + bookingId);
+        if (panel) { panel.style.display = 'none'; window.openPaymentManager(bookingId); }
+      } catch (e) { toast(e.message || 'Failed to reject', 'error'); }
+    };
+
+    // ─── BOOKING EVENTS MANAGEMENT ────────────────────────────────────────
+    // Uses existing /creator/calendar/private API with type:"booking"
+    // bookingId is stored in notes field as "BOOKING:id|actual notes"
+
+    function parseBookingEventNotes(notes) {
+      if (!notes) return { bookingId: '', notes: '' };
+      if (notes.startsWith('BOOKING:')) {
+        var parts = notes.split('|');
+        var bid = parts[0].replace('BOOKING:', '');
+        var actualNotes = parts.slice(1).join('|');
+        return { bookingId: bid, notes: actualNotes };
+      }
+      return { bookingId: '', notes: notes };
+    }
+
+    function makeBookingEventNotes(bookingId, notes) {
+      return 'BOOKING:' + bookingId + '|' + (notes || '');
+    }
+
+    window.viewBookingEvents = async function(bookingId) {
+      var panel = document.getElementById('eventsPanel_' + bookingId);
+      if (!panel) return;
+      if (panel.style.display === 'block') { panel.style.display = 'none'; return; }
+      panel.innerHTML = '<div class="loader" style="margin:0.5rem auto"></div>';
+      panel.style.display = 'block';
+
+      try {
+        var result = await API.get('/creator/calendar/private');
+        var allEvents = result.events || [];
+        // Filter events linked to this booking (identified by notes prefix)
+        var events = allEvents.filter(function(e) {
+          return e.notes && e.notes.startsWith('BOOKING:' + bookingId + '|');
+        });
+
+        var html = '<h4 style="font-size:0.85rem;color:var(--gold-light);margin:0 0 0.5rem;font-family:Playfair Display,serif"><i class="fas fa-calendar-days" style="color:var(--gold);margin-right:0.4rem"></i>Linked Events (' + events.length + ')</h4>';
+
+        if (events.length === 0) {
+          html += '<p style="color:rgba(255,255,255,0.3);font-size:0.8rem;text-align:center;padding:0.5rem"><i class="fas fa-info-circle"></i> No Events Added Yet. Click "Add Event" to schedule functions.</p>';
+        } else {
+          events.forEach(function(ev) {
+            var evDate = ev.date ? new Date(ev.date).toLocaleDateString() : '—';
+            var parsed = parseBookingEventNotes(ev.notes);
+            var statusColor = ev.status === 'Completed' ? 'var(--success)' : ev.status === 'Cancelled' ? 'var(--danger)' : 'var(--gold)';
+            var statusIcon = ev.status === 'Completed' ? 'fa-check-circle' : ev.status === 'Cancelled' ? 'fa-times-circle' : 'fa-clock';
+
+            html += '<div style="padding:0.6rem;border:1px solid rgba(255,255,255,0.05);border-radius:10px;margin-bottom:0.4rem;background:rgba(255,255,255,0.02)">' +
+              '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.3rem">' +
+                '<span style="font-size:0.82rem;font-weight:500;color:var(--text)"><i class="fas fa-calendar-day" style="color:var(--gold);margin-right:0.3rem"></i>' + esc(ev.title || ev.functionName || 'Event') + '</span>' +
+                '<span style="font-size:0.65rem;color:' + statusColor + '"><i class="fas ' + statusIcon + '"></i> ' + (ev.status || 'Upcoming') + '</span>' +
+              '</div>' +
+              '<div style="display:flex;flex-wrap:wrap;gap:0.8rem;font-size:0.72rem;color:rgba(255,255,255,0.4)">' +
+                '<span><i class="fas fa-calendar"></i> ' + evDate + '</span>' +
+                (ev.time ? '<span><i class="fas fa-clock"></i> ' + ev.time + '</span>' : '') +
+                (ev.location ? '<span><i class="fas fa-location-dot"></i> ' + esc(ev.location) + '</span>' : '') +
+              '</div>' +
+              (parsed.notes ? '<div style="font-size:0.7rem;color:rgba(255,255,255,0.3);margin-top:0.3rem"><i class="fas fa-sticky-note"></i> ' + esc(parsed.notes) + '</div>' : '') +
+              '<div style="display:flex;gap:0.3rem;margin-top:0.4rem">' +
+                (ev.status !== 'Completed' ? '<button class="btn btn-success btn-sm" style="padding:0.15rem 0.4rem;font-size:0.6rem" onclick="window.completeBookingEvent(\'' + ev._id + '\',\'' + bookingId + '\')"><i class="fas fa-check"></i></button>' : '') +
+                '<button class="btn btn-outline btn-sm" style="padding:0.15rem 0.4rem;font-size:0.6rem" onclick="window.editBookingEvent(\'' + ev._id + '\',\'' + bookingId + '\')"><i class="fas fa-pen"></i></button>' +
+                '<button class="btn btn-danger btn-sm" style="padding:0.15rem 0.4rem;font-size:0.6rem" onclick="window.deleteBookingEvent(\'' + ev._id + '\',\'' + bookingId + '\')"><i class="fas fa-trash"></i></button>' +
+              '</div>' +
+            '</div>';
+          });
+        }
+        panel.innerHTML = html;
+      } catch (e) {
+        panel.innerHTML = '<p style="color:rgba(255,255,255,0.4);font-size:0.8rem;text-align:center;padding:0.5rem"><i class="fas fa-info-circle"></i> No Events Added Yet.</p>';
+      }
+    };
+
+    window.openAddEventModal = function(bookingId, bookingDate) {
+      if (checkExpiredBlock('Creating events')) return;
+      document.getElementById('addEventBookingId').value = bookingId;
+      document.getElementById('addEventId').value = '';
+      document.getElementById('addEventForm').reset();
+      document.getElementById('addEventBookingId').value = bookingId;
+      document.getElementById('addEventModalTitle').innerHTML = '<i class="fas fa-plus-circle" style="color:var(--gold)"></i> Add Event';
+      // Prefill event date from booking date
+      if (bookingDate) {
+        document.getElementById('aeEventDate').value = bookingDate;
+      }
+      document.getElementById('addEventModal').style.display = 'flex';
+    };
+
+    window.editBookingEvent = async function(eventId, bookingId) {
+      try {
+        var result = await API.get('/creator/calendar/private');
+        var ev = (result.events || []).find(function(e) { return e._id === eventId; });
+        if (!ev) { toast('Event not found', 'error'); return; }
+
+        var parsed = parseBookingEventNotes(ev.notes);
+        document.getElementById('addEventBookingId').value = bookingId;
+        document.getElementById('addEventId').value = eventId;
+        document.getElementById('aeEventName').value = ev.title || ev.functionName || '';
+        document.getElementById('aeEventDate').value = ev.date ? ev.date.slice(0, 10) : '';
+        document.getElementById('aeStartTime').value = ev.time || '';
+        document.getElementById('aeEndTime').value = '';
+        document.getElementById('aeLocation').value = ev.location || '';
+        document.getElementById('aeNotes').value = parsed.notes || '';
+        document.getElementById('aeTeam').value = '';
+        document.getElementById('addEventModalTitle').innerHTML = '<i class="fas fa-pen" style="color:var(--gold)"></i> Edit Event';
+        document.getElementById('addEventModal').style.display = 'flex';
+      } catch (e) { toast('Failed to load event', 'error'); }
+    };
+
+    window.completeBookingEvent = async function(eventId, bookingId) {
+      if (!confirm('Mark this event as completed?')) return;
+      try {
+        await API.put('/creator/calendar/private/' + eventId, { status: 'Completed' });
+        toast('Event completed!', 'success');
+        var panel = document.getElementById('eventsPanel_' + bookingId);
+        if (panel) { panel.style.display = 'none'; window.viewBookingEvents(bookingId); }
+      } catch (e) { toast(e.message || 'Failed', 'error'); }
+    };
+
+    window.deleteBookingEvent = async function(eventId, bookingId) {
+      if (!confirm('Delete this event?')) return;
+      try {
+        await API.delete('/creator/calendar/private/' + eventId);
+        toast('Event deleted', 'info');
+        var panel = document.getElementById('eventsPanel_' + bookingId);
+        if (panel) { panel.style.display = 'none'; window.viewBookingEvents(bookingId); }
+      } catch (e) { toast(e.message || 'Failed', 'error'); }
+    };
+
+    // Attach form submit handler after DOM is ready (modal is below script)
+    document.addEventListener('DOMContentLoaded', function() {
+      var addEventFormEl = document.getElementById('addEventForm');
+      if (addEventFormEl) {
+        addEventFormEl.addEventListener('submit', async function(e) {
+          e.preventDefault();
+          var bookingId = document.getElementById('addEventBookingId').value;
+          var eventId = document.getElementById('addEventId').value;
+
+          var eventName = document.getElementById('aeEventName').value.trim();
+          var eventDate = document.getElementById('aeEventDate').value;
+          var startTime = document.getElementById('aeStartTime').value;
+          var location = document.getElementById('aeLocation').value.trim();
+          var notes = document.getElementById('aeNotes').value.trim();
+          var team = document.getElementById('aeTeam').value.trim();
+
+          if (!eventName) { toast('Event name required', 'error'); return; }
+          if (!eventDate) { toast('Event date required', 'error'); return; }
+
+          // Build data for /creator/calendar/private endpoint
+          var data = {
+            title: eventName,
+            date: eventDate,
+            time: startTime || '',
+            location: location || '',
+            category: 'Shoot',
+            type: 'event',
+            status: 'Upcoming',
+            functionName: eventName,
+            notes: makeBookingEventNotes(bookingId, (team ? '[Team: ' + team + '] ' : '') + notes),
+          };
+
+          try {
+            if (eventId) {
+              await API.put('/creator/calendar/private/' + eventId, data);
+              toast('Event updated!', 'success');
+            } else {
+              await API.post('/creator/calendar/private', data);
+              toast('Event added!', 'success');
+            }
+            document.getElementById('addEventModal').style.display = 'none';
+            // Refresh events panel
+            var panel = document.getElementById('eventsPanel_' + bookingId);
+            if (panel) { panel.style.display = 'none'; window.viewBookingEvents(bookingId); }
+            // Reload calendar if visible
+            if (privateCalendarInstance) loadPrivateCalendar();
+          } catch (err) {
+            toast(err.message || 'Failed to save event', 'error');
+          }
+        });
+      }
+    });
+
+    // ─── Booking Requests ───────────────────────────────────────────────────
+
+    function loadBookingRequests() {
+      var container = document.getElementById('bookingRequestsContent');
+      container.innerHTML = '<div class="loader"></div>';
+
+      API.get('/creator/booking-requests')
+        .then(function(res) {
+          var bookings = res.bookings || [];
+          if (!bookings.length) {
+            container.innerHTML =
+              '<div class="empty-state"><div class="empty-icon">📋</div><h3>No booking requests yet</h3><p>When clients send you booking requests, they will appear here for you to accept or decline</p></div>';
+            return;
+          }
+          var html = '<div style="display:flex;flex-direction:column;gap:0.75rem">';
+          bookings.forEach(function(b) {
+            var statusClass = 'status-' + (b.status || 'pending').toLowerCase().replace(/\s+/g, '-');
+            var statusLabel = b.status || 'Pending';
+            var eventDate = b.eventDate ? new Date(b.eventDate).toLocaleDateString() : '—';
+            var amount = b.amount || b.budget || 0;
+            var userName = (b.user && b.user.name) || b.clientName || 'Client';
+            var userEmail = (b.user && b.user.email) || b.clientEmail || '';
+            var userAvatar = (b.user && b.user.avatar) || 'https://images.unsplash.com/photo-1554048612-b6a482b17f70?w=100';
+
+            var actions = '';
+            if (b.status === 'Booking Created') {
+              actions = '<button class="btn btn-success btn-sm" onclick="acceptBooking(\'' + b._id + '\')">✓ Accept</button> ' +
+                        '<button class="btn btn-danger btn-sm" onclick="rejectBooking(\'' + b._id + '\')">✗ Reject</button>';
+            } else if (b.status === 'Creator Accepted') {
+              actions = '<span style="color:var(--gold);font-size:0.8rem">⏳ Awaiting Payment</span>';
+            } else if (b.status === 'Payment Submitted' || b.status === 'Payment Approved') {
+              actions = '<button class="btn btn-primary btn-sm" onclick="scheduleEvent(\'' + b._id + '\')">📅 Schedule Event</button>';
+            } else if (b.status === 'Event Scheduled') {
+              actions = '<button class="btn btn-success btn-sm" onclick="completeBooking(\'' + b._id + '\')">✓ Mark Completed</button>';
+            } else if (b.status === 'Completed') {
+              actions = '<span style="color:var(--success);font-size:0.8rem">✅ Completed</span>';
+            } else if (b.status === 'rejected') {
+              actions = '<span style="color:var(--danger);font-size:0.8rem">❌ Rejected</span>';
+            }
+
+            var creatorBadgeBR = (b.creatorNotes === 'Created by creator') ?
+              ' <span style="background:rgba(212,175,55,0.12);color:#D4AF37;padding:0.1rem 0.4rem;border-radius:6px;font-size:0.6rem;font-weight:600"><i class="fas fa-user-pen" style="margin-right:0.2rem"></i>By Creator</span>' : '';
+
+            html += '<div class="booking-card">' +
+              '<div class="top">' +
+                '<div><h4>' + esc(userName) + ' · ' + esc(b.eventType || 'Booking') + creatorBadgeBR + '</h4>' +
+                '<span style="font-size:0.7rem;color:rgba(255,255,255,0.3)">' + esc(userEmail) + '</span></div>' +
+                '<span class="status-badge ' + statusClass + '">' + esc(statusLabel) + '</span>' +
+              '</div>' +
+              '<div class="details">' +
+                '<div class="item"><div class="lbl">Event Date</div><div class="val">' + eventDate + '</div></div>' +
+                '<div class="item"><div class="lbl">Location</div><div class="val">' + esc(b.eventLocation || '—') + '</div></div>' +
+                '<div class="item"><div class="lbl">Amount</div><div class="val">₹' + amount.toLocaleString('en-IN') + '</div></div>' +
+                (b.scheduledDate ? '<div class="item"><div class="lbl">Scheduled</div><div class="val">' + new Date(b.scheduledDate).toLocaleDateString() + ' ' + (b.scheduledTime || '') + '</div></div>' : '') +
+              '</div>' +
+              (b.message ? '<div style="margin-top:0.5rem;font-size:0.8rem;color:rgba(255,255,255,0.4);font-style:italic">"' + esc(b.message) + '"</div>' : '') +
+              (actions ? '<div class="actions">' + actions + '</div>' : '') +
+            '</div>';
+          });
+          html += '</div>';
+          container.innerHTML = html;
+        })
+        .catch(function(err) {
+          container.innerHTML =
+            '<div class="empty-state"><div class="empty-icon">⚠️</div><h3>Error loading booking requests</h3><p>' + (err.message || 'Please try again') + '</p></div>';
+        });
+    }
+
+    window.acceptBooking = function(id) {
+      if (checkExpiredBlock('Accepting bookings')) return;
+      var amount = prompt('Enter booking amount (₹):') || '0';
+      API.patch('/creator/booking-requests/' + id, { status: 'Creator Accepted', amount: parseInt(amount) || 0 })
+        .then(function() { toast('Booking accepted!', 'success'); loadBookingRequests(); loadBookings(); })
+        .catch(function(err) { toast(err.message || 'Failed to accept', 'error'); });
+    };
+
+    window.rejectBooking = function(id) {
+      if (!confirm('Reject this booking request?')) return;
+      API.patch('/creator/booking-requests/' + id, { status: 'rejected' })
+        .then(function() { toast('Booking rejected', 'info'); loadBookingRequests(); loadBookings(); })
+        .catch(function(err) { toast(err.message || 'Failed to reject', 'error'); });
+    };
+
+    window.scheduleEvent = function(id) {
+      var scheduledDate = prompt('Enter scheduled date (YYYY-MM-DD):');
+      if (!scheduledDate) return;
+      var scheduledTime = prompt('Enter time (HH:MM):') || '';
+      var scheduledLocation = prompt('Enter location:') || '';
+      API.patch('/bookings/' + id + '/schedule', { scheduledDate: scheduledDate, scheduledTime: scheduledTime, scheduledLocation: scheduledLocation })
+        .then(function() { toast('Event scheduled!', 'success'); loadBookingRequests(); })
+        .catch(function(err) { toast(err.message || 'Failed to schedule', 'error'); });
+    };
+
+    window.completeBooking = function(id) {
+      if (!confirm('Mark this booking as completed?')) return;
+      API.patch('/creator/bookings/' + id + '/complete')
+        .then(function() { toast('Booking completed!', 'success'); loadBookingRequests(); })
+        .catch(function(err) { toast(err.message || 'Failed to complete', 'error'); });
+    };
+
+    // ─── Inquiries ──────────────────────────────────────────────────────────
+
+    function loadInquiries() {
+      var container = document.getElementById('inquiriesContent');
+      container.innerHTML = '<div class="loader"></div>';
+
+      API.get('/creator/leads')
+        .then(function(res) {
+          var inquiries = res.inquiries || [];
+          if (!inquiries.length) {
+            container.innerHTML =
+              '<div class="empty-state"><div class="empty-icon">📩</div><h3>No inquiries yet</h3><p>When users send inquiries about your services, they will appear here</p></div>';
+            return;
+          }
+          var html = '<div style="display:flex;flex-direction:column;gap:0.75rem">';
+          inquiries.forEach(function(i) {
+            var statusClass = 'status-' + (i.status || 'pending');
+            var statusLabel = i.status || 'Pending';
+            var eventDate = i.eventDate ? new Date(i.eventDate).toLocaleDateString() : '—';
+            var isCreatorMade = (i.user && currentUser && i.user._id === currentUser._id);
+            var creatorInqBadge = isCreatorMade ? ' <span style="background:rgba(212,175,55,0.12);color:#D4AF37;padding:0.1rem 0.4rem;border-radius:6px;font-size:0.6rem;font-weight:600"><i class="fas fa-user-pen" style="margin-right:0.2rem"></i>By Creator</span>' : '';
+
+            var actions = '';
+            if (i.status === 'pending') {
+              actions = '<button class="btn btn-success btn-sm" onclick="window.acceptInquiry(\'' + i._id + '\')">✓ Accept</button> ' +
+                        '<button class="btn btn-danger btn-sm" onclick="window.rejectInquiry(\'' + i._id + '\')">✗ Reject</button>';
+            } else if (i.status === 'accepted') {
+              actions = '<span style="color:var(--success);font-size:0.8rem">✅ Accepted</span>';
+            } else if (i.status === 'rejected') {
+              actions = '<span style="color:var(--danger);font-size:0.8rem">❌ Rejected</span>';
+            } else if (i.status === 'replied') {
+              actions = '<span style="color:var(--gold);font-size:0.8rem">📩 Replied</span>';
+            }
+
+            html += '<div class="booking-card">' +
+              '<div class="top">' +
+                '<div><h4>' + esc(i.name || (i.user && i.user.name) || 'Client') + ' · ' + esc(i.eventType || 'Event') + creatorInqBadge + '</h4></div>' +
+                '<span class="status-badge ' + statusClass + '">' + esc(statusLabel) + '</span>' +
+              '</div>' +
+              '<div class="details">' +
+                '<div class="item"><div class="lbl">Event Date</div><div class="val">' + eventDate + '</div></div>' +
+                (i.budget ? '<div class="item"><div class="lbl">Budget</div><div class="val">₹' + (i.budget || 0).toLocaleString('en-IN') + '</div></div>' : '') +
+                (i.phone ? '<div class="item"><div class="lbl">Phone</div><div class="val">' + esc(i.phone) + '</div></div>' : '') +
+                (i.email ? '<div class="item"><div class="lbl">Email</div><div class="val">' + esc(i.email) + '</div></div>' : '') +
+              '</div>' +
+              (i.message ? '<div style="margin-top:0.5rem;font-size:0.8rem;color:rgba(255,255,255,0.4);font-style:italic">"' + esc(i.message) + '"</div>' : '') +
+              (actions ? '<div class="actions">' + actions + '</div>' : '') +
+            '</div>';
+          });
+          html += '</div>';
+          container.innerHTML = html;
+        })
+        .catch(function(err) {
+          container.innerHTML =
+            '<div class="empty-state"><div class="empty-icon">⚠️</div><h3>Error loading inquiries</h3><p>' + (err.message || 'Please try again') + '</p></div>';
+        });
+    }
+
+    window.acceptInquiry = function(id) {
+      if (checkExpiredBlock('Accepting inquiries')) return;
+      if (!confirm('Accept this inquiry?')) return;
+      API.patch('/creator/inquiries/' + id + '/reply', { status: 'accepted' })
+        .then(function() { toast('Inquiry accepted!', 'success'); loadInquiries(); })
+        .catch(function(err) { toast(err.message || 'Failed to accept', 'error'); });
+    };
+
+    window.rejectInquiry = function(id) {
+      if (!confirm('Reject this inquiry?')) return;
+      API.patch('/creator/inquiries/' + id + '/reply', { status: 'rejected' })
+        .then(function() { toast('Inquiry rejected', 'info'); loadInquiries(); })
+        .catch(function(err) { toast(err.message || 'Failed to reject', 'error'); });
+    };
+
+    // ─── Create Inquiry (by Creator) ────────────────────────────────────────
+
+    window.openCreateInquiryModal = function() {
+      if (checkExpiredBlock('Creating inquiries')) return;
+      document.getElementById('createInquiryForm').reset();
+      document.getElementById('createInquiryModal').style.display = 'flex';
+    };
+
+    // Attach create inquiry form handler after DOM is ready (modal is below script)
+    document.addEventListener('DOMContentLoaded', function() {
+      var createInqFormEl = document.getElementById('createInquiryForm');
+      if (createInqFormEl) {
+        createInqFormEl.addEventListener('submit', async function(e) {
+          e.preventDefault();
+          var data = {
+            name: document.getElementById('ciqName').value.trim(),
+            phone: document.getElementById('ciqPhone').value.trim(),
+            email: document.getElementById('ciqEmail').value.trim(),
+            eventType: document.getElementById('ciqEventType').value.trim(),
+            eventDate: document.getElementById('ciqEventDate').value,
+            city: document.getElementById('ciqCity').value.trim(),
+            budget: parseInt(document.getElementById('ciqBudget').value) || 0,
+            message: document.getElementById('ciqMessage').value.trim(),
+          };
+
+          if (!data.name) { toast('Please enter client name', 'error'); return; }
+          if (!data.eventType) { toast('Please enter event type', 'error'); return; }
+          if (!data.eventDate) { toast('Please select event date', 'error'); return; }
+
+          try {
+            await API.post('/creator/inquiries', data);
+            toast('Inquiry created & booking added!', 'success');
+            document.getElementById('createInquiryModal').style.display = 'none';
+            loadInquiries();
+            loadBookings();
+          } catch (err) {
+            toast(err.message || 'Failed to create inquiry', 'error');
+          }
+        });
+      }
+    });
+
+    // ─── Payment Proofs ─────────────────────────────────────────────────────
+
+    function loadPaymentProofs() {
+      var container = document.getElementById('paymentProofsContent');
+      container.innerHTML = '<div class="loader"></div>';
+
+      API.get('/creator/payment-proofs')
+        .then(function(res) {
+          var proofs = res.proofs || [];
+          if (!proofs.length) {
+            container.innerHTML =
+              '<div class="empty-state"><div class="empty-icon">💳</div><h3>No payment proofs yet</h3><p>When clients submit payment proofs, they will appear here for verification</p></div>';
+            return;
+          }
+          var html = '<div style="display:flex;flex-direction:column;gap:0.75rem">';
+          proofs.forEach(function(p) {
+            var statusClass = 'status-' + (p.status === 'verified' ? 'approved' : p.status === 'rejected' ? 'rejected' : 'submitted');
+            var statusLabel = p.status === 'verified' ? '✅ Approved' : p.status === 'rejected' ? '❌ Rejected' : '⏳ Pending';
+            var uploadDate = p.createdAt ? new Date(p.createdAt).toLocaleDateString() : '—';
+            var clientName = (p.booking && p.booking.clientName) || 'Client';
+            var eventType = (p.booking && p.booking.eventType) || 'Booking';
+            var totalAmount = (p.booking && p.booking.amount) || p.amount || 0;
+            var paidAmount = p.amount || 0;
+            var remaining = Math.max(0, totalAmount - paidAmount);
+
+            html += '<div class="booking-card">' +
+              '<div class="top">' +
+                '<div><h4>' + esc(eventType) + ' · ' + esc(clientName) + '</h4></div>' +
+                '<span class="status-badge ' + statusClass + '">' + statusLabel + '</span>' +
+              '</div>' +
+              '<div class="details">' +
+                '<div class="item"><div class="lbl">Total Amount</div><div class="val">₹' + totalAmount.toLocaleString('en-IN') + '</div></div>' +
+                '<div class="item"><div class="lbl">Paid Amount</div><div class="val" style="color:var(--success)">₹' + paidAmount.toLocaleString('en-IN') + '</div></div>' +
+                '<div class="item"><div class="lbl">Remaining</div><div class="val" style="color:' + (remaining > 0 ? 'var(--gold)' : 'var(--success)') + '">₹' + remaining.toLocaleString('en-IN') + '</div></div>' +
+                '<div class="item"><div class="lbl">UTR / TXN ID</div><div class="val">' + esc(p.transactionId || '—') + '</div></div>' +
+                '<div class="item"><div class="lbl">Submitted On</div><div class="val">' + uploadDate + '</div></div>' +
+              '</div>' +
+              (p.note ? '<div style="margin-top:0.5rem;font-size:0.8rem;color:rgba(255,255,255,0.4)">📝 Note: ' + esc(p.note) + '</div>' : '') +
+              (p.screenshot ? '<div style="margin-top:0.5rem"><img src="' + p.screenshot + '" alt="Payment Screenshot" style="max-width:100%;max-height:200px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);cursor:pointer" onclick="window.open(this.src,\'_blank\')"></div>' : '') +
+              (p.status === 'pending' ? '<div class="actions">' +
+                '<button class="btn btn-success btn-sm" onclick="verifyPaymentProof(\'' + p._id + '\',\'verified\')">✅ Approve Payment</button>' +
+                '<button class="btn btn-danger btn-sm" onclick="verifyPaymentProof(\'' + p._id + '\',\'rejected\')">❌ Reject</button>' +
+              '</div>' : '') +
+            '</div>';
+          });
+          html += '</div>';
+          container.innerHTML = html;
+        })
+        .catch(function(err) {
+          container.innerHTML =
+            '<div class="empty-state"><div class="empty-icon">⚠️</div><h3>Error loading payment proofs</h3><p>' + (err.message || 'Please try again') + '</p></div>';
+        });
+    }
+
+    window.verifyPaymentProof = function(proofId, status) {
+      if (status === 'rejected') {
+        var reason = prompt('Enter rejection reason:');
+        if (reason === null) return;
+        API.patch('/creator/payment-proofs/' + proofId + '/verify', { status: status, adminNote: reason })
+          .then(function() { toast('Payment proof rejected', 'info'); loadPaymentProofs(); loadBookings(); })
+          .catch(function(err) { toast(err.message || 'Failed to reject', 'error'); });
+      } else {
+        if (!confirm('Approve this payment proof?')) return;
+        API.patch('/creator/payment-proofs/' + proofId + '/verify', { status: status })
+          .then(function() { toast('Payment proof approved!', 'success'); loadPaymentProofs(); loadBookings(); })
+          .catch(function(err) { toast(err.message || 'Failed to approve', 'error'); });
+      } 
+    };
+
+    // ─── Personal Calendar (FullCalendar) ───────────────────────────────────
+
+    let privateCalendarInstance = null;
+
+    async function loadPrivateCalendar() {
+      try {
+        const result = await API.get('/creator/calendar/private');
+        const events = result.events || [];
+
+        // Booking events are stored as CalendarEvents with type:"booking"
+        // They are already included in the events array from /creator/calendar/private
+        // No separate fetch needed — they show automatically in the calendar
+
+        // Destroy existing calendar if any
+        if (privateCalendarInstance) {
+          privateCalendarInstance.destroy();
+          privateCalendarInstance = null;
+        }
+
+        var calEl = document.getElementById('privateCalendar');
+        if (!calEl) return;
+        calEl.innerHTML = '';
+
+        var fcEvents = events.map(function(e) {
+          var catColors = {
+            'Shoot': '#c9a962',
+            'Meeting': '#3b82f6',
+            'Travel': '#10b981',
+            'Personal': '#8b5cf6'
+          };
+          var isBookingEvent = (e.notes && e.notes.startsWith('BOOKING:'));
+          var color = isBookingEvent ? '#D4AF37' : (catColors[e.category] || '#c9a962');
+          return {
+            id: e._id,
+            title: e.title || e.functionName || 'Event',
+            start: e.date + (e.time ? 'T' + e.time : ''),
+            allDay: !e.time,
+            backgroundColor: color,
+            borderColor: color,
+            textColor: '#0a0806',
+            extendedProps: {
+              type: isBookingEvent ? 'booking-event' : 'personal',
+              category: e.category || 'Personal',
+              notes: e.notes || '',
+              amount: e.amount || 0,
+              time: e.time || '',
+              location: e.location || '',
+              status: e.status || '',
+            }
+          };
+        });
+
+        privateCalendarInstance = new FullCalendar.Calendar(calEl, {
+          initialView: 'dayGridMonth',
+          headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,listMonth'
+          },
+          height: 'auto',
+          events: fcEvents,
+          selectable: true,
+          selectMirror: true,
+          dayMaxEvents: 3,
+          dayCellDidMount: function(arg) {
+            // Add a "+" button to every day cell
+            var btn = document.createElement('button');
+            btn.className = 'cal-add-btn';
+            btn.innerHTML = '+';
+            btn.title = 'Add event on this date';
+            // Use local date parts to avoid timezone shift
+            var d = arg.date;
+            var yyyy = d.getFullYear();
+            var mm = String(d.getMonth() + 1).padStart(2, '0');
+            var dd = String(d.getDate()).padStart(2, '0');
+            var dateStr = yyyy + '-' + mm + '-' + dd;
+            btn.setAttribute('data-date', dateStr);
+            btn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              e.preventDefault();
+              // Open the personal calendar event modal with this date prefilled
+              var clickedDate = this.getAttribute('data-date');
+              openEventModal(null, clickedDate);
+            });
+            arg.el.style.position = 'relative';
+            arg.el.appendChild(btn);
+          },
+          eventClick: function(info) {
+            // Show date details panel and scroll
+            var dateStr = info.event.startStr.slice(0, 10);
+            showDateDetails(dateStr, fcEvents);
+          },
+          dateClick: function(info) {
+            // Always show date details panel and scroll
+            showDateDetails(info.dateStr, fcEvents);
+          }
+        });
+
+        privateCalendarInstance.render();
+      } catch (e) {
+        // Calendar failed to load
+      }
+    }
+
+    // ─── Show Date Details Panel ────────────────────────────────────────────
+
+    function showDateDetails(dateStr, fcEvents) {
+      var panel = document.getElementById('calendarDateDetails');
+      var badge = document.getElementById('selectedDateText');
+      var body = document.getElementById('dateDetailsBody');
+
+      if (!panel) return;
+
+      // Format the date nicely
+      var dateObj = new Date(dateStr + 'T00:00:00');
+      var options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      var formattedDate = dateObj.toLocaleDateString('en-IN', options);
+      badge.textContent = formattedDate;
+
+      // Find events for this date
+      var dayEvents = fcEvents.filter(function(ev) {
+        return ev.start && ev.start.slice(0, 10) === dateStr;
+      });
+
+      panel.style.display = 'block';
+
+      // Auto-scroll to the details panel
+      setTimeout(function() {
+        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+
+      if (dayEvents.length === 0) {
+        body.innerHTML =
+          '<div class="empty-state" style="padding:2rem 1rem">' +
+            '<div class="empty-icon"><i class="fas fa-calendar-xmark" style="color:var(--gold);font-size:2.5rem"></i></div>' +
+            '<h3 style="font-family:Playfair Display,serif;color:var(--gold-light);margin:0.5rem 0 0.3rem">No events scheduled for this date.</h3>' +
+            '<p style="color:rgba(255,255,255,0.3);font-size:0.85rem;margin:0">Click to add a new event</p>' +
+          '</div>';
+        return;
+      }
+
+      var html = '';
+      dayEvents.forEach(function(ev, idx) {
+        var isBookingEvent = ev.extendedProps && ev.extendedProps.type === 'booking-event';
+        var eventId = ev.id || '';
+
+        // Action buttons (Edit + Delete)
+        var actionButtons = '<div style="display:flex;gap:0.4rem;margin-top:0.75rem;padding-top:0.6rem;border-top:1px solid rgba(255,255,255,0.05)">' +
+          '<button class="btn btn-outline btn-sm" onclick="window.editCalendarEvent(\'' + eventId + '\')"><i class="fas fa-pen"></i> Edit</button>' +
+          '<button class="btn btn-danger btn-sm" onclick="window.deleteCalendarEvent(\'' + eventId + '\')"><i class="fas fa-trash"></i> Delete</button>' +
+        '</div>';
+
+        if (isBookingEvent) {
+          var props = ev.extendedProps;
+          var parsedNotes = parseBookingEventNotes(props.notes);
+          var statusColor = props.status === 'Completed' ? 'var(--success)' : props.status === 'Cancelled' ? 'var(--danger)' : 'var(--gold)';
+          html +=
+            '<div class="date-event-card" style="animation:fadeIn 0.3s ease ' + (idx * 0.1) + 's both">' +
+              '<div class="event-card-header">' +
+                '<h4 class="event-card-title"><i class="fas fa-camera"></i> ' + esc(ev.title) + '</h4>' +
+                '<span style="font-size:0.65rem;color:' + statusColor + ';font-weight:600">' + (props.status || 'Upcoming') + '</span>' +
+              '</div>' +
+              '<div class="event-card-grid">' +
+                '<div class="event-detail-item"><i class="fas fa-clock"></i><div><span class="detail-label">Time</span><span class="detail-value">' + (props.time || 'All Day') + '</span></div></div>' +
+                (props.location ? '<div class="event-detail-item"><i class="fas fa-location-dot"></i><div><span class="detail-label">Location</span><span class="detail-value">' + esc(props.location) + '</span></div></div>' : '') +
+                (parsedNotes.notes ? '<div class="event-detail-item"><i class="fas fa-sticky-note"></i><div><span class="detail-label">Notes</span><span class="detail-value">' + esc(parsedNotes.notes) + '</span></div></div>' : '') +
+              '</div>' +
+              actionButtons +
+            '</div>';
+        } else {
+          var cat = ev.extendedProps.category || 'Personal';
+          var catIcons = { 'Shoot': 'fa-video', 'Meeting': 'fa-handshake', 'Travel': 'fa-plane', 'Personal': 'fa-bookmark' };
+          var icon = catIcons[cat] || 'fa-calendar';
+          var time = ev.extendedProps.time || 'All Day';
+          var amount = ev.extendedProps.amount ? '₹' + Number(ev.extendedProps.amount).toLocaleString('en-IN') : '—';
+
+          html +=
+            '<div class="date-event-card" style="animation:fadeIn 0.3s ease ' + (idx * 0.1) + 's both">' +
+              '<div class="event-card-header">' +
+                '<h4 class="event-card-title"><i class="fas ' + icon + '"></i> ' + esc(ev.title) + '</h4>' +
+                '<span class="status-badge status-approved">' + (ev.extendedProps.status || 'Upcoming') + '</span>' +
+              '</div>' +
+              '<div class="event-card-grid">' +
+                '<div class="event-detail-item"><i class="fas fa-clock"></i><div><span class="detail-label">Time</span><span class="detail-value">' + time + '</span></div></div>' +
+                '<div class="event-detail-item"><i class="fas fa-tag"></i><div><span class="detail-label">Category</span><span class="detail-value">' + cat + '</span></div></div>' +
+                '<div class="event-detail-item"><i class="fas fa-indian-rupee-sign"></i><div><span class="detail-label">Amount</span><span class="detail-value">' + amount + '</span></div></div>' +
+                (ev.extendedProps.notes ? '<div class="event-detail-item"><i class="fas fa-sticky-note"></i><div><span class="detail-label">Notes</span><span class="detail-value">' + esc(ev.extendedProps.notes) + '</span></div></div>' : '') +
+              '</div>' +
+              actionButtons +
+            '</div>';
+        }
+      });
+
+      body.innerHTML = html;
+    }
+
+    // Edit/Delete calendar event from the date details panel
+    window.editCalendarEvent = function(eventId) {
+      if (!eventId) return;
+      // Open the existing event modal in edit mode by finding the event data
+      if (privateCalendarInstance) {
+        var fcEvent = privateCalendarInstance.getEventById(eventId);
+        if (fcEvent) {
+          openEventModal(fcEvent);
+          return;
+        }
+      }
+      toast('Event not found', 'error');
+    };
+
+    window.deleteCalendarEvent = async function(eventId) {
+      if (!eventId) return;
+      if (!confirm('Delete this event?')) return;
+      try {
+        await API.delete('/creator/calendar/private/' + eventId);
+        toast('Event deleted', 'success');
+        loadPrivateCalendar();
+      } catch (e) {
+        toast(e.message || 'Failed to delete', 'error');
+      }
+    };
+
+    // ─── Personal Calendar Event Modal ──────────────────────────────────────
+
+    function openEventModal(event, dateStr) {
+      var modal = document.getElementById('eventModal');
+      var form = document.getElementById('eventForm');
+      var titleEl = document.getElementById('eventModalTitle');
+      var saveBtn = document.getElementById('eventSaveBtn');
+      var deleteBtn = document.getElementById('eventDeleteBtn');
+
+      // Reset form
+      form.reset();
+      document.getElementById('eventId').value = '';
+      document.getElementById('eventDeleteBtn').style.display = 'none';
+
+      // Set active category to Shoot by default
+      document.querySelectorAll('.category-option').forEach(function(el) {
+        el.classList.toggle('active', el.dataset.category === 'Shoot');
+      });
+      document.getElementById('evCategory').value = 'Shoot';
+
+      if (event) {
+        // Edit mode
+        titleEl.textContent = '';
+        titleEl.innerHTML = '<i class="fas fa-calendar-pen" style="color:var(--gold)"></i> Edit Event';
+        saveBtn.innerHTML = '<i class="fas fa-floppy-disk"></i> Update Event';
+        document.getElementById('eventId').value = event.id;
+        document.getElementById('evTitle').value = event.title;
+        document.getElementById('evDate').value = event.startStr.slice(0, 10);
+        document.getElementById('evTime').value = event.extendedProps.time || '';
+        document.getElementById('evAmount').value = event.extendedProps.amount || 0;
+        document.getElementById('evNotes').value = event.extendedProps.notes || '';
+
+        var cat = event.extendedProps.category || 'Personal';
+        document.querySelectorAll('.category-option').forEach(function(el) {
+          el.classList.toggle('active', el.dataset.category === cat);
+        });
+        document.getElementById('evCategory').value = cat;
+
+        document.getElementById('eventDeleteBtn').style.display = 'inline-flex';
+      } else {
+        // New event mode
+        titleEl.textContent = '';
+        titleEl.innerHTML = '<i class="fas fa-calendar-plus" style="color:var(--gold)"></i> New Event';
+        saveBtn.innerHTML = '<i class="fas fa-floppy-disk"></i> Save Event';
+        if (dateStr) {
+          document.getElementById('evDate').value = dateStr;
+        }
+      }
+
+      modal.style.display = 'flex';
+    }
+
+    function closeEventModal() {
+      document.getElementById('eventModal').style.display = 'none';
+    }
+
+    // ─── Personal Calendar Event CRUD ───────────────────────────────────────
+
+    // Attach event modal handlers after full DOM is parsed (modals are below script)
+    document.addEventListener('DOMContentLoaded', function() {
+      var eventModalCloseEl = document.getElementById('eventModalClose');
+      var eventModalEl = document.getElementById('eventModal');
+      var eventFormEl = document.getElementById('eventForm');
+      var eventDeleteBtnEl = document.getElementById('eventDeleteBtn');
+
+      if (eventModalCloseEl) eventModalCloseEl.addEventListener('click', closeEventModal);
+      if (eventModalEl) eventModalEl.addEventListener('click', function(e) {
+        if (e.target === this) closeEventModal();
+      });
+
+      // Category selection
+      document.querySelectorAll('.category-option').forEach(function(el) {
+        el.addEventListener('click', function() {
+          document.querySelectorAll('.category-option').forEach(function(o) {
+            o.classList.remove('active');
+          });
+          this.classList.add('active');
+          document.getElementById('evCategory').value = this.dataset.category;
+        });
+      });
+
+      if (eventFormEl) eventFormEl.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        var id = document.getElementById('eventId').value;
+        var data = {
+          title: document.getElementById('evTitle').value.trim(),
+          date: document.getElementById('evDate').value,
+          time: document.getElementById('evTime').value || '',
+          category: document.getElementById('evCategory').value,
+          amount: parseFloat(document.getElementById('evAmount').value) || 0,
+          notes: document.getElementById('evNotes').value.trim()
+        };
+
+        if (!data.title) { toast('Please enter a title', 'error'); return; }
+        if (!data.date) { toast('Please select a date', 'error'); return; }
+
+        try {
+          if (id) {
+            await API.put('/creator/calendar/private/' + id, data);
+            toast('Event updated!', 'success');
+          } else {
+            await API.post('/creator/calendar/private', data);
+            toast('Event created!', 'success');
+          }
+          closeEventModal();
+          loadPrivateCalendar();
+        } catch (err) {
+          toast(err.message || 'Failed to save event', 'error');
+        }
+      });
+
+      if (eventDeleteBtnEl) eventDeleteBtnEl.addEventListener('click', async function() {
+        var id = document.getElementById('eventId').value;
+        if (!id) return;
+        if (!confirm('Delete this event?')) return;
+        try {
+          await API.delete('/creator/calendar/private/' + id);
+          toast('Event deleted', 'success');
+          closeEventModal();
+          loadPrivateCalendar();
+        } catch (err) {
+          toast(err.message || 'Failed to delete event', 'error');
+        }
+      });
+    });
+
+    // ─── Availability Calendar (FullCalendar) ───────────────────────────────
+
+    let availabilityCalendar = null;
+
+    async function loadPublicCalendar() {
+      try {
+        const result = await API.get('/creator/calendar/availability');
+        const events = result.events || [];
+
+        // Destroy existing calendar if any
+        if (availabilityCalendar) {
+          availabilityCalendar.destroy();
+          availabilityCalendar = null;
+        }
+
+        var calEl = document.getElementById('availabilityCalendar');
+        if (!calEl) return;
+        calEl.innerHTML = '';
+
+        var fcEvents = events.map(function(e) {
+          return {
+            id: e._id,
+            title: e.type === 'booking' ? '📅 Booked' : '🚫 Unavailable',
+            start: e.date,
+            allDay: true,
+            className: 'event-unavailable',
+            extendedProps: { type: e.type, notes: e.notes || '' },
+          };
+        });
+
+        availabilityCalendar = new FullCalendar.Calendar(calEl, {
+          initialView: 'dayGridMonth',
+          headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,listMonth',
+          },
+          height: 'auto',
+          events: fcEvents,
+          selectable: true,
+          selectMirror: true,
+          dayMaxEvents: 3,
+          eventClick: function(info) {
+            if (confirm('Remove blocked date "' + info.event.title + '"?')) {
+              deleteCalendarEvent(info.event.id);
+            }
+          },
+          dateClick: function(info) {
+            var dateInput = document.getElementById('unavailDate');
+            if (dateInput) dateInput.value = info.dateStr;
+          },
+        });
+
+        availabilityCalendar.render();
+
+        // Update the blocked dates list
+        var availabilityList = document.getElementById('availabilityList');
+        if (!availabilityList) return;
+        if (events.length > 0) {
+          availabilityList.innerHTML = events.map(function(e) {
+            return '<div style="padding:0.5rem;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center">' +
+              '<span style="color:var(--danger)">' + new Date(e.date).toLocaleDateString() + ' — ' + (e.type === 'booking' ? '📅 Booked' : '🚫 ' + (e.title || 'Unavailable')) + '</span>' +
+              '<button class="btn btn-sm btn-outline" onclick="window.deleteCalendarEvent(\'' + e._id + '\')">Remove</button>' +
+              '</div>';
+          }).join('');
+        } else {
+          availabilityList.innerHTML = '<p style="color:rgba(255,255,255,0.3);font-size:0.85rem">No blocked dates. Click a date above to mark it unavailable.</p>';
+        }
+
+        // Wire up the mark unavailable button
+        var markBtn = document.getElementById('markUnavailableBtn');
+        if (markBtn) {
+          markBtn.onclick = async function() {
+            var date = document.getElementById('unavailDate').value;
+            var reason = document.getElementById('unavailReason').value.trim() || 'Unavailable';
+            if (!date) {
+              toast('Please select a date', 'error');
+              return;
+            }
+            try {
+              await API.post('/creator/calendar', { type: 'unavailable', title: reason, date: date });
+              toast('Date marked unavailable', 'success');
+              document.getElementById('unavailDate').value = '';
+              document.getElementById('unavailReason').value = '';
+              loadPublicCalendar();
+            } catch (e) {
+              toast(e.message, 'error');
+            }
+          };
+        }
+      } catch (e) {
+        // Calendar failed to load
+      }
+    }
+
+    // ─── Availability Calendar Helpers ──────────────────────────────────────
+
+    window.deleteCalendarEvent = async function(id) {
+      try {
+        await API.delete('/creator/calendar/' + id);
+        toast('Event removed', 'success');
+        loadPublicCalendar();
+      } catch (e) {
+        toast(e.message, 'error');
+      }
+    };
+
+    // ─── Reel Grid ──────────────────────────────────────────────────────────
+
+    function renderReelGrid() {
+      var container = document.getElementById('reelsContent');
+      container.innerHTML =
+        '<div style="display:flex;flex-direction:column;gap:1rem">' +
+          '<div class="card-panel">' +
+            '<h3 style="font-family:Playfair Display,serif;color:var(--gold-light);margin:0 0 0.5rem">🎬 Upload Reels & Videos</h3>' +
+            '<p style="color:rgba(255,255,255,0.3);font-size:0.85rem;margin:0 0 1rem">Upload cinematic reels, wedding highlights, and promotional videos (MP4, WebM, MOV — max 50MB each)</p>' +
+            '<div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap">' +
+              '<label class="btn btn-primary" style="cursor:pointer">📤 Upload Videos<input type="file" id="videoUploadInput" multiple accept="video/*" style="display:none"></label>' +
+              '<span id="videoUploadStatus" style="color:rgba(255,255,255,0.3);font-size:0.8rem"></span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="card-panel">' +
+            '<h3 style="font-family:Playfair Display,serif;color:var(--gold-light);margin:0 0 0.5rem">📹 Your Videos</h3>' +
+            '<div id="videoGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem"></div>' +
+          '</div>' +
+        '</div>';
+
+      // Load existing videos
+      loadVideos();
+
+      // Bind upload
+      var uploadInput = document.getElementById('videoUploadInput');
+      if (uploadInput) {
+        uploadInput.addEventListener('change', function(e) {
+          var files = e.target.files;
+          if (!files || !files.length) return;
+          uploadVideos(files);
+        });
+      }
+    }
+
+    async function loadVideos() {
+      var grid = document.getElementById('videoGrid');
+      if (!grid) return;
+      grid.innerHTML = '<div class="loader"></div>';
+
+      try {
+        var res = await API.get('/creators/profile');
+        var videos = (res.creator && res.creator.videos) || [];
+
+        if (!videos.length) {
+          grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🎬</div><h3>No videos yet</h3><p>Upload your first video above</p></div>';
+          return;
+        }
+
+        grid.innerHTML = videos.map(function(v) {
+          return '<div style="position:relative;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);aspect-ratio:16/9;background:#000">' +
+            '<video src="' + v + '" style="width:100%;height:100%;object-fit:cover" preload="metadata"></video>' +
+            '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.3);cursor:pointer" onclick="this.previousElementSibling.play()">' +
+              '<span style="font-size:2.5rem;color:var(--gold);opacity:0.8">▶</span>' +
+            '</div>' +
+          '</div>';
+        }).join('');
+      } catch (e) {
+        grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">⚠️</div><h3>Failed to load videos</h3><p>' + esc(e.message) + '</p></div>';
+      }
+    }
+
+    async function uploadVideos(files) {
+      var statusEl = document.getElementById('videoUploadStatus');
+      if (!statusEl) return;
+      statusEl.textContent = 'Uploading ' + files.length + ' video(s)...';
+
+      var fd = new FormData();
+      for (var i = 0; i < files.length; i++) {
+        fd.append('videos', files[i]);
+      }
+
+      try {
+        var res = await API.upload('/creators/upload/videos', fd);
+        toast('Videos uploaded successfully!', 'success');
+        statusEl.textContent = '';
+        document.getElementById('videoUploadInput').value = '';
+        loadVideos();
+      } catch (e) {
+        toast(e.message || 'Failed to upload videos', 'error');
+        statusEl.textContent = 'Upload failed';
+      }
+    }
+
+    // ─── Photos & Portfolio ─────────────────────────────────────────────────
+
+    function loadPhotos() {
+      var container = document.getElementById('photosContent');
+      container.innerHTML =
+        '<div style="display:flex;flex-direction:column;gap:1rem">' +
+          '<div class="card-panel">' +
+            '<h3 style="font-family:Playfair Display,serif;color:var(--gold-light);margin:0 0 0.5rem">📸 Upload Portfolio Photos</h3>' +
+            '<p style="color:rgba(255,255,255,0.3);font-size:0.85rem;margin:0 0 1rem">Upload your best work. Images appear on your public portfolio page (JPG, PNG, WebP — max 50MB each)</p>' +
+            '<div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap">' +
+              '<label class="btn btn-primary" style="cursor:pointer">📤 Upload Photos<input type="file" id="photoUploadInput" multiple accept="image/*" style="display:none"></label>' +
+              '<span id="photoUploadStatus" style="color:rgba(255,255,255,0.3);font-size:0.8rem"></span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="card-panel">' +
+            '<h3 style="font-family:Playfair Display,serif;color:var(--gold-light);margin:0 0 0.5rem">🖼 Your Portfolio</h3>' +
+            '<div id="photoGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem"></div>' +
+          '</div>' +
+        '</div>';
+
+      // Load existing photos
+      loadPortfolioPhotos();
+
+      // Bind upload
+      var uploadInput = document.getElementById('photoUploadInput');
+      if (uploadInput) {
+        uploadInput.addEventListener('change', function(e) {
+          var files = e.target.files;
+          if (!files || !files.length) return;
+          uploadPhotos(files);
+        });
+      }
+    }
+
+    async function loadPortfolioPhotos() {
+      var grid = document.getElementById('photoGrid');
+      if (!grid) return;
+      grid.innerHTML = '<div class="loader"></div>';
+
+      try {
+        var res = await API.get('/creators/profile');
+        var portfolio = (res.creator && res.creator.portfolio) || [];
+
+        if (!portfolio.length) {
+          grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">📸</div><h3>No photos yet</h3><p>Upload your first photo above</p></div>';
+          return;
+        }
+
+        grid.innerHTML = portfolio.map(function(p) {
+          return '<div style="position:relative;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);aspect-ratio:4/3;cursor:pointer" onclick="window.open(\'' + p + '\',\'_blank\')">' +
+            '<img src="' + p + '" style="width:100%;height:100%;object-fit:cover" loading="lazy">' +
+          '</div>';
+        }).join('');
+      } catch (e) {
+        grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">⚠️</div><h3>Failed to load photos</h3><p>' + esc(e.message) + '</p></div>';
+      }
+    }
+
+    async function uploadPhotos(files) {
+      var statusEl = document.getElementById('photoUploadStatus');
+      if (!statusEl) return;
+      statusEl.textContent = 'Uploading ' + files.length + ' photo(s)...';
+
+      var fd = new FormData();
+      for (var i = 0; i < files.length; i++) {
+        fd.append('photos', files[i]);
+      }
+
+      try {
+        var res = await API.upload('/creators/upload/portfolio', fd);
+        toast('Photos uploaded successfully!', 'success');
+        statusEl.textContent = '';
+        document.getElementById('photoUploadInput').value = '';
+        loadPortfolioPhotos();
+      } catch (e) {
+        toast(e.message || 'Failed to upload photos', 'error');
+        statusEl.textContent = 'Upload failed';
+      }
+    }
+
+    // ─── Packages ───────────────────────────────────────────────────────────
+
+    function loadPackages() {
+      var container = document.getElementById('packagesContent');
+      container.innerHTML = '<div class="loader"></div>';
+
+      API.get('/creator/packages')
+        .then(function(res) {
+          var packages = res.packages || [];
+          var html = '<div style="display:flex;flex-direction:column;gap:1rem">' +
+            '<div class="card-panel">' +
+              '<h3 style="font-family:Playfair Display,serif;color:var(--gold-light);margin:0 0 0.5rem">💎 Add Package</h3>' +
+              '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem">' +
+                '<div class="form-group"><label>Package Name</label><input id="pkgName" class="form-input" placeholder="e.g. Silver Wedding"></div>' +
+                '<div class="form-group"><label>Price (₹)</label><input id="pkgPrice" class="form-input" type="number" placeholder="25000"></div>' +
+              '</div>' +
+              '<div class="form-group"><label>Description</label><textarea id="pkgDesc" class="form-input" rows="2" placeholder="What is included included?"></textarea></div>' +
+              '<div class="form-group"><label>Features (one per line)</label><textarea id="pkgFeatures" class="form-input" rows="3" placeholder="8 hours coverage, 100 edited photos, Online gallery"></textarea></div>' +
+              '<button class="btn btn-primary" id="addPackageBtn">➕ Add Package</button>' +
+            '</div>' +
+            '<div class="card-panel">' +
+              '<h3 style="font-family:Playfair Display,serif;color:var(--gold-light);margin:0 0 0.5rem">📋 Your Packages</h3>' +
+              '<div id="packagesList"></div>' +
+            '</div>' +
+          '</div>';
+          container.innerHTML = html;
+
+          // Render packages list
+          var listEl = document.getElementById('packagesList');
+          if (!listEl) return;
+          if (packages.length > 0) {
+            listEl.innerHTML = packages.map(function(p) {
+              return '<div style="padding:0.8rem;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center">' +
+                '<div><strong style="color:var(--gold-light)">' + esc(p.name) + '</strong> — ₹' + (p.price || 0).toLocaleString('en-IN') +
+                '<br><span style="font-size:0.75rem;color:rgba(255,255,255,0.3)">' + esc(p.description || '') + '</span></div>' +
+                '<button class="btn btn-sm btn-danger" onclick="window.deletePackage(\'' + p._id + '\')">🗑</button>' +
+              '</div>';
+            }).join('');
+          } else {
+            listEl.innerHTML = '<p style="color:rgba(255,255,255,0.3);font-size:0.85rem">No packages yet. Create your first package above.</p>';
+          }
+
+          // Bind add package
+          var addBtn = document.getElementById('addPackageBtn');
+          if (addBtn) {
+            addBtn.onclick = async function() {
+              var name = document.getElementById('pkgName').value.trim();
+              var price = parseFloat(document.getElementById('pkgPrice').value) || 0;
+              var desc = document.getElementById('pkgDesc').value.trim();
+              var featuresRaw = document.getElementById('pkgFeatures').value.trim();
+              var features = featuresRaw ? featuresRaw.split('\n').map(function(f) { return f.trim(); }).filter(Boolean) : [];
+
+              if (!name) { toast('Please enter a package name', 'error'); return; }
+              if (price <= 0) { toast('Please enter a valid price', 'error'); return; }
+
+              try {
+                await API.post('/creator/packages', { name: name, price: price, description: desc, features: features });
+                toast('Package added!', 'success');
+                loadPackages();
+              } catch (e) {
+                toast(e.message || 'Failed to add package', 'error');
+              }
+            };
+          }
+        })
+        .catch(function(err) {
+          container.innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><h3>Error loading packages</h3><p>' + (err.message || 'Please try again') + '</p></div>';
+        });
+    }
+
+    window.deletePackage = async function(id) {
+      if (!confirm('Delete this package?')) return;
+      try {
+        await API.delete('/creator/packages/' + id);
+        toast('Package deleted', 'success');
+        loadPackages();
+      } catch (e) {
+        toast(e.message || 'Failed to delete', 'error');
+      }
+    };
+
+    // ─── Earnings ───────────────────────────────────────────────────────────
+
+    function loadEarnings() {
+      API.get('/creator/earnings')
+        .then(function(res) {
+          var earnings = res.earnings || { total: 0, pending: 0, completed: 0 };
+          document.getElementById('earningsStats').innerHTML =
+            '<div class="stat-card"><div class="stat-icon">💰</div><div class="stat-value">₹' + ((earnings.total || 0).toLocaleString('en-IN')) + '</div><div class="stat-label">Total Earnings</div></div>' +
+            '<div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-value">₹' + ((earnings.pending || 0).toLocaleString('en-IN')) + '</div><div class="stat-label">Pending</div></div>' +
+            '<div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value">₹' + ((earnings.completed || 0).toLocaleString('en-IN')) + '</div><div class="stat-label">Completed</div></div>';
+        })
+        .catch(function() {
+          // Keep defaults
+        });
+    }
+
+    // ─── Messages ───────────────────────────────────────────────────────────
+
+    function loadMessages() {
+      var container = document.getElementById('messagesContent');
+      container.innerHTML =
+        '<div class="empty-state"><div class="empty-icon">💬</div><h3>No messages yet</h3><p>When clients message you, conversations will appear here</p></div>';
+    }
+
+    // ─── Revenue & Subscription ────────────────────────────────────────────
+
+    async function loadRevenue() {
+      var container = document.getElementById('revenueContent');
+      container.innerHTML = '<div class="loader"></div>';
+
+      try {
+        var bookingsRes = await API.get('/bookings/creator');
+        var bookings = bookingsRes.bookings || [];
+        var meRes = await API.get('/auth/me');
+        var creator = meRes.creator || {};
+
+        var validBookings = bookings.filter(function(b) { return b.status !== 'rejected' && b.status !== 'cancelled'; });
+        var bmsLeads = validBookings.filter(function(b) { return b.leadSource === 'bookmyshot' || !b.leadSource; });
+        var creatorLeads = validBookings.filter(function(b) { return b.leadSource === 'creator'; });
+
+        var totalRevenue = validBookings.reduce(function(s, b) { return s + (b.amount || 0); }, 0);
+        var bmsRevenue = bmsLeads.reduce(function(s, b) { return s + (b.amount || 0); }, 0);
+        var creatorRevenue = creatorLeads.reduce(function(s, b) { return s + (b.amount || 0); }, 0);
+        var bmsCommission = Math.round(bmsRevenue * (platformConfig.commission.bmsLeadPercent / 100));
+        var creatorCommission = Math.round(creatorRevenue * (platformConfig.commission.creatorLeadPercent / 100));
+        var totalCommission = bmsCommission + creatorCommission;
+        var totalReceivable = totalRevenue - totalCommission;
+        var subscriptionDue = platformConfig.subscription.monthlyPlanPrice;
+        var totalDue = totalCommission + subscriptionDue;
+
+        // Subscription details
+        var subStatus = creator.subscriptionStatus || '';
+        var subEnd = creator.subscriptionEndDate ? new Date(creator.subscriptionEndDate) : null;
+        var subStart = creator.subscriptionStartDate ? new Date(creator.subscriptionStartDate) : null;
+        var lastPay = creator.lastPaymentDate ? new Date(creator.lastPaymentDate) : null;
+        var autoRenew = creator.autoRenew !== false;
+        var daysRemaining = subEnd ? Math.max(0, Math.ceil((subEnd - new Date()) / 86400000)) : 0;
+        var subStatusColor = subStatus === 'active' ? 'var(--success)' : subStatus === 'trial' ? 'var(--gold)' : subStatus === 'overdue' ? 'var(--danger)' : subStatus ? '#f59e0b' : 'rgba(255,255,255,0.3)';
+        var subLabel = subStatus === 'active' ? 'Active' : subStatus === 'trial' ? 'Free Trial' : subStatus === 'overdue' ? 'OVERDUE' : subStatus === 'expired' ? 'Expired' : subStatus === 'suspended' ? 'Suspended' : 'Inactive';
+
+        var html = '';
+
+        // Warning banners
+        if (subStatus === 'overdue') {
+          html += '<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:0.75rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem">' +
+            '<i class="fas fa-exclamation-triangle" style="color:var(--danger);font-size:1.1rem"></i>' +
+            '<span style="color:var(--danger);font-size:0.85rem;font-weight:500">Your account is overdue. Booking creation is disabled until payment is made.</span>' +
+          '</div>';
+        } else if (daysRemaining > 0 && daysRemaining <= 5 && subStatus) {
+          html += '<div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:0.75rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem">' +
+            '<i class="fas fa-clock" style="color:#f59e0b;font-size:1.1rem"></i>' +
+            '<span style="color:#f59e0b;font-size:0.85rem;font-weight:500">' + daysRemaining + ' day' + (daysRemaining > 1 ? 's' : '') + ' remaining until subscription expires.</span>' +
+          '</div>';
+        }
+
+        // Subscription Card
+        html += '<div class="card-panel" style="margin-bottom:1rem;border-left:3px solid ' + subStatusColor + '">' +
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:0.75rem">' +
+            '<div>' +
+              '<h3 style="font-family:Playfair Display,serif;color:var(--gold-light);margin:0 0 0.4rem;font-size:1rem"><i class="fas fa-crown" style="color:var(--gold);margin-right:0.4rem"></i>Subscription · Basic Plan</h3>' +
+              '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.4rem 1.5rem;font-size:0.78rem;margin-top:0.4rem">' +
+                '<div><span style="color:rgba(255,255,255,0.35)">Status:</span> <span style="color:' + subStatusColor + ';font-weight:600">' + subLabel + '</span></div>' +
+                '<div><span style="color:rgba(255,255,255,0.35)">Auto Renew:</span> <span style="color:var(--text)">' + (autoRenew ? 'ON' : 'OFF') + '</span></div>' +
+                '<div><span style="color:rgba(255,255,255,0.35)">Next Billing:</span> <span style="color:var(--text)">' + (subEnd ? subEnd.toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'}) : '—') + '</span></div>' +
+                '<div><span style="color:rgba(255,255,255,0.35)">Last Payment:</span> <span style="color:var(--text)">' + (lastPay ? lastPay.toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'}) : '—') + '</span></div>' +
+                '<div><span style="color:rgba(255,255,255,0.35)">Start Date:</span> <span style="color:var(--text)">' + (subStart ? subStart.toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'}) : '—') + '</span></div>' +
+                '<div><span style="color:rgba(255,255,255,0.35)">Days Remaining:</span> <span style="color:' + (daysRemaining <= 5 ? '#f59e0b' : 'var(--text)') + ';font-weight:' + (daysRemaining <= 5 ? '600' : '400') + '">' + (subStatus ? daysRemaining : '—') + '</span></div>' +
+              '</div>' +
+            '</div>' +
+            '<div style="text-align:center">' +
+              '<div style="font-size:1.4rem;font-weight:700;color:var(--gold-light)">₹' + platformConfig.subscription.monthlyPlanPrice + '</div>' +
+              '<div style="font-size:0.65rem;color:rgba(255,255,255,0.3)">per month</div>' +
+            '</div>' +
+          '</div>' +
+          (subStatus === 'expired' || subStatus === 'overdue' || subStatus === 'suspended' || !subStatus ? '<button class="btn btn-primary btn-sm" style="margin-top:0.75rem" onclick="window.renewSubscription()"><i class="fas fa-credit-card"></i> Pay & Renew ₹' + platformConfig.subscription.monthlyPlanPrice + '</button>' : '') +
+        '</div>';
+
+        // Due Amount Card
+        html += '<div class="card-panel" style="margin-bottom:1rem;background:linear-gradient(135deg, rgba(212,175,55,0.06), rgba(255,140,66,0.04))">' +
+          '<h3 style="font-family:Playfair Display,serif;color:var(--gold-light);margin:0 0 0.6rem;font-size:0.95rem"><i class="fas fa-file-invoice" style="color:var(--gold);margin-right:0.4rem"></i>Current Month Due</h3>' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0;border-bottom:1px solid rgba(255,255,255,0.04)">' +
+            '<span style="font-size:0.8rem;color:rgba(255,255,255,0.5)">Commission Due</span>' +
+            '<span style="font-size:0.85rem;color:var(--text);font-weight:500">₹' + totalCommission.toLocaleString('en-IN') + '</span>' +
+          '</div>' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0;border-bottom:1px solid rgba(255,255,255,0.04)">' +
+            '<span style="font-size:0.8rem;color:rgba(255,255,255,0.5)">Subscription</span>' +
+            '<span style="font-size:0.85rem;color:var(--text);font-weight:500">₹' + platformConfig.subscription.monthlyPlanPrice + '</span>' +
+          '</div>' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0;margin-top:0.2rem">' +
+            '<span style="font-size:0.9rem;color:var(--gold-light);font-weight:600">Total Due</span>' +
+            '<span style="font-size:1.1rem;color:var(--gold);font-weight:700">₹' + totalDue.toLocaleString('en-IN') + '</span>' +
+          '</div>' +
+          '<button class="btn btn-primary btn-sm" style="margin-top:0.5rem;width:100%" onclick="window.payDues()"><i class="fas fa-credit-card"></i> Pay Now</button>' +
+        '</div>';
+
+        // Stats Grid
+        html += '<div class="stats-grid" style="margin-bottom:1rem">' +
+          '<div class="stat-card"><div class="stat-icon"><i class="fas fa-calendar-check" style="color:var(--gold)"></i></div><div class="stat-value">' + validBookings.length + '</div><div class="stat-label">Total Bookings</div></div>' +
+          '<div class="stat-card"><div class="stat-icon"><i class="fas fa-globe" style="color:var(--gold)"></i></div><div class="stat-value">' + bmsLeads.length + '</div><div class="stat-label">BookMyShot Leads</div></div>' +
+          '<div class="stat-card"><div class="stat-icon"><i class="fas fa-user-plus" style="color:var(--gold)"></i></div><div class="stat-value">' + creatorLeads.length + '</div><div class="stat-label">Creator Leads</div></div>' +
+          '<div class="stat-card"><div class="stat-icon"><i class="fas fa-indian-rupee-sign" style="color:var(--gold)"></i></div><div class="stat-value">₹' + totalRevenue.toLocaleString('en-IN') + '</div><div class="stat-label">Total Revenue</div></div>' +
+          '<div class="stat-card"><div class="stat-icon"><i class="fas fa-receipt" style="color:var(--gold)"></i></div><div class="stat-value">₹' + totalCommission.toLocaleString('en-IN') + '</div><div class="stat-label">Platform Fee</div></div>' +
+          '<div class="stat-card"><div class="stat-icon"><i class="fas fa-wallet" style="color:var(--gold)"></i></div><div class="stat-value">₹' + totalReceivable.toLocaleString('en-IN') + '</div><div class="stat-label">Your Earnings</div></div>' +
+        '</div>';
+
+        // Monthly Statement
+        var now = new Date();
+        var monthName = now.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+        html += '<div class="card-panel" style="margin-bottom:1rem">' +
+          '<h3 style="font-family:Playfair Display,serif;color:var(--gold-light);margin:0 0 0.75rem;font-size:0.95rem"><i class="fas fa-file-alt" style="color:var(--gold);margin-right:0.4rem"></i>Monthly Statement — ' + monthName + '</h3>' +
+          '<div style="font-size:0.8rem">' +
+            '<div style="display:flex;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid rgba(255,255,255,0.04)"><span style="color:rgba(255,255,255,0.5)">BookMyShot Leads Revenue</span><span style="color:var(--text)">₹' + bmsRevenue.toLocaleString('en-IN') + '</span></div>' +
+            '<div style="display:flex;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid rgba(255,255,255,0.04)"><span style="color:rgba(255,255,255,0.5)">BookMyShot Commission (' + platformConfig.commission.bmsLeadPercent + '%)</span><span style="color:var(--danger)">₹' + bmsCommission.toLocaleString('en-IN') + '</span></div>' +
+            '<div style="display:flex;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid rgba(255,255,255,0.04)"><span style="color:rgba(255,255,255,0.5)">Creator Leads Revenue</span><span style="color:var(--text)">₹' + creatorRevenue.toLocaleString('en-IN') + '</span></div>' +
+            '<div style="display:flex;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid rgba(255,255,255,0.04)"><span style="color:rgba(255,255,255,0.5)">Creator Commission (' + platformConfig.commission.creatorLeadPercent + '%)</span><span style="color:var(--danger)">₹' + creatorCommission.toLocaleString('en-IN') + '</span></div>' +
+            '<div style="display:flex;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid rgba(255,255,255,0.04)"><span style="color:rgba(255,255,255,0.5)">Subscription</span><span style="color:var(--danger)">₹' + platformConfig.subscription.monthlyPlanPrice + '</span></div>' +
+            '<div style="display:flex;justify-content:space-between;padding:0.6rem 0;font-weight:600"><span style="color:var(--gold-light)">Total Due This Month</span><span style="color:var(--gold)">₹' + totalDue.toLocaleString('en-IN') + '</span></div>' +
+          '</div>' +
+        '</div>';
+
+        // Fee info tooltip
+        html += '<div style="margin-bottom:1rem;text-align:center">' +
+          '<button class="btn btn-outline btn-sm" onclick="window.showFeeInfo()" style="font-size:0.72rem"><i class="fas fa-info-circle"></i> How Fees Work</button>' +
+        '</div>';
+
+        // Booking Revenue Breakdown
+        var bookingsWithAmount = validBookings.filter(function(b) { return b.amount > 0; });
+        if (bookingsWithAmount.length > 0) {
+          html += '<div class="card-panel">' +
+            '<h3 style="font-family:Playfair Display,serif;color:var(--gold-light);margin:0 0 0.75rem;font-size:0.95rem"><i class="fas fa-list" style="color:var(--gold);margin-right:0.4rem"></i>Revenue Breakdown</h3>';
+          bookingsWithAmount.forEach(function(b) {
+            var pct = b.leadSource === 'creator' ? 3 : 5;
+            var comm = Math.round((b.amount * pct) / 100);
+            var recv = b.amount - comm;
+            var leadIcon = b.leadSource === 'creator' ? '<i class="fas fa-user-plus" style="color:#3b82f6"></i>' : '<i class="fas fa-globe" style="color:var(--gold)"></i>';
+            html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid rgba(255,255,255,0.04);flex-wrap:wrap;gap:0.2rem">' +
+              '<div style="flex:1;min-width:100px"><span style="font-size:0.8rem;color:var(--text)">' + esc(b.clientName) + '</span></div>' +
+              '<div style="display:flex;gap:0.6rem;align-items:center;font-size:0.72rem">' +
+                '<span>' + leadIcon + '</span>' +
+                '<span style="color:var(--gold-light)">₹' + b.amount.toLocaleString('en-IN') + '</span>' +
+                '<span style="color:var(--danger)">-' + pct + '%</span>' +
+                '<span style="color:var(--success);font-weight:500">₹' + recv.toLocaleString('en-IN') + '</span>' +
+              '</div>' +
+            '</div>';
+          });
+          html += '</div>';
+        }
+
+        container.innerHTML = html;
+      } catch (e) {
+        container.innerHTML = '<div class="card-panel"><p style="color:var(--danger);font-size:0.85rem"><i class="fas fa-exclamation-triangle"></i> Failed to load: ' + (e.message || 'Unknown error') + '</p></div>';
+      }
+    }
+
+    window.renewSubscription = async function() {
+      if (!confirm('Renew subscription for ₹' + platformConfig.subscription.monthlyPlanPrice + '/month?')) return;
+      try {
+        await API.post('/revenue/creator/subscribe', {});
+        toast('Subscription renewed!', 'success');
+        loadRevenue();
+      } catch (e) {
+        toast('Payment gateway integration pending. Contact admin.', 'info');
+      }
+    };
+
+    window.payDues = function() {
+      toast('Payment gateway integration coming soon. Contact admin for manual payment.', 'info');
+    };
+
+    window.showFeeInfo = function() {
+      alert('BookMyShot Fee Structure:\\n\\n• BookMyShot Leads (platform sourced): ' + platformConfig.commission.bmsLeadPercent + '% commission\\n• Creator Leads (self-sourced): ' + platformConfig.commission.creatorLeadPercent + '% commission\\n• Monthly Subscription: ₹' + platformConfig.subscription.monthlyPlanPrice + '/month\\n\\nAll fees are calculated automatically from booking amounts.');
+    };
+
+    // ─── Promotions ────────────────────────────────────────────────────────
+
+    async function loadPromotions() {
+      var plansContainer = document.getElementById('promotionPlansContent');
+      var requestsContainer = document.getElementById('myPromotionRequests');
+      
+      // Load plans
+      try {
+        var res = await API.get('/promotions/plans');
+        var plans = res.plans || [];
+        var icons = { homepage_featured: '⭐', rank_1: '🥇', rank_2: '🥈', rank_3: '🥉', rank_4: '🏅' };
+        plansContainer.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1rem">' + plans.map(function(p) {
+          return '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;text-align:center">' +
+            '<div style="font-size:2rem;margin-bottom:.5rem">' + (icons[p.id] || '🏆') + '</div>' +
+            '<h3 style="font-family:var(--font-display);color:var(--gold-light);font-size:1rem;margin-bottom:.3rem">' + p.name + '</h3>' +
+            '<div style="font-size:1.3rem;font-weight:700;color:var(--cream);margin-bottom:.75rem">₹' + p.price.toLocaleString('en-IN') + '<span style="font-size:.7rem;color:var(--text-muted)">/month</span></div>' +
+            '<ul style="list-style:none;padding:0;margin:0 0 1rem">' + p.benefits.map(function(b) { return '<li style="font-size:.78rem;color:var(--text-muted);padding:.2rem 0">✓ ' + b + '</li>'; }).join('') + '</ul>' +
+            '<button class="btn btn-primary btn-sm" onclick="applyPromotion(\'' + p.id + '\')">Apply Now</button>' +
+          '</div>';
+        }).join('') + '</div>';
+      } catch (e) { plansContainer.innerHTML = '<p style="color:var(--text-muted)">Failed to load plans.</p>'; }
+
+      // Load my requests
+      try {
+        var res2 = await API.get('/promotions/my-requests');
+        var requests = res2.data || [];
+        if (!requests.length) { requestsContainer.innerHTML = '<p style="color:var(--text-muted);font-size:.82rem">No promotion requests yet.</p>'; return; }
+        var planNames = { homepage_featured: 'Homepage Featured', rank_1: 'Rank #1', rank_2: 'Rank #2', rank_3: 'Rank #3', rank_4: 'Rank #4' };
+        requestsContainer.innerHTML = '<div class="table-wrap" style="border:1px solid var(--border);border-radius:var(--radius);overflow-x:auto"><table style="width:100%;font-size:.8rem"><thead><tr style="background:var(--bg-card)"><th style="padding:.6rem;color:var(--gold)">Plan</th><th style="padding:.6rem;color:var(--gold)">Price</th><th style="padding:.6rem;color:var(--gold)">Status</th><th style="padding:.6rem;color:var(--gold)">Date</th></tr></thead><tbody>' +
+          requests.map(function(r) {
+            var statusColor = r.status === 'approved' ? 'var(--success)' : r.status === 'rejected' ? 'var(--danger)' : 'var(--gold)';
+            return '<tr><td style="padding:.5rem">' + (planNames[r.planType] || r.planType) + '</td><td style="padding:.5rem">₹' + (r.price||0) + '</td><td style="padding:.5rem;color:' + statusColor + '">' + r.status + '</td><td style="padding:.5rem;font-size:.72rem">' + new Date(r.requestDate).toLocaleDateString('en-IN') + '</td></tr>';
+          }).join('') +
+        '</tbody></table></div>';
+      } catch (e) { requestsContainer.innerHTML = '<p style="color:var(--text-muted);font-size:.82rem">Failed to load requests.</p>'; }
+    }
+
+    window.applyPromotion = async function(planType) {
+      if (!confirm('Apply for this promotion plan?')) return;
+      try {
+        await API.post('/promotions/apply', { planType: planType });
+        toast('Promotion request submitted! Awaiting admin approval.', 'success');
+        loadPromotions();
+      } catch (e) {
+        toast(e.message || 'Failed to submit request', 'error');
+      }
+    };
+
+    // ─── Settings ───────────────────────────────────────────────────────────
+
+    function loadSettings() {
+      var container = document.getElementById('settingsContent');
+      if (currentUser) {
+        container.innerHTML =
+          '<div class="card-panel"><h3 style="font-family:Playfair Display,serif;color:var(--gold-light);margin:0 0 1rem">Account Settings</h3>' +
+          '<p style="color:rgba(255,255,255,0.4)">Email: ' + esc(currentUser.email) + '</p>' +
+          '<p style="color:rgba(255,255,255,0.4)">Role: ' + esc(currentUser.role) + '</p>' +
+          '<p style="color:rgba(255,255,255,0.3)">Account management coming soon.</p></div>';
+      }
+    }
+
+    // ─── Start ──────────────────────────────────────────────────────────────
+
+    init();
+  })();
+  </script>
+
+  <!-- ═══ ADD/EDIT BOOKING EVENT MODAL ═══ -->
+  <div class="modal-overlay" id="addEventModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="document.getElementById('addEventModal').style.display='none'">&times;</button>
+      <h2 id="addEventModalTitle"><i class="fas fa-plus-circle" style="color:var(--gold)"></i> Add Event</h2>
+      <form id="addEventForm">
+        <input type="hidden" id="addEventBookingId">
+        <input type="hidden" id="addEventId">
+        <div class="form-group">
+          <label>Event Name *</label>
+          <input type="text" id="aeEventName" class="form-input" placeholder="e.g. Pre Wedding Shoot, Haldi, Mehndi, Wedding" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Event Date *</label>
+            <input type="date" id="aeEventDate" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label>Location</label>
+            <input type="text" id="aeLocation" class="form-input" placeholder="e.g. Grand Hotel, Mumbai">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Start Time</label>
+            <input type="time" id="aeStartTime" class="form-input">
+          </div>
+          <div class="form-group">
+            <label>End Time</label>
+            <input type="time" id="aeEndTime" class="form-input">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Assigned Team (optional)</label>
+          <input type="text" id="aeTeam" class="form-input" placeholder="e.g. Raj + Priya (photo), Karan (video)">
+        </div>
+        <div class="form-group">
+          <label>Notes</label>
+          <textarea id="aeNotes" class="form-input" rows="2" placeholder="Special instructions, outfit details, etc."></textarea>
+        </div>
+        <div style="display:flex;gap:0.75rem;margin-top:1.2rem">
+          <button type="submit" class="btn btn-primary" style="flex:1"><i class="fas fa-check"></i> Save Event</button>
+          <button type="button" class="btn btn-outline" onclick="document.getElementById('addEventModal').style.display='none'">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ═══ CREATE INQUIRY MODAL ═══ -->
+  <div class="modal-overlay" id="createInquiryModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="document.getElementById('createInquiryModal').style.display='none'">&times;</button>
+      <h2 style="display:flex;align-items:center;gap:0.5rem"><i class="fas fa-plus-circle" style="color:var(--gold)"></i> Create Inquiry</h2>
+      <form id="createInquiryForm">
+        <div class="form-group">
+          <label>Client Name *</label>
+          <input type="text" id="ciqName" class="form-input" placeholder="e.g. Priya Sharma" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Phone</label>
+            <input type="tel" id="ciqPhone" class="form-input" placeholder="e.g. 9876543210">
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="ciqEmail" class="form-input" placeholder="e.g. client@email.com">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Event Type *</label>
+            <input type="text" id="ciqEventType" class="form-input" placeholder="e.g. Wedding, Pre-wedding" required>
+          </div>
+          <div class="form-group">
+            <label>Event Date *</label>
+            <input type="date" id="ciqEventDate" class="form-input" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>City / Location</label>
+            <input type="text" id="ciqCity" class="form-input" placeholder="e.g. Mumbai, Delhi">
+          </div>
+          <div class="form-group">
+            <label>Budget (₹)</label>
+            <input type="number" id="ciqBudget" class="form-input" placeholder="e.g. 50000" min="0">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Message / Notes</label>
+          <textarea id="ciqMessage" class="form-input" rows="2" placeholder="Additional details about the event..."></textarea>
+        </div>
+        <div style="display:flex;gap:0.75rem;margin-top:1.2rem">
+          <button type="submit" class="btn btn-primary" style="flex:1"><i class="fas fa-check"></i> Create & Book</button>
+          <button type="button" class="btn btn-outline" onclick="document.getElementById('createInquiryModal').style.display='none'">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ═══ PERSONAL CALENDAR EVENT MODAL ═══ -->
+  <div class="modal-overlay" id="eventModal">
+    <div class="modal-content">
+      <button class="modal-close" id="eventModalClose">&times;</button>
+      <h2 id="eventModalTitle"><i class="fas fa-calendar-plus" style="color:var(--gold)"></i> New Event</h2>
+      <form id="eventForm">
+        <input type="hidden" id="eventId">
+
+        <div class="form-group">
+          <label>Event Title</label>
+          <input type="text" id="evTitle" class="form-input" placeholder="e.g. Wedding shoot with Priya" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="evDate" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label>Time (optional)</label>
+            <input type="time" id="evTime" class="form-input">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Category</label>
+          <div class="category-options">
+            <div class="category-option active" data-category="Shoot"><span class="cat-icon"><i class="fas fa-video"></i></span> Shoot</div>
+            <div class="category-option" data-category="Meeting"><span class="cat-icon"><i class="fas fa-handshake"></i></span> Meeting</div>
+            <div class="category-option" data-category="Travel"><span class="cat-icon"><i class="fas fa-plane"></i></span> Travel</div>
+            <div class="category-option" data-category="Personal"><span class="cat-icon"><i class="fas fa-bookmark"></i></span> Personal</div>
+          </div>
+          <input type="hidden" id="evCategory" value="Shoot">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Amount (₹, optional)</label>
+            <input type="number" id="evAmount" class="form-input" placeholder="0" min="0">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Notes</label>
+          <textarea id="evNotes" class="form-input" rows="2" placeholder="Any additional details..."></textarea>
+        </div>
+
+        <div style="display:flex;gap:0.75rem;margin-top:1.2rem">
+          <button type="submit" class="btn btn-primary" id="eventSaveBtn" style="flex:1"><i class="fas fa-floppy-disk"></i> Save Event</button>
+          <button type="button" class="btn btn-danger" id="eventDeleteBtn" style="display:none"><i class="fas fa-trash"></i> Delete</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</body>
+</html>

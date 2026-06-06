@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — BookMyShot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/auth.css">
+  <style>
+    .login-method-toggle { display:flex; gap:0.5rem; margin-bottom:1.5rem; }
+    .login-method-toggle button { flex:1; padding:0.6rem; border:1px solid var(--border); border-radius:var(--radius); background:transparent; color:var(--text-muted); cursor:pointer; font-size:0.85rem; transition:all 0.2s; }
+    .login-method-toggle button.active { border-color:var(--gold); color:var(--gold); background:rgba(232,184,74,0.1); }
+    .login-method-toggle button:hover { border-color:var(--gold-light); color:var(--cream); }
+    .phone-input-group { display:flex; gap:0.5rem; }
+    .phone-input-group select { width:100px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); color:var(--text); padding:0.6rem; }
+    .phone-input-group input { flex:1; }
+    .auth-tabs { margin-bottom:1.5rem; }
+  </style>
+</head>
+<body class="auth-page">
+  <div class="auth-card glass">
+    <a href="/" class="auth-logo">BookMyShot</a>
+    <h1>Welcome Back</h1>
+    <p class="auth-sub">Sign in to your account</p>
+    <div class="auth-tabs">
+      <button type="button" class="auth-tab active" data-role="user">User</button>
+      <button type="button" class="auth-tab" data-role="creator">Creator</button>
+      <button type="button" class="auth-tab" data-role="admin">Admin</button>
+    </div>
+    <div class="login-method-toggle">
+      <button type="button" class="active" data-method="email">📧 Email</button>
+      <button type="button" data-method="phone">📱 Phone</button>
+    </div>
+    <form id="loginForm" novalidate>
+      <div id="emailField" class="form-group">
+        <label>Email</label>
+        <input type="email" id="email" name="email" class="form-control" required>
+      </div>
+      <div id="phoneField" class="form-group" style="display:none">
+        <label>Phone Number</label>
+        <div class="phone-input-group">
+          <select id="countryCode" name="countryCode">
+            <option value="+91">🇮🇳 +91</option>
+            <option value="+1">🇺🇸 +1</option>
+            <option value="+44">🇬🇧 +44</option>
+            <option value="+61">🇦🇺 +61</option>
+            <option value="+971">🇦🇪 +971</option>
+          </select>
+          <input type="tel" id="phone" name="phone" class="form-control" placeholder="9876543210">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="password" name="password" class="form-control" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+    </form>
+    <p class="auth-footer">
+      <a href="#" id="forgotLink">Forgot password?</a><br>
+      No account? <a href="/register.html">Sign up</a> ·
+      <a href="/creator/register.html">Join as Creator</a>
+    </p>
+  </div>
+  <script src="/js/api.js"></script>
+  <script src="/js/utils.js"></script>
+  <script>
+    let role = "user";
+    let loginMethod = "email";
+
+    document.querySelectorAll(".auth-tab").forEach((t) => {
+      t.addEventListener("click", () => {
+        document.querySelectorAll(".auth-tab").forEach((x) => x.classList.remove("active"));
+        t.classList.add("active");
+        role = t.dataset.role;
+      });
+    });
+
+    document.querySelectorAll(".login-method-toggle button").forEach((b) => {
+      b.addEventListener("click", () => {
+        document.querySelectorAll(".login-method-toggle button").forEach((x) => x.classList.remove("active"));
+        b.classList.add("active");
+        loginMethod = b.dataset.method;
+        document.getElementById("emailField").style.display = loginMethod === "email" ? "block" : "none";
+        document.getElementById("phoneField").style.display = loginMethod === "phone" ? "block" : "none";
+        document.getElementById("email").required = loginMethod === "email";
+        document.getElementById("email").disabled = loginMethod !== "email";
+        document.getElementById("phone").required = loginMethod === "phone";
+        document.getElementById("phone").disabled = loginMethod !== "phone";
+      });
+    });
+
+    const loginButton = document.querySelector("#loginForm button[type=submit]");
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (loginButton.disabled) return;
+      // Client-side validation
+      const password = document.getElementById("password").value;
+      if (!password) { toast("Please enter your password", "error"); document.getElementById("password").focus(); return; }
+      if (loginMethod === "email") {
+        const email = document.getElementById("email").value.trim();
+        if (!email) { toast("Please enter your email", "error"); document.getElementById("email").focus(); return; }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast("Please enter a valid email address", "error"); document.getElementById("email").focus(); return; }
+      } else {
+        const phone = document.getElementById("phone").value.trim();
+        if (!phone) { toast("Please enter your phone number", "error"); document.getElementById("phone").focus(); return; }
+        if (!/^\d{7,15}$/.test(phone)) { toast("Please enter a valid phone number", "error"); document.getElementById("phone").focus(); return; }
+      }
+      loginButton.disabled = true;
+      const originalText = loginButton.textContent;
+      loginButton.textContent = "Signing in...";
+      try {
+        const payload = { password };
+        if (loginMethod === "email") {
+          payload.email = document.getElementById("email").value.trim();
+        } else {
+          payload.phone = document.getElementById("countryCode").value + document.getElementById("phone").value.trim();
+        }
+        const data = await API.post("/auth/login", payload);
+        if (role === "admin" && data.user.role !== "admin") throw new Error("Not an admin account");
+        if (role === "creator" && data.user.role !== "creator") throw new Error("Not a creator account");
+        API.setAuth(data.token, data.user);
+        if (data.user.creatorStatus && data.user.creatorStatus !== "approved") {
+          window.location.href = "/creator/pending.html";
+          return;
+        }
+        const routes = { admin: "/admin/dashboard.html", creator: "/creator/dashboard.html", user: "/user/dashboard.html" };
+        window.location.href = routes[data.user.role] || "/";
+      } catch (err) {
+        toast(err.message || "Login failed", "error");
+      } finally {
+        loginButton.disabled = false;
+        loginButton.textContent = originalText;
+      }
+    });
+
+    document.getElementById("forgotLink").addEventListener("click", async (e) => {
+      e.preventDefault();
+      const method = loginMethod;
+      if (method === "email") {
+        const email = prompt("Enter your email:");
+        if (!email) return;
+        try {
+          const r = await API.post("/auth/forgot-password", { email });
+          toast(r.message + (r.resetToken ? ` Token: ${r.resetToken}` : ""), "success");
+        } catch { toast("Failed", "error"); }
+      } else {
+        const phone = prompt("Enter your phone number:");
+        if (!phone) return;
+        try {
+          const r = await API.post("/auth/forgot-password", { phone });
+          toast(r.message, "success");
+        } catch { toast("Failed", "error"); }
+      }
+    });
+  </script>
+</body>
+</html>

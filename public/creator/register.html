@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Creator Registration — BookMyShot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/auth.css">
+</head>
+<body class="auth-page">
+  <div class="auth-card glass" style="max-width:480px">
+    <a href="/" class="auth-logo">BookMyShot</a>
+    <h1>Join as Creator</h1>
+    <p class="auth-sub">Photographers & cameramen — apply to join our platform</p>
+    <form id="regForm" novalidate>
+      <div class="form-group"><label>Full Name</label><input id="name" name="name" class="form-control" required></div>
+      <div class="form-group"><label>Email</label><input type="email" id="email" name="email" class="form-control" required></div>
+      <div class="form-group"><label>Phone</label><input id="phone" name="phone" class="form-control"></div>
+      <div class="form-group"><label>Specialty</label><input id="specialty" name="specialty" class="form-control" placeholder="Wedding, Cinematic..."></div>
+      <div class="form-group"><label>City</label><input id="city" name="city" class="form-control"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="password" name="password" class="form-control" required minlength="6"></div>
+      <button type="submit" class="btn btn-primary btn-block">Submit Application</button>
+    </form>
+    <p class="auth-footer"><a href="/login.html">Already registered? Login</a></p>
+  </div>
+  <script src="/js/api.js"></script>
+  <script src="/js/utils.js"></script>
+  <script>
+    document.getElementById("regForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      if (!name) { toast("Please enter your full name", "error"); return; }
+      if (!email) { toast("Please enter your email", "error"); return; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast("Please enter a valid email address", "error"); return; }
+      if (!password || password.length < 6) { toast("Password must be at least 6 characters", "error"); return; }
+      try {
+        const data = await API.post("/auth/register", {
+          name,
+          email,
+          phone: document.getElementById("phone").value.trim(),
+          password,
+          role: "creator",
+        });
+        API.setAuth(data.token, data.user);
+        await API.put("/creators/profile", {
+          specialty: document.getElementById("specialty").value.trim(),
+          city: document.getElementById("city").value.trim(),
+        }).catch(() => {});
+        window.location.href = "/creator/pending.html";
+      } catch (err) { toast(err.message, "error"); }
+    });
+  </script>
+</body>
+</html>

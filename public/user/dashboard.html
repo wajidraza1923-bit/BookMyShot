@@ -1,0 +1,1887 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>User Dashboard — BookMyShot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="/css/premium-homepage.css" rel="stylesheet">
+  <style>
+    /* ═══════════════════════════════════════════════════════════════════════
+       BookMyShot — User Dashboard (Premium)
+       ═══════════════════════════════════════════════════════════════════════ */
+    :root {
+      --sidebar-w: 240px;
+      --header-h: 64px;
+      --gold: #c9a962;
+      --gold-light: #e8d5a3;
+      --gold-dark: #a8883a;
+      --danger: #ef4444;
+      --success: #10b981;
+      --info: #3b82f6;
+      --warning: #f59e0b;
+      --card-bg: rgba(255,255,255,0.04);
+      --card-border: rgba(255,255,255,0.07);
+      --card-hover-border: rgba(201,169,98,0.25);
+      --card-radius: 16px;
+      --transition: 0.3s cubic-bezier(0.22,1,0.36,1);
+      --text: #f6eee7;
+      --text-muted: rgba(255,255,255,0.4);
+      --text-muted2: rgba(255,255,255,0.3);
+      --accent-green: #34d399;
+      --accent-gold: #fbbf24;
+      --accent-red: #f87171;
+      --border-light: rgba(255,255,255,0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Outfit', system-ui, sans-serif;
+      background: #050302;
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+    /* ─── Sidebar ─── */
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0;
+      width: var(--sidebar-w);
+      height: 100vh;
+      background: rgba(8,6,4,0.95);
+      backdrop-filter: blur(20px);
+      border-right: 1px solid var(--border-light);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      transition: transform var(--transition);
+    }
+
+    .sidebar-logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--gold-light);
+      padding: 1.5rem 1.5rem 1rem;
+      border-bottom: 1px solid var(--border-light);
+      letter-spacing: 0.02em;
+    }
+    .sidebar-logo span { color: var(--gold); }
+
+    .sidebar-nav {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.6rem;
+    }
+
+    .sidebar-nav a {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.6rem 1rem;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: var(--transition);
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      font-weight: 400;
+      text-decoration: none;
+    }
+
+    .sidebar-nav a:hover {
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+    }
+
+    .sidebar-nav a.active {
+      background: rgba(201,169,98,0.12);
+      color: var(--gold-light);
+      font-weight: 500;
+    }
+
+    .sidebar-nav a .icon { width: 20px; text-align: center; font-size: 1rem; flex-shrink: 0; }
+
+    .sidebar-footer {
+      padding: 0.8rem 0.6rem;
+      border-top: 1px solid var(--border-light);
+    }
+
+    .sidebar-footer a {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.6rem 1rem;
+      border-radius: 10px;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .sidebar-footer a:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+
+    /* ─── Main Content ─── */
+    .main-content {
+      margin-left: var(--sidebar-w);
+      min-height: 100vh;
+    }
+
+    /* ─── Header ─── */
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2rem;
+      height: var(--header-h);
+      background: rgba(5,3,2,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .menu-toggle {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 1.4rem;
+      cursor: pointer;
+      padding: 0.4rem;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .notif-btn {
+      position: relative;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border-light);
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: var(--transition);
+      font-size: 1rem;
+    }
+
+    .notif-btn:hover { background: rgba(255,255,255,0.1); }
+
+    .notif-btn .count {
+      position: absolute;
+      top: -2px;
+      right: -2px;
+      background: var(--danger);
+      color: #fff;
+      font-size: 0.55rem;
+      font-weight: 700;
+      min-width: 16px;
+      height: 16px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 3px;
+    }
+
+    .user-name {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid rgba(201,169,98,0.3);
+    }
+
+    /* ─── Panels ─── */
+    .panel { display: none; padding: 2rem; max-width: 1200px; }
+    .panel.active { display: block; }
+
+    .panel-header { margin-bottom: 1.5rem; }
+    .panel-header h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.6rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 0 0 0.3rem;
+    }
+    .panel-header p { color: var(--text-muted); font-size: 0.85rem; margin: 0; }
+
+    /* ─── Stats Grid ─── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--card-radius);
+      padding: 1.2rem;
+      transition: var(--transition);
+    }
+
+    .stat-card:hover {
+      border-color: var(--card-hover-border);
+      box-shadow: 0 0 20px rgba(201,169,98,0.06);
+    }
+
+    .stat-card .label {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
+
+    .stat-card .value {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.6rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-top: 0.2rem;
+    }
+
+    .stat-card .value.blue { color: var(--info); }
+    .stat-card .value.orange { color: var(--warning); }
+    .stat-card .value.gold { color: var(--gold-light); }
+
+    /* ─── Section Title ─── */
+    .section-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 1rem;
+      margin-top: 1.5rem;
+    }
+    .section-title:first-child { margin-top: 0; }
+
+    /* ─── Booking Card ─── */
+    .booking-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--card-radius);
+      padding: 1.2rem;
+      margin-bottom: 0.75rem;
+      transition: var(--transition);
+    }
+
+    .booking-card:hover {
+      border-color: var(--card-hover-border);
+      box-shadow: 0 0 20px rgba(201,169,98,0.06);
+    }
+
+    .booking-card .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.8rem;
+    }
+
+    .booking-card .top h4 {
+      margin: 0;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .booking-card .details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.3rem 1rem;
+    }
+
+    .booking-card .details .item {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      padding: 0.25rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .booking-card .details .item .lbl { color: var(--text-muted2); }
+    .booking-card .details .item .val { color: var(--text); font-weight: 500; }
+
+    .booking-card .actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 0.75rem;
+    }
+
+    /* ─── Status Badges ─── */
+    .status-badge {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 12px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .status-badge.status-pending { background: rgba(245,158,11,0.12); color: #fbbf24; border: 1px solid rgba(245,158,11,0.2); }
+    .status-badge.status-accepted { background: rgba(59,130,246,0.12); color: #60a5fa; border: 1px solid rgba(59,130,246,0.2); }
+    .status-badge.status-confirmed { background: rgba(59,130,246,0.12); color: #60a5fa; border: 1px solid rgba(59,130,246,0.2); }
+    .status-badge.status-completed { background: rgba(16,185,129,0.12); color: #34d399; border: 1px solid rgba(16,185,129,0.2); }
+    .status-badge.status-paid { background: rgba(16,185,129,0.12); color: #34d399; border: 1px solid rgba(16,185,129,0.2); }
+    .status-badge.status-cancelled { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
+    .status-badge.status-rejected { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
+    .status-badge.status-approved { background: rgba(16,185,129,0.12); color: #34d399; border: 1px solid rgba(16,185,129,0.2); }
+    .status-badge.status-verified { background: rgba(16,185,129,0.12); color: #34d399; border: 1px solid rgba(16,185,129,0.2); }
+    .status-badge.status-proof-submitted { background: rgba(245,158,11,0.12); color: #fbbf24; border: 1px solid rgba(245,158,11,0.2); }
+    .status-badge.status-unpaid { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
+    .status-badge.status-partial { background: rgba(245,158,11,0.12); color: #fbbf24; border: 1px solid rgba(245,158,11,0.2); }
+
+    /* ─── Booking Timeline ─── */
+    .booking-timeline {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 0.75rem;
+      padding: 0.75rem;
+      background: rgba(255,255,255,0.02);
+      border-radius: 8px;
+      border: 1px solid var(--border-light);
+    }
+
+    .timeline-step {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.7rem;
+      color: var(--text-muted2);
+    }
+
+    .timeline-step .tl-icon { font-size: 0.85rem; }
+    .timeline-step.done { color: var(--accent-green); }
+    .timeline-step.active { color: var(--accent-gold); font-weight: 600; }
+    .timeline-step.pending { color: var(--text-muted2); opacity: 0.5; }
+    .timeline-arrow { color: var(--border-light); font-size: 0.7rem; }
+
+    /* ─── Empty State ─── */
+    .empty-state {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--card-radius);
+      padding: 2.5rem 2rem;
+      text-align: center;
+    }
+
+    .empty-state .icon { font-size: 2.5rem; opacity: 0.3; margin-bottom: 0.8rem; }
+    .empty-state h3 { font-size: 1rem; font-weight: 500; color: var(--text-muted); margin: 0 0 0.3rem; }
+    .empty-state p { font-size: 0.8rem; color: var(--text-muted2); margin: 0; }
+
+    /* ─── Creator Mini Card ─── */
+    .creator-mini {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      background: var(--card-bg);
+      border: 1px solid var(--border-light);
+      border-radius: 10px;
+      margin-bottom: 0.5rem;
+      transition: var(--transition);
+    }
+
+    .creator-mini:hover { border-color: var(--card-hover-border); }
+    .creator-mini img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; }
+    .creator-mini .info { flex: 1; }
+    .creator-mini .info h5 { color: var(--text); font-size: 0.85rem; font-weight: 600; margin: 0; }
+    .creator-mini .info p { color: var(--text-muted2); font-size: 0.75rem; margin: 0.1rem 0 0; }
+
+    /* ─── Payment Detail Card ─── */
+    .payment-detail-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 0.75rem;
+      transition: var(--transition);
+    }
+
+    .payment-detail-card:hover { border-color: var(--card-hover-border); }
+
+    .payment-detail-card .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 0.75rem;
+    }
+
+    .payment-detail-card .top h4 {
+      color: var(--text);
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .payment-detail-card .details {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 0.6rem;
+    }
+
+    .payment-detail-card .details .item .lbl {
+      color: var(--text-muted2);
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
+
+    .payment-detail-card .details .item .val {
+      color: var(--text);
+      font-size: 0.82rem;
+      margin-top: 0.15rem;
+      font-weight: 500;
+    }
+
+    .payment-detail-card .proof-preview { margin-top: 0.75rem; }
+    .payment-detail-card .proof-preview img { max-width: 100%; max-height: 200px; border-radius: 8px; border: 1px solid var(--border-light); cursor: pointer; }
+    .payment-detail-card .rejection-reason { margin-top: 0.75rem; padding: 0.75rem; background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.15); border-radius: 8px; font-size: 0.8rem; color: var(--accent-red); }
+
+    /* ─── Payment Flow ─── */
+    .payment-flow { max-width: 600px; margin: 0 auto; }
+    .payment-step { text-align: center; margin-bottom: 1.5rem; }
+    .payment-step .big-icon { font-size: 3rem; margin-bottom: 0.5rem; }
+    .payment-step h3 { font-family: 'Cormorant Garamond', serif; font-size: 1.3rem; color: var(--text); margin: 0 0 0.3rem; }
+    .payment-step p { color: var(--text-muted); font-size: 0.85rem; margin: 0; }
+
+    .select-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 0.5rem;
+      transition: var(--transition);
+      cursor: pointer;
+    }
+
+    .select-card:hover { border-color: var(--card-hover-border); }
+    .select-card h4 { margin: 0 0 0.3rem; font-size: 0.9rem; color: var(--text); }
+    .select-card .meta { display: flex; flex-wrap: wrap; gap: 0.5rem; font-size: 0.75rem; color: var(--text-muted); }
+
+    /* ─── Card ─── */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--card-radius);
+      padding: 1.5rem;
+    }
+
+    /* ─── Form ─── */
+    .form-group { margin-bottom: 1rem; }
+    .form-group label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 0.3rem;
+    }
+
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      padding: 0.55rem 0.8rem;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border-light);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 0.85rem;
+      outline: none;
+      transition: var(--transition);
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 12px rgba(201,169,98,0.1);
+    }
+
+    .form-group textarea { resize: vertical; min-height: 50px; }
+
+    /* ─── Upload Area ─── */
+    .upload-area {
+      border: 2px dashed var(--border-light);
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .upload-area:hover { border-color: var(--gold); background: rgba(201,169,98,0.04); }
+    .upload-area .icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    .upload-area p { color: var(--text-muted2); font-size: 0.85rem; margin: 0; }
+    .upload-area input[type="file"] { display: none; }
+
+    .upload-preview { max-width: 100%; max-height: 200px; border-radius: 8px; margin-top: 0.5rem; }
+
+    .upload-buttons {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+
+    .upload-buttons .btn { font-size: 0.8rem; }
+
+    /* ─── QR Section ─── */
+    .qr-section {
+      text-align: center;
+      padding: 1.5rem;
+      background: rgba(255,255,255,0.02);
+      border-radius: 12px;
+      border: 1px solid var(--border-light);
+      margin-bottom: 1rem;
+    }
+
+    .qr-section img { width: 160px; height: 160px; margin-bottom: 0.75rem; }
+    .qr-section .upi-id { font-size: 0.9rem; color: var(--text); font-weight: 600; }
+    .qr-section .upi-label { font-size: 0.75rem; color: var(--text-muted2); margin-top: 0.25rem; }
+
+    /* ─── Buttons ─── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.45rem 1.1rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition);
+      border: 1px solid transparent;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--gold);
+      border-color: var(--gold);
+      color: #050302;
+    }
+
+    .btn-primary:hover {
+      background: var(--gold-light);
+      border-color: var(--gold-light);
+    }
+
+    .btn-outline {
+      background: rgba(255,255,255,0.04);
+      border-color: var(--border-light);
+      color: var(--text);
+    }
+
+    .btn-outline:hover {
+      border-color: var(--gold);
+      color: var(--gold-light);
+    }
+
+    .btn-sm { padding: 0.3rem 0.8rem; font-size: 0.75rem; border-radius: 16px; }
+
+    /* ─── Favorites Grid ─── */
+    .fav-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 0.8rem;
+    }
+
+    .fav-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--card-radius);
+      overflow: hidden;
+      transition: var(--transition);
+    }
+
+    .fav-card:hover { border-color: var(--card-hover-border); }
+
+    .fav-card img {
+      width: 100%;
+      height: 140px;
+      object-fit: cover;
+    }
+
+    .fav-card .body { padding: 1rem; }
+    .fav-card .body h4 { margin: 0 0 0.2rem; font-size: 0.9rem; color: var(--text); }
+    .fav-card .body p { margin: 0 0 0.8rem; font-size: 0.75rem; color: var(--text-muted); }
+    .fav-card .body .actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+    /* ─── Chat ─── */
+    .chat-container {
+      display: flex;
+      height: 500px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--card-radius);
+      overflow: hidden;
+    }
+
+    .chat-list {
+      width: 280px;
+      border-right: 1px solid var(--border-light);
+      overflow-y: auto;
+      padding: 0.5rem;
+    }
+
+    .chat-list-item {
+      padding: 0.6rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: var(--transition);
+      margin-bottom: 0.3rem;
+    }
+
+    .chat-list-item:hover { background: rgba(255,255,255,0.04); }
+    .chat-list-item h5 { margin: 0 0 0.2rem; font-size: 0.8rem; color: var(--text); }
+    .chat-list-item p { margin: 0; font-size: 0.7rem; color: var(--text-muted2); }
+
+    .chat-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+    }
+
+    .msg { display: flex; margin-bottom: 0.5rem; }
+    .msg.sent { justify-content: flex-end; }
+
+    .msg-bubble {
+      max-width: 70%;
+      padding: 0.5rem 0.8rem;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border-light);
+      font-size: 0.8rem;
+      color: var(--text);
+    }
+
+    .msg.sent .msg-bubble {
+      background: rgba(201,169,98,0.12);
+      border-color: rgba(201,169,98,0.2);
+    }
+
+    .chat-input-area {
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.75rem;
+      border-top: 1px solid var(--border-light);
+    }
+
+    .chat-input-area input {
+      flex: 1;
+      padding: 0.5rem 0.8rem;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border-light);
+      border-radius: 20px;
+      color: var(--text);
+      font-size: 0.8rem;
+      outline: none;
+    }
+
+    .chat-input-area input:focus { border-color: var(--gold); }
+
+    .chat-input-area button {
+      padding: 0.45rem 1rem;
+      border-radius: 20px;
+      border: 1px solid var(--gold);
+      background: var(--gold);
+      color: #050302;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .attach-btn {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border-light);
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    /* ─── Booking Detail Page ─── */
+    .booking-detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    .detail-section {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--card-radius);
+      padding: 1.5rem;
+    }
+
+    .detail-section h3 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--gold-light);
+      margin: 0 0 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.4rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 0.82rem;
+    }
+
+    .detail-row .lbl { color: var(--text-muted2); }
+    .detail-row .val { color: var(--text); font-weight: 500; }
+
+    .detail-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+
+    /* ─── Loader ─── */
+    .loader {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      color: var(--text-muted2);
+      font-size: 0.85rem;
+    }
+
+    .loader::after {
+      content: '';
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255,255,255,0.1);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      margin-left: 0.5rem;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── Toast ─── */
+    .toast-container {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .toast {
+      background: rgba(12,9,7,0.95);
+      border: 1px solid var(--border-light);
+      border-radius: 12px;
+      padding: 0.7rem 1.1rem;
+      font-size: 0.8rem;
+      color: var(--text);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+      animation: toastIn 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .toast.success { border-color: rgba(16,185,129,0.3); }
+    .toast.error { border-color: rgba(239,68,68,0.3); }
+    .toast.info { border-color: rgba(59,130,246,0.3); }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .main-content { margin-left: 0; }
+      .menu-toggle { display: block; }
+      .header { padding: 0 1rem; }
+      .panel { padding: 1rem; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .chat-container { flex-direction: column; height: auto; }
+      .chat-list { width: 100%; max-height: 200px; }
+      .booking-card .details { grid-template-columns: 1fr 1fr; }
+      .booking-detail-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 480px) {
+      .stats-grid { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+      .stat-card { padding: 0.8rem; }
+      .stat-card .value { font-size: 1.2rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="dash-layout">
+    <!-- ═══ SIDEBAR ═══ -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">Book<span>MyShot</span></div>
+      <nav class="sidebar-nav">
+        <a href="#" class="active" data-panel="home"><span class="icon">🏠</span> Home</a>
+        <a href="#" data-panel="dashboard"><span class="icon">📊</span> Dashboard</a>
+        <a href="#" data-panel="bookings"><span class="icon">📅</span> My Bookings</a>
+        <a href="#" data-panel="payments"><span class="icon">💰</span> Payments</a>
+        <a href="#" data-panel="favorites"><span class="icon">❤️</span> Favorites</a>
+        <a href="#" data-panel="messages"><span class="icon">💬</span> Messages</a>
+        <a href="#" data-panel="profile"><span class="icon">👤</span> My Profile</a>
+      </nav>
+      <div class="sidebar-footer">
+        <a href="/" target="_blank">🌐 View Site</a>
+        <a href="#" id="logoutBtn">🚪 Logout</a>
+      </div>
+    </aside>
+
+    <!-- ═══ MAIN CONTENT ═══ -->
+    <div class="main-content">
+      <header class="header">
+        <div class="header-left">
+          <button class="menu-toggle" id="menuToggle">☰</button>
+          <span style="color:var(--text-muted2);font-size:0.9rem;font-weight:500" id="pageTitle">Home</span>
+        </div>
+        <div class="header-right">
+          <button class="notif-btn" id="notifBtn" onclick="toggleNotifPanel()">🔔<span class="count" id="notifCount">0</span></button>
+          <span class="user-name" id="headerName">User</span>
+          <img class="avatar" id="headerAvatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100" alt="">
+        </div>
+      </header>
+
+      <!-- ─── HOME PANEL ─── -->
+      <div class="panel active" id="panel-home">
+        <div class="panel-header"><h2>Home</h2><p>Welcome back! Here's your overview</p></div>
+        <div class="stats-grid" id="homeStats">
+          <div class="stat-card"><div class="label">Total Bookings</div><div class="value" id="hStatBookings">0</div></div>
+          <div class="stat-card"><div class="label">Upcoming Events</div><div class="value blue" id="hStatUpcoming">0</div></div>
+          <div class="stat-card"><div class="label">Pending Payments</div><div class="value orange" id="hStatPendingPay">₹0</div></div>
+          <div class="stat-card"><div class="label">Total Spent</div><div class="value gold" id="hStatSpent">₹0</div></div>
+        </div>
+        <div class="section-title">📅 Upcoming Events</div>
+        <div id="homeUpcomingEvents"><div class="loader"></div></div>
+        <div class="section-title">💬 Recent Messages</div>
+        <div id="homeRecentMessages"><div class="loader"></div></div>
+        <div class="section-title">❤️ Favorite Creators</div>
+        <div id="homeFavCreators"><div class="loader"></div></div>
+        <div class="section-title">📋 Latest Booking Updates</div>
+        <div id="homeRecentBookings"><div class="loader"></div></div>
+      </div>
+
+      <!-- ─── DASHBOARD PANEL ─── -->
+      <div class="panel" id="panel-dashboard">
+        <div class="panel-header"><h2>Dashboard</h2><p>Your booking activity at a glance</p></div>
+        <div class="stats-grid" id="dashStats">
+          <div class="stat-card"><div class="label">Total Bookings</div><div class="value" id="statBookings">0</div></div>
+          <div class="stat-card"><div class="label">Upcoming Events</div><div class="value blue" id="statUpcoming">0</div></div>
+          <div class="stat-card"><div class="label">Pending Payments</div><div class="value orange" id="statPendingPay">₹0</div></div>
+          <div class="stat-card"><div class="label">Total Spent</div><div class="value gold" id="statSpent">₹0</div></div>
+        </div>
+        <div class="section-title">📅 Upcoming Events</div>
+        <div id="upcomingEvents"><div class="loader"></div></div>
+        <div class="section-title">💬 Recent Messages</div>
+        <div id="recentMessages"><div class="loader"></div></div>
+        <div class="section-title">❤️ Favorite Creators</div>
+        <div id="favCreators"><div class="loader"></div></div>
+        <div class="section-title">📋 Latest Booking Updates</div>
+        <div id="recentBookings"><div class="loader"></div></div>
+      </div>
+
+      <!-- ─── BOOKINGS PANEL ─── -->
+      <div class="panel" id="panel-bookings">
+        <div class="panel-header"><h2>My Bookings</h2><p>View and manage all your bookings</p></div>
+        <div id="bookingsList"><div class="loader"></div></div>
+      </div>
+
+      <!-- ─── BOOKING DETAIL PANEL (hidden, shown when viewing a booking) ─── -->
+      <div class="panel" id="panel-booking-detail">
+        <div id="bookingDetailContent"><div class="loader"></div></div>
+      </div>
+
+      <!-- ─── PAYMENTS PANEL ─── -->
+      <div class="panel" id="panel-payments">
+        <div class="panel-header"><h2>Payments</h2><p>View your payment history and status tracking</p></div>
+        <div id="paymentsContainer"><div class="loader"></div></div>
+      </div>
+
+      <!-- ─── FAVORITES PANEL ─── -->
+      <div class="panel" id="panel-favorites">
+        <div class="panel-header"><h2>Favorites</h2><p>Your favorite creators</p></div>
+        <div id="favoritesGrid"><div class="loader"></div></div>
+      </div>
+
+      <!-- ─── MESSAGES PANEL ─── -->
+      <div class="panel" id="panel-messages">
+        <div class="panel-header"><h2>Messages</h2><p>Chat with your creators</p></div>
+        <div class="chat-container">
+          <div class="chat-list" id="chatList"><div class="loader"></div></div>
+          <div class="chat-body">
+            <div class="chat-messages" id="chatBody"><div class="empty-state"><div class="icon">💬</div><h3>Select a conversation</h3></div></div>
+            <div class="chat-input-area">
+              <button class="attach-btn" onclick="attachImage()">📎</button>
+              <input type="text" id="chatInput" placeholder="Type a message...">
+              <button id="sendMsg">Send</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── PROFILE PANEL ─── -->
+      <div class="panel" id="panel-profile">
+        <div class="panel-header"><h2>My Profile</h2><p>Manage your personal information</p></div>
+        <div class="card" style="max-width:500px">
+          <form id="profileForm">
+            <div class="form-group"><label>Full Name</label><input type="text" id="profName" required></div>
+            <div class="form-group"><label>Phone</label><input type="tel" id="profPhone"></div>
+            <div class="form-group"><label>Address</label><textarea id="profAddress" rows="2"></textarea></div>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    // ═══════════════════════════════════════════════════════════════════════════
+    //  BookMyShot — User Dashboard (Premium) — FULLY DATABASE-DRIVEN
+    //  NO demo/hardcoded data. All data comes from the backend API.
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    let allBookings = [];
+    let allPaymentProofs = [];
+    let activeChatUser = null;
+    let screenshotDataUrl = null;
+
+    // ─── INIT ───────────────────────────────────────────────────────────────
+    document.addEventListener("DOMContentLoaded", async () => {
+      const user = API.getUser();
+      if (!user || !API.getToken()) { window.location.href = "/login.html"; return; }
+      document.getElementById("headerName").textContent = user.name || "User";
+      if (user.avatar) document.getElementById("headerAvatar").src = user.avatar;
+
+      // Sidebar navigation
+      document.querySelectorAll(".sidebar-nav a").forEach(a => {
+        a.addEventListener("click", e => {
+          e.preventDefault();
+          document.querySelectorAll(".sidebar-nav a").forEach(x => x.classList.remove("active"));
+          a.classList.add("active");
+          document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+          const panel = document.getElementById("panel-" + a.dataset.panel);
+          if (panel) panel.classList.add("active");
+          document.getElementById("pageTitle").textContent = a.textContent.trim();
+          document.getElementById("sidebar").classList.remove("open");
+
+          switch (a.dataset.panel) {
+            case "home": loadHome(); break;
+            case "dashboard": loadDashboard(); break;
+            case "bookings": loadBookings(); break;
+            case "payments": loadPayments(); break;
+            case "favorites": loadFavorites(); break;
+            case "messages": loadConversations(); break;
+            case "profile": loadProfile(); break;
+          }
+        });
+      });
+
+      document.getElementById("menuToggle").addEventListener("click", () => {
+        document.getElementById("sidebar").classList.toggle("open");
+      });
+
+      document.getElementById("logoutBtn").addEventListener("click", e => {
+        e.preventDefault();
+        API.clearAuth();
+        window.location.href = "/login.html";
+      });
+
+      document.getElementById("profileForm").addEventListener("submit", async e => {
+        e.preventDefault();
+        try {
+          await API.put("/auth/profile", {
+            name: document.getElementById("profName").value,
+            phone: document.getElementById("profPhone").value,
+            address: document.getElementById("profAddress").value,
+          });
+          document.getElementById("headerName").textContent = document.getElementById("profName").value;
+          toast("Profile updated", "success");
+        } catch (err) {
+          toast(err.message, "error");
+        }
+      });
+
+      loadHome();
+      loadNotifications();
+    });
+
+    // ─── UTILITY ────────────────────────────────────────────────────────────
+    function esc(s) {
+      if (!s) return '';
+      return String(s).replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>').replace(/"/g,'"').replace(/'/g,'&#039;');
+    }
+
+    function toast(msg, type) {
+      type = type || "info";
+      const c = document.getElementById("toastContainer");
+      const t = document.createElement("div");
+      t.className = "toast " + type;
+      t.textContent = msg;
+      c.appendChild(t);
+      setTimeout(() => t.remove(), 3000);
+    }
+
+    function switchPanel(panelId) {
+      const link = document.querySelector('.sidebar-nav a[data-panel="' + panelId + '"]');
+      if (link) link.click();
+    }
+
+    // ─── FETCH BOOKINGS (always from API) ──────────────────────────────────
+    async function fetchBookings() {
+      const d = await API.get("/bookings/my");
+      allBookings = d.bookings || [];
+      return allBookings;
+    }
+
+    async function fetchPaymentProofs() {
+      try {
+        const d = await API.get("/user/payment-proofs");
+        allPaymentProofs = d.proofs || [];
+      } catch { allPaymentProofs = []; }
+      return allPaymentProofs;
+    }
+
+    // ─── HOME ──────────────────────────────────────────────────────────────
+    async function loadHome() {
+      try {
+        const bookings = await fetchBookings();
+        const total = bookings.length;
+        const upcoming = bookings.filter(b => b.status === "Creator Accepted" || b.status === "Payment Submitted" || b.status === "Payment Approved" || b.status === "Event Scheduled").length;
+        const completed = bookings.filter(b => b.status === "Completed").length;
+        const spent = bookings.filter(b => b.status === "Completed").reduce((s, b) => s + (b.amount || b.budget || 0), 0);
+        const pendingPay = bookings.filter(b => b.status === "Creator Accepted" || b.status === "Payment Submitted" || b.status === "Payment Approved").reduce((s, b) => s + (b.remaining || b.amount || b.budget || 0), 0);
+
+        document.getElementById("hStatBookings").textContent = total;
+        document.getElementById("hStatUpcoming").textContent = upcoming;
+        document.getElementById("hStatSpent").textContent = "₹" + spent.toLocaleString();
+        document.getElementById("hStatPendingPay").textContent = "₹" + pendingPay.toLocaleString();
+
+        // Upcoming Events — only "Event Scheduled" or "Creator Accepted" with future dates
+        const upcomingEvents = bookings.filter(b =>
+          (b.status === "Event Scheduled" || b.status === "Creator Accepted" || b.status === "Payment Approved") &&
+          new Date(b.eventDate) > new Date()
+        );
+        document.getElementById("homeUpcomingEvents").innerHTML = upcomingEvents.length
+          ? upcomingEvents.slice(0, 5).map(b => {
+              const creatorName = b.creator?.user?.name || "Creator";
+              const eventDate = b.scheduledDate || b.eventDate;
+              const eventLocation = b.scheduledLocation || b.eventLocation || "TBD";
+              return `<div class="booking-card">
+                <div class="top"><h4>${esc(b.eventType || "Event")}</h4><span class="status-badge status-accepted">${b.status}</span></div>
+                <div class="details">
+                  <div class="item"><div class="lbl">Creator</div><div class="val">${esc(creatorName)}</div></div>
+                  <div class="item"><div class="lbl">Date</div><div class="val">${eventDate ? new Date(eventDate).toLocaleDateString() : "TBD"}</div></div>
+                  <div class="item"><div class="lbl">Time</div><div class="val">${b.scheduledTime || "TBD"}</div></div>
+                  <div class="item"><div class="lbl">Location</div><div class="val">${esc(eventLocation)}</div></div>
+                </div>
+              </div>`;
+            }).join("")
+          : `<div class="empty-state"><div class="icon">📅</div><h3>No Upcoming Events</h3><p>Your upcoming events will appear here once a creator schedules them.</p></div>`;
+
+        // Recent Messages — from API
+        try {
+          const d = await API.get("/messages/conversations");
+          const conversations = d.conversations || [];
+          document.getElementById("homeRecentMessages").innerHTML = conversations.length
+            ? conversations.slice(0, 3).map(c => {
+                const u = c.user || c;
+                return `<div class="creator-mini" onclick="switchPanel('messages')" style="cursor:pointer">
+                  <img src="${u.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}" alt="">
+                  <div class="info">
+                    <h5>${esc(u.name || "Creator")}</h5>
+                    <p>${esc(c.lastMessage || "No messages yet")}</p>
+                  </div>
+                  ${c.unread ? `<span style="background:var(--accent-gold);color:#fff;font-size:0.6rem;padding:0.15rem 0.45rem;border-radius:50%;font-weight:600">${c.unread}</span>` : ""}
+                </div>`;
+              }).join("")
+            : `<div class="empty-state"><div class="icon">💬</div><h3>No messages</h3></div>`;
+        } catch {
+          document.getElementById("homeRecentMessages").innerHTML = `<div class="empty-state"><div class="icon">💬</div><h3>No messages</h3></div>`;
+        }
+
+        // Favorite Creators — from API
+        try {
+          const d = await API.get("/user/favorites");
+          const favorites = d.favorites || [];
+          document.getElementById("homeFavCreators").innerHTML = favorites.length
+            ? favorites.slice(0, 3).map(f => {
+                const c = f.creator || f;
+                return `<div class="creator-mini">
+                  <img src="${c.user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}" alt="">
+                  <div class="info">
+                    <h5>${esc(c.user?.name || "Creator")}</h5>
+                    <p>${esc(c.specialty || "Photographer")} · ${esc(c.city || "")}</p>
+                  </div>
+                </div>`;
+              }).join("")
+            : `<div class="empty-state"><div class="icon">❤️</div><h3>No favorites yet</h3></div>`;
+        } catch {
+          document.getElementById("homeFavCreators").innerHTML = `<div class="empty-state"><div class="icon">❤️</div><h3>No favorites yet</h3></div>`;
+        }
+
+        // Recent Bookings
+        const recent = bookings.slice(0, 5);
+        document.getElementById("homeRecentBookings").innerHTML = recent.length
+          ? recent.map(b => renderBookingCard(b)).join("")
+          : `<div class="empty-state"><div class="icon">📅</div><h3>No bookings yet</h3><p>Browse creators and book your dream photographer</p><a href="/" class="btn btn-primary" style="margin-top:1rem">Browse Creators</a></div>`;
+      } catch (e) {
+        document.getElementById("homeRecentBookings").innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><h3>Error loading data</h3></div>`;
+      }
+    }
+
+    // ─── DASHBOARD ──────────────────────────────────────────────────────────
+    async function loadDashboard() {
+      try {
+        const bookings = await fetchBookings();
+        const total = bookings.length;
+        const upcoming = bookings.filter(b => b.status === "Creator Accepted" || b.status === "Payment Submitted" || b.status === "Payment Approved" || b.status === "Event Scheduled").length;
+        const completed = bookings.filter(b => b.status === "Completed").length;
+        const spent = bookings.filter(b => b.status === "Completed").reduce((s, b) => s + (b.amount || b.budget || 0), 0);
+        const pendingPay = bookings.filter(b => b.status === "Creator Accepted" || b.status === "Payment Submitted" || b.status === "Payment Approved").reduce((s, b) => s + (b.remaining || b.amount || b.budget || 0), 0);
+
+        document.getElementById("statBookings").textContent = total;
+        document.getElementById("statUpcoming").textContent = upcoming;
+        document.getElementById("statSpent").textContent = "₹" + spent.toLocaleString();
+        document.getElementById("statPendingPay").textContent = "₹" + pendingPay.toLocaleString();
+
+        // Upcoming Events
+        const upcomingEvents = bookings.filter(b =>
+          (b.status === "Event Scheduled" || b.status === "Creator Accepted" || b.status === "Payment Approved") &&
+          new Date(b.eventDate) > new Date()
+        );
+        document.getElementById("upcomingEvents").innerHTML = upcomingEvents.length
+          ? upcomingEvents.slice(0, 5).map(b => {
+              const creatorName = b.creator?.user?.name || "Creator";
+              const eventDate = b.scheduledDate || b.eventDate;
+              const eventLocation = b.scheduledLocation || b.eventLocation || "TBD";
+              return `<div class="booking-card">
+                <div class="top"><h4>${esc(b.eventType || "Event")}</h4><span class="status-badge status-accepted">${b.status}</span></div>
+                <div class="details">
+                  <div class="item"><div class="lbl">Creator</div><div class="val">${esc(creatorName)}</div></div>
+                  <div class="item"><div class="lbl">Date</div><div class="val">${eventDate ? new Date(eventDate).toLocaleDateString() : "TBD"}</div></div>
+                  <div class="item"><div class="lbl">Time</div><div class="val">${b.scheduledTime || "TBD"}</div></div>
+                  <div class="item"><div class="lbl">Location</div><div class="val">${esc(eventLocation)}</div></div>
+                </div>
+              </div>`;
+            }).join("")
+          : `<div class="empty-state"><div class="icon">📅</div><h3>No Upcoming Events</h3><p>Your upcoming events will appear here once a creator schedules them.</p></div>`;
+
+        // Recent Messages
+        try {
+          const d = await API.get("/messages/conversations");
+          const conversations = d.conversations || [];
+          document.getElementById("recentMessages").innerHTML = conversations.length
+            ? conversations.slice(0, 3).map(c => {
+                const u = c.user || c;
+                return `<div class="creator-mini" onclick="switchPanel('messages')" style="cursor:pointer">
+                  <img src="${u.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}" alt="">
+                  <div class="info">
+                    <h5>${esc(u.name || "Creator")}</h5>
+                    <p>${esc(c.lastMessage || "No messages yet")}</p>
+                  </div>
+                  ${c.unread ? `<span style="background:var(--accent-gold);color:#fff;font-size:0.6rem;padding:0.15rem 0.45rem;border-radius:50%;font-weight:600">${c.unread}</span>` : ""}
+                </div>`;
+              }).join("")
+            : `<div class="empty-state"><div class="icon">💬</div><h3>No messages</h3></div>`;
+        } catch {
+          document.getElementById("recentMessages").innerHTML = `<div class="empty-state"><div class="icon">💬</div><h3>No messages</h3></div>`;
+        }
+
+        // Favorite Creators
+        try {
+          const d = await API.get("/user/favorites");
+          const favorites = d.favorites || [];
+          document.getElementById("favCreators").innerHTML = favorites.length
+            ? favorites.slice(0, 3).map(f => {
+                const c = f.creator || f;
+                return `<div class="creator-mini">
+                  <img src="${c.user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}" alt="">
+                  <div class="info">
+                    <h5>${esc(c.user?.name || "Creator")}</h5>
+                    <p>${esc(c.specialty || "Photographer")} · ${esc(c.city || "")}</p>
+                  </div>
+                </div>`;
+              }).join("")
+            : `<div class="empty-state"><div class="icon">❤️</div><h3>No favorites yet</h3></div>`;
+        } catch {
+          document.getElementById("favCreators").innerHTML = `<div class="empty-state"><div class="icon">❤️</div><h3>No favorites yet</h3></div>`;
+        }
+
+        // Recent Bookings
+        const recent = bookings.slice(0, 5);
+        document.getElementById("recentBookings").innerHTML = recent.length
+          ? recent.map(b => renderBookingCard(b)).join("")
+          : `<div class="empty-state"><div class="icon">📅</div><h3>No bookings yet</h3><p>Browse creators and book your dream photographer</p><a href="/" class="btn btn-primary" style="margin-top:1rem">Browse Creators</a></div>`;
+      } catch (e) {
+        document.getElementById("recentBookings").innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><h3>Error loading data</h3></div>`;
+      }
+    }
+
+    // ─── BOOKINGS ───────────────────────────────────────────────────────────
+    async function loadBookings() {
+      try {
+        const bookings = await fetchBookings();
+        document.getElementById("bookingsList").innerHTML = bookings.length
+          ? bookings.map(b => renderFullBookingCard(b)).join("")
+          : `<div class="empty-state"><div class="icon">📅</div><h3>No bookings yet</h3><p>Start by browsing creators and sending a booking request</p><a href="/" class="btn btn-primary" style="margin-top:1rem">Browse Creators</a></div>`;
+      } catch (e) {
+        document.getElementById("bookingsList").innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><h3>Error loading bookings</h3></div>`;
+      }
+    }
+
+    function renderBookingCard(b) {
+      const statusClass = "status-" + (b.status || "pending").toLowerCase().replace(/\s+/g, '-');
+      const creatorName = b.creator?.user?.name || b.clientName || "Creator";
+      const amount = b.amount || b.budget || 0;
+      return `<div class="booking-card">
+        <div class="top"><h4>${esc(b.eventType || "Event")} · ${esc(creatorName)}</h4><span class="status-badge ${statusClass}">${b.status}</span></div>
+        <div class="details">
+          <div class="item"><div class="lbl">Amount</div><div class="val">₹${amount.toLocaleString()}</div></div>
+          <div class="item"><div class="lbl">Date</div><div class="val">${b.eventDate ? new Date(b.eventDate).toLocaleDateString() : "TBD"}</div></div>
+          <div class="item"><div class="lbl">Payment</div><div class="val">${getPaymentStatusLabel(b.paymentStatus)}</div></div>
+        </div>
+      </div>`;
+    }
+
+    function renderFullBookingCard(b) {
+      const statusClass = "status-" + (b.status || "pending").toLowerCase().replace(/\s+/g, '-');
+      const creatorName = b.creator?.user?.name || b.clientName || "Creator";
+      const amount = b.amount || b.budget || 0;
+      const advance = b.advancePaid || 0;
+      const remaining = b.remaining || (amount - advance);
+      const bookingId = b._id || "—";
+      const shortId = bookingId.length > 8 ? bookingId.slice(-8).toUpperCase() : bookingId;
+      const bookingDate = b.createdAt || b.eventDate;
+      const packageName = b.packageName || "Standard";
+      const timeline = buildTimeline(b);
+
+      const needsPayment = (b.status === "Creator Accepted" || b.status === "Payment Submitted" || b.status === "Payment Approved") && remaining > 0 && b.paymentStatus !== "paid";
+      const hasSubmittedPayment = b.paymentStatus === "proof-submitted" || b.paymentStatus === "pending-verification";
+      const isPaid = b.paymentStatus === "paid" || (remaining <= 0 && advance > 0);
+      const isScheduled = b.status === "Event Scheduled";
+
+      return `<div class="booking-card">
+        <div class="top">
+          <div>
+            <h4>${esc(b.eventType || "Event")}</h4>
+            <span style="font-size:0.7rem;color:var(--text-muted2)">ID: #${shortId}</span>
+          </div>
+          <span class="status-badge ${statusClass}">${b.status}</span>
+        </div>
+        <div class="details">
+          <div class="item"><div class="lbl">Booking Date</div><div class="val">${bookingDate ? new Date(bookingDate).toLocaleDateString() : "TBD"}</div></div>
+          <div class="item"><div class="lbl">Event Date</div><div class="val">${b.eventDate ? new Date(b.eventDate).toLocaleDateString() : "TBD"}</div></div>
+          <div class="item"><div class="lbl">Creator</div><div class="val">${esc(creatorName)}</div></div>
+          <div class="item"><div class="lbl">Package</div><div class="val">${esc(packageName)}</div></div>
+          <div class="item"><div class="lbl">Total Amount</div><div class="val">₹${amount.toLocaleString()}</div></div>
+          <div class="item"><div class="lbl">Advance Paid</div><div class="val" style="color:var(--accent-green)">₹${advance.toLocaleString()}</div></div>
+          <div class="item"><div class="lbl">Remaining</div><div class="val" style="color:${remaining > 0 ? 'var(--accent-gold)' : 'var(--accent-green)'}">₹${remaining.toLocaleString()}</div></div>
+          <div class="item"><div class="lbl">Payment</div><div class="val">${getPaymentStatusLabel(b.paymentStatus)}</div></div>
+        </div>
+        ${timeline}
+        <div class="actions">
+          <button class="btn btn-outline btn-sm" onclick="viewBookingDetail('${b._id}')">👁️ View Details</button>
+          ${needsPayment ? `<button class="btn btn-primary btn-sm" onclick="makePayment('${b._id}')">💳 Make Payment</button>` : ""}
+          ${hasSubmittedPayment ? `<button class="btn btn-outline btn-sm" onclick="viewBookingDetail('${b._id}')">👁️ View Payment</button>` : ""}
+          ${isPaid ? `<span style="font-size:0.75rem;color:var(--accent-green)">✅ Fully Paid</span>` : ""}
+          ${isScheduled ? `<span style="font-size:0.75rem;color:var(--info)">📅 ${b.scheduledDate ? new Date(b.scheduledDate).toLocaleDateString() : ''} ${b.scheduledTime || ''}</span>` : ""}
+          ${b.status === "Completed" ? `<button class="btn btn-outline btn-sm" onclick="downloadInvoice('${b._id}')">📄 Invoice</button>` : ""}
+        </div>
+      </div>`;
+    }
+
+    function getPaymentStatusLabel(status) {
+      const labels = {
+        "unpaid": "Unpaid",
+        "partial": "Partial",
+        "proof-submitted": "Pending Verification",
+        "pending-verification": "Pending Verification",
+        "verified": "Approved ✅",
+        "rejected": "Rejected ❌",
+        "paid": "Paid ✅"
+      };
+      return labels[status] || status || "—";
+    }
+
+    function buildTimeline(b) {
+      const status = b.status || "Booking Created";
+      const steps = [
+        { key: "created", label: "Booking Created", icon: "📋", done: true },
+        { key: "accepted", label: "Creator Accepted", icon: "✅", done: status === "Creator Accepted" || status === "Payment Submitted" || status === "Payment Approved" || status === "Event Scheduled" || status === "Completed" },
+        { key: "payment", label: "Payment Submitted", icon: "💰", done: b.paymentStatus === "proof-submitted" || b.paymentStatus === "verified" || b.paymentStatus === "paid" },
+        { key: "approved", label: "Payment Approved", icon: "✔️", done: b.paymentStatus === "verified" || b.paymentStatus === "paid" },
+        { key: "scheduled", label: "Event Scheduled", icon: "📅", done: status === "Event Scheduled" || status === "Completed" },
+        { key: "completed", label: "Completed", icon: "🎉", done: status === "Completed" }
+      ];
+
+      let currentActive = false;
+      let html = '<div class="booking-timeline">';
+      steps.forEach((s, i) => {
+        if (!s.done && !currentActive) currentActive = true;
+        const cls = s.done ? "done" : (currentActive && !s.done ? "active" : "pending");
+        if (!s.done && currentActive) currentActive = false;
+        html += `<div class="timeline-step ${cls}"><span class="tl-icon">${s.icon}</span> ${s.label}</div>`;
+        if (i < steps.length - 1) html += '<span class="timeline-arrow">→</span>';
+      });
+      html += '</div>';
+      return html;
+    }
+
+    window.downloadInvoice = async (id) => {
+      try {
+        const res = await fetch(`/api/user/bookings/${id}/invoice`, { headers: { Authorization: `Bearer ${API.getToken()}` } });
+        const blob = await res.blob();
+        const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "invoice.pdf"; a.click();
+      } catch { toast("Failed to download invoice", "error"); }
+    };
+
+    // ─── BOOKING DETAIL ─────────────────────────────────────────────────────
+    window.viewBookingDetail = async (bookingId) => {
+      // Fetch fresh booking data from API
+      try {
+        const d = await API.get("/bookings/my");
+        const booking = (d.bookings || []).find(b => b._id === bookingId);
+        if (!booking) { toast("Booking not found", "error"); return; }
+
+        document.querySelectorAll(".sidebar-nav a").forEach(x => x.classList.remove("active"));
+        document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+        document.getElementById("panel-booking-detail").classList.add("active");
+        document.getElementById("pageTitle").textContent = "Booking Details";
+
+        renderBookingDetail(booking);
+      } catch (e) {
+        toast("Failed to load booking details", "error");
+      }
+    };
+
+    function renderBookingDetail(booking) {
+      const container = document.getElementById("bookingDetailContent");
+      const creatorName = booking.creator?.user?.name || booking.clientName || "Creator";
+      const creatorPhone = booking.creator?.user?.phone || "—";
+      const amount = booking.amount || booking.budget || 0;
+      const advance = booking.advancePaid || 0;
+      const remaining = booking.remaining || (amount - advance);
+      const bookingId = booking._id || "—";
+      const shortId = bookingId.length > 8 ? bookingId.slice(-8).toUpperCase() : bookingId;
+      const timeline = buildTimeline(booking);
+
+      const needsPayment = (booking.status === "Creator Accepted" || booking.status === "Payment Submitted" || booking.status === "Payment Approved") && remaining > 0 && booking.paymentStatus !== "paid";
+      const hasSubmittedPayment = booking.paymentStatus === "proof-submitted" || booking.paymentStatus === "pending-verification";
+      const isPaid = booking.paymentStatus === "paid" || (remaining <= 0 && advance > 0);
+      const isRejected = booking.paymentStatus === "rejected";
+      const isScheduled = booking.status === "Event Scheduled";
+
+      let html = '';
+      html += '<div style="margin-bottom:1rem"><button class="btn btn-outline btn-sm" onclick="switchPanel(\'bookings\')">← Back to Bookings</button></div>';
+
+      html += '<div class="booking-detail-grid">';
+
+      // ─── Booking Information ───
+      html += '<div class="detail-section">';
+      html += '<h3>📋 Booking Information</h3>';
+      html += '<div class="detail-row"><span class="lbl">Booking ID</span><span class="val">#' + shortId + '</span></div>';
+      html += '<div class="detail-row"><span class="lbl">Booking Date</span><span class="val">' + (booking.createdAt ? new Date(booking.createdAt).toLocaleDateString() : "—") + '</span></div>';
+      html += '<div class="detail-row"><span class="lbl">Event Type</span><span class="val">' + esc(booking.eventType || "—") + '</span></div>';
+      html += '<div class="detail-row"><span class="lbl">Package</span><span class="val">' + esc(booking.packageName || "Standard") + '</span></div>';
+      html += '<div class="detail-row"><span class="lbl">Creator</span><span class="val">' + esc(creatorName) + '</span></div>';
+      html += '<div class="detail-row"><span class="lbl">Creator Contact</span><span class="val">' + esc(creatorPhone) + '</span></div>';
+      html += '<div class="detail-row"><span class="lbl">Event Date</span><span class="val">' + (booking.eventDate ? new Date(booking.eventDate).toLocaleDateString() : "TBD") + '</span></div>';
+      html += '<div class="detail-row"><span class="lbl">Event Time</span><span class="val">' + (booking.eventTime || "TBD") + '</span></div>';
+      html += '<div class="detail-row"><span class="lbl">Location</span><span class="val">' + esc(booking.eventLocation || "TBD") + '</span></div>';
+      html += '<div class="detail-row"><span class="lbl">Total Amount</span><span class="val">₹' + amount.toLocaleString() + '</span></div>';
+      html += '<div class="detail-row"><span class="lbl">Paid Amount</span><span class="val" style="color:var(--accent-green)">₹' + advance.toLocaleString() + '</span></div>';
+      html += '<div class="detail-row"><span class="lbl">Remaining</span><span class="val" style="color:' + (remaining > 0 ? 'var(--accent-gold)' : 'var(--accent-green)') + '">₹' + remaining.toLocaleString() + '</span></div>';
+      html += '<div class="detail-row"><span class="lbl">Payment Status</span><span class="val">' + getPaymentStatusLabel(booking.paymentStatus) + '</span></div>';
+      html += '<div class="detail-row"><span class="lbl">Booking Status</span><span class="val">' + (booking.status || "—") + '</span></div>';
+      if (booking.creatorNotes) {
+        html += '<div class="detail-row"><span class="lbl">Creator Notes</span><span class="val">' + esc(booking.creatorNotes) + '</span></div>';
+      }
+      html += '</div>';
+
+      // ─── Event Schedule (if scheduled) ───
+      if (isScheduled) {
+        html += '<div class="detail-section">';
+        html += '<h3>📅 Scheduled Event Details</h3>';
+        html += '<div class="detail-row"><span class="lbl">Event Date</span><span class="val">' + (booking.scheduledDate ? new Date(booking.scheduledDate).toLocaleDateString() : "—") + '</span></div>';
+        html += '<div class="detail-row"><span class="lbl">Event Time</span><span class="val">' + (booking.scheduledTime || "—") + '</span></div>';
+        html += '<div class="detail-row"><span class="lbl">Location</span><span class="val">' + esc(booking.scheduledLocation || "—") + '</span></div>';
+        if (booking.creatorNotes) {
+          html += '<div class="detail-row"><span class="lbl">Creator Notes</span><span class="val">' + esc(booking.creatorNotes) + '</span></div>';
+        }
+        html += '</div>';
+      }
+
+      // ─── Payment Section ───
+      html += '<div class="detail-section">';
+      html += '<h3>💰 Payment</h3>';
+
+      if (isPaid) {
+        html += '<div style="padding:1rem;background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.15);border-radius:8px;text-align:center">';
+        html += '<div style="font-size:2rem;margin-bottom:0.5rem">✅</div>';
+        html += '<p style="color:var(--accent-green);font-weight:500;margin:0">Payment completed!</p>';
+        html += '<p style="color:var(--text-muted2);font-size:0.8rem;margin-top:0.3rem">Total Paid: ₹' + advance.toLocaleString() + '</p>';
+        html += '</div>';
+      } else if (isRejected) {
+        html += '<div style="padding:1rem;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:8px;margin-bottom:1rem">';
+        html += '<div style="font-size:1.5rem;margin-bottom:0.3rem">❌</div>';
+        html += '<p style="color:var(--accent-red);font-weight:500;margin:0">Your last payment was rejected.</p>';
+        html += '<p style="color:var(--text-muted2);font-size:0.8rem;margin-top:0.3rem">Please submit a new payment proof below.</p>';
+        html += '</div>';
+        html += renderPaymentForm(booking, remaining);
+      } else if (needsPayment) {
+        if (hasSubmittedPayment) {
+          html += '<div style="padding:0.75rem;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.15);border-radius:8px;text-align:center;margin-bottom:1rem">';
+          html += '<p style="color:var(--accent-gold);font-weight:500;margin:0;font-size:0.85rem">⏳ Previous payment pending verification</p>';
+          html += '</div>';
+        }
+        html += renderPaymentForm(booking, remaining);
+      } else {
+        html += '<div style="padding:1rem;background:rgba(255,255,255,0.02);border:1px solid var(--border-light);border-radius:8px;text-align:center">';
+        html += '<p style="color:var(--text-muted2);margin:0">No payment action needed at this time.</p>';
+        html += '</div>';
+      }
+
+      html += '</div>'; // .detail-section
+
+      html += '</div>'; // .booking-detail-grid
+
+      // Timeline
+      html += '<div style="margin-top:1.5rem">';
+      html += '<h3 style="font-family:\'Cormorant Garamond\',serif;font-size:1rem;color:var(--text);margin:0 0 0.5rem">📊 Booking Timeline</h3>';
+      html += timeline;
+      html += '</div>';
+
+      container.innerHTML = html;
+
+      // Bind payment form submit if present
+      const form = document.getElementById("paymentProofForm");
+      if (form) {
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const transactionId = document.getElementById("payTransactionId").value;
+          const notes = document.getElementById("payNotes").value;
+          const amountInput = document.getElementById("payAmount").value;
+          const payAmount = parseInt(amountInput) || remaining;
+
+          if (!transactionId) { toast("Please enter a UTR / Transaction ID", "error"); return; }
+          if (!screenshotDataUrl) { toast("Please upload a payment screenshot", "error"); return; }
+
+          try {
+            await API.post("/user/payment-proofs", {
+              bookingId: booking._id,
+              screenshot: screenshotDataUrl,
+              transactionId,
+              note: notes,
+              amount: payAmount
+            });
+            toast("Payment proof submitted successfully! Status: Pending Verification", "success");
+            viewBookingDetail(booking._id);
+          } catch (err) {
+            toast(err.message || "Failed to submit payment proof", "error");
+          }
+        });
+      }
+    }
+
+    function renderPaymentForm(booking, remaining) {
+      const creatorName = booking.creator?.user?.name || booking.clientName || "Creator";
+      return `
+        <div style="margin-top:1rem">
+          <h4 style="font-size:0.9rem;color:var(--text);margin:0 0 0.5rem">💳 Make a Payment</h4>
+          <p style="font-size:0.8rem;color:var(--text-muted2);margin:0 0 1rem">
+            Booking: ${esc(booking.eventType || "Event")} with ${esc(creatorName)}<br>
+            Amount Due: <strong style="color:var(--accent-gold)">₹${remaining.toLocaleString()}</strong>
+          </p>
+          <div class="qr-section">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=upi://pay?pa=bookmyshot@upi%26am=${remaining}%26tn=BookingPayment" alt="QR Code">
+            <div class="upi-id">bookmyshot@upi</div>
+            <div class="upi-label">Scan to pay via any UPI app</div>
+          </div>
+          <div class="card">
+            <form id="paymentProofForm">
+              <div class="form-group">
+                <label>Amount to Pay (₹)</label>
+                <input type="number" id="payAmount" value="${remaining}" min="1" max="${remaining}" required>
+              </div>
+              <div class="form-group">
+                <label>UTR / Transaction ID *</label>
+                <input type="text" id="payTransactionId" placeholder="e.g. HDFC123456789" required>
+              </div>
+              <div class="form-group">
+                <label>Payment Notes (optional)</label>
+                <textarea id="payNotes" placeholder="Any additional details about this payment..." rows="2"></textarea>
+              </div>
+              <div class="form-group">
+                <label>Upload Payment Screenshot *</label>
+                <div class="upload-area" onclick="document.getElementById('screenshotInput').click()">
+                  <div class="icon">📤</div>
+                  <p id="screenshotLabel">Click to upload payment screenshot</p>
+                  <input type="file" id="screenshotInput" accept="image/*" onchange="handleScreenshotUpload(event)">
+                  <img id="screenshotPreview" class="upload-preview" style="display:none">
+                </div>
+                <div class="upload-buttons">
+                  <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('screenshotInput').click()">📁 Gallery</button>
+                  <button type="button" class="btn btn-outline btn-sm" onclick="captureCamera()">📷 Camera</button>
+                </div>
+              </div>
+              <div style="display:flex;gap:1rem;justify-content:center;margin-top:1rem">
+                <button type="submit" class="btn btn-primary">Submit Payment Proof</button>
+              </div>
+            </form>
+          </div>
+        </div>`;
+    }
+
+    window.makePayment = (bookingId) => {
+      viewBookingDetail(bookingId);
+    };
+
+    // ─── PAYMENTS ───────────────────────────────────────────────────────────
+    let selectedPaymentBooking = null;
+
+    async function loadPayments() {
+      try {
+        const bookings = await fetchBookings();
+        const proofs = await fetchPaymentProofs();
+
+        renderPaymentsView(bookings, proofs);
+      } catch (e) {
+        document.getElementById("paymentsContainer").innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><h3>Error loading payments</h3></div>`;
+      }
+    }
+
+    function renderPaymentsView(bookings, proofs) {
+      const container = document.getElementById("paymentsContainer");
+      let html = '';
+
+      // Pending Payments
+      const pendingBookings = bookings.filter(b =>
+        b.status === "Creator Accepted" &&
+        b.paymentStatus !== "paid" &&
+        b.paymentStatus !== "verified"
+      );
+
+      if (pendingBookings.length > 0) {
+        html += `<div class="section-title">💳 Pending Payments</div>`;
+        html += `<p style="font-size:0.8rem;color:var(--text-muted2);margin:0 0 1rem">Select a booking below to make a payment</p>`;
+        html += pendingBookings.map(b => {
+          const remaining = b.remaining || (b.amount || b.budget || 0) - (b.advancePaid || 0);
+          const isSelected = selectedPaymentBooking && selectedPaymentBooking._id === b._id;
+          const selectedClass = isSelected ? ' style="border-color:var(--gold);background:rgba(201,169,98,0.08)"' : '';
+          return `<div class="select-card" onclick="selectPaymentItem('${b._id}')"${selectedClass}>
+            <h4>${esc(b.eventType || "Event")} · ${esc(b.creator?.user?.name || "Creator")}</h4>
+            <div class="meta">
+              <span>📅 ${b.eventDate ? new Date(b.eventDate).toLocaleDateString() : "TBD"}</span>
+              <span>💰 Total: ₹${(b.amount || b.budget || 0).toLocaleString()}</span>
+              <span style="color:var(--accent-gold)">Due: ₹${remaining.toLocaleString()}</span>
+              <span class="status-badge status-unpaid">Unpaid</span>
+            </div>
+          </div>`;
+        }).join("");
+      } else {
+        html += `<div class="empty-state"><div class="icon">💰</div><h3>No pending payments</h3><p>All your payments are up to date.</p></div>`;
+      }
+
+      // Payment form if selected
+      if (selectedPaymentBooking) {
+        const remaining = selectedPaymentBooking.remaining || (selectedPaymentBooking.amount || selectedPaymentBooking.budget || 0) - (selectedPaymentBooking.advancePaid || 0);
+        html += `<div class="section-title" style="margin-top:1.5rem">📤 Submit Payment</div>`;
+        html += renderPaymentForm(selectedPaymentBooking, remaining);
+      }
+
+      // Payment History
+      if (proofs.length) {
+        html += `<div class="section-title" style="margin-top:1.5rem">📜 Payment History</div>`;
+        html += proofs.map(p => {
+          const statusClass = "status-" + (p.status === "verified" ? "approved" : p.status);
+          const statusLabel = p.status === "verified" ? "Approved ✅" : p.status === "rejected" ? "Rejected ❌" : "Pending Verification";
+          const bookingInfo = p.booking || {};
+          const uploadDate = p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "—";
+          const verifiedDate = p.verifiedAt ? new Date(p.verifiedAt).toLocaleDateString() : "—";
+
+          return `<div class="payment-detail-card">
+            <div class="top">
+              <div>
+                <h4>${esc(bookingInfo.eventType || "Booking")}</h4>
+                <span style="font-size:0.7rem;color:var(--text-muted2)">Booking ID: #${(p.booking?._id || "").slice(-8).toUpperCase()}</span>
+              </div>
+              <span class="status-badge ${statusClass}">${statusLabel}</span>
+            </div>
+            <div class="details">
+              <div class="item"><div class="lbl">Amount Paid</div><div class="val" style="color:var(--accent-green)">₹${(p.amount || 0).toLocaleString()}</div></div>
+              <div class="item"><div class="lbl">UTR</div><div class="val">${esc(p.transactionId || "—")}</div></div>
+              <div class="item"><div class="lbl">Submitted On</div><div class="val">${uploadDate}</div></div>
+              <div class="item"><div class="lbl">Approved On</div><div class="val">${p.status === "verified" ? verifiedDate : "—"}</div></div>
+            </div>
+            ${p.screenshot ? `<div class="proof-preview"><img src="${p.screenshot}" alt="Payment Screenshot" onclick="window.open(this.src,'_blank')"></div>` : ""}
+            ${p.note ? `<div style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-muted2)">📝 Note: ${esc(p.note)}</div>` : ""}
+            ${p.status === "rejected" && p.reason ? `<div class="rejection-reason">❌ Rejection Reason: ${esc(p.reason)}</div>` : ""}
+          </div>`;
+        }).join("");
+      } else {
+        html += `<div class="section-title" style="margin-top:1.5rem">📜 Payment History</div>`;
+        html += `<div class="empty-state"><div class="icon">💰</div><h3>No payment history yet</h3><p>Your payment records will appear here once you submit a payment.</p></div>`;
+      }
+
+      container.innerHTML = html;
+
+      const form = document.getElementById("paymentProofForm");
+      if (form) {
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const transactionId = document.getElementById("payTransactionId").value;
+          const notes = document.getElementById("payNotes").value;
+          const amountInput = document.getElementById("payAmount").value;
+          const payAmount = parseInt(amountInput) || 0;
+
+          if (!transactionId) { toast("Please enter a UTR / Transaction ID", "error"); return; }
+          if (!screenshotDataUrl) { toast("Please upload a payment screenshot", "error"); return; }
+          if (!selectedPaymentBooking) { toast("Please select a booking first", "error"); return; }
+
+          try {
+            await API.post("/user/payment-proofs", {
+              bookingId: selectedPaymentBooking._id,
+              screenshot: screenshotDataUrl,
+              transactionId,
+              note: notes,
+              amount: payAmount
+            });
+            toast("Payment proof submitted successfully! Status: Pending Verification", "success");
+            screenshotDataUrl = null;
+            selectedPaymentBooking = null;
+            loadPayments();
+          } catch (err) {
+            toast(err.message || "Failed to submit payment proof", "error");
+          }
+        });
+      }
+    }
+
+    window.selectPaymentItem = (id) => {
+      const booking = allBookings.find(b => b._id === id);
+      if (booking) {
+        selectedPaymentBooking = booking;
+      }
+      loadPayments();
+    };
+
+    // ─── SCREENSHOT HANDLING ───────────────────────────────────────────────
+    function handleScreenshotUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        screenshotDataUrl = e.target.result;
+        const preview = document.getElementById("screenshotPreview");
+        if (preview) { preview.src = screenshotDataUrl; preview.style.display = "block"; }
+        const label = document.getElementById("screenshotLabel");
+        if (label) label.textContent = "✅ Screenshot uploaded!";
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function captureCamera() {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+      input.capture = "environment";
+      input.onchange = function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+          screenshotDataUrl = ev.target.result;
+          const preview = document.getElementById("screenshotPreview");
+          if (preview) { preview.src = screenshotDataUrl; preview.style.display = "block"; }
+          const label = document.getElementById("screenshotLabel");
+          if (label) label.textContent = "✅ Screenshot captured!";
+        };
+        reader.readAsDataURL(file);
+      };
+      input.click();
+    }
+
+    // ─── FAVORITES ──────────────────────────────────────────────────────────
+    async function loadFavorites() {
+      try {
+        const d = await API.get("/user/favorites");
+        const favorites = d.favorites || [];
+        document.getElementById("favoritesGrid").innerHTML = favorites.length
+          ? `<div class="fav-grid">${favorites.map(f => {
+            const c = f.creator || f;
+            return `<div class="fav-card">
+              <img src="${c.user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200'}" alt="">
+              <div class="body">
+                <h4>${esc(c.user?.name || "Creator")}</h4>
+                <p>${esc(c.specialty || "Photographer")} · ${esc(c.city || "")}</p>
+                <div class="actions">
+                  <button class="btn btn-outline btn-sm" onclick="viewCreatorProfile('${c.user?._id || f._id}')">👁️ View Profile</button>
+                  <button class="btn btn-primary btn-sm" onclick="sendInquiry('${esc(c.user?.name || "Creator")}')">📩 Send Inquiry</button>
+                  <button class="btn btn-outline btn-sm" onclick="removeFavorite('${f._id}')">🗑️ Remove</button>
+                </div>
+              </div>
+            </div>`;
+          }).join("")}</div>`
+          : `<div class="empty-state"><div class="icon">❤️</div><h3>No favorites yet</h3><p>Save your favorite creators for quick access</p><a href="/" class="btn btn-primary" style="margin-top:1rem">Browse Creators</a></div>`;
+      } catch (e) {
+        document.getElementById("favoritesGrid").innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><h3>Error loading favorites</h3></div>`;
+      }
+    }
+
+    window.viewCreatorProfile = (id) => {
+      window.open("/creator-portfolio.html?id=" + id, "_blank");
+    };
+
+    window.sendInquiry = (creatorName) => {
+      toast("Redirecting to " + creatorName + "'s profile to send inquiry", "info");
+      window.open("/creator-portfolio.html", "_blank");
+    };
+
+    window.removeFavorite = async (id) => {
+      try { await API.delete("/user/favorites/" + id); toast("Removed from favorites", "info"); loadFavorites(); }
+      catch { toast("Failed to remove", "error"); }
+    };
+
+    // ─── MESSAGES ───────────────────────────────────────────────────────────
+    async function loadConversations() {
+      try {
+        const d = await API.get("/messages/conversations");
+        const conversations = d.conversations || [];
+        document.getElementById("chatList").innerHTML = conversations.length
+          ? conversations.map(c => {
+            const u = c.user || c;
+            return `<div class="chat-list-item" onclick="openChat('${c._id}')">
+              <h5>${esc(u.name || "Creator")} ${c.unread ? `<span style="background:var(--accent-gold);color:#fff;font-size:0.6rem;padding:0.1rem 0.4rem;border-radius:50%;margin-left:0.3rem">${c.unread}</span>` : ""}</h5>
+              <p>${esc(c.lastMessage || "No messages yet")}</p>
+            </div>`;
+          }).join("")
+          : `<div class="empty-state" style="padding:1rem"><div class="icon">💬</div><h3>No conversations</h3></div>`;
+      } catch (e) {
+        document.getElementById("chatList").innerHTML = `<div class="empty-state" style="padding:1rem"><div class="icon">⚠️</div></div>`;
+      }
+    }
+
+    window.openChat = async (convId) => {
+      activeChatUser = convId;
+      try {
+        const d = await API.get("/messages/" + convId);
+        const msgs = d.messages || [];
+        document.getElementById("chatBody").innerHTML = msgs.length
+          ? msgs.map(m => `<div class="msg ${m.from === 'me' || m.sender === 'user' ? 'sent' : ''}"><div class="msg-bubble">${esc(m.text || m.message)}<br><small style="opacity:0.6;font-size:0.7rem">${m.createdAt ? new Date(m.createdAt).toLocaleTimeString() : ""}</small></div></div>`).join("")
+          : `<div class="empty-state"><div class="icon">💬</div><h3>No messages yet</h3><p>Start a conversation</p></div>`;
+      } catch {
+        document.getElementById("chatBody").innerHTML = `<div class="empty-state"><div class="icon">💬</div><h3>No messages yet</h3></div>`;
+      }
+    };
+
+    document.getElementById("sendMsg").addEventListener("click", async () => {
+      const input = document.getElementById("chatInput");
+      if (!input.value.trim() || !activeChatUser) return;
+      try {
+        await API.post("/messages/" + activeChatUser, { text: input.value });
+        const body = document.getElementById("chatBody");
+        body.innerHTML += `<div class="msg sent"><div class="msg-bubble">${esc(input.value)}<br><small style="opacity:0.6;font-size:0.7rem">Just now</small></div></div>`;
+        input.value = "";
+        body.scrollTop = body.scrollHeight;
+      } catch { toast("Failed to send message", "error"); }
+    });
+
+    document.getElementById("chatInput").addEventListener("keydown", e => {
+      if (e.key === "Enter") document.getElementById("sendMsg").click();
+    });
+
+    window.attachImage = () => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+      input.onchange = function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        toast("Image attached! Send a message to share it.", "info");
+      };
+      input.click();
+    };
+
+    // ─── PROFILE ────────────────────────────────────────────────────────────
+    function loadProfile() {
+      const user = API.getUser();
+      if (!user) return;
+      document.getElementById("profName").value = user.name || "";
+      document.getElementById("profPhone").value = user.phone || "";
+      document.getElementById("profAddress").value = user.address || "";
+    }
+
+    // ─── NOTIFICATIONS ──────────────────────────────────────────────────────
+    async function loadNotifications() {
+      try {
+        const d = await API.get("/notifications");
+        const count = d.notifications?.filter(n => !n.read).length || 0;
+        document.getElementById("notifCount").textContent = count;
+      } catch { }
+    }
+
+    window.toggleNotifPanel = () => {
+      toast("No new notifications", "info");
+    };
+  </script>
+</body>
+</html>

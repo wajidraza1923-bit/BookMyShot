@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>All Creators — BookMyShot</title>
+  <meta name="description" content="Browse all verified creators on BookMyShot. Find photographers, videographers, and wedding creators.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/premium-homepage.css">
+  <style>
+    .reveal { opacity: 1 !important; transform: none !important; }
+    .page-loader { display: none !important; }
+    body.loading { overflow: auto !important; }
+    .brand-logo { animation: none !important; }
+    .topbar { backdrop-filter: none !important; }
+    .creators-page { padding: 5rem 1.5rem 3rem; max-width: 1100px; margin: 0 auto; }
+    .creators-page h1 { font-family: var(--font-display); font-size: 1.8rem; font-weight: 700; margin-bottom: .5rem; }
+    .creators-page .subtitle { color: var(--muted); font-size: .9rem; margin-bottom: 2rem; }
+    .creators-page .search-bar { margin-bottom: 2rem; position: relative; max-width: 400px; }
+    .creators-page .search-bar input { width: 100%; padding: .75rem 2.5rem .75rem 1rem; border-radius: 12px; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.04); color: var(--text); font-size: .85rem; outline: none; }
+    .creators-page .search-bar input:focus { border-color: var(--accent); }
+    .load-more-btn { display: block; margin: 2rem auto 0; padding: .7rem 2rem; border-radius: 12px; border: 1px solid rgba(255,255,255,.08); background: transparent; color: var(--muted); font-size: .82rem; font-weight: 500; cursor: pointer; transition: .2s; }
+    .load-more-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .empty-msg { text-align: center; padding: 3rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand-group"><a href="/" class="brand-logo">BOOKMYSHOT</a></div>
+    <a href="/" style="font-size:.82rem;color:var(--muted)">← Back to Home</a>
+  </header>
+
+  <div class="creators-page">
+    <h1>All Creators</h1>
+    <p class="subtitle">Browse verified creators available for booking. No login required.</p>
+    <div class="search-bar">
+      <input type="text" id="creatorSearch" placeholder="Search by name, city, or category..." oninput="filterCreators()">
+    </div>
+    <div id="creatorsGrid" class="cinematic-grid"></div>
+    <button id="loadMoreBtn" class="load-more-btn" style="display:none" onclick="loadMore()">Load More Creators</button>
+    <div id="emptyMsg" class="empty-msg" style="display:none">No creators found.</div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/utils.js"></script>
+  <script>
+    var allCreators = [];
+    var displayCount = 12;
+
+    async function loadCreators() {
+      try {
+        var res = await API.get('/creators');
+        allCreators = (res.creators || []).filter(function(c) { return c.status === 'approved'; });
+        // Sort: ranked first (ascending), then unranked
+        allCreators.sort(function(a, b) { return (a.rank || 9999) - (b.rank || 9999); });
+        renderCreators();
+      } catch (e) {
+        document.getElementById('emptyMsg').style.display = 'block';
+        document.getElementById('emptyMsg').textContent = 'Failed to load creators.';
+      }
+    }
+
+    function renderCreators() {
+      var query = (document.getElementById('creatorSearch').value || '').toLowerCase();
+      var filtered = allCreators;
+      if (query) {
+        filtered = allCreators.filter(function(c) {
+          var name = (c.user && c.user.name || '').toLowerCase();
+          var city = (c.city || '').toLowerCase();
+          var cat = (c.specialty || c.category || '').toLowerCase();
+          return name.includes(query) || city.includes(query) || cat.includes(query);
+        });
+      }
+      var grid = document.getElementById('creatorsGrid');
+      var toShow = filtered.slice(0, displayCount);
+      grid.innerHTML = toShow.map(function(c) {
+        var thumb = (c.portfolio && c.portfolio[0]) || (c.user && c.user.avatar) || 'https://images.unsplash.com/photo-1554048612-b6a482b17f70?w=400';
+        var name = (c.user && c.user.name) || 'Creator';
+        var cat = c.specialty || c.category || 'Creator';
+        var city = c.city || '';
+        var rating = c.rating || '4.9';
+        var badge = c.featured ? '<div style="position:absolute;top:8px;right:8px;background:rgba(255,140,39,.9);color:#fff;font-size:.55rem;font-weight:700;padding:.2rem .4rem;border-radius:5px">★ FEATURED</div>' : '';
+        var creatorBadge = '';
+        if (c.badge) {
+          var badgeLabels = {rank_1:'🏆 #1 Creator',rank_2:'🥈 #2 Creator',rank_3:'🥉 #3 Creator',rank_4:'⭐ #4 Creator',best_creator:'⭐ Best Creator',most_trusted:'🛡 Most Trusted',premium_creator:'👑 Premium Creator',top_rated:'🌟 Top Rated',editors_choice:'✨ Editor\'s Choice'};
+          creatorBadge = '<div style="position:absolute;top:8px;left:8px;background:rgba(212,175,55,.9);color:#111;font-size:.55rem;font-weight:700;padding:.2rem .4rem;border-radius:5px">' + (badgeLabels[c.badge]||'') + '</div>';
+        } else if (c.rank && c.rank > 0) {
+          creatorBadge = '<div style="position:absolute;top:8px;left:8px;background:rgba(212,175,55,.9);color:#111;font-size:.55rem;font-weight:700;padding:.2rem .4rem;border-radius:5px">#' + c.rank + ' Creator</div>';
+        }
+        return '<article class="cinematic-card" style="position:relative;cursor:pointer" onclick="location.href=\'/creator-portfolio.html?id=' + c._id + '\'">' + badge + creatorBadge + '<div class="cinematic-thumb" style="background-image:url(\'' + thumb + '\')"></div><div class="cinematic-body"><span>' + cat + '</span><h3>' + name + '</h3><div class="meta-row"><span>★ ' + rating + '</span><span>' + city + '</span></div></div></article>';
+      }).join('');
+      // Show/hide Load More
+      document.getElementById('loadMoreBtn').style.display = filtered.length > displayCount ? 'block' : 'none';
+      document.getElementById('emptyMsg').style.display = toShow.length === 0 ? 'block' : 'none';
+    }
+
+    function filterCreators() { displayCount = 12; renderCreators(); }
+    function loadMore() { displayCount += 12; renderCreators(); }
+
+    loadCreators();
+  </script>
+</body>
+</html>

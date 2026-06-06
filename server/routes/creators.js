@@ -1,0 +1,216 @@
+const express = require("express");
+const Creator = require("../models/Creator");
+const User = require("../models/User");
+const CalendarEvent = require("../models/CalendarEvent");
+const { protect, authorize } = require("../middleware/auth");
+const upload = require("../middleware/upload");
+
+const router = express.Router();
+
+// Public: list approved creators with filters (NO email exposed)
+router.get("/", async (req, res, next) => {
+  try {
+    const { city, category, budget, search, featured } = req.query;
+    const filter = { status: "approved" };
+    if (city) filter.city = new RegExp(city, "i");
+    if (category) filter.category = category;
+    if (featured === "true") filter.featured = true;
+    if (budget) filter.budgetMax = { $gte: Number(budget) };
+
+    let creators = await Creator.find(filter).populate("user", "name avatar");
+
+    if (search) {
+      const s = search.toLowerCase();
+      creators = creators.filter(
+        (c) =>
+          c.user?.name?.toLowerCase().includes(s) ||
+          c.specialty?.toLowerCase().includes(s) ||
+          c.city?.toLowerCase().includes(s)
+      );
+    }
+
+    // Apply search boost ordering: creators with active boosts appear first
+    try {
+      const SearchBoost = require("../models/SearchBoost");
+      const activeBoosts = await SearchBoost.find({
+        status: "active",
+        endDate: { $gte: new Date() },
+        boostType: { $in: ["top_search", "category_priority"] },
+      }).select("creator boostType").lean();
+
+      if (activeBoosts.length > 0) {
+        const boostedIds = new Set(activeBoosts.map(b => b.creator.toString()));
+        // Sort: boosted creators first, then featured, then by rating
+        creators.sort((a, b) => {
+          const aBoost = boostedIds.has(a._id.toString()) ? 1 : 0;
+          const bBoost = boostedIds.has(b._id.toString()) ? 1 : 0;
+          if (aBoost !== bBoost) return bBoost - aBoost;
+          if (a.featured !== b.featured) return b.featured ? 1 : -1;
+          return (b.rating || 0) - (a.rating || 0);
+        });
+      }
+    } catch (boostErr) {
+      // If boost lookup fails, continue without boost ordering
+    }
+
+    res.json({ success: true, creators });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Public: single creator with full user data (for portfolio page)
+router.get("/public/:id", async (req, res, next) => {
+  try {
+    const creator = await Creator.findById(req.params.id)
+      .populate("user", "name email avatar phone")
+      .select("-__v");
+    if (!creator || creator.status !== "approved") {
+      return res.status(404).json({ success: false, message: "Creator not found" });
+    }
+    const user = creator.user || {};
+    res.json({ success: true, creator, user });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Creator: get own profile (includes email for dashboard use)
+// MUST be before /:id to prevent "profile" from being treated as an ObjectId
+router.get("/profile", protect, authorize("creator"), async (req, res, next) => {
+  try {
+    const creator = await Creator.findOne({ user: req.user._id }).populate("user", "name email phone avatar");
+    if (!creator) return res.status(404).json({ success: false, message: "Creator profile not found" });
+    res.json({ success: true, creator });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Creator: update own profile
+router.put("/profile", protect, authorize("creator"), async (req, res, next) => {
+  try {
+    const creator = await Creator.findOneAndUpdate(
+      { user: req.user._id },
+      { $set: req.body },
+      { new: true, runValidators: true }
+    );
+    if (req.body.name || req.body.phone) {
+      await User.findByIdAndUpdate(req.user._id, {
+        ...(req.body.name && { name: req.body.name }),
+        ...(req.body.phone && { phone: req.body.phone }),
+      });
+    }
+    res.json({ success: true, creator });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Public: single creator with full user data (alternate URL used by portfolio page)
+router.get("/:id/public", async (req, res, next) => {
+  try {
+    const creator = await Creator.findById(req.params.id)
+      .populate("user", "name email avatar phone")
+      .select("-__v");
+    if (!creator || creator.status !== "approved") {
+      return res.status(404).json({ success: false, message: "Creator not found" });
+    }
+    const user = creator.user || {};
+    res.json({ success: true, creator, user });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Public: get creator's blocked/unavailable dates (for portfolio display)
+router.get("/:id/availability", async (req, res, next) => {
+  try {
+    const creator = await Creator.findById(req.params.id);
+    if (!creator || creator.status !== "approved") {
+      return res.status(404).json({ success: false, message: "Creator not found" });
+    }
+    const events = await CalendarEvent.find({
+      creator: creator._id,
+      type: { $in: ["unavailable", "booking"] },
+      date: { $gte: new Date() },
+    }).sort("date");
+    res.json({ success: true, events });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Public: single creator (NO email exposed)
+// MUST be AFTER /profile, /:id/public, /:id/availability to avoid catching those paths
+router.get("/:id", async (req, res, next) => {
+  try {
+    const creator = await Creator.findById(req.params.id)
+      .populate("user", "name avatar")
+      .select("-__v");
+    if (!creator || creator.status !== "approved") {
+      return res.status(404).json({ success: false, message: "Creator not found" });
+    }
+    res.json({ success: true, creator });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Upload avatar
+router.post(
+  "/upload/avatar",
+  protect,
+  authorize("creator", "user", "admin"),
+  upload.single("avatar"),
+  async (req, res, next) => {
+    try {
+      if (!req.file) return res.status(400).json({ success: false, message: "No file" });
+      const url = `/uploads/avatars/${req.file.filename}`;
+      await User.findByIdAndUpdate(req.user._id, { avatar: url });
+      res.json({ success: true, url });
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+// Upload portfolio
+router.post(
+  "/upload/portfolio",
+  protect,
+  authorize("creator"),
+  upload.array("photos", 12),
+  async (req, res, next) => {
+    try {
+      const creator = await Creator.findOne({ user: req.user._id });
+      const urls = req.files.map((f) => `/uploads/portfolio/${f.filename}`);
+      creator.portfolio.push(...urls);
+      await creator.save();
+      res.json({ success: true, portfolio: creator.portfolio });
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+// Upload videos
+router.post(
+  "/upload/videos",
+  protect,
+  authorize("creator"),
+  upload.array("videos", 5),
+  async (req, res, next) => {
+    try {
+      const creator = await Creator.findOne({ user: req.user._id });
+      const urls = req.files.map((f) => `/uploads/videos/${f.filename}`);
+      creator.videos.push(...urls);
+      await creator.save();
+      res.json({ success: true, videos: creator.videos });
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+module.exports = router;

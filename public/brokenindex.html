@@ -1,0 +1,261 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>BookMyShot — Premium Creator Booking Platform</title>
+  <meta name="description" content="BookMyShot is India's premium creator booking platform. Book photographers, YouTubers, influencers, singers, models and event hosts with secure payments.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <!-- premium-homepage.css disabled for performance - using inline styles only -->
+  <style>
+    /* Base theme */
+    :root{--accent:#ff8c27;--muted:#b9aa98;--text:#f6eee7;--bg:#050302;--border:rgba(255,255,255,.08);--font-display:'Playfair Display',serif;--font-body:'Outfit',system-ui,sans-serif}
+    *{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--font-body);background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden}
+    a{color:inherit;text-decoration:none}
+    button{font-family:inherit;cursor:pointer;border:none;background:none}
+    img{max-width:100%;height:auto;display:block}
+
+    /* Topbar */
+    .topbar{position:sticky;top:0;z-index:999;display:flex;align-items:center;justify-content:space-between;padding:.9rem 1.5rem;background:rgba(8,5,3,.97);border-bottom:1px solid var(--border)}
+    .brand-logo{font-family:var(--font-display);font-size:1.4rem;letter-spacing:.1em;color:var(--accent)}
+
+    /* Buttons */
+    .btn{display:inline-flex;align-items:center;gap:.4rem;padding:.7rem 1.4rem;border-radius:14px;font-size:.82rem;font-weight:600;transition:all .2s}
+    .btn-primary{background:linear-gradient(135deg,var(--accent),#ffb347);color:#111}
+    .btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(255,140,39,.25)}
+    .btn-secondary{border:1px solid var(--border);color:var(--muted)}
+    .btn-secondary:hover{border-color:var(--accent);color:var(--accent)}
+
+    /* Hamburger menu */
+    .topbar { justify-content: space-between; }
+    .hamburger-btn { width:44px;height:44px;display:grid;place-items:center;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);cursor:pointer;transition:.2s }
+    .hamburger-btn:hover { background:rgba(255,255,255,.1) }
+    .hamburger-btn span { display:block;width:18px;height:2px;background:#f6eee7;border-radius:2px;margin:2.5px 0 }
+
+    .menu-drawer { position:fixed;top:0;right:-100%;width:82%;max-width:320px;height:100vh;background:rgba(8,5,3,.98);border-left:1px solid rgba(255,255,255,.06);z-index:2000;padding:4rem 1.5rem 2rem;transition:right .3s ease;overflow-y:auto }
+    .menu-drawer.open { right:0 }
+    .menu-overlay { position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1999;opacity:0;pointer-events:none;transition:opacity .3s }
+    .menu-overlay.open { opacity:1;pointer-events:all }
+    .menu-drawer .close-btn { position:absolute;top:1rem;right:1rem;font-size:1.5rem;color:rgba(255,255,255,.5);cursor:pointer;background:none;border:none }
+    .menu-drawer a { display:block;padding:.8rem 0;font-size:.92rem;font-weight:500;color:rgba(255,255,255,.6);border-bottom:1px solid rgba(255,255,255,.04);transition:color .2s }
+    .menu-drawer a:hover { color:var(--accent) }
+    .menu-drawer .menu-section { margin-top:1rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,.06) }
+    .menu-drawer .menu-section-title { font-size:.65rem;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:.5rem }
+
+    /* Featured creators slider */
+    .creators-slider { display:flex;gap:1.25rem;overflow-x:auto;padding:.5rem 0 1rem;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none }
+    .creators-slider::-webkit-scrollbar { display:none }
+    .creator-slide { flex:0 0 260px;scroll-snap-align:start;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:18px;overflow:hidden;transition:transform .3s,border-color .3s;cursor:pointer }
+    .creator-slide:hover { transform:translateY(-4px);border-color:rgba(255,140,39,.2) }
+    .creator-slide img { width:100%;height:170px;object-fit:cover;background:rgba(255,255,255,.02) }
+    .creator-slide .slide-info { padding:1rem 1.1rem }
+    .creator-slide .slide-info h4 { font-size:.88rem;font-weight:600;margin-bottom:.2rem;color:var(--text) }
+    .creator-slide .slide-meta { display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted) }
+    .creator-slide .slide-cat { font-size:.62rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);margin-bottom:.25rem }
+    .view-all-btn { text-align:center;margin-top:1.5rem }
+    .view-all-btn a { display:inline-flex;align-items:center;gap:.4rem;padding:.65rem 1.5rem;border-radius:12px;border:1px solid rgba(255,140,39,.2);color:var(--accent);font-size:.82rem;font-weight:500;transition:.2s }
+    .view-all-btn a:hover { background:rgba(255,140,39,.06);border-color:rgba(255,140,39,.4) }
+
+    /* Hero */
+    .hero-section{min-height:85vh;display:grid;place-items:center;text-align:center;padding:4rem 1.5rem 3rem;position:relative}
+    .hero-section::before{content:'';position:absolute;top:0;left:10%;width:40%;height:40%;background:radial-gradient(circle,rgba(255,140,39,.06),transparent 70%);pointer-events:none}
+
+    /* Fade-in */
+    .fade-in{opacity:0;transform:translateY(14px);transition:opacity .4s ease,transform .4s ease}
+    .fade-in.visible{opacity:1;transform:translateY(0)}
+  </style>
+</head>
+<body>
+
+  <!-- Top Bar -->
+  <header class="topbar" id="navbar">
+    <div class="brand-group">
+      <a href="/" class="brand-logo">BOOKMYSHOT</a>
+    </div>
+    <div class="hamburger-btn" id="hamburgerBtn" aria-label="Menu">
+      <div><span></span><span></span><span></span></div>
+    </div>
+  </header>
+
+  <!-- Menu Drawer -->
+  <div class="menu-overlay" id="menuOverlay"></div>
+  <div class="menu-drawer" id="menuDrawer">
+    <button class="close-btn" id="drawerClose">&times;</button>
+    <a href="/">Home</a>
+    <a href="#categories">Categories</a>
+    <a href="#creators">Creators</a>
+    <a href="#how-it-works">How It Works</a>
+    <a href="#faq">FAQ</a>
+    <a href="/contact">Contact</a>
+    <div class="menu-section">
+      <div class="menu-section-title">Dashboards</div>
+      <a href="/creator/dashboard.html">Creator Dashboard</a>
+      <a href="/user/dashboard.html">User Dashboard</a>
+      <a href="/admin-login.html">Admin Login</a>
+    </div>
+    <div class="menu-section">
+      <div class="menu-section-title">Account</div>
+      <a href="/login.html">Login</a>
+      <a href="/register.html">Sign Up</a>
+    </div>
+  </div>
+
+  <main>
+    <!-- Hero -->
+    <section class="hero-section" id="home">
+      <div class="fade-in">
+          <span style="display:inline-block;font-size:.7rem;text-transform:uppercase;letter-spacing:.2em;color:var(--muted);margin-bottom:1rem">Premium Creator Booking Platform</span>
+          <h1 style="font-family:var(--font-display);font-size:clamp(2rem,5vw,3.5rem);font-weight:700;line-height:1.15;margin-bottom:1.25rem">Book Incredible<br><span style="color:var(--accent)">Creators</span> For Any Project</h1>
+          <p style="color:var(--muted);font-size:clamp(.9rem,1.8vw,1.05rem);max-width:500px;margin:0 auto 2rem;line-height:1.7">Find photographers, influencers, YouTubers, singers, models and event hosts — all in one place with secure payments.</p>
+          <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;margin-bottom:2rem">
+            <a href="/login.html" class="btn btn-primary btn-animated" style="padding:.8rem 1.6rem;border-radius:14px;font-size:.85rem;font-weight:600">Book Creator</a>
+            <a href="/creator-auth.html" class="btn btn-secondary btn-animated" style="padding:.8rem 1.6rem;border-radius:14px;font-size:.85rem;font-weight:600">Become Creator</a>
+          </div>
+          <div style="max-width:440px;margin:0 auto;position:relative">
+            <input type="text" id="heroSearch" placeholder="Search by name, category or city..." style="width:100%;padding:.85rem 3rem .85rem 1rem;border-radius:14px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:var(--text);font-size:.85rem;outline:none">
+            <button onclick="doSearch()" style="position:absolute;right:.4rem;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:10px;background:var(--accent);border:none;cursor:pointer;display:grid;place-items:center" aria-label="Search">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </button>
+          </div>
+        </div>
+    </section>
+
+    <!-- Featured Creators -->
+    <section id="creators" style="padding:3rem 1.5rem;display:none">
+      <div class="section-header fade-in" style="text-align:center;margin-bottom:1.5rem">
+        <span style="font-size:.65rem;text-transform:uppercase;letter-spacing:.15em;color:var(--accent)">Featured</span>
+        <h2 style="font-family:var(--font-display);font-size:1.6rem;font-weight:600;margin-top:.3rem">Featured Creators</h2>
+      </div>
+      <div class="creators-slider fade-in" id="creatorsSlider"></div>
+      <div class="view-all-btn fade-in"><a href="/user-auth.html">View All Creators →</a></div>
+    </section>
+
+    <!-- Categories -->
+    <section id="categories" style="padding:3rem 1.5rem">
+      <div class="section-header fade-in" style="text-align:center;margin-bottom:1.5rem">
+        <span style="font-size:.65rem;text-transform:uppercase;letter-spacing:.15em;color:var(--accent)">Explore</span>
+        <h2 style="font-family:var(--font-display);font-size:1.6rem;font-weight:600;margin-top:.3rem">Popular Categories</h2>
+      </div>
+      <div class="fade-in" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:.9rem;max-width:900px;margin:0 auto" id="catGrid">
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:1.3rem .8rem;text-align:center;transition:.2s;cursor:pointer" onmouseover="this.style.borderColor='rgba(255,140,39,.25)'" onmouseout="this.style.borderColor='rgba(255,255,255,.06)'"><div style="font-size:1.8rem;margin-bottom:.4rem">📸</div><div style="font-size:.75rem;font-weight:600">Photographers</div></div>
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:1.3rem .8rem;text-align:center;transition:.2s;cursor:pointer" onmouseover="this.style.borderColor='rgba(255,140,39,.25)'" onmouseout="this.style.borderColor='rgba(255,255,255,.06)'"><div style="font-size:1.8rem;margin-bottom:.4rem">🎬</div><div style="font-size:.75rem;font-weight:600">YouTubers</div></div>
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:1.3rem .8rem;text-align:center;transition:.2s;cursor:pointer" onmouseover="this.style.borderColor='rgba(255,140,39,.25)'" onmouseout="this.style.borderColor='rgba(255,255,255,.06)'"><div style="font-size:1.8rem;margin-bottom:.4rem">📱</div><div style="font-size:.75rem;font-weight:600">Influencers</div></div>
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:1.3rem .8rem;text-align:center;transition:.2s;cursor:pointer" onmouseover="this.style.borderColor='rgba(255,140,39,.25)'" onmouseout="this.style.borderColor='rgba(255,255,255,.06)'"><div style="font-size:1.8rem;margin-bottom:.4rem">🎤</div><div style="font-size:.75rem;font-weight:600">Singers</div></div>
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:1.3rem .8rem;text-align:center;transition:.2s;cursor:pointer" onmouseover="this.style.borderColor='rgba(255,140,39,.25)'" onmouseout="this.style.borderColor='rgba(255,255,255,.06)'"><div style="font-size:1.8rem;margin-bottom:.4rem">🧑‍🎨</div><div style="font-size:.75rem;font-weight:600">Models</div></div>
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:1.3rem .8rem;text-align:center;transition:.2s;cursor:pointer" onmouseover="this.style.borderColor='rgba(255,140,39,.25)'" onmouseout="this.style.borderColor='rgba(255,255,255,.06)'"><div style="font-size:1.8rem;margin-bottom:.4rem">🎭</div><div style="font-size:.75rem;font-weight:600">Actors</div></div>
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:1.3rem .8rem;text-align:center;transition:.2s;cursor:pointer" onmouseover="this.style.borderColor='rgba(255,140,39,.25)'" onmouseout="this.style.borderColor='rgba(255,255,255,.06)'"><div style="font-size:1.8rem;margin-bottom:.4rem">🎮</div><div style="font-size:.75rem;font-weight:600">Gamers</div></div>
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:1.3rem .8rem;text-align:center;transition:.2s;cursor:pointer" onmouseover="this.style.borderColor='rgba(255,140,39,.25)'" onmouseout="this.style.borderColor='rgba(255,255,255,.06)'"><div style="font-size:1.8rem;margin-bottom:.4rem">🎙️</div><div style="font-size:.75rem;font-weight:600">Anchors</div></div>
+      </div>
+    </section>
+
+    <!-- How It Works -->
+    <section id="how-it-works" style="padding:3rem 1.5rem">
+      <div class="section-header fade-in" style="text-align:center;margin-bottom:2rem">
+        <span style="font-size:.65rem;text-transform:uppercase;letter-spacing:.15em;color:var(--accent)">Process</span>
+        <h2 style="font-family:var(--font-display);font-size:1.6rem;font-weight:600;margin-top:.3rem">How It Works</h2>
+      </div>
+      <div class="fade-in" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;max-width:900px;margin:0 auto">
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:1.5rem 1.2rem"><div style="font-size:.6rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.4rem">Step 1</div><h4 style="font-size:.88rem;font-weight:600;margin-bottom:.3rem">Search Creator</h4><p style="font-size:.78rem;color:var(--muted);line-height:1.6">Browse by category, city or specialty.</p></div>
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:1.5rem 1.2rem"><div style="font-size:.6rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.4rem">Step 2</div><h4 style="font-size:.88rem;font-weight:600;margin-bottom:.3rem">Send Request</h4><p style="font-size:.78rem;color:var(--muted);line-height:1.6">Share event details, dates and budget.</p></div>
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:1.5rem 1.2rem"><div style="font-size:.6rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.4rem">Step 3</div><h4 style="font-size:.88rem;font-weight:600;margin-bottom:.3rem">Pay Securely</h4><p style="font-size:.78rem;color:var(--muted);line-height:1.6">Complete payment through secure gateway.</p></div>
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:1.5rem 1.2rem"><div style="font-size:.6rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.4rem">Step 4</div><h4 style="font-size:.88rem;font-weight:600;margin-bottom:.3rem">Collaborate</h4><p style="font-size:.78rem;color:var(--muted);line-height:1.6">Work together and rate after completion.</p></div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" style="padding:3rem 1.5rem">
+      <div class="section-header fade-in" style="text-align:center;margin-bottom:1.5rem">
+        <span style="font-size:.65rem;text-transform:uppercase;letter-spacing:.15em;color:var(--accent)">FAQ</span>
+        <h2 style="font-family:var(--font-display);font-size:1.6rem;font-weight:600;margin-top:.3rem">Frequently Asked Questions</h2>
+      </div>
+      <div class="fade-in" style="max-width:600px;margin:0 auto">
+        <details style="border-bottom:1px solid rgba(255,255,255,.06);padding:1rem 0"><summary style="font-size:.85rem;font-weight:600;cursor:pointer;list-style:none;display:flex;justify-content:space-between">How do bookings work?<span style="color:var(--accent)">+</span></summary><p style="font-size:.8rem;color:var(--muted);margin-top:.6rem;line-height:1.6">Search for a creator, send a booking request. Creator accepts, you pay securely, work gets delivered.</p></details>
+        <details style="border-bottom:1px solid rgba(255,255,255,.06);padding:1rem 0"><summary style="font-size:.85rem;font-weight:600;cursor:pointer;list-style:none;display:flex;justify-content:space-between">How do payments work?<span style="color:var(--accent)">+</span></summary><p style="font-size:.8rem;color:var(--muted);margin-top:.6rem;line-height:1.6">All payments processed securely. We support UPI, cards, and net banking.</p></details>
+        <details style="border-bottom:1px solid rgba(255,255,255,.06);padding:1rem 0"><summary style="font-size:.85rem;font-weight:600;cursor:pointer;list-style:none;display:flex;justify-content:space-between">Can I cancel a booking?<span style="color:var(--accent)">+</span></summary><p style="font-size:.8rem;color:var(--muted);margin-top:.6rem;line-height:1.6">Yes, before work begins. Check our cancellation policy for refund details.</p></details>
+        <details style="border-bottom:1px solid rgba(255,255,255,.06);padding:1rem 0"><summary style="font-size:.85rem;font-weight:600;cursor:pointer;list-style:none;display:flex;justify-content:space-between">How long does creator approval take?<span style="color:var(--accent)">+</span></summary><p style="font-size:.8rem;color:var(--muted);margin-top:.6rem;line-height:1.6">Applications reviewed within 24-48 hours. Profile goes live after approval.</p></details>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer style="border-top:1px solid rgba(255,255,255,.06);padding:2.5rem 1.5rem 1.5rem">
+    <div style="max-width:900px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:2rem;margin-bottom:2rem">
+      <div>
+        <a href="/" class="brand-logo" style="font-size:1.1rem;display:block;margin-bottom:.5rem">BOOKMYSHOT</a>
+        <p style="font-size:.78rem;color:var(--muted);line-height:1.6">India's premium creator booking platform.</p>
+      </div>
+      <div><h4 style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:.6rem">Company</h4><a href="/about" style="display:block;font-size:.78rem;color:var(--muted);padding:.2rem 0">About Us</a><a href="/contact" style="display:block;font-size:.78rem;color:var(--muted);padding:.2rem 0">Contact</a><a href="#faq" style="display:block;font-size:.78rem;color:var(--muted);padding:.2rem 0">FAQ</a></div>
+      <div><h4 style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:.6rem">Legal</h4><a href="/terms" style="display:block;font-size:.78rem;color:var(--muted);padding:.2rem 0">Terms</a><a href="/privacy" style="display:block;font-size:.78rem;color:var(--muted);padding:.2rem 0">Privacy</a><a href="/refund-policy" style="display:block;font-size:.78rem;color:var(--muted);padding:.2rem 0">Refunds</a></div>
+      <div><h4 style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:.6rem">Social</h4><a href="https://instagram.com/bookmyshot" target="_blank" style="display:block;font-size:.78rem;color:var(--muted);padding:.2rem 0">Instagram</a><a href="https://wa.me/919876543210" target="_blank" style="display:block;font-size:.78rem;color:var(--muted);padding:.2rem 0">WhatsApp</a><a href="https://youtube.com/@bookmyshot" target="_blank" style="display:block;font-size:.78rem;color:var(--muted);padding:.2rem 0">YouTube</a><a href="https://facebook.com/bookmyshot" target="_blank" style="display:block;font-size:.78rem;color:var(--muted);padding:.2rem 0">Facebook</a></div>
+    </div>
+    <div style="text-align:center;font-size:.7rem;color:rgba(255,255,255,.3);padding-top:1rem;border-top:1px solid rgba(255,255,255,.04)">&copy; 2026 BookMyShot. All rights reserved.</div>
+  </footer>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/utils.js"></script>
+  <script>
+    // Hamburger Menu
+    var drawer = document.getElementById('menuDrawer');
+    var overlay = document.getElementById('menuOverlay');
+    document.getElementById('hamburgerBtn').addEventListener('click', function() {
+      drawer.classList.add('open');
+      overlay.classList.add('open');
+    });
+    overlay.addEventListener('click', closeMenu);
+    document.getElementById('drawerClose').addEventListener('click', closeMenu);
+    document.querySelectorAll('.menu-drawer a').forEach(function(a) { a.addEventListener('click', closeMenu); });
+    function closeMenu() { drawer.classList.remove('open'); overlay.classList.remove('open'); }
+
+    // Search
+    function doSearch() {
+      var q = (document.getElementById('heroSearch') || {}).value || '';
+      window.location.href = q.trim() ? '/user-auth.html?search=' + encodeURIComponent(q.trim()) : '/user-auth.html';
+    }
+    var si = document.getElementById('heroSearch');
+    if (si) si.addEventListener('keydown', function(e) { if (e.key === 'Enter') doSearch(); });
+
+    // Fade-in on scroll (lightweight)
+    var fadeEls = document.querySelectorAll('.fade-in');
+    var fadeObs = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) { if (e.isIntersecting) { e.target.classList.add('visible'); fadeObs.unobserve(e.target); } });
+    }, { threshold: 0.1 });
+    fadeEls.forEach(function(el) { fadeObs.observe(el); });
+    // Safety: show all after 1.5s
+    setTimeout(function() { fadeEls.forEach(function(el) { el.classList.add('visible'); }); }, 1500);
+
+    // Featured Creators (from database)
+    async function loadFeatured() {
+      try {
+        var res = await API.get('/creators?featured=true');
+        var creators = (res.creators || []).filter(function(c) { return c.status === 'approved' && c.featured === true; });
+        if (!creators.length) {
+          // Fallback: show approved creators
+          var fb = await API.get('/creators');
+          creators = (fb.creators || []).filter(function(c) { return c.status === 'approved'; }).slice(0, 6);
+        }
+        if (!creators.length) return;
+
+        document.getElementById('creators').style.display = 'block';
+        var slider = document.getElementById('creatorsSlider');
+        slider.innerHTML = creators.slice(0, 8).map(function(c) {
+          var img = (c.portfolio && c.portfolio[0]) || (c.user && c.user.avatar) || 'https://images.unsplash.com/photo-1554048612-b6a482b17f70?w=400&h=280&fit=crop';
+          var name = (c.user && c.user.name) || 'Creator';
+          var cat = c.specialty || c.category || 'Creator';
+          var city = c.city || '';
+          var rating = c.rating || '4.9';
+          return '<div class="creator-slide" onclick="location.href=\'/creator-portfolio.html?id=' + c._id + '\'">' +
+            '<img src="' + img + '" alt="' + name + '" loading="lazy" onerror="this.src=\'https://images.unsplash.com/photo-1554048612-b6a482b17f70?w=400&h=280&fit=crop\'">' +
+            '<div class="slide-info"><div class="slide-cat">' + cat + '</div><h4>' + name + '</h4><div class="slide-meta"><span>★ ' + rating + '</span><span>' + city + '</span></div></div></div>';
+        }).join('');
+      } catch (e) {
+        // Silently fail — section stays hidden
+      }
+    }
+    loadFeatured();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — BookMyShot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/theme.css">
+  <style>
+    :root {
+      --sidebar-w: 260px;
+      --header-h: 68px;
+      --gold: #DAAF37;
+      --gold-light: #F4C542;
+      --gold-dim: rgba(218,175,55,0.12);
+      --bg: #121212;
+      --bg-card: #1B1B1B;
+      --bg-elevated: #222222;
+      --border: rgba(218,175,55,0.15);
+      --border-light: rgba(255,255,255,0.06);
+      --text: #FFFFFF;
+      --text-muted: #D0D0D0;
+      --text-dim: rgba(255,255,255,0.4);
+      --success: #10b981;
+      --danger: #ef4444;
+      --info: #3b82f6;
+      --warning: #f59e0b;
+      --radius: 14px;
+      --font-display: 'Playfair Display', serif;
+      --font-body: 'Outfit', system-ui, sans-serif;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:var(--bg); color:var(--text); font-family:var(--font-body); overflow-x:hidden; }
+    ::-webkit-scrollbar { width:6px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:3px; }
+
+    .dash-layout { display:flex; min-height:100vh; }
+
+    /* ─── Sidebar ─── */
+    .sidebar { width:var(--sidebar-w); background:#0a0a0a; border-right:1px solid var(--border); position:fixed; top:0; left:0; height:100vh; z-index:100; display:flex; flex-direction:column; transition:transform 0.3s ease; }
+    .sidebar-logo { padding:1.2rem 1.5rem; font-family:var(--font-display); font-size:1.4rem; color:var(--gold); border-bottom:1px solid rgba(255,255,255,0.04); font-weight:600; }
+    .sidebar-logo span { color:#F5F5F5; }
+    .sidebar-nav { flex:1; padding:0.75rem 0; overflow-y:auto; }
+    .sidebar-nav a { display:flex; align-items:center; gap:0.75rem; padding:0.7rem 1.5rem; color:rgba(255,255,255,0.5); text-decoration:none; font-size:0.85rem; transition:all 0.2s; border-left:3px solid transparent; }
+    .sidebar-nav a:hover { background:rgba(218,175,55,0.04); color:rgba(255,255,255,0.8); }
+    .sidebar-nav a.active { color:var(--gold-light); background:rgba(218,175,55,0.06); border-left-color:var(--gold); }
+    .sidebar-nav a .icon { font-size:1rem; width:22px; text-align:center; }
+    .sidebar-nav a .badge { margin-left:auto; background:var(--gold); color:#111; font-size:0.65rem; padding:0.15rem 0.5rem; border-radius:50px; font-weight:700; }
+    .sidebar-footer { padding:1rem 1.5rem; border-top:1px solid rgba(255,255,255,0.04); display:flex; flex-direction:column; gap:0.5rem; }
+    .sidebar-footer a { color:rgba(255,255,255,0.4); text-decoration:none; font-size:0.82rem; display:flex; align-items:center; gap:0.5rem; transition:color 0.2s; }
+    .sidebar-footer a:hover { color:var(--gold-light); }
+
+    /* ─── Main ─── */
+    .main-content { margin-left:var(--sidebar-w); flex:1; min-height:100vh; }
+    .header { height:var(--header-h); background:rgba(10,10,10,0.9); backdrop-filter:blur(12px); border-bottom:1px solid rgba(255,255,255,0.04); display:flex; align-items:center; justify-content:space-between; padding:0 2rem; position:sticky; top:0; z-index:50; }
+    .header-right { display:flex; align-items:center; gap:1rem; }
+    .header-right .avatar { width:36px; height:36px; border-radius:50%; object-fit:cover; border:2px solid rgba(218,175,55,0.3); }
+
+    /* ─── Panels ─── */
+    .panel { display:none; padding:2rem; max-width:1400px; }
+    .panel.active { display:block; }
+    .panel-header { margin-bottom:1.5rem; }
+    .panel-header h2 { font-family:var(--font-display); color:var(--gold-light); font-size:1.5rem; font-weight:500; }
+    .panel-header p { color:var(--text-dim); font-size:0.85rem; margin-top:0.2rem; }
+
+    /* ─── Stats Grid ─── */
+    .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:1rem; margin-bottom:1.5rem; }
+    .stat-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:1.2rem 1.4rem; transition:all 0.2s; position:relative; overflow:hidden; }
+    .stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,var(--gold),var(--gold-light)); opacity:0; transition:opacity 0.2s; }
+    .stat-card:hover { border-color:rgba(218,175,55,0.3); }
+    .stat-card:hover::before { opacity:1; }
+    .stat-card .label { color:var(--text-dim); font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em; font-weight:500; }
+    .stat-card .value { font-family:var(--font-display); color:#F5F5F5; font-size:1.5rem; margin-top:0.3rem; font-weight:500; }
+    .stat-card .value.gold { color:var(--gold); }
+    .stat-card .value.danger { color:var(--danger); }
+    .stat-card .value.success { color:var(--success); }
+
+    /* ─── Cards ─── */
+    .card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem; margin-bottom:1rem; }
+    .card h4 { color:var(--gold-light); font-family:var(--font-display); font-weight:500; margin-bottom:0.6rem; font-size:1rem; }
+    .card p { color:var(--text-muted); font-size:0.85rem; }
+
+    /* ─── Tables ─── */
+    .table-wrap { overflow-x:auto; border-radius:var(--radius); border:1px solid var(--border); }
+    table { width:100%; border-collapse:collapse; font-size:0.82rem; }
+    th { text-align:left; padding:0.85rem 0.75rem; color:var(--gold); font-weight:600; background:rgba(218,175,55,0.06); border-bottom:1px solid var(--border); text-transform:uppercase; font-size:0.68rem; letter-spacing:0.07em; }
+    td { padding:0.8rem 0.75rem; border-bottom:1px solid var(--border-light); color:var(--text); }
+    tr:nth-child(even) td { background:rgba(255,255,255,0.015); }
+    tr:hover td { background:rgba(218,175,55,0.04); }
+
+    /* ─── Badges ─── */
+    .status-badge { display:inline-flex; align-items:center; padding:0.2rem 0.65rem; border-radius:50px; font-size:0.68rem; text-transform:uppercase; font-weight:600; letter-spacing:0.03em; }
+    .status-pending, .status-new, .status-trial { background:rgba(218,175,55,0.12); color:var(--gold); }
+    .status-approved, .status-verified, .status-paid, .status-active { background:rgba(16,185,129,0.12); color:var(--success); }
+    .status-rejected, .status-cancelled, .status-expired, .status-overdue, .status-suspended { background:rgba(239,68,68,0.12); color:var(--danger); }
+    .status-completed { background:rgba(59,130,246,0.12); color:var(--info); }
+    .status-booking-created { background:rgba(218,175,55,0.12); color:var(--gold); }
+    .status-creator-accepted, .status-payment-approved { background:rgba(16,185,129,0.12); color:var(--success); }
+    .status-event-scheduled, .status-payment-submitted { background:rgba(59,130,246,0.12); color:var(--info); }
+
+    /* ─── Buttons ─── */
+    .btn { display:inline-flex; align-items:center; gap:0.4rem; padding:0.45rem 0.9rem; border-radius:10px; font-size:0.78rem; font-weight:500; cursor:pointer; transition:all 0.2s; border:none; text-decoration:none; font-family:inherit; }
+    .btn-primary { background:linear-gradient(135deg,var(--gold),var(--gold-light)); color:#111; font-weight:600; }
+    .btn-primary:hover { box-shadow:0 4px 14px rgba(218,175,55,0.3); transform:translateY(-1px); }
+    .btn-outline { background:transparent; border:1px solid rgba(218,175,55,0.25); color:var(--gold-light); }
+    .btn-outline:hover { border-color:var(--gold); background:rgba(218,175,55,0.06); }
+    .btn-success { background:rgba(16,185,129,0.15); color:var(--success); border:1px solid rgba(16,185,129,0.25); }
+    .btn-success:hover { background:rgba(16,185,129,0.25); }
+    .btn-danger { background:rgba(239,68,68,0.12); color:var(--danger); border:1px solid rgba(239,68,68,0.25); }
+    .btn-danger:hover { background:rgba(239,68,68,0.2); }
+    .btn-sm { padding:0.3rem 0.6rem; font-size:0.7rem; border-radius:8px; }
+
+    /* ─── Forms ─── */
+    .form-group { margin-bottom:0.85rem; }
+    .form-group label { display:block; color:var(--text-dim); font-size:0.75rem; font-weight:500; margin-bottom:0.3rem; }
+    .form-group input, .form-group select, .form-group textarea { width:100%; padding:0.6rem 0.8rem; background:rgba(255,255,255,0.04); border:1px solid var(--border-light); border-radius:10px; color:var(--text); font-family:inherit; font-size:0.85rem; outline:none; transition:border-color 0.2s; }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color:var(--gold); box-shadow:0 0 12px rgba(218,175,55,0.1); }
+
+    /* ─── Utility ─── */
+    .empty-state { text-align:center; padding:3rem 1rem; }
+    .empty-state .icon { font-size:2.5rem; margin-bottom:0.75rem; color:var(--gold); }
+    .empty-state h3 { color:var(--gold-light); font-family:var(--font-display); margin-bottom:0.4rem; font-weight:500; }
+    .empty-state p { color:var(--text-dim); font-size:0.85rem; }
+
+    .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); backdrop-filter:blur(6px); z-index:1000; justify-content:center; align-items:center; }
+    .modal-overlay.active { display:flex; }
+    .modal { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:2rem; width:90%; max-width:500px; max-height:90vh; overflow-y:auto; }
+    .modal h3 { font-family:var(--font-display); color:var(--gold-light); margin-bottom:1.5rem; font-weight:500; }
+    .modal .modal-actions { display:flex; gap:0.75rem; justify-content:flex-end; margin-top:1.5rem; }
+
+    .toast-container { position:fixed; top:1rem; right:1rem; z-index:2000; display:flex; flex-direction:column; gap:0.5rem; }
+    .toast { padding:0.75rem 1.25rem; border-radius:12px; font-size:0.82rem; animation:slideIn 0.3s ease; max-width:350px; backdrop-filter:blur(8px); }
+    .toast.success { background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.25); color:var(--success); }
+    .toast.error { background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.25); color:var(--danger); }
+    .toast.info { background:rgba(59,130,246,0.15); border:1px solid rgba(59,130,246,0.25); color:var(--info); }
+    @keyframes slideIn { from { transform:translateX(100%); opacity:0; } to { transform:translateX(0); opacity:1; } }
+
+    .loader { display:flex; justify-content:center; align-items:center; padding:3rem; }
+    .loader::after { content:""; width:32px; height:32px; border:3px solid rgba(218,175,55,0.1); border-top-color:var(--gold); border-radius:50%; animation:spin 0.7s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    .tabs { display:flex; gap:0.5rem; margin-bottom:1.5rem; flex-wrap:wrap; }
+    .tabs button { padding:0.5rem 1rem; border:1px solid var(--border); border-radius:10px; background:transparent; color:var(--text-dim); cursor:pointer; font-size:0.78rem; font-family:inherit; transition:all 0.2s; }
+    .tabs button.active { border-color:var(--gold); color:var(--gold); background:rgba(218,175,55,0.08); }
+    .tabs button:hover { border-color:var(--gold-light); color:var(--text); }
+
+    /* ─── Finance Tabs ─── */
+    .finance-tab { display:none; }
+    .finance-tab.active { display:block; }
+
+    /* ─── Mobile ─── */
+    @media(max-width:768px) {
+      .sidebar { transform:translateX(-100%); }
+      .sidebar.open { transform:translateX(0); }
+      .main-content { margin-left:0; }
+      .header { padding:0 1rem; }
+      .panel { padding:1.2rem; }
+      .stats-grid { grid-template-columns:1fr 1fr; gap:0.6rem; }
+      .table-wrap { border-radius:10px; }
+      table { font-size:0.75rem; }
+      th, td { padding:0.6rem 0.5rem; }
+      #menuToggle { display:inline-flex !important; }
+    }
+    @media(max-width:480px) {
+      .stats-grid { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="dash-layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">Book<span>MyShot</span> <span style="font-size:0.6rem;color:var(--gold);display:block;font-family:var(--font-body);margin-top:0.15rem">Super Admin</span></div>
+      <nav class="sidebar-nav">
+        <a href="#" class="active" data-panel="dashboard"><span class="icon">📊</span> Dashboard</a>
+        <a href="#" data-panel="creators"><span class="icon">📸</span> Creators</a>
+        <a href="#" data-panel="users"><span class="icon">👥</span> Users</a>
+        <a href="#" data-panel="bookings"><span class="icon">📅</span> Bookings</a>
+        <a href="#" data-panel="inquiries"><span class="icon">📩</span> Inquiries</a>
+        <a href="#" data-panel="payments"><span class="icon">💰</span> Payments</a>
+        <a href="#" data-panel="commissions"><span class="icon">📈</span> Commissions</a>
+        <a href="#" data-panel="revenue"><span class="icon">💎</span> Revenue</a>
+        <a href="#" data-panel="subscriptions"><span class="icon">👑</span> Subscriptions</a>
+        <a href="#" data-panel="notifications"><span class="icon">🔔</span> Notifications</a>
+        <a href="#" data-panel="calendar"><span class="icon">📆</span> Calendar</a>
+        <a href="#" data-panel="contacts"><span class="icon">📞</span> Contacts</a>
+        <a href="#" data-panel="homepage"><span class="icon">🏠</span> Homepage CMS</a>
+        <a href="#" data-panel="social-links"><span class="icon">📱</span> Social Links</a>
+        <a href="#" data-panel="promotion-requests"><span class="icon">🏆</span> Promotion Requests</a>
+        <a href="#" style="margin-top:0.75rem;padding-top:0.7rem;border-top:1px solid rgba(255,255,255,0.04)" data-panel="platform-settings"><span class="icon">⚙️</span> Platform Settings</a>
+        <a href="#" data-panel="subscription-settings"><span class="icon">💳</span> Subscription Settings</a>
+        <a href="#" data-panel="commission-settings"><span class="icon">📊</span> Commission Settings</a>
+        <a href="#" data-panel="featured-creators"><span class="icon">⭐</span> Featured Creators</a>
+        <a href="#" data-panel="search-boosts"><span class="icon">🚀</span> Search Boosts</a>
+        <a href="#" data-panel="revenue-center"><span class="icon">💰</span> Revenue Center</a>
+        <a href="#" data-panel="announcements"><span class="icon">📢</span> Announcements</a>
+        <a href="#" data-panel="finance-control"><span class="icon">🏦</span> Finance</a>
+        <a href="#" data-panel="creator-accounts"><span class="icon">👤</span> Creator Accounts</a>
+        <a href="#" data-panel="audit"><span class="icon">📋</span> Audit Logs</a>
+      </nav>
+      <div class="sidebar-footer">
+        <a href="/" target="_blank">🌐 View Site</a>
+        <a href="#" id="logoutBtn">🚪 Logout</a>
+      </div>
+    </aside>
+
+    <div class="main-content">
+      <header class="header">
+        <div style="display:flex;align-items:center;gap:0.75rem">
+          <button class="btn btn-outline btn-sm" id="menuToggle" style="display:none"><i class="fas fa-bars"></i></button>
+          <span style="color:var(--gold-light);font-size:0.95rem;font-family:var(--font-display)" id="pageTitle">Dashboard</span>
+        </div>
+        <div class="header-right">
+          <span style="color:var(--text-dim);font-size:0.82rem" id="adminName">Admin</span>
+          <img class="avatar" id="adminAvatar" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100" alt="">
+        </div>
+      </header>
+
+      <!-- Dashboard -->
+      <div class="panel active" id="panel-dashboard">
+        <div class="panel-header"><h2>Dashboard</h2><p>BookMyShot Platform Overview</p></div>
+        <div class="stats-grid" id="dashStats">
+          <div class="stat-card"><div class="label">Total Creators</div><div class="value gold" id="statCreators">0</div></div>
+          <div class="stat-card"><div class="label">Active Creators</div><div class="value success" id="statActiveCreators">0</div></div>
+          <div class="stat-card"><div class="label">Pending Approvals</div><div class="value danger" id="statPending">0</div></div>
+          <div class="stat-card"><div class="label">Total Users</div><div class="value" id="statUsers">0</div></div>
+          <div class="stat-card"><div class="label">Total Inquiries</div><div class="value" id="statInquiries">0</div></div>
+          <div class="stat-card"><div class="label">Total Bookings</div><div class="value" id="statBookings">0</div></div>
+          <div class="stat-card"><div class="label">Total Revenue</div><div class="value gold" id="statRevenue">₹0</div></div>
+          <div class="stat-card"><div class="label">Subscription Revenue</div><div class="value" id="statSubRevenue">₹0</div></div>
+          <div class="stat-card"><div class="label">BMS Lead Revenue</div><div class="value" id="statBmsRevenue">₹0</div></div>
+          <div class="stat-card"><div class="label">Creator Lead Revenue</div><div class="value" id="statCrtRevenue">₹0</div></div>
+        </div>
+      </div>
+
+      <!-- Creators -->
+      <div class="panel" id="panel-creators">
+        <div class="panel-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:0.5rem">
+          <div><h2>Creators</h2><p>Manage creator applications and profiles</p></div>
+          <button class="btn btn-primary" onclick="openBroadcastModal()"><i class="fas fa-bullhorn"></i> Broadcast Message</button>
+        </div>
+        <div class="tabs" id="creatorTabs">
+          <button class="active" data-filter="all">All</button>
+          <button data-filter="pending">Pending</button>
+          <button data-filter="approved">Approved</button>
+          <button data-filter="rejected">Rejected</button>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Status</th><th>Subscription</th><th>Actions</th></tr></thead><tbody id="creatorsTable"><tr><td colspan="6"><div class="loader"></div></td></tr></tbody></table></div>
+      </div>
+
+      <!-- Users -->
+      <div class="panel" id="panel-users">
+        <div class="panel-header"><h2>Users</h2><p>Registered platform users</p></div>
+        <div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Joined</th><th>Actions</th></tr></thead><tbody id="usersTable"><tr><td colspan="5"><div class="loader"></div></td></tr></tbody></table></div>
+      </div>
+
+      <!-- Bookings -->
+      <div class="panel" id="panel-bookings">
+        <div class="panel-header"><h2>Bookings</h2><p>All platform bookings</p></div>
+        <div class="table-wrap"><table><thead><tr><th>Client</th><th>Creator</th><th>Amount</th><th>Lead Source</th><th>Created By</th><th>Status</th><th>Date</th></tr></thead><tbody id="bookingsTable"><tr><td colspan="7"><div class="loader"></div></td></tr></tbody></table></div>
+      </div>
+
+      <!-- Inquiries -->
+      <div class="panel" id="panel-inquiries">
+        <div class="panel-header"><h2>Platform Inquiries</h2><p>User inquiries submitted through BookMyShot website</p></div>
+        <div class="table-wrap"><table><thead><tr><th>User</th><th>Phone</th><th>Creator</th><th>Event Type</th><th>Date</th><th>Budget</th><th>Status</th></tr></thead><tbody id="inquiriesTable"><tr><td colspan="7"><div class="loader"></div></td></tr></tbody></table></div>
+      </div>
+
+      <!-- Payments -->
+      <div class="panel" id="panel-payments">
+        <div class="panel-header"><h2>Creator Payments & Revenue</h2><p>Platform revenue by creator — click a row for details</p></div>
+        <div class="table-wrap"><table><thead><tr><th>Creator</th><th>Bookings</th><th>Revenue</th><th>Commission Due</th><th>Subscription</th></tr></thead><tbody id="paymentsTable"><tr><td colspan="5"><div class="loader"></div></td></tr></tbody></table></div>
+      </div>
+
+      <!-- Commissions -->
+      <div class="panel" id="panel-commissions">
+        <div class="panel-header"><h2>Commissions</h2><p>Platform commission tracking</p></div>
+        <div class="stats-grid" style="grid-template-columns:1fr 1fr">
+          <div class="stat-card"><div class="label">Total Revenue</div><div class="value gold" id="commTotal">₹0</div></div>
+          <div class="stat-card"><div class="label">Pending</div><div class="value" id="commPending">0</div></div>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>Booking</th><th>Creator</th><th>Total</th><th>Commission</th><th>Creator Earns</th><th>Status</th><th>Actions</th></tr></thead><tbody id="commissionsTable"><tr><td colspan="7"><div class="loader"></div></td></tr></tbody></table></div>
+      </div>
+
+      <!-- Contacts -->
+      <div class="panel" id="panel-contacts">
+        <div class="panel-header"><h2>Contact Messages</h2><p>User contact form submissions</p></div>
+        <div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Message</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="contactsTable"><tr><td colspan="6"><div class="loader"></div></td></tr></tbody></table></div>
+      </div>
+
+      <!-- Homepage CMS -->
+      <div class="panel" id="panel-homepage">
+        <div class="panel-header"><h2>Homepage CMS</h2><p>Manage homepage content</p></div>
+        <div class="card">
+          <form id="homepageForm">
+            <div class="form-group"><label>Hero Title</label><input type="text" id="cmsHeroTitle" class="form-control"></div>
+            <div class="form-group"><label>Hero Subtitle</label><input type="text" id="cmsHeroSubtitle" class="form-control"></div>
+            <div class="form-group"><label>Hero Image URL</label><input type="text" id="cmsHeroImage" class="form-control"></div>
+            <div class="form-group"><label>About Title</label><input type="text" id="cmsAboutTitle" class="form-control"></div>
+            <div class="form-group"><label>About Text</label><textarea id="cmsAboutText" class="form-control" rows="4"></textarea></div>
+            <button type="submit" class="btn btn-primary">Save Homepage</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Social Links Panel -->
+      <div class="panel" id="panel-social-links">
+        <div class="panel-header"><h2>Social Links</h2><p>Manage platform social media links</p></div>
+        <div class="card">
+          <form id="socialLinksForm">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.85rem">
+              <div class="form-group"><label>Instagram URL</label><input type="url" id="slInstagram" placeholder="https://instagram.com/..."></div>
+              <div class="form-group"><label>Facebook URL</label><input type="url" id="slFacebook" placeholder="https://facebook.com/..."></div>
+              <div class="form-group"><label>YouTube URL</label><input type="url" id="slYoutube" placeholder="https://youtube.com/..."></div>
+              <div class="form-group"><label>WhatsApp URL</label><input type="url" id="slWhatsapp" placeholder="https://wa.me/91..."></div>
+              <div class="form-group"><label>X (Twitter) URL</label><input type="url" id="slTwitter" placeholder="https://x.com/..."></div>
+              <div class="form-group"><label>LinkedIn URL</label><input type="url" id="slLinkedin" placeholder="https://linkedin.com/..."></div>
+              <div class="form-group"><label>Telegram URL</label><input type="url" id="slTelegram" placeholder="https://t.me/..."></div>
+            </div>
+            <div id="slErrors" style="color:var(--danger);font-size:0.8rem;margin-top:0.5rem"></div>
+            <button type="submit" class="btn btn-primary" style="margin-top:1rem">Save Social Links</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Promotion Requests Panel -->
+      <div class="panel" id="panel-promotion-requests">
+        <div class="panel-header"><h2>Promotion Requests</h2><p>Manage creator promotion and rank applications</p></div>
+        <div id="promotionRequestsPanel"><div class="loader"></div></div>
+      </div>
+
+      <!-- Revenue Panel -->
+      <div class="panel" id="panel-revenue">
+        <div class="panel-header"><h2>Platform Revenue</h2><p>Complete revenue overview</p></div>
+        <div id="revenuePanel"><div class="loader"></div></div>
+      </div>
+
+      <!-- Subscriptions Panel -->
+      <div class="panel" id="panel-subscriptions">
+        <div class="panel-header"><h2>Subscription Management</h2><p>Manage creator subscriptions</p></div>
+        <div id="subscriptionsPanel"><div class="loader"></div></div>
+      </div>
+
+      <!-- Notifications Panel -->
+      <div class="panel" id="panel-notifications">
+        <div class="panel-header"><h2>Notification Center</h2><p>Send notifications and broadcast announcements</p></div>
+        <div class="card" style="margin-bottom:1rem">
+          <h4>Send Notification / Broadcast</h4>
+          <div class="form-group" style="margin-top:0.75rem"><label>Title *</label><input type="text" id="notifTitle" style="width:100%;padding:0.6rem 0.8rem;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.85rem" placeholder="e.g. Subscription Reminder"></div>
+          <div class="form-group"><label>Message *</label><textarea id="notifMessage" rows="3" style="width:100%;padding:0.6rem 0.8rem;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.85rem" placeholder="Your notification message..."></textarea></div>
+          <div class="form-group"><label>Audience</label>
+            <select id="notifAudience" style="width:100%;padding:0.6rem 0.8rem;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.85rem">
+              <option value="creators">All Creators</option>
+              <option value="users">All Users</option>
+              <option value="all">Everyone (Creators + Users)</option>
+              <option value="specific">Specific User/Creator IDs</option>
+            </select>
+          </div>
+          <div class="form-group" id="specificIdsGroup" style="display:none"><label>User/Creator IDs (comma-separated)</label><input type="text" id="notifUserIds" placeholder="e.g. 6a20f4d8ea557e4efe23ecd7" style="width:100%;padding:0.6rem 0.8rem;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.85rem"></div>
+          <div style="display:flex;gap:0.5rem;margin-top:0.75rem">
+            <button class="btn btn-primary" onclick="sendBroadcast()">📢 Send Broadcast</button>
+            <button class="btn btn-outline" onclick="triggerSubAlerts()">⏰ Trigger Subscription Alerts</button>
+          </div>
+        </div>
+        <div class="card">
+          <h4>Recent Notifications</h4>
+          <div id="recentNotifsTable" style="margin-top:0.75rem"><div class="loader"></div></div>
+        </div>
+      </div>
+
+      <!-- Calendar Panel -->
+      <div class="panel" id="panel-calendar">
+        <div class="panel-header"><h2>Calendar Control</h2><p>View and manage all creator events</p></div>
+        <div id="calendarPanel"><div class="loader"></div></div>
+      </div>
+
+      <!-- Audit Logs Panel -->
+      <div class="panel" id="panel-audit">
+        <div class="panel-header"><h2>Audit Logs</h2><p>Track all admin actions with full change history</p></div>
+        <div style="margin-bottom:1rem">
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem">
+            <input type="text" id="auditFilterAction" placeholder="Action type" style="padding:0.5rem 0.8rem;background:rgba(255,255,255,0.04);border:1px solid var(--border-light);border-radius:10px;color:var(--text);font-size:0.8rem;width:140px">
+            <input type="date" id="auditFilterFrom" style="padding:0.5rem 0.8rem;background:rgba(255,255,255,0.04);border:1px solid var(--border-light);border-radius:10px;color:var(--text);font-size:0.8rem;color-scheme:dark">
+            <input type="date" id="auditFilterTo" style="padding:0.5rem 0.8rem;background:rgba(255,255,255,0.04);border:1px solid var(--border-light);border-radius:10px;color:var(--text);font-size:0.8rem;color-scheme:dark">
+            <input type="text" id="auditFilterAdmin" placeholder="Admin name" style="padding:0.5rem 0.8rem;background:rgba(255,255,255,0.04);border:1px solid var(--border-light);border-radius:10px;color:var(--text);font-size:0.8rem;width:130px">
+            <input type="text" id="auditFilterTarget" placeholder="Target type" style="padding:0.5rem 0.8rem;background:rgba(255,255,255,0.04);border:1px solid var(--border-light);border-radius:10px;color:var(--text);font-size:0.8rem;width:130px">
+            <button class="btn btn-primary btn-sm" onclick="loadAuditPanel()">Filter</button>
+            <button class="btn btn-outline btn-sm" onclick="clearAuditFilters()">Clear</button>
+          </div>
+        </div>
+        <div id="auditPanel"><div class="loader"></div></div>
+        <div id="auditPagination" style="display:flex;justify-content:space-between;align-items:center;margin-top:1rem"></div>
+      </div>
+
+      <!-- Platform Settings Panel -->
+      <div class="panel" id="panel-platform-settings">
+        <div class="panel-header"><h2>Platform Settings</h2><p>Manage global platform configuration</p></div>
+        <div class="card">
+          <form id="platformSettingsForm">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.85rem">
+              <div class="form-group"><label>Site Name</label><input type="text" id="psSiteName"></div>
+              <div class="form-group"><label>Currency</label><select id="psCurrency"><option value="INR">INR (₹)</option><option value="USD">USD ($)</option><option value="EUR">EUR (€)</option><option value="GBP">GBP (£)</option></select></div>
+              <div class="form-group" style="grid-column:1/-1"><label>Site Description</label><input type="text" id="psSiteDescription"></div>
+              <div class="form-group"><label>Support Email</label><input type="email" id="psSupportEmail"></div>
+              <div class="form-group"><label>Support Phone</label><input type="text" id="psSupportPhone"></div>
+              <div class="form-group"><label>Platform Status</label><select id="psPlatformStatus"><option value="active">Active</option><option value="maintenance">Maintenance</option><option value="offline">Offline</option></select></div>
+              <div class="form-group" style="display:flex;align-items:center;gap:0.75rem;padding-top:1.2rem">
+                <label style="margin:0;cursor:pointer;display:flex;align-items:center;gap:0.5rem"><input type="checkbox" id="psMaintenanceMode" style="width:auto"> Maintenance Mode</label>
+              </div>
+            </div>
+            <div id="psErrors" style="color:var(--danger);font-size:0.8rem;margin-top:0.5rem"></div>
+            <button type="submit" class="btn btn-primary" style="margin-top:1rem">Save Platform Settings</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Subscription Settings Panel -->
+      <div class="panel" id="panel-subscription-settings">
+        <div class="panel-header"><h2>Subscription Settings</h2><p>Configure subscription pricing and plan details</p></div>
+        <div class="card">
+          <form id="subscriptionSettingsForm">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.85rem">
+              <div class="form-group"><label>Monthly Plan Price (₹)</label><input type="number" id="ssMonthlyPrice" min="0" step="1"></div>
+              <div class="form-group"><label>Yearly Plan Price (₹)</label><input type="number" id="ssYearlyPrice" min="0" step="1"></div>
+              <div class="form-group"><label>Trial Days</label><input type="number" id="ssTrialDays" min="0"></div>
+              <div class="form-group"><label>Grace Period Days</label><input type="number" id="ssGracePeriod" min="0"></div>
+              <div class="form-group"><label>Featured Portfolio Price (₹)</label><input type="number" id="ssFeaturedPrice" min="0"></div>
+              <div class="form-group"><label>Search Boost Price (₹)</label><input type="number" id="ssBoostPrice" min="0"></div>
+              <div class="form-group"><label>Homepage Featured Price (₹)</label><input type="number" id="ssHomepagePrice" min="0"></div>
+              <div class="form-group"><label>Rank #1 Price (₹)</label><input type="number" id="ssRank1Price" min="0"></div>
+              <div class="form-group"><label>Rank #2 Price (₹)</label><input type="number" id="ssRank2Price" min="0"></div>
+              <div class="form-group"><label>Rank #3 Price (₹)</label><input type="number" id="ssRank3Price" min="0"></div>
+              <div class="form-group"><label>Rank #4 Price (₹)</label><input type="number" id="ssRank4Price" min="0"></div>
+              <div class="form-group" style="display:flex;align-items:center;gap:0.75rem;padding-top:1.2rem">
+                <label style="margin:0;cursor:pointer;display:flex;align-items:center;gap:0.5rem"><input type="checkbox" id="ssAutoRenew" style="width:auto"> Auto Renew Default</label>
+              </div>
+            </div>
+            <div id="ssErrors" style="color:var(--danger);font-size:0.8rem;margin-top:0.5rem"></div>
+            <button type="submit" class="btn btn-primary" style="margin-top:1rem">Save Subscription Settings</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Commission Settings Panel -->
+      <div class="panel" id="panel-commission-settings">
+        <div class="panel-header"><h2>Commission Settings</h2><p>Configure commission rates for all booking types</p></div>
+        <div class="card">
+          <form id="commissionSettingsForm">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.85rem">
+              <div class="form-group"><label>BMS Lead Commission (%)</label><input type="number" id="csBmsPercent" min="0" max="100" step="0.1"></div>
+              <div class="form-group"><label>Creator Lead Commission (%)</label><input type="number" id="csCreatorPercent" min="0" max="100" step="0.1"></div>
+              <div class="form-group"><label>Late Payment Fee (%)</label><input type="number" id="csLateFee" min="0" max="100" step="0.1"></div>
+              <div class="form-group"><label>Manual Adjustment (%)</label><input type="number" id="csManualAdj" min="0" max="100" step="0.1"></div>
+            </div>
+            <div id="csErrors" style="color:var(--danger);font-size:0.8rem;margin-top:0.5rem"></div>
+            <button type="submit" class="btn btn-primary" style="margin-top:1rem">Save Commission Settings</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Featured Creators Panel -->
+      <div class="panel" id="panel-featured-creators">
+        <div class="panel-header"><h2>Featured Creators</h2><p>Manage featured portfolio listings and payments</p></div>
+        <div id="featuredCreatorsPanel"><div class="loader"></div></div>
+      </div>
+
+      <!-- Search Boosts Panel -->
+      <div class="panel" id="panel-search-boosts">
+        <div class="panel-header"><h2>Search Boosts</h2><p>Manage creator visibility boosts and payments</p></div>
+        <div id="searchBoostsPanel"><div class="loader"></div></div>
+      </div>
+
+      <!-- Revenue Center Panel -->
+      <div class="panel" id="panel-revenue-center">
+        <div class="panel-header"><h2>Revenue Center</h2><p>Categorized revenue with time-based filters</p></div>
+        <div class="tabs" id="revenuePeriodTabs">
+          <button class="active" data-period="month">This Month</button>
+          <button data-period="today">Today</button>
+          <button data-period="week">This Week</button>
+          <button data-period="year">This Year</button>
+        </div>
+        <div id="revenueCenterPanel"><div class="loader"></div></div>
+      </div>
+
+      <!-- Announcements Panel -->
+      <div class="panel" id="panel-announcements">
+        <div class="panel-header"><h2>Global Announcements</h2><p>Send targeted communications to platform users</p></div>
+        <div class="card" style="margin-bottom:1.25rem">
+          <h4>Create Announcement</h4>
+          <form id="announcementForm" style="margin-top:0.75rem">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.85rem">
+              <div class="form-group"><label>Title *</label><input type="text" id="annTitle" required></div>
+              <div class="form-group"><label>Type *</label>
+                <select id="annType"><option value="general">General</option><option value="maintenance">Maintenance Notice</option><option value="offer">Offer</option><option value="subscription_reminder">Subscription Reminder</option><option value="emergency">Emergency Alert</option></select>
+              </div>
+              <div class="form-group" style="grid-column:1/-1"><label>Message *</label><textarea id="annMessage" rows="3" required></textarea></div>
+              <div class="form-group"><label>Audience *</label>
+                <select id="annAudience" onchange="document.getElementById('annRecipientIds').parentElement.style.display=this.value.startsWith('selected')?'block':'none'">
+                  <option value="all_creators">All Creators</option><option value="all_users">All Users</option><option value="selected_creators">Selected Creators</option><option value="selected_users">Selected Users</option>
+                </select>
+              </div>
+              <div class="form-group" style="display:none"><label>Recipient IDs (comma-separated)</label><input type="text" id="annRecipientIds" placeholder="id1, id2, ..."></div>
+            </div>
+            <div id="annErrors" style="color:var(--danger);font-size:0.8rem;margin-top:0.5rem"></div>
+            <button type="submit" class="btn btn-primary" style="margin-top:0.75rem">Send Announcement</button>
+          </form>
+        </div>
+        <div class="card"><h4>Sent Announcements</h4><div id="announcementsList" style="margin-top:0.75rem"><div class="loader"></div></div></div>
+      </div>
+
+      <!-- Finance Control Panel -->
+      <div class="panel" id="panel-finance-control">
+        <div class="panel-header"><h2>Finance Control</h2><p>Manual payments, approvals, adjustments, and refunds</p></div>
+        <div class="tabs" id="financeTabs">
+          <button class="active" data-ftab="manual">Manual Payment</button>
+          <button data-ftab="queue">Approval Queue</button>
+          <button data-ftab="adjust">Adjustment</button>
+          <button data-ftab="refund">Refund</button>
+          <button data-ftab="history">Payment History</button>
+        </div>
+        <div id="financeContent">
+          <!-- Manual Payment -->
+          <div class="finance-tab active" id="ftab-manual">
+            <div class="card">
+              <form id="manualPaymentForm">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.85rem">
+                  <div class="form-group"><label>Creator ID *</label><input type="text" id="mpCreatorId" required></div>
+                  <div class="form-group"><label>Amount (₹) *</label><input type="number" id="mpAmount" min="0" step="0.01" required></div>
+                  <div class="form-group"><label>Payment Type *</label><select id="mpType"><option value="bonus">Bonus</option><option value="commission">Commission</option><option value="reimbursement">Reimbursement</option><option value="penalty">Penalty</option><option value="other">Other</option></select></div>
+                  <div class="form-group"><label>Reason *</label><input type="text" id="mpReason" required></div>
+                </div>
+                <div id="mpErrors" style="color:var(--danger);font-size:0.8rem;margin-top:0.5rem"></div>
+                <button type="submit" class="btn btn-primary" style="margin-top:0.75rem">Record Payment</button>
+              </form>
+            </div>
+          </div>
+          <!-- Approval Queue -->
+          <div class="finance-tab" id="ftab-queue"><div id="approvalQueueContent"><div class="loader"></div></div></div>
+          <!-- Adjustment -->
+          <div class="finance-tab" id="ftab-adjust">
+            <div class="card">
+              <form id="adjustmentForm">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.85rem">
+                  <div class="form-group"><label>Target ID (Creator/Booking) *</label><input type="text" id="adjTargetId" required></div>
+                  <div class="form-group"><label>Target Type *</label><select id="adjTargetType"><option value="creator">Creator</option><option value="booking">Booking</option></select></div>
+                  <div class="form-group"><label>Adjustment Amount (₹) *</label><input type="number" id="adjAmount" step="0.01" required></div>
+                  <div class="form-group"><label>Justification *</label><input type="text" id="adjJustification" required></div>
+                </div>
+                <div id="adjErrors" style="color:var(--danger);font-size:0.8rem;margin-top:0.5rem"></div>
+                <button type="submit" class="btn btn-primary" style="margin-top:0.75rem">Record Adjustment</button>
+              </form>
+            </div>
+          </div>
+          <!-- Refund -->
+          <div class="finance-tab" id="ftab-refund">
+            <div class="card">
+              <form id="refundForm">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.85rem">
+                  <div class="form-group"><label>Original Payment ID *</label><input type="text" id="refPaymentId" required></div>
+                  <div class="form-group"><label>Refund Amount (₹) *</label><input type="number" id="refAmount" min="0" step="0.01" required></div>
+                  <div class="form-group" style="grid-column:1/-1"><label>Reason *</label><input type="text" id="refReason" required></div>
+                </div>
+                <div id="refErrors" style="color:var(--danger);font-size:0.8rem;margin-top:0.5rem"></div>
+                <button type="submit" class="btn btn-primary" style="margin-top:0.75rem">Process Refund</button>
+              </form>
+            </div>
+          </div>
+          <!-- Payment History -->
+          <div class="finance-tab" id="ftab-history">
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem">
+              <input type="date" id="fhDateFrom" style="padding:0.5rem 0.7rem;background:rgba(255,255,255,0.04);border:1px solid var(--border-light);border-radius:10px;color:var(--text);font-size:0.8rem;color-scheme:dark">
+              <input type="date" id="fhDateTo" style="padding:0.5rem 0.7rem;background:rgba(255,255,255,0.04);border:1px solid var(--border-light);border-radius:10px;color:var(--text);font-size:0.8rem;color-scheme:dark">
+              <input type="text" id="fhCreator" placeholder="Creator" style="padding:0.5rem 0.7rem;background:rgba(255,255,255,0.04);border:1px solid var(--border-light);border-radius:10px;color:var(--text);font-size:0.8rem;width:120px">
+              <select id="fhStatus" style="padding:0.5rem 0.7rem;background:rgba(255,255,255,0.04);border:1px solid var(--border-light);border-radius:10px;color:var(--text);font-size:0.8rem"><option value="">All</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select>
+              <button class="btn btn-primary btn-sm" onclick="loadPaymentHistory()">Filter</button>
+            </div>
+            <div id="paymentHistoryContent"><div class="loader"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Creator Accounts Panel -->
+      <div class="panel" id="panel-creator-accounts">
+        <div class="panel-header"><h2>Creator Account Control</h2><p>Manage creator lifecycle, verification, and subscription</p></div>
+        <div style="margin-bottom:1rem;display:flex;gap:0.5rem">
+          <input type="text" id="caSearch" placeholder="Search creators..." style="flex:1;padding:0.6rem 0.8rem;background:rgba(255,255,255,0.04);border:1px solid var(--border-light);border-radius:10px;color:var(--text);font-size:0.85rem" onkeydown="if(event.key==='Enter')loadCreatorAccounts()">
+          <button class="btn btn-primary btn-sm" onclick="loadCreatorAccounts()">Search</button>
+        </div>
+        <div id="creatorAccountsPanel"><div class="loader"></div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Commission Modal -->
+  <div class="modal-overlay" id="commissionModal">
+    <div class="modal">
+      <h3>Create Commission</h3>
+      <form id="commissionForm">
+        <div class="form-group"><label>Booking ID</label><input type="text" id="commBooking" required></div>
+        <div class="form-group"><label>Total Amount (₹)</label><input type="number" id="commAmount" required></div>
+        <div class="form-group"><label>Commission %</label><input type="number" id="commPercent" value="5" step="0.5"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" onclick="closeModal('commissionModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Creator Detail Modal -->
+  <div class="modal-overlay" id="creatorDetailModal">
+    <div class="modal" style="max-width:700px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <h3 style="margin:0">Creator Details</h3>
+        <button class="btn btn-outline btn-sm" onclick="closeModal('creatorDetailModal')">✕ Close</button>
+      </div>
+      <div id="creatorDetailContent"><div class="loader"></div></div>
+    </div>
+  </div>
+
+  <!-- Broadcast Modal -->
+  <div class="modal-overlay" id="broadcastModal">
+    <div class="modal" style="max-width:480px">
+      <h3><i class="fas fa-bullhorn" style="color:var(--gold);margin-right:0.4rem"></i>Broadcast Message</h3>
+      <div class="form-group"><label>Title *</label><input type="text" id="bcTitle" placeholder="e.g. Important Platform Update"></div>
+      <div class="form-group"><label>Message *</label><textarea id="bcMessage" rows="3" placeholder="Your message to creators..."></textarea></div>
+      <div class="form-group"><label>Priority</label>
+        <select id="bcPriority"><option value="normal">Normal (Notification only)</option><option value="important">Important (Notification + Popup)</option></select>
+      </div>
+      <div class="form-group"><label>Send To</label>
+        <select id="bcTarget" onchange="document.getElementById('bcCreatorId').style.display=this.value==='selected'?'block':'none'"><option value="all">All Creators</option><option value="selected">Selected Creator</option></select>
+      </div>
+      <div class="form-group" id="bcCreatorId" style="display:none"><label>Creator ID</label><input type="text" id="bcSelectedId" placeholder="Paste creator ID"></div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeModal('broadcastModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="sendBroadcastFromModal()">Send Broadcast</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/utils.js"></script>
+  <script>
+    let adminUser = null;
+
+    // Platform config loaded from database
+    var adminConfig = {
+      subscription: { monthlyPlanPrice: 299 },
+      commission: { bmsLeadPercent: 5, creatorLeadPercent: 3 },
+      platform: { currency: 'INR' }
+    };
+
+    (async function init() {
+      const token = API.getToken();
+      if (!token) { window.location.href = "/login.html"; return; }
+      try {
+        // Load platform config from DB
+        try {
+          const cfg = await API.get("/config/public");
+          if (cfg && cfg.success) adminConfig = cfg;
+        } catch(e) { /* use defaults */ }
+
+        const data = await API.get("/auth/me");
+        adminUser = data.user;
+        if (adminUser.role !== "admin") { window.location.href = "/login.html"; return; }
+        document.getElementById("adminName").textContent = adminUser.name || "Admin";
+        if (adminUser.avatar) document.getElementById("adminAvatar").src = adminUser.avatar;
+        loadDashboard();
+      } catch { API.clearAuth(); window.location.href = "/login.html"; }
+    })();
+
+    document.querySelectorAll(".sidebar-nav a").forEach(a => {
+      a.addEventListener("click", e => {
+        e.preventDefault();
+        document.querySelectorAll(".sidebar-nav a").forEach(x => x.classList.remove("active"));
+        a.classList.add("active");
+        document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+        const panel = document.getElementById("panel-" + a.dataset.panel);
+        if (panel) panel.classList.add("active");
+        document.getElementById("pageTitle").textContent = a.textContent.trim();
+        const p = a.dataset.panel;
+        try {
+          if (p === "dashboard") loadDashboard();
+          else if (p === "creators") loadCreators();
+          else if (p === "users") loadUsers();
+          else if (p === "bookings") loadAllBookings();
+          else if (p === "inquiries") loadAllInquiries();
+          else if (p === "payments") loadAllPayments();
+          else if (p === "commissions") loadCommissions();
+          else if (p === "contacts") loadContacts();
+          else if (p === "homepage") loadHomepageCMS();
+          else if (p === "social-links") loadSocialLinks();
+          else if (p === "promotion-requests") loadPromotionRequests();
+          else if (p === "revenue") loadRevenuePanel();
+          else if (p === "subscriptions") loadSubscriptionsPanel();
+          else if (p === "notifications") loadRecentNotifs();
+          else if (p === "calendar") loadCalendarPanel();
+          else if (p === "audit") loadAuditPanel();
+          else if (p === "platform-settings") loadPlatformSettings();
+          else if (p === "subscription-settings") loadSubscriptionSettings();
+          else if (p === "commission-settings") loadCommissionSettings();
+          else if (p === "featured-creators") loadFeaturedCreators();
+          else if (p === "search-boosts") loadSearchBoosts();
+          else if (p === "revenue-center") loadRevenueCenter('month');
+          else if (p === "announcements") loadAnnouncementsPanel();
+          else if (p === "finance-control") loadApprovalQueue();
+          else if (p === "creator-accounts") loadCreatorAccounts();
+        } catch (err) { /* panel load error */ }
+        // Close mobile sidebar
+        document.getElementById("sidebar").classList.remove("open");
+      });
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click", e => { e.preventDefault(); API.clearAuth(); window.location.href = "/login.html"; });
+
+    // Dashboard
+    async function loadDashboard() {
+      try {
+        const { stats } = await API.get("/admin/analytics");
+        const { creators } = await API.get("/admin/creators");
+        const { bookings } = await API.get("/bookings/all");
+
+        const activeCreators = creators.filter(c => c.status === 'approved').length;
+        const validBookings = bookings.filter(b => b.status !== 'rejected');
+        const bmsRev = validBookings.filter(b => b.leadSource !== 'creator').reduce((s,b) => s + (b.amount||0), 0);
+        const crtRev = validBookings.filter(b => b.leadSource === 'creator').reduce((s,b) => s + (b.amount||0), 0);
+        const bmsComm = Math.round(bmsRev * (adminConfig.commission.bmsLeadPercent / 100));
+        const crtComm = Math.round(crtRev * (adminConfig.commission.creatorLeadPercent / 100));
+        const subRevenue = creators.filter(c => c.subscriptionStatus === 'active').length * adminConfig.subscription.monthlyPlanPrice;
+
+        document.getElementById("statUsers").textContent = stats.users || 0;
+        document.getElementById("statCreators").textContent = creators.length;
+        document.getElementById("statActiveCreators").textContent = activeCreators;
+        document.getElementById("statPending").textContent = stats.pendingCreators || 0;
+        document.getElementById("statInquiries").textContent = stats.contacts || 0;
+        document.getElementById("statBookings").textContent = validBookings.length;
+        document.getElementById("statRevenue").textContent = "₹" + (bmsRev + crtRev).toLocaleString('en-IN');
+        document.getElementById("statSubRevenue").textContent = "₹" + subRevenue.toLocaleString('en-IN');
+        document.getElementById("statBmsRevenue").textContent = "₹" + bmsComm.toLocaleString('en-IN');
+        document.getElementById("statCrtRevenue").textContent = "₹" + crtComm.toLocaleString('en-IN');
+      } catch { }
+    }
+
+    // Creators
+    let allCreators = [];
+    async function loadCreators() {
+      try {
+        const { creators } = await API.get("/admin/creators");
+        allCreators = creators;
+        renderCreators("all");
+      } catch { }
+    }
+
+    function renderCreators(filter) {
+      const filtered = filter === "all" ? allCreators : allCreators.filter(c => c.status === filter);
+      document.getElementById("creatorsTable").innerHTML = filtered.length
+        ? filtered.map(c => `<tr style="cursor:pointer" onclick="openCreatorDetails('${c._id}')">
+          <td><strong style="color:var(--gold-light)">${c.user?.name || "N/A"}</strong></td>
+          <td>${c.user?.email || "N/A"}</td>
+          <td>${c.user?.phone || "—"}</td>
+          <td><span class="status-badge status-${c.status}">${c.status}</span></td>
+          <td><span class="status-badge status-${c.subscriptionStatus || 'none'}">${c.subscriptionStatus || '—'}</span></td>
+          <td style="display:flex;gap:0.35rem;flex-wrap:wrap" onclick="event.stopPropagation()">
+            ${c.status === "pending" ? `<button class="btn btn-success btn-sm" onclick="updateCreatorStatus('${c._id}','approved')">Approve</button><button class="btn btn-danger btn-sm" onclick="updateCreatorStatus('${c._id}','rejected')">Reject</button>` : ""}
+            ${c.status === "approved" ? `<button class="btn btn-outline btn-sm" onclick="toggleFeatured('${c._id}',${!c.featured})">${c.featured ? "Unfeature" : "Feature"}</button>` : ""}
+            <button class="btn btn-danger btn-sm" onclick="deleteCreator('${c._id}')">Del</button>
+          </td>
+        </tr>`).join("")
+        : `<tr><td colspan="6"><div class="empty-state"><h3>No creators found</h3></div></td></tr>`;
+    }
+
+    // Creator Details (clickable row)
+    window.openCreatorDetails = async function(creatorId) {
+      const c = allCreators.find(x => x._id === creatorId);
+      if (!c) return;
+      const name = c.user?.name || 'Creator';
+      const email = c.user?.email || '—';
+      const phone = c.user?.phone || '—';
+      const subStatus = c.subscriptionStatus || '—';
+      const subExpiry = c.subscriptionEndDate ? new Date(c.subscriptionEndDate).toLocaleDateString('en-IN') : '—';
+
+      // Fetch bookings for this creator
+      let bookings = [];
+      try {
+        const res = await API.get("/bookings/all");
+        bookings = (res.bookings || []).filter(b => b.creator?._id === creatorId || (b.creator?.user?._id && false));
+      } catch {}
+      // Filter by creator ID from the bookings
+      bookings = bookings.filter(b => {
+        if (b.creator && typeof b.creator === 'object') return b.creator._id === creatorId;
+        return b.creator === creatorId;
+      });
+
+      const totalRevenue = bookings.reduce((s, b) => s + (b.amount || 0), 0);
+      const bmsLeads = bookings.filter(b => b.leadSource === 'bookmyshot' || !b.leadSource).length;
+      const creatorLeads = bookings.filter(b => b.leadSource === 'creator').length;
+      const bmsRevenue = bookings.filter(b => b.leadSource !== 'creator').reduce((s, b) => s + (b.amount || 0), 0);
+      const creatorRevenue = bookings.filter(b => b.leadSource === 'creator').reduce((s, b) => s + (b.amount || 0), 0);
+      const commDue = Math.round(bmsRevenue * (adminConfig.commission.bmsLeadPercent / 100)) + Math.round(creatorRevenue * (adminConfig.commission.creatorLeadPercent / 100));
+
+      const modal = document.getElementById("creatorDetailModal");
+      document.getElementById("creatorDetailContent").innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem">
+          <div>
+            <h3 style="font-family:var(--font-display);color:var(--gold-light);font-size:1.3rem;margin:0">${name}</h3>
+            <p style="color:var(--text-dim);font-size:0.82rem;margin:0.2rem 0">${email} · ${phone}</p>
+          </div>
+          <div style="text-align:right">
+            <span class="status-badge status-${c.status}">${c.status}</span>
+            <span class="status-badge status-${subStatus}" style="margin-left:0.3rem">${subStatus}</span>
+          </div>
+        </div>
+        <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:0.75rem">
+          <div class="stat-card"><div class="label">Bookings</div><div class="value">${bookings.length}</div></div>
+          <div class="stat-card"><div class="label">Revenue</div><div class="value gold">₹${totalRevenue.toLocaleString('en-IN')}</div></div>
+          <div class="stat-card"><div class="label">BMS Leads</div><div class="value">${bmsLeads}</div></div>
+          <div class="stat-card"><div class="label">Creator Leads</div><div class="value">${creatorLeads}</div></div>
+          <div class="stat-card"><div class="label">Commission Due</div><div class="value danger">₹${commDue.toLocaleString('en-IN')}</div></div>
+          <div class="stat-card"><div class="label">Sub Expiry</div><div class="value" style="font-size:0.9rem">${subExpiry}</div></div>
+        </div>
+        <div style="margin-top:1.25rem;display:flex;gap:0.5rem;flex-wrap:wrap">
+          ${c.status === 'approved' ? `<button class="btn btn-danger btn-sm" onclick="updateCreatorStatus('${c._id}','rejected');closeModal('creatorDetailModal')">Suspend</button>` : `<button class="btn btn-success btn-sm" onclick="updateCreatorStatus('${c._id}','approved');closeModal('creatorDetailModal')">Approve</button>`}
+          <button class="btn btn-outline btn-sm" onclick="activateSub('${c._id}')">Activate Sub</button>
+          <button class="btn btn-outline btn-sm" onclick="extendSub('${c._id}')">Extend +30d</button>
+          <button class="btn btn-primary btn-sm" onclick="sendNotifToCreator('${c._id}')">Send Notification</button>
+        </div>
+        ${bookings.length > 0 ? `<h4 style="margin-top:1.5rem;color:var(--gold-light);font-family:var(--font-display);font-size:0.95rem">Recent Bookings</h4>
+        <div class="table-wrap" style="margin-top:0.5rem"><table><thead><tr><th>Client</th><th>Type</th><th>Amount</th><th>Lead</th><th>Status</th></tr></thead><tbody>
+        ${bookings.slice(0,10).map(b => '<tr><td>' + (b.clientName||'—') + '</td><td>' + (b.eventType||'—') + '</td><td>₹' + (b.amount||0).toLocaleString('en-IN') + '</td><td>' + (b.leadSource||'bms') + '</td><td><span class="status-badge">' + (b.status||'—') + '</span></td></tr>').join('')}
+        </tbody></table></div>` : ''}
+      `;
+      modal.classList.add("active");
+    };
+
+    window.sendNotifToCreator = function(creatorId) {
+      const title = prompt("Notification title:");
+      if (!title) return;
+      const message = prompt("Notification message:");
+      if (!message) return;
+      // Use "announcement" type to trigger popup on creator side
+      API.post("/admin/notifications/send", { title, message, type: "announcement", creatorIds: [creatorId] })
+        .then(() => toast("Notification sent with popup", "success"))
+        .catch(e => toast(e.message || "Failed", "error"));
+    };
+
+    document.querySelectorAll("#creatorTabs button").forEach(b => {
+      b.addEventListener("click", () => {
+        document.querySelectorAll("#creatorTabs button").forEach(x => x.classList.remove("active"));
+        b.classList.add("active");
+        renderCreators(b.dataset.filter);
+      });
+    });
+
+    window.updateCreatorStatus = async (id, status) => {
+      try {
+        await API.patch(`/admin/creators/${id}/status`, { status });
+        toast(`Creator ${status}`, "success");
+        loadCreators();
+      } catch (err) { toast(err.message, "error"); }
+    };
+
+    window.toggleFeatured = async (id, featured) => {
+      try {
+        await API.patch(`/admin/creators/${id}/featured`, { featured });
+        toast(featured ? "Featured" : "Unfeatured", "success");
+        loadCreators();
+      } catch (err) { toast(err.message, "error"); }
+    };
+
+    window.deleteCreator = async (id) => {
+      if (!confirm("Delete this creator?")) return;
+      try {
+        await API.delete(`/admin/creators/${id}`);
+        toast("Deleted", "success");
+        loadCreators();
+      } catch (err) { toast(err.message, "error"); }
+    };
+
+    // Users
+    async function loadUsers() {
+      try {
+        const { users } = await API.get("/admin/users");
+        document.getElementById("usersTable").innerHTML = users.length
+          ? users.map(u => `<tr>
+            <td>${u.name}</td>
+            <td>${u.email}</td>
+            <td>${u.phone || "—"}</td>
+            <td>${new Date(u.createdAt).toLocaleDateString()}</td>
+            <td><button class="btn btn-danger btn-sm" onclick="deleteUser('${u._id}')">Delete</button></td>
+          </tr>`).join("")
+          : `<tr><td colspan="5"><div class="empty-state"><h3>No users</h3></div></td></tr>`;
+      } catch { }
+    }
+
+    window.deleteUser = async (id) => {
+      if (!confirm("Delete this user?")) return;
+      try { await API.delete(`/admin/users/${id}`); toast("Deleted", "success"); loadUsers(); } catch (err) { toast(err.message, "error"); }
+    };
+
+    // Bookings
+    async function loadAllBookings() {
+      try {
+        const { bookings } = await API.get("/bookings/all");
+        document.getElementById("bookingsTable").innerHTML = bookings.length
+          ? bookings.map(b => `<tr>
+            <td>${b.clientName || b.user?.name || "N/A"}</td>
+            <td>${b.creator?.user?.name || "N/A"}</td>
+            <td>₹${(b.amount || b.budget || 0).toLocaleString('en-IN')}</td>
+            <td>${b.leadSource === 'creator' ? '<span style="color:var(--info)">Creator</span>' : '<span style="color:var(--gold)">BookMyShot</span>'}</td>
+            <td>${b.creatorNotes === 'Created by creator' ? 'Creator' : 'User'}</td>
+            <td><span class="status-badge">${b.status}</span></td>
+            <td>${b.eventDate ? new Date(b.eventDate).toLocaleDateString('en-IN') : "—"}</td>
+          </tr>`).join("")
+          : `<tr><td colspan="7"><div class="empty-state"><h3>No bookings</h3></div></td></tr>`;
+      } catch { }
+    }
+
+    // Inquiries - Platform inquiries only (user-submitted, not creator-created)
+    async function loadAllInquiries() {
+      try {
+        const { inquiries } = await API.get("/admin/inquiries");
+        // Filter to only show platform inquiries (user-submitted, not creator-self-created)
+        const platformInquiries = inquiries.filter(i => i.user && i.user._id);
+        document.getElementById("inquiriesTable").innerHTML = platformInquiries.length
+          ? platformInquiries.map(i => `<tr>
+            <td><strong style="color:var(--text)">${i.user?.name || i.name || "N/A"}</strong></td>
+            <td>${i.user?.phone || i.phone || "—"}</td>
+            <td>${i.creator?.user?.name || "N/A"}</td>
+            <td>${i.eventType || "—"}</td>
+            <td>${new Date(i.eventDate).toLocaleDateString('en-IN')}</td>
+            <td>₹${(i.budget || 0).toLocaleString('en-IN')}</td>
+            <td><span class="status-badge status-${i.status}">${i.status}</span></td>
+          </tr>`).join("")
+          : `<tr><td colspan="7"><div class="empty-state"><h3>No platform inquiries</h3></div></td></tr>`;
+      } catch { }
+    }
+
+    // Payments - Show creator payment status (not customer proofs)
+    async function loadAllPayments() {
+      try {
+        const { creators } = await API.get("/admin/creators");
+        const { bookings } = await API.get("/bookings/all");
+
+        let html = '';
+        const creatorsWithData = creators.filter(c => c.status === 'approved');
+        creatorsWithData.forEach(c => {
+          const cBookings = bookings.filter(b => {
+            if (b.creator && typeof b.creator === 'object') return b.creator._id === c._id;
+            return b.creator === c._id;
+          });
+          const totalRev = cBookings.reduce((s, b) => s + (b.amount || 0), 0);
+          const bmsRev = cBookings.filter(b => b.leadSource !== 'creator').reduce((s, b) => s + (b.amount || 0), 0);
+          const crtRev = cBookings.filter(b => b.leadSource === 'creator').reduce((s, b) => s + (b.amount || 0), 0);
+          const commDue = Math.round(bmsRev * (adminConfig.commission.bmsLeadPercent / 100)) + Math.round(crtRev * (adminConfig.commission.creatorLeadPercent / 100));
+          const subStatus = c.subscriptionStatus || '—';
+          html += `<tr style="cursor:pointer" onclick="openCreatorDetails('${c._id}')">
+            <td><strong style="color:var(--gold-light)">${c.user?.name || '—'}</strong></td>
+            <td>${cBookings.length}</td>
+            <td>₹${totalRev.toLocaleString('en-IN')}</td>
+            <td style="color:var(--danger)">₹${commDue.toLocaleString('en-IN')}</td>
+            <td><span class="status-badge status-${subStatus}">${subStatus}</span></td>
+          </tr>`;
+        });
+
+        document.getElementById("paymentsTable").innerHTML = html || `<tr><td colspan="5"><div class="empty-state"><h3>No creator data</h3></div></td></tr>`;
+      } catch { }
+    }
+
+    window.verifyPayment = async (id, status) => {
+      try {
+        await API.patch(`/admin/payment-proofs/${id}/verify`, { status });
+        toast(`Payment ${status}`, "success");
+        loadAllPayments();
+      } catch (err) { toast(err.message, "error"); }
+    };
+
+    // Commissions
+    async function loadCommissions() {
+      try {
+        const { commissions, totalRevenue } = await API.get("/admin/commissions");
+        document.getElementById("commTotal").textContent = "₹" + (totalRevenue || 0).toLocaleString();
+        document.getElementById("commPending").textContent = commissions.filter(c => c.status === "pending").length;
+        document.getElementById("commissionsTable").innerHTML = commissions.length
+          ? commissions.map(c => `<tr>
+            <td>${c.booking?.eventType || "N/A"}</td>
+            <td>${c.creator?.user?.name || "N/A"}</td>
+            <td>₹${c.totalAmount.toLocaleString()}</td>
+            <td>₹${c.commissionAmount.toLocaleString()} (${c.commissionPercent}%)</td>
+            <td>₹${c.creatorEarning.toLocaleString()}</td>
+            <td><span class="status-badge status-${c.status}">${c.status}</span></td>
+            <td>${c.status === "pending" ? `<button class="btn btn-success btn-sm" onclick="markCommissionPaid('${c._id}')">Mark Paid</button>` : "—"}</td>
+          </tr>`).join("")
+          : `<tr><td colspan="7"><div class="empty-state"><h3>No commissions</h3></div></td></tr>`;
+      } catch { }
+    }
+
+    window.markCommissionPaid = async (id) => {
+      try {
+        await API.patch(`/admin/commissions/${id}`, { status: "paid" });
+        toast("Commission marked paid", "success");
+        loadCommissions();
+      } catch (err) { toast(err.message, "error"); }
+    };
+
+    // Contacts
+    async function loadContacts() {
+      try {
+        const { contacts } = await API.get("/admin/contacts");
+        document.getElementById("contactsTable").innerHTML = contacts.length
+          ? contacts.map(c => `<tr>
+            <td>${c.name}</td>
+            <td>${c.email}</td>
+            <td>${(c.message || "").slice(0, 60)}...</td>
+            <td>${new Date(c.createdAt).toLocaleDateString()}</td>
+            <td><span class="status-badge status-${c.status || "new"}">${c.status || "new"}</span></td>
+            <td><button class="btn btn-outline btn-sm" onclick="markContactRead('${c._id}')">Mark Read</button></td>
+          </tr>`).join("")
+          : `<tr><td colspan="6"><div class="empty-state"><h3>No contacts</h3></div></td></tr>`;
+      } catch { }
+    }
+
+    window.markContactRead = async (id) => {
+      try { await API.patch(`/admin/contacts/${id}`, { status: "read" }); toast("Marked read", "success"); loadContacts(); } catch { }
+    };
+
+    // Homepage CMS
+    async function loadHomepageCMS() {
+      try {
+        const { homepage } = await API.get("/admin/homepage");
+        document.getElementById("cmsHeroTitle").value = homepage.heroTitle || "";
+        document.getElementById("cmsHeroSubtitle").value = homepage.heroSubtitle || "";
+        document.getElementById("cmsHeroImage").value = homepage.heroImage || "";
+        document.getElementById("cmsAboutTitle").value = homepage.aboutTitle || "";
+        document.getElementById("cmsAboutText").value = homepage.aboutText || "";
+      } catch { }
+    }
+
+    document.getElementById("homepageForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      try {
+        await API.put("/admin/homepage", {
+          heroTitle: document.getElementById("cmsHeroTitle").value,
+          heroSubtitle: document.getElementById("cmsHeroSubtitle").value,
+          heroImage: document.getElementById("cmsHeroImage").value,
+          aboutTitle: document.getElementById("cmsAboutTitle").value,
+          aboutText: document.getElementById("cmsAboutText").value,
+        });
+        toast("Homepage saved", "success");
+      } catch (err) { toast(err.message, "error"); }
+    });
+
+    // ─── SOCIAL LINKS ───────────────────────────────────────────────
+
+    async function loadSocialLinks() {
+      try {
+        const data = await API.get("/admin/social-links");
+        const s = data.data || data;
+        document.getElementById("slInstagram").value = s.instagram || '';
+        document.getElementById("slFacebook").value = s.facebook || '';
+        document.getElementById("slYoutube").value = s.youtube || '';
+        document.getElementById("slWhatsapp").value = s.whatsapp || '';
+        document.getElementById("slTwitter").value = s.twitter || '';
+        document.getElementById("slLinkedin").value = s.linkedin || '';
+        document.getElementById("slTelegram").value = s.telegram || '';
+      } catch { }
+    }
+
+    document.getElementById("socialLinksForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      document.getElementById("slErrors").textContent = '';
+      const body = {
+        instagram: document.getElementById("slInstagram").value.trim(),
+        facebook: document.getElementById("slFacebook").value.trim(),
+        youtube: document.getElementById("slYoutube").value.trim(),
+        whatsapp: document.getElementById("slWhatsapp").value.trim(),
+        twitter: document.getElementById("slTwitter").value.trim(),
+        linkedin: document.getElementById("slLinkedin").value.trim(),
+        telegram: document.getElementById("slTelegram").value.trim(),
+      };
+      try {
+        await API.put("/admin/social-links", body);
+        toast("Social links saved", "success");
+      } catch (err) {
+        document.getElementById("slErrors").textContent = err.message || 'Failed to save';
+      }
+    });
+
+    // Modal helpers
+    window.closeModal = (id) => { document.getElementById(id).classList.remove("active"); };
+    document.querySelectorAll(".modal-overlay").forEach(m => {
+      m.addEventListener("click", e => { if (e.target === m) m.classList.remove("active"); });
+    });
+
+    function toast(msg, type = "info") {
+      const t = document.createElement("div");
+      t.className = "toast " + type;
+      t.textContent = msg;
+      document.getElementById("toastContainer").appendChild(t);
+      setTimeout(() => t.remove(), 4000);
+    }
+
+    // ─── NEW PANEL LOADERS ──────────────────────────────────────────────────
+
+    async function loadRevenuePanel() {
+      const el = document.getElementById("revenuePanel");
+      try {
+        const { bookings } = await API.get("/bookings/all");
+        const { creators } = await API.get("/admin/creators");
+
+        const validBookings = bookings.filter(b => b.status !== 'rejected');
+        const activeCreators = creators.filter(c => c.subscriptionStatus === 'active').length;
+        const bmsBookings = validBookings.filter(b => b.leadSource !== 'creator');
+        const crtBookings = validBookings.filter(b => b.leadSource === 'creator');
+        const bmsRevenue = bmsBookings.reduce((s,b) => s + (b.amount||0), 0);
+        const crtRevenue = crtBookings.reduce((s,b) => s + (b.amount||0), 0);
+        const bmsComm = Math.round(bmsRevenue * (adminConfig.commission.bmsLeadPercent / 100));
+        const crtComm = Math.round(crtRevenue * (adminConfig.commission.creatorLeadPercent / 100));
+        const subRevMonthly = activeCreators * adminConfig.subscription.monthlyPlanPrice;
+        const subRevYearly = subRevMonthly * 12;
+
+        el.innerHTML = `
+          <div class="card" style="margin-bottom:1.25rem">
+            <h4>A) Subscription Revenue</h4>
+            <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0.75rem;margin-top:0.75rem;margin-bottom:0">
+              <div class="stat-card"><div class="label">Active Creators</div><div class="value success">${activeCreators}</div></div>
+              <div class="stat-card"><div class="label">Monthly Revenue</div><div class="value gold">₹${subRevMonthly.toLocaleString('en-IN')}</div></div>
+              <div class="stat-card"><div class="label">Yearly Revenue</div><div class="value gold">₹${subRevYearly.toLocaleString('en-IN')}</div></div>
+            </div>
+          </div>
+          <div class="card" style="margin-bottom:1.25rem">
+            <h4>B) BookMyShot Lead Revenue (${adminConfig.commission.bmsLeadPercent}%)</h4>
+            <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0.75rem;margin-top:0.75rem;margin-bottom:0">
+              <div class="stat-card"><div class="label">Total BMS Bookings</div><div class="value">${bmsBookings.length}</div></div>
+              <div class="stat-card"><div class="label">Booking Revenue</div><div class="value">₹${bmsRevenue.toLocaleString('en-IN')}</div></div>
+              <div class="stat-card"><div class="label">Commission (${adminConfig.commission.bmsLeadPercent}%)</div><div class="value gold">₹${bmsComm.toLocaleString('en-IN')}</div></div>
+            </div>
+          </div>
+          <div class="card" style="margin-bottom:1.25rem">
+            <h4>C) Creator Lead Revenue (${adminConfig.commission.creatorLeadPercent}%)</h4>
+            <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0.75rem;margin-top:0.75rem;margin-bottom:0">
+              <div class="stat-card"><div class="label">Total Creator Bookings</div><div class="value">${crtBookings.length}</div></div>
+              <div class="stat-card"><div class="label">Booking Revenue</div><div class="value">₹${crtRevenue.toLocaleString('en-IN')}</div></div>
+              <div class="stat-card"><div class="label">Commission (${adminConfig.commission.creatorLeadPercent}%)</div><div class="value gold">₹${crtComm.toLocaleString('en-IN')}</div></div>
+            </div>
+          </div>
+          <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">
+            <div class="stat-card"><div class="label">Total Platform Revenue</div><div class="value gold">₹${(subRevMonthly + bmsComm + crtComm).toLocaleString('en-IN')}</div></div>
+            <div class="stat-card"><div class="label">Total Booking Volume</div><div class="value">₹${(bmsRevenue + crtRevenue).toLocaleString('en-IN')}</div></div>
+          </div>
+        `;
+      } catch (e) { el.innerHTML = '<p style="color:var(--text-dim)">Failed to load revenue data.</p>'; }
+    }
+
+    async function loadSubscriptionsPanel() {
+      const el = document.getElementById("subscriptionsPanel");
+      try {
+        const data = await API.get("/admin/subscriptions");
+        const creators = data.creators || [];
+        let html = `<div class="stats-grid" style="margin-bottom:1.5rem">
+          <div class="stat-card"><div class="label">Active</div><div class="value" style="color:#4ae882">${data.stats?.active||0}</div></div>
+          <div class="stat-card"><div class="label">Trial</div><div class="value gold">${data.stats?.trial||0}</div></div>
+          <div class="stat-card"><div class="label">Expired</div><div class="value danger">${data.stats?.expired||0}</div></div>
+          <div class="stat-card"><div class="label">Total</div><div class="value">${data.stats?.total||0}</div></div>
+        </div><div class="table-wrap"><table><thead><tr><th>Creator</th><th>Email</th><th>Status</th><th>Expires</th><th>Actions</th></tr></thead><tbody>`;
+        creators.forEach(c => {
+          const name = c.user?.name || '—';
+          const email = c.user?.email || '—';
+          const status = c.subscriptionStatus || 'none';
+          const expiry = c.subscriptionEndDate ? new Date(c.subscriptionEndDate).toLocaleDateString('en-IN') : '—';
+          html += `<tr><td>${name}</td><td>${email}</td><td><span class="status-badge status-${status}">${status}</span></td><td>${expiry}</td><td>
+            <button class="btn btn-success btn-sm" onclick="activateSub('${c._id}')">Activate</button>
+            <button class="btn btn-outline btn-sm" onclick="extendSub('${c._id}')">+30d</button>
+            <button class="btn btn-danger btn-sm" onclick="suspendSub('${c._id}')">Suspend</button>
+          </td></tr>`;
+        });
+        html += '</tbody></table></div>';
+        el.innerHTML = html;
+      } catch (e) { el.innerHTML = '<p style="color:var(--text-muted)">Subscriptions panel requires server restart.</p>'; }
+    }
+
+    async function activateSub(creatorId) {
+      try {
+        const end = new Date(); end.setDate(end.getDate() + 30);
+        await API.patch("/admin/subscriptions/" + creatorId, { subscriptionStatus: "active", subscriptionEndDate: end.toISOString() });
+        toast("Subscription activated", "success"); loadSubscriptionsPanel();
+      } catch (e) { toast(e.message || "Failed", "error"); }
+    }
+    async function extendSub(creatorId) {
+      try {
+        const end = new Date(); end.setDate(end.getDate() + 30);
+        await API.patch("/admin/subscriptions/" + creatorId, { subscriptionEndDate: end.toISOString() });
+        toast("Extended by 30 days", "success"); loadSubscriptionsPanel();
+      } catch (e) { toast(e.message || "Failed", "error"); }
+    }
+    async function suspendSub(creatorId) {
+      if (!confirm("Suspend this creator's subscription?")) return;
+      try {
+        await API.patch("/admin/subscriptions/" + creatorId, { subscriptionStatus: "suspended" });
+        toast("Subscription suspended", "success"); loadSubscriptionsPanel();
+      } catch (e) { toast(e.message || "Failed", "error"); }
+    }
+
+    async function sendNotification() {
+      const title = document.getElementById("notifTitle").value.trim();
+      const message = document.getElementById("notifMessage").value.trim();
+      const idsStr = document.getElementById("notifUserIds") ? document.getElementById("notifUserIds").value.trim() : "";
+      if (!title || !message) { toast("Title and message required", "error"); return; }
+      const creatorIds = idsStr ? idsStr.split(",").map(s => s.trim()) : [];
+      try {
+        const res = await API.post("/admin/notifications/send", { title, message, creatorIds });
+        toast("Sent to " + (res.sent || 0) + " creators", "success");
+        document.getElementById("notifTitle").value = "";
+        document.getElementById("notifMessage").value = "";
+      } catch (e) { toast(e.message || "Failed to send", "error"); }
+    }
+
+    async function sendBroadcast() {
+      const title = document.getElementById("notifTitle").value.trim();
+      const message = document.getElementById("notifMessage").value.trim();
+      const audience = document.getElementById("notifAudience").value;
+      if (!title || !message) { toast("Title and message required", "error"); return; }
+
+      let userIds = [];
+      if (audience === "specific") {
+        const idsStr = document.getElementById("notifUserIds") ? document.getElementById("notifUserIds").value.trim() : "";
+        if (!idsStr) { toast("Please enter user IDs", "error"); return; }
+        userIds = idsStr.split(",").map(s => s.trim());
+      }
+
+      try {
+        const res = await API.post("/admin/broadcast", { title, message, audience, userIds });
+        toast("Broadcast sent to " + (res.sent || 0) + " users", "success");
+        document.getElementById("notifTitle").value = "";
+        document.getElementById("notifMessage").value = "";
+        loadRecentNotifs();
+      } catch (e) { toast(e.message || "Failed to broadcast", "error"); }
+    }
+
+    async function triggerSubAlerts() {
+      if (!confirm("Send subscription expiry reminders to all creators with 5 days or less remaining?")) return;
+      try {
+        const res = await API.post("/admin/subscription-alerts", {});
+        toast("Sent " + (res.sent || 0) + " subscription alerts", "success");
+      } catch (e) { toast(e.message || "Failed - server restart may be required", "error"); }
+    }
+
+    function openBroadcastModal() {
+      document.getElementById("bcTitle").value = "";
+      document.getElementById("bcMessage").value = "";
+      document.getElementById("bcPriority").value = "normal";
+      document.getElementById("bcTarget").value = "all";
+      document.getElementById("bcCreatorId").style.display = "none";
+      document.getElementById("broadcastModal").classList.add("active");
+    }
+
+    async function sendBroadcastFromModal() {
+      const title = document.getElementById("bcTitle").value.trim();
+      const message = document.getElementById("bcMessage").value.trim();
+      const priority = document.getElementById("bcPriority").value;
+      const target = document.getElementById("bcTarget").value;
+      if (!title || !message) { toast("Title and message required", "error"); return; }
+
+      // Use "announcement" type for important (triggers popup), "system" for normal
+      const type = priority === "important" ? "announcement" : "system";
+      let userIds = [];
+      let audience = "creators";
+
+      if (target === "selected") {
+        const selectedId = document.getElementById("bcSelectedId").value.trim();
+        if (!selectedId) { toast("Please enter a creator ID", "error"); return; }
+        // Find the creator's user ID
+        const creator = allCreators.find(c => c._id === selectedId);
+        if (creator && creator.user) {
+          userIds = [typeof creator.user === 'object' ? creator.user._id : creator.user];
+        } else {
+          userIds = [selectedId];
+        }
+        audience = undefined;
+      }
+
+      try {
+        const body = { title, message, audience };
+        if (userIds.length > 0) body.userIds = userIds;
+        // Use broadcast endpoint for audience, notifications/send for specific
+        let res;
+        if (target === "selected") {
+          res = await API.post("/admin/notifications/send", { title, message, type, creatorIds: userIds });
+        } else {
+          res = await API.post("/admin/broadcast", { title, message, audience: "creators", userIds: [] });
+        }
+        toast("Broadcast sent to " + (res.sent || 0) + " creators", "success");
+        closeModal("broadcastModal");
+      } catch (e) { toast(e.message || "Failed to send broadcast", "error"); }
+    }
+
+    async function loadRecentNotifs() {
+      const el = document.getElementById("recentNotifsTable");
+      if (!el) return;
+      try {
+        const data = await API.get("/admin/all-notifications");
+        const notifs = data.notifications || [];
+        if (!notifs.length) { el.innerHTML = '<p style="color:var(--text-dim);font-size:0.8rem">No notifications sent yet.</p>'; return; }
+        let html = '<div class="table-wrap"><table><thead><tr><th>User</th><th>Title</th><th>Type</th><th>Date</th><th>Read</th></tr></thead><tbody>';
+        notifs.slice(0, 20).forEach(n => {
+          html += '<tr><td>' + (n.user?.name || n.user?.email || '—') + '</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis">' + (n.title || '—') + '</td><td>' + (n.type || 'info') + '</td><td style="font-size:0.72rem">' + (n.createdAt ? new Date(n.createdAt).toLocaleDateString('en-IN') : '—') + '</td><td>' + (n.read ? '✓' : '•') + '</td></tr>';
+        });
+        html += '</tbody></table></div>';
+        el.innerHTML = html;
+      } catch (e) { el.innerHTML = '<p style="color:var(--text-dim);font-size:0.8rem">Requires server restart for admin notification view.</p>'; }
+    }
+
+    // Show/hide specific IDs field
+    document.addEventListener("DOMContentLoaded", function() {
+      var sel = document.getElementById("notifAudience");
+      if (sel) {
+        sel.addEventListener("change", function() {
+          var g = document.getElementById("specificIdsGroup");
+          if (g) g.style.display = this.value === "specific" ? "block" : "none";
+        });
+      }
+    });
+
+    async function loadCalendarPanel() {
+      const el = document.getElementById("calendarPanel");
+      try {
+        const data = await API.get("/admin/calendar/all");
+        const events = data.events || [];
+        let html = '<div class="table-wrap"><table><thead><tr><th>Date</th><th>Title</th><th>Creator</th><th>Type</th><th>Actions</th></tr></thead><tbody>';
+        events.forEach(ev => {
+          const date = ev.date ? new Date(ev.date).toLocaleDateString('en-IN') : '—';
+          const creator = ev.creator?.user?.name || '—';
+          html += `<tr><td>${date}</td><td>${ev.title||ev.functionName||'—'}</td><td>${creator}</td><td><span class="status-badge">${ev.type}</span></td><td>
+            <button class="btn btn-danger btn-sm" onclick="deleteCalEvent('${ev._id}')">Delete</button>
+          </td></tr>`;
+        });
+        html += '</tbody></table></div>';
+        el.innerHTML = html;
+      } catch (e) { el.innerHTML = '<p style="color:var(--text-muted)">Calendar panel requires server restart.</p>'; }
+    }
+
+    async function deleteCalEvent(id) {
+      if (!confirm("Delete this event?")) return;
+      try { await API.delete("/admin/calendar/" + id); toast("Event deleted", "success"); loadCalendarPanel(); }
+      catch (e) { toast(e.message || "Failed", "error"); }
+    }
+
+    async function loadAuditPanel() {
+      const el = document.getElementById("auditPanel");
+      try {
+        const params = new URLSearchParams();
+        const action = document.getElementById("auditFilterAction")?.value;
+        const dateFrom = document.getElementById("auditFilterFrom")?.value;
+        const dateTo = document.getElementById("auditFilterTo")?.value;
+        const admin = document.getElementById("auditFilterAdmin")?.value;
+        const target = document.getElementById("auditFilterTarget")?.value;
+        if (action) params.set('action', action);
+        if (dateFrom) params.set('dateFrom', dateFrom);
+        if (dateTo) params.set('dateTo', dateTo);
+        if (admin) params.set('admin', admin);
+        if (target) params.set('target', target);
+        params.set('limit', '50');
+
+        const data = await API.get("/admin/audit-logs?" + params.toString());
+        const logs = data.data || data.logs || [];
+        if (!logs.length) { el.innerHTML = '<div class="empty-state"><div class="icon">📋</div><h3>No audit logs found</h3></div>'; return; }
+        let html = '<div class="table-wrap"><table><thead><tr><th>Time</th><th>Admin</th><th>Action</th><th>Target</th><th>Target ID</th><th>Changes</th></tr></thead><tbody>';
+        logs.forEach(l => {
+          const time = l.createdAt ? new Date(l.createdAt).toLocaleString('en-IN') : '—';
+          const adminName = l.adminName || l.admin?.name || '—';
+          const hasChanges = l.previousValues || l.newValues;
+          html += `<tr><td style="white-space:nowrap;font-size:0.72rem">${time}</td><td>${adminName}</td><td><span class="status-badge status-active">${l.action}</span></td><td>${l.targetType || l.target || '—'}</td><td style="font-family:monospace;font-size:0.7rem">${l.targetId ? l.targetId.slice(-8) : '—'}</td><td>${hasChanges ? '<button class="btn btn-outline btn-sm" onclick=\'showAuditDetails(' + JSON.stringify(l.previousValues).replace(/'/g,"&#39;") + ',' + JSON.stringify(l.newValues).replace(/'/g,"&#39;") + ')\'>View</button>' : '—'}</td></tr>`;
+        });
+        html += '</tbody></table></div>';
+        el.innerHTML = html;
+      } catch (e) { el.innerHTML = '<p style="color:var(--text-muted)">Failed to load audit logs.</p>'; }
+    }
+
+    function clearAuditFilters() {
+      document.getElementById("auditFilterAction").value = '';
+      document.getElementById("auditFilterFrom").value = '';
+      document.getElementById("auditFilterTo").value = '';
+      document.getElementById("auditFilterAdmin").value = '';
+      document.getElementById("auditFilterTarget").value = '';
+      loadAuditPanel();
+    }
+
+    window.showAuditDetails = function(prev, next) {
+      const modal = document.createElement("div");
+      modal.className = "modal-overlay active";
+      modal.onclick = e => { if (e.target === modal) modal.remove(); };
+      modal.innerHTML = `<div class="modal" style="max-width:700px"><h3>Change Details</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem"><div><h4 style="color:var(--text-dim);font-size:0.75rem;margin-bottom:0.5rem">PREVIOUS VALUES</h4><pre style="background:rgba(255,255,255,0.03);padding:0.75rem;border-radius:8px;font-size:0.72rem;color:var(--text-muted);overflow:auto;max-height:300px">${JSON.stringify(prev, null, 2) || 'null'}</pre></div><div><h4 style="color:var(--gold);font-size:0.75rem;margin-bottom:0.5rem">NEW VALUES</h4><pre style="background:rgba(218,175,55,0.04);padding:0.75rem;border-radius:8px;font-size:0.72rem;color:var(--gold-light);overflow:auto;max-height:300px">${JSON.stringify(next, null, 2) || 'null'}</pre></div></div><div class="modal-actions"><button class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">Close</button></div></div>`;
+      document.body.appendChild(modal);
+    };
+
+    // ─── PLATFORM SETTINGS ──────────────────────────────────────────
+
+    async function loadPlatformSettings() {
+      try {
+        const data = await API.get("/admin/platform-settings");
+        const s = data.data || data;
+        document.getElementById("psSiteName").value = s.siteName || '';
+        document.getElementById("psSiteDescription").value = s.siteDescription || '';
+        document.getElementById("psSupportEmail").value = s.supportEmail || '';
+        document.getElementById("psSupportPhone").value = s.supportPhone || '';
+        document.getElementById("psCurrency").value = s.currency || 'INR';
+        document.getElementById("psPlatformStatus").value = s.platformStatus || 'active';
+        document.getElementById("psMaintenanceMode").checked = !!s.maintenanceMode;
+      } catch { }
+    }
+
+    document.getElementById("platformSettingsForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      document.getElementById("psErrors").textContent = '';
+      const body = {
+        siteName: document.getElementById("psSiteName").value.trim(),
+        siteDescription: document.getElementById("psSiteDescription").value.trim(),
+        supportEmail: document.getElementById("psSupportEmail").value.trim(),
+        supportPhone: document.getElementById("psSupportPhone").value.trim(),
+        currency: document.getElementById("psCurrency").value,
+        platformStatus: document.getElementById("psPlatformStatus").value,
+        maintenanceMode: document.getElementById("psMaintenanceMode").checked,
+      };
+      try {
+        await API.put("/admin/platform-settings", body);
+        toast("Platform settings saved", "success");
+      } catch (err) {
+        const msg = err.data?.errors?.map(e => e.message).join(', ') || err.message;
+        document.getElementById("psErrors").textContent = msg;
+      }
+    });
+
+    // ─── SUBSCRIPTION SETTINGS ──────────────────────────────────────
+
+    async function loadSubscriptionSettings() {
+      try {
+        const data = await API.get("/admin/subscription-settings");
+        const s = data.data || data;
+        document.getElementById("ssMonthlyPrice").value = s.monthlyPlanPrice ?? 299;
+        document.getElementById("ssYearlyPrice").value = s.yearlyPlanPrice ?? 2999;
+        document.getElementById("ssTrialDays").value = s.trialDays ?? 30;
+        document.getElementById("ssGracePeriod").value = s.gracePeriodDays ?? 7;
+        document.getElementById("ssFeaturedPrice").value = s.featuredPortfolioPrice ?? 999;
+        document.getElementById("ssBoostPrice").value = s.searchBoostPrice ?? 499;
+        document.getElementById("ssHomepagePrice").value = s.homepageFeaturedPrice ?? 1499;
+        document.getElementById("ssRank1Price").value = s.rank1Price ?? 1999;
+        document.getElementById("ssRank2Price").value = s.rank2Price ?? 1499;
+        document.getElementById("ssRank3Price").value = s.rank3Price ?? 999;
+        document.getElementById("ssRank4Price").value = s.rank4Price ?? 799;
+        document.getElementById("ssAutoRenew").checked = s.autoRenewDefault !== false;
+      } catch { }
+    }
+
+    document.getElementById("subscriptionSettingsForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      document.getElementById("ssErrors").textContent = '';
+      const body = {
+        monthlyPlanPrice: Number(document.getElementById("ssMonthlyPrice").value),
+        yearlyPlanPrice: Number(document.getElementById("ssYearlyPrice").value),
+        trialDays: Number(document.getElementById("ssTrialDays").value),
+        gracePeriodDays: Number(document.getElementById("ssGracePeriod").value),
+        featuredPortfolioPrice: Number(document.getElementById("ssFeaturedPrice").value),
+        searchBoostPrice: Number(document.getElementById("ssBoostPrice").value),
+        homepageFeaturedPrice: Number(document.getElementById("ssHomepagePrice").value),
+        rank1Price: Number(document.getElementById("ssRank1Price").value),
+        rank2Price: Number(document.getElementById("ssRank2Price").value),
+        rank3Price: Number(document.getElementById("ssRank3Price").value),
+        rank4Price: Number(document.getElementById("ssRank4Price").value),
+        autoRenewDefault: document.getElementById("ssAutoRenew").checked,
+      };
+      try {
+        await API.put("/admin/subscription-settings", body);
+        toast("Subscription settings saved", "success");
+      } catch (err) {
+        const msg = err.data?.errors?.map(e => e.message).join(', ') || err.message;
+        document.getElementById("ssErrors").textContent = msg;
+      }
+    });
+
+    // ─── COMMISSION SETTINGS ────────────────────────────────────────
+
+    async function loadCommissionSettings() {
+      try {
+        const data = await API.get("/admin/commission-settings");
+        const s = data.data || data;
+        document.getElementById("csBmsPercent").value = s.bmsLeadCommissionPercent ?? 5;
+        document.getElementById("csCreatorPercent").value = s.creatorLeadCommissionPercent ?? 3;
+        document.getElementById("csLateFee").value = s.latePaymentFeePercent ?? 2;
+        document.getElementById("csManualAdj").value = s.manualAdjustmentPercent ?? 0;
+      } catch { }
+    }
+
+    document.getElementById("commissionSettingsForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      document.getElementById("csErrors").textContent = '';
+      const body = {
+        bmsLeadCommissionPercent: Number(document.getElementById("csBmsPercent").value),
+        creatorLeadCommissionPercent: Number(document.getElementById("csCreatorPercent").value),
+        latePaymentFeePercent: Number(document.getElementById("csLateFee").value),
+        manualAdjustmentPercent: Number(document.getElementById("csManualAdj").value),
+      };
+      try {
+        await API.put("/admin/commission-settings", body);
+        toast("Commission settings saved", "success");
+      } catch (err) {
+        const msg = err.data?.errors?.map(e => e.message).join(', ') || err.message;
+        document.getElementById("csErrors").textContent = msg;
+      }
+    });
+
+    // ─── FEATURED CREATORS ──────────────────────────────────────────
+
+    async function loadFeaturedCreators() {
+      const el = document.getElementById("featuredCreatorsPanel");
+      try {
+        const data = await API.get("/admin/featured-portfolios");
+        const creators = data.data || data.creators || [];
+        if (!creators.length) { el.innerHTML = '<div class="empty-state"><div class="icon">⭐</div><h3>No creators found</h3></div>'; return; }
+        let html = '<div class="table-wrap"><table><thead><tr><th>Creator</th><th>Featured</th><th>Start</th><th>End</th><th>Payment</th><th>Actions</th></tr></thead><tbody>';
+        creators.forEach(c => {
+          const name = c.user?.name || c.name || '—';
+          const featured = c.featured ? '<span class="status-badge status-active">Yes</span>' : '<span class="status-badge status-pending">No</span>';
+          const start = c.featuredStartDate ? new Date(c.featuredStartDate).toLocaleDateString('en-IN') : '—';
+          const end = c.featuredEndDate ? new Date(c.featuredEndDate).toLocaleDateString('en-IN') : '—';
+          const payment = c.featuredPaymentStatus || 'none';
+          const payBadge = `<span class="status-badge status-${payment === 'paid' ? 'approved' : payment === 'rejected' ? 'rejected' : 'pending'}">${payment}</span>`;
+          let actions = '';
+          if (!c.featured) actions += `<button class="btn btn-success btn-sm" onclick="featureCreator('${c._id}')">Feature</button> `;
+          else actions += `<button class="btn btn-danger btn-sm" onclick="unfeatureCreator('${c._id}')">Remove</button> `;
+          if (payment === 'pending') actions += `<button class="btn btn-success btn-sm" onclick="approveFeaturePayment('${c._id}')">Approve</button> <button class="btn btn-danger btn-sm" onclick="rejectFeaturePayment('${c._id}')">Reject</button>`;
+          html += `<tr><td><strong style="color:var(--gold-light)">${name}</strong></td><td>${featured}</td><td>${start}</td><td>${end}</td><td>${payBadge}</td><td style="display:flex;gap:0.3rem;flex-wrap:wrap">${actions}</td></tr>`;
+        });
+        html += '</tbody></table></div>';
+        el.innerHTML = html;
+      } catch { el.innerHTML = '<p style="color:var(--text-muted)">Failed to load featured creators.</p>'; }
+    }
+
+    window.featureCreator = async function(id) {
+      const endDate = prompt("Featured expiry date (YYYY-MM-DD):", new Date(Date.now() + 30*86400000).toISOString().split('T')[0]);
+      if (!endDate) return;
+      try { await API.post("/admin/featured-portfolios/" + id, { endDate }); toast("Creator featured", "success"); loadFeaturedCreators(); }
+      catch (e) { toast(e.message, "error"); }
+    };
+    window.unfeatureCreator = async function(id) {
+      try { await API.delete("/admin/featured-portfolios/" + id); toast("Removed from featured", "success"); loadFeaturedCreators(); }
+      catch (e) { toast(e.message, "error"); }
+    };
+    window.approveFeaturePayment = async function(id) {
+      try { await API.patch("/admin/featured-portfolios/" + id + "/payment", { action: "approve" }); toast("Payment approved", "success"); loadFeaturedCreators(); }
+      catch (e) { toast(e.message, "error"); }
+    };
+    window.rejectFeaturePayment = async function(id) {
+      const reason = prompt("Rejection reason:");
+      if (!reason) return;
+      try { await API.patch("/admin/featured-portfolios/" + id + "/payment", { action: "reject", reason }); toast("Payment rejected", "success"); loadFeaturedCreators(); }
+      catch (e) { toast(e.message, "error"); }
+    };
+
+    // ─── SEARCH BOOSTS ──────────────────────────────────────────────
+
+    async function loadSearchBoosts() {
+      const el = document.getElementById("searchBoostsPanel");
+      try {
+        const data = await API.get("/admin/search-boosts");
+        const boosts = data.data || data.boosts || [];
+        if (!boosts.length) { el.innerHTML = '<div class="empty-state"><div class="icon">🚀</div><h3>No boost requests</h3></div>'; return; }
+        let html = '<div class="table-wrap"><table><thead><tr><th>Creator</th><th>Boost Type</th><th>Status</th><th>Start</th><th>End</th><th>Payment</th><th>Actions</th></tr></thead><tbody>';
+        boosts.forEach(b => {
+          const name = b.creator?.user?.name || b.creator?.name || '—';
+          const type = b.boostType?.replace(/_/g, ' ') || '—';
+          const status = `<span class="status-badge status-${b.status === 'active' ? 'approved' : b.status === 'rejected' ? 'rejected' : b.status === 'expired' ? 'expired' : 'pending'}">${b.status}</span>`;
+          const start = b.startDate ? new Date(b.startDate).toLocaleDateString('en-IN') : '—';
+          const end = b.endDate ? new Date(b.endDate).toLocaleDateString('en-IN') : '—';
+          const payment = `<span class="status-badge status-${b.paymentStatus === 'paid' ? 'approved' : 'pending'}">${b.paymentStatus}</span>`;
+          let actions = '';
+          if (b.status === 'pending') {
+            actions = `<button class="btn btn-success btn-sm" onclick="approveBoost('${b._id}')">Approve</button> <button class="btn btn-danger btn-sm" onclick="rejectBoost('${b._id}')">Reject</button>`;
+          } else if (b.status === 'active') {
+            actions = `<button class="btn btn-outline btn-sm" onclick="extendBoost('${b._id}')">Extend</button>`;
+          }
+          html += `<tr><td><strong style="color:var(--gold-light)">${name}</strong></td><td>${type}</td><td>${status}</td><td>${start}</td><td>${end}</td><td>${payment}</td><td style="display:flex;gap:0.3rem">${actions}</td></tr>`;
+        });
+        html += '</tbody></table></div>';
+        el.innerHTML = html;
+      } catch { el.innerHTML = '<p style="color:var(--text-muted)">Failed to load search boosts.</p>'; }
+    }
+
+    window.approveBoost = async function(id) {
+      const days = prompt("Duration in days:", "30");
+      if (!days) return;
+      try { await API.patch("/admin/search-boosts/" + id + "/approve", { duration: Number(days) }); toast("Boost approved", "success"); loadSearchBoosts(); }
+      catch (e) { toast(e.message, "error"); }
+    };
+    window.rejectBoost = async function(id) {
+      const reason = prompt("Rejection reason:");
+      if (!reason) return;
+      try { await API.patch("/admin/search-boosts/" + id + "/reject", { reason }); toast("Boost rejected", "success"); loadSearchBoosts(); }
+      catch (e) { toast(e.message, "error"); }
+    };
+    window.extendBoost = async function(id) {
+      const days = prompt("Extend by (days):", "15");
+      if (!days) return;
+      try { await API.patch("/admin/search-boosts/" + id + "/extend", { days: Number(days) }); toast("Boost extended", "success"); loadSearchBoosts(); }
+      catch (e) { toast(e.message, "error"); }
+    };
+
+    // ─── REVENUE CENTER ─────────────────────────────────────────────
+
+    async function loadRevenueCenter(period) {
+      const el = document.getElementById("revenueCenterPanel");
+      el.innerHTML = '<div class="loader"></div>';
+      try {
+        const data = await API.get("/admin/revenue-center?period=" + (period || 'month'));
+        const r = data.data || data;
+        el.innerHTML = `
+          <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:1rem">
+            <div class="stat-card"><div class="label">Subscription Revenue</div><div class="value gold">₹${(r.subscriptionRevenue || 0).toLocaleString('en-IN')}</div></div>
+            <div class="stat-card"><div class="label">BMS Lead Commission</div><div class="value">₹${(r.bmsLeadCommissionRevenue || 0).toLocaleString('en-IN')}</div></div>
+            <div class="stat-card"><div class="label">Creator Lead Commission</div><div class="value">₹${(r.creatorLeadCommissionRevenue || 0).toLocaleString('en-IN')}</div></div>
+            <div class="stat-card"><div class="label">Featured Portfolio</div><div class="value">₹${(r.featuredPortfolioRevenue || 0).toLocaleString('en-IN')}</div></div>
+            <div class="stat-card"><div class="label">Search Boost</div><div class="value">₹${(r.searchBoostRevenue || 0).toLocaleString('en-IN')}</div></div>
+          </div>
+          <div class="stat-card" style="border-color:rgba(218,175,55,0.3)"><div class="label">Total Platform Revenue</div><div class="value gold" style="font-size:2rem">₹${(r.totalPlatformRevenue || 0).toLocaleString('en-IN')}</div></div>
+        `;
+      } catch { el.innerHTML = '<p style="color:var(--text-muted)">Failed to load revenue data.</p>'; }
+    }
+
+    document.querySelectorAll("#revenuePeriodTabs button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#revenuePeriodTabs button").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        loadRevenueCenter(btn.dataset.period);
+      });
+    });
+
+    // ─── ANNOUNCEMENTS ──────────────────────────────────────────────
+
+    async function loadAnnouncementsPanel() {
+      const el = document.getElementById("announcementsList");
+      try {
+        const data = await API.get("/admin/announcements");
+        const announcements = data.data || data.announcements || [];
+        if (!announcements.length) { el.innerHTML = '<p style="color:var(--text-dim)">No announcements sent yet.</p>'; return; }
+        let html = '<div class="table-wrap"><table><thead><tr><th>Title</th><th>Type</th><th>Audience</th><th>Recipients</th><th>Date</th></tr></thead><tbody>';
+        announcements.forEach(a => {
+          html += `<tr><td>${a.title}</td><td><span class="status-badge status-${a.type === 'emergency' ? 'rejected' : 'active'}">${a.type}</span></td><td>${a.audience?.replace(/_/g, ' ')}</td><td>${a.recipientCount || 0}</td><td>${new Date(a.createdAt).toLocaleDateString('en-IN')}</td></tr>`;
+        });
+        html += '</tbody></table></div>';
+        el.innerHTML = html;
+      } catch { el.innerHTML = '<p style="color:var(--text-muted)">Failed to load announcements.</p>'; }
+    }
+
+    document.getElementById("announcementForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      document.getElementById("annErrors").textContent = '';
+      const body = {
+        title: document.getElementById("annTitle").value.trim(),
+        message: document.getElementById("annMessage").value.trim(),
+        type: document.getElementById("annType").value,
+        audience: document.getElementById("annAudience").value,
+      };
+      const audience = body.audience;
+      if (audience === 'selected_creators' || audience === 'selected_users') {
+        const ids = document.getElementById("annRecipientIds").value.trim();
+        if (!ids) { document.getElementById("annErrors").textContent = 'Recipient IDs required for selected audience'; return; }
+        body.recipientIds = ids.split(',').map(s => s.trim());
+      }
+      if (!body.title || !body.message) { document.getElementById("annErrors").textContent = 'Title and message are required'; return; }
+      try {
+        await API.post("/admin/announcements", body);
+        toast("Announcement sent", "success");
+        document.getElementById("announcementForm").reset();
+        loadAnnouncementsPanel();
+      } catch (err) {
+        document.getElementById("annErrors").textContent = err.data?.message || err.message;
+      }
+    });
+
+    // ─── FINANCE CONTROL ────────────────────────────────────────────
+
+    document.querySelectorAll("#financeTabs button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#financeTabs button").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        document.querySelectorAll(".finance-tab").forEach(t => t.classList.remove("active"));
+        document.getElementById("ftab-" + btn.dataset.ftab).classList.add("active");
+        if (btn.dataset.ftab === 'queue') loadApprovalQueue();
+        if (btn.dataset.ftab === 'history') loadPaymentHistory();
+      });
+    });
+
+    document.getElementById("manualPaymentForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      document.getElementById("mpErrors").textContent = '';
+      const body = {
+        creatorId: document.getElementById("mpCreatorId").value.trim(),
+        amount: Number(document.getElementById("mpAmount").value),
+        paymentType: document.getElementById("mpType").value,
+        reason: document.getElementById("mpReason").value.trim(),
+      };
+      if (!body.creatorId || !body.amount || !body.reason) { document.getElementById("mpErrors").textContent = 'All fields are required'; return; }
+      try {
+        await API.post("/admin/finance/manual-payment", body);
+        toast("Payment recorded", "success");
+        document.getElementById("manualPaymentForm").reset();
+      } catch (err) { document.getElementById("mpErrors").textContent = err.data?.message || err.message; }
+    });
+
+    async function loadApprovalQueue() {
+      const el = document.getElementById("approvalQueueContent");
+      try {
+        const data = await API.get("/admin/finance/history?status=pending");
+        const payments = data.payments || data.data || [];
+        if (!payments.length) { el.innerHTML = '<div class="empty-state"><div class="icon">✅</div><h3>No pending payments</h3></div>'; return; }
+        let html = '<div class="table-wrap"><table><thead><tr><th>Creator</th><th>Amount</th><th>Type</th><th>Reason</th><th>Date</th><th>Actions</th></tr></thead><tbody>';
+        payments.forEach(p => {
+          html += `<tr><td>${p.creatorName || p.creatorId || '—'}</td><td>₹${(p.amount||0).toLocaleString('en-IN')}</td><td>${p.paymentType||'—'}</td><td>${(p.reason||'—').slice(0,30)}</td><td>${p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-IN') : '—'}</td><td style="display:flex;gap:0.3rem"><button class="btn btn-success btn-sm" onclick="financeAction('${p._id}','approve')">Approve</button><button class="btn btn-danger btn-sm" onclick="financeAction('${p._id}','reject')">Reject</button></td></tr>`;
+        });
+        html += '</tbody></table></div>';
+        el.innerHTML = html;
+      } catch { el.innerHTML = '<p style="color:var(--text-muted)">Failed to load approval queue.</p>'; }
+    }
+
+    window.financeAction = async function(id, action) {
+      try { await API.patch("/admin/finance/payments/" + id + "/" + action); toast("Payment " + action + "d", "success"); loadApprovalQueue(); }
+      catch (e) { toast(e.message, "error"); }
+    };
+
+    document.getElementById("adjustmentForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      document.getElementById("adjErrors").textContent = '';
+      const body = {
+        targetId: document.getElementById("adjTargetId").value.trim(),
+        targetType: document.getElementById("adjTargetType").value,
+        adjustmentAmount: Number(document.getElementById("adjAmount").value),
+        justification: document.getElementById("adjJustification").value.trim(),
+      };
+      if (!body.targetId || !body.adjustmentAmount || !body.justification) { document.getElementById("adjErrors").textContent = 'All fields are required'; return; }
+      try { await API.post("/admin/finance/adjust", body); toast("Adjustment recorded", "success"); document.getElementById("adjustmentForm").reset(); }
+      catch (err) { document.getElementById("adjErrors").textContent = err.data?.message || err.message; }
+    });
+
+    document.getElementById("refundForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      document.getElementById("refErrors").textContent = '';
+      const body = {
+        originalPaymentId: document.getElementById("refPaymentId").value.trim(),
+        refundAmount: Number(document.getElementById("refAmount").value),
+        reason: document.getElementById("refReason").value.trim(),
+      };
+      if (!body.originalPaymentId || !body.refundAmount || !body.reason) { document.getElementById("refErrors").textContent = 'All fields are required'; return; }
+      try { await API.post("/admin/finance/refund", body); toast("Refund processed", "success"); document.getElementById("refundForm").reset(); }
+      catch (err) { document.getElementById("refErrors").textContent = err.data?.message || err.message; }
+    });
+
+    async function loadPaymentHistory() {
+      const el = document.getElementById("paymentHistoryContent");
+      const params = new URLSearchParams();
+      const from = document.getElementById("fhDateFrom")?.value;
+      const to = document.getElementById("fhDateTo")?.value;
+      const creator = document.getElementById("fhCreator")?.value;
+      const status = document.getElementById("fhStatus")?.value;
+      if (from) params.set('dateFrom', from);
+      if (to) params.set('dateTo', to);
+      if (creator) params.set('creator', creator);
+      if (status) params.set('status', status);
+      try {
+        const data = await API.get("/admin/finance/history?" + params.toString());
+        const payments = data.payments || data.data || [];
+        if (!payments.length) { el.innerHTML = '<div class="empty-state"><div class="icon">💳</div><h3>No payment records</h3></div>'; return; }
+        let html = '<div class="table-wrap"><table><thead><tr><th>Date</th><th>Creator</th><th>Type</th><th>Amount</th><th>Status</th><th>Reason</th></tr></thead><tbody>';
+        payments.forEach(p => {
+          const statusClass = p.status === 'approved' ? 'approved' : p.status === 'rejected' ? 'rejected' : 'pending';
+          html += `<tr><td style="font-size:0.75rem">${p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-IN') : '—'}</td><td>${p.creatorName || p.creatorId || '—'}</td><td>${p.paymentType || '—'}</td><td>₹${(p.amount||0).toLocaleString('en-IN')}</td><td><span class="status-badge status-${statusClass}">${p.status||'—'}</span></td><td style="max-width:150px;overflow:hidden;text-overflow:ellipsis">${p.reason||'—'}</td></tr>`;
+        });
+        html += '</tbody></table></div>';
+        el.innerHTML = html;
+      } catch { el.innerHTML = '<p style="color:var(--text-muted)">Failed to load payment history.</p>'; }
+    }
+
+    // ─── CREATOR ACCOUNTS ───────────────────────────────────────────
+
+    async function loadCreatorAccounts() {
+      const el = document.getElementById("creatorAccountsPanel");
+      const search = document.getElementById("caSearch")?.value || '';
+      el.innerHTML = '<div class="loader"></div>';
+      try {
+        const params = search ? '?search=' + encodeURIComponent(search) : '';
+        const data = await API.get("/admin/creator-accounts" + params);
+        const creators = (data.data && data.data.creators) || data.data || data.creators || [];
+        if (!creators.length) { el.innerHTML = '<div class="empty-state"><div class="icon">👤</div><h3>No creators found</h3></div>'; return; }
+        let html = '<div class="table-wrap"><table><thead><tr><th>Creator</th><th>Status</th><th>Subscription</th><th>Featured</th><th>Verified</th><th>Actions</th></tr></thead><tbody>';
+        creators.forEach(c => {
+          const name = c.user?.name || c.name || '—';
+          const email = c.user?.email || c.email || '';
+          const status = c.status || 'pending';
+          const subStatus = c.subscriptionStatus || 'none';
+          const featured = c.featured ? '<span class="status-badge status-active">Yes</span>' : '—';
+          const verified = c.verified ? '<span class="status-badge status-approved">✓</span>' : '—';
+          let actions = '<div style="display:flex;gap:0.25rem;flex-wrap:wrap">';
+          if (status !== 'approved') actions += `<button class="btn btn-success btn-sm" onclick="caAction('${c._id}','activate')">Activate</button>`;
+          if (status === 'approved') actions += `<button class="btn btn-danger btn-sm" onclick="caAction('${c._id}','deactivate')">Deactivate</button>`;
+          if (status !== 'suspended') actions += `<button class="btn btn-outline btn-sm" style="color:var(--warning);border-color:rgba(245,158,11,0.3)" onclick="caSuspend('${c._id}')">Suspend</button>`;
+          if (!c.verified) actions += `<button class="btn btn-outline btn-sm" style="color:var(--info);border-color:rgba(59,130,246,0.3)" onclick="caAction('${c._id}','verify')">Verify</button>`;
+          if (!c.featured) actions += `<button class="btn btn-outline btn-sm" style="color:var(--gold);border-color:var(--border)" onclick="caFeature('${c._id}')">Feature</button>`;
+          actions += `<button class="btn btn-outline btn-sm" onclick="caExtend('${c._id}')">Extend</button>`;
+          actions += `<button class="btn btn-outline btn-sm" onclick="caAction('${c._id}','reset')">Reset</button>`;
+          actions += `<select onchange="caBadge('${c._id}',this.value)" style="padding:0.2rem 0.4rem;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text);font-size:0.65rem;cursor:pointer"><option value=""${!c.badge?' selected':''}>No Badge</option><option value="most_trusted"${c.badge==='most_trusted'?' selected':''}>🛡 Most Trusted</option><option value="premium_creator"${c.badge==='premium_creator'?' selected':''}>👑 Premium</option><option value="top_rated"${c.badge==='top_rated'?' selected':''}>🌟 Top Rated</option><option value="best_creator"${c.badge==='best_creator'?' selected':''}>⭐ Verified</option><option value="editors_choice"${c.badge==='editors_choice'?' selected':''}>✨ Rising Star</option></select>`;
+          actions += `<input type="number" min="0" max="99" value="${c.rank||0}" onchange="caRank('${c._id}',this.value)" style="width:42px;padding:0.2rem 0.3rem;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text);font-size:0.65rem;text-align:center" title="Rank (0=none)">`;
+          actions += '</div>';
+          html += `<tr><td><strong style="color:var(--gold-light)">${name}</strong><br><span style="font-size:0.7rem;color:var(--text-dim)">${email}</span></td><td><span class="status-badge status-${status}">${status}</span></td><td><span class="status-badge status-${subStatus}">${subStatus}</span></td><td>${featured}</td><td>${verified}</td><td>${actions}</td></tr>`;
+        });
+        html += '</tbody></table></div>';
+        el.innerHTML = html;
+      } catch { el.innerHTML = '<p style="color:var(--text-muted)">Failed to load creator accounts.</p>'; }
+    }
+
+    window.caAction = async function(id, action) {
+      try { await API.patch("/admin/creator-accounts/" + id + "/" + action); toast("Action completed", "success"); loadCreatorAccounts(); }
+      catch (e) { toast(e.message, "error"); }
+    };
+    window.caSuspend = async function(id) {
+      const reason = prompt("Suspension reason:");
+      if (!reason) return;
+      try { await API.patch("/admin/creator-accounts/" + id + "/suspend", { reason }); toast("Creator suspended", "success"); loadCreatorAccounts(); }
+      catch (e) { toast(e.message, "error"); }
+    };
+    window.caFeature = async function(id) {
+      const endDate = prompt("Feature expiry (YYYY-MM-DD):", new Date(Date.now() + 30*86400000).toISOString().split('T')[0]);
+      if (!endDate) return;
+      try { await API.patch("/admin/creator-accounts/" + id + "/feature", { endDate }); toast("Creator featured", "success"); loadCreatorAccounts(); }
+      catch (e) { toast(e.message, "error"); }
+    };
+    window.caExtend = async function(id) {
+      const days = prompt("Extend subscription by (days):", "30");
+      if (!days) return;
+      try { await API.patch("/admin/creator-accounts/" + id + "/extend-subscription", { days: Number(days) }); toast("Subscription extended", "success"); loadCreatorAccounts(); }
+      catch (e) { toast(e.message, "error"); }
+    };
+    window.caBadge = async function(id, badge) {
+      try { await API.patch("/admin/creator-accounts/" + id + "/badge", { badge: badge }); toast("Badge updated", "success"); }
+      catch (e) { toast(e.message, "error"); }
+    };
+    window.caRank = async function(id, rank) {
+      try { await API.patch("/admin/creator-accounts/" + id + "/rank", { rank: Number(rank) }); toast("Rank updated", "success"); }
+      catch (e) { toast(e.message, "error"); }
+    };
+
+    // ─── PROMOTION REQUESTS ─────────────────────────────────────────
+
+    async function loadPromotionRequests() {
+      const el = document.getElementById("promotionRequestsPanel");
+      el.innerHTML = '<div class="loader"></div>';
+      try {
+        const data = await API.get("/promotions/admin/all");
+        const requests = data.data || [];
+        if (!requests.length) { el.innerHTML = '<div class="empty-state"><div class="icon">🏆</div><h3>No promotion requests yet</h3></div>'; return; }
+        const planNames = { homepage_featured: 'Homepage Featured', rank_1: 'Rank #1', rank_2: 'Rank #2', rank_3: 'Rank #3', rank_4: 'Rank #4' };
+        let html = '<div class="table-wrap"><table><thead><tr><th>Creator</th><th>Plan</th><th>Price</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+        requests.forEach(r => {
+          const name = r.creator?.user?.name || r.creatorName || '—';
+          const plan = planNames[r.planType] || r.planType;
+          const price = '₹' + (r.price || 0).toLocaleString('en-IN');
+          const date = r.requestDate ? new Date(r.requestDate).toLocaleDateString('en-IN') : '—';
+          const statusClass = r.status === 'approved' ? 'approved' : r.status === 'rejected' ? 'rejected' : 'pending';
+          let actions = '';
+          if (r.status === 'pending') {
+            actions = '<button class="btn btn-success btn-sm" onclick="approvePromo(\'' + r._id + '\')">Approve</button> <button class="btn btn-danger btn-sm" onclick="rejectPromo(\'' + r._id + '\')">Reject</button>';
+          } else {
+            actions = '<span style="font-size:.7rem;color:var(--text-dim)">' + r.status + '</span>';
+          }
+          html += '<tr><td>' + name + '</td><td>' + plan + '</td><td>' + price + '</td><td style="font-size:.75rem">' + date + '</td><td><span class="status-badge status-' + statusClass + '">' + r.status + '</span></td><td>' + actions + '</td></tr>';
+        });
+        html += '</tbody></table></div>';
+        el.innerHTML = html;
+      } catch (e) { el.innerHTML = '<p style="color:var(--text-muted)">Failed to load promotion requests.</p>'; }
+    }
+
+    window.approvePromo = async function(id) {
+      try { await API.patch("/promotions/admin/" + id + "/approve"); toast("Promotion approved", "success"); loadPromotionRequests(); }
+      catch (e) { toast(e.message, "error"); }
+    };
+    window.rejectPromo = async function(id) {
+      const reason = prompt("Rejection reason (optional):");
+      try { await API.patch("/promotions/admin/" + id + "/reject", { reason: reason || '' }); toast("Promotion rejected", "success"); loadPromotionRequests(); }
+      catch (e) { toast(e.message, "error"); }
+    };
+
+  </script>
+</body>
+</html>

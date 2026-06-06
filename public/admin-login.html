@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login — BookMyShot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --gold: #D4AF37;
+      --gold-light: #e8d5a3;
+      --gold-dark: #b8960c;
+      --gold-glow: rgba(212,175,55,0.15);
+      --bg: #0f0f0f;
+      --bg-card: rgba(18,18,18,0.8);
+      --border: rgba(212,175,55,0.12);
+      --text: #f5f0e8;
+      --text-muted: rgba(255,255,255,0.45);
+      --danger: #ef4444;
+      --transition: 0.35s cubic-bezier(0.22,1,0.36,1);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Outfit', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    .auth-wrapper {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 100vh;
+    }
+
+    .hero-panel {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 4rem 3.5rem;
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(150deg, #0a0a0a 0%, #12100a 50%, #0f0f0f 100%);
+    }
+    .hero-panel::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 50%, rgba(212,175,55,0.04) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .hero-content { position: relative; z-index: 1; max-width: 440px; }
+    .hero-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem; font-weight: 700;
+      color: var(--gold); margin-bottom: 2rem;
+    }
+    .hero-logo span { color: var(--gold-light); }
+    .hero-badge {
+      display: inline-block;
+      padding: 0.3rem 1rem;
+      background: rgba(239,68,68,0.08);
+      border: 1px solid rgba(239,68,68,0.2);
+      border-radius: 24px;
+      font-size: 0.65rem; font-weight: 600;
+      color: #ef4444;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      margin-bottom: 1.5rem;
+    }
+    .hero-heading {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.4rem; font-weight: 600;
+      line-height: 1.2; color: var(--text);
+      margin-bottom: 1rem;
+    }
+    .hero-heading em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-sub {
+      font-size: 1rem; color: var(--text-muted);
+      line-height: 1.7;
+    }
+
+    .form-panel {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2.5rem;
+      background: var(--bg);
+      position: relative;
+    }
+    .form-panel::before {
+      content: '';
+      position: absolute; top: 0; left: 0; bottom: 0; width: 1px;
+      background: linear-gradient(to bottom, transparent, var(--border), transparent);
+    }
+
+    .form-container { width: 100%; max-width: 380px; }
+
+    .form-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 2.5rem 2rem;
+      box-shadow: 0 24px 48px rgba(0,0,0,0.3), 0 0 80px rgba(212,175,55,0.03);
+    }
+
+    .form-header { text-align: center; margin-bottom: 2rem; }
+    .form-header h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.6rem; font-weight: 500;
+      color: var(--text); margin-bottom: 0.4rem;
+    }
+    .form-header p { font-size: 0.85rem; color: var(--text-muted); }
+
+    .form-group { margin-bottom: 1.1rem; }
+    .form-group label {
+      display: block; font-size: 0.72rem; font-weight: 500;
+      color: var(--text-muted); margin-bottom: 0.4rem;
+      text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .form-group input {
+      width: 100%; padding: 0.75rem 1rem;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px; color: var(--text);
+      font-size: 0.9rem; font-family: inherit;
+      outline: none; transition: var(--transition);
+    }
+    .form-group input:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 20px var(--gold-glow);
+      background: rgba(212,175,55,0.02);
+    }
+    .form-group input::placeholder { color: rgba(255,255,255,0.18); }
+
+    .btn-primary {
+      width: 100%; padding: 0.85rem;
+      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+      border: none; border-radius: 12px;
+      color: #0a0806; font-size: 0.9rem; font-weight: 600;
+      font-family: inherit; cursor: pointer;
+      transition: var(--transition); margin-top: 0.5rem;
+      position: relative; overflow: hidden;
+    }
+    .btn-primary::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.15) 50%, transparent 70%);
+      transform: translateX(-100%); transition: transform 0.6s;
+    }
+    .btn-primary:hover::after { transform: translateX(100%); }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(212,175,55,0.3); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .back-link {
+      text-align: center; margin-top: 1.5rem;
+      font-size: 0.8rem;
+    }
+    .back-link a { color: var(--text-muted); text-decoration: none; transition: color 0.2s; }
+    .back-link a:hover { color: var(--gold-light); }
+
+    .toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; }
+    .toast-msg { padding: 0.75rem 1.2rem; border-radius: 12px; font-size: 0.85rem; animation: slideIn 0.3s ease; max-width: 360px; }
+    .toast-msg.success { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.2); color: #10b981; }
+    .toast-msg.error { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.2); color: #ef4444; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    @media (max-width: 900px) {
+      .auth-wrapper { grid-template-columns: 1fr; }
+      .hero-panel { display: none; }
+      .form-panel { min-height: 100vh; padding: 3rem 1.5rem; }
+    }
+    @media (max-width: 480px) {
+      .form-panel { padding: 2rem 1rem; }
+      .form-card { padding: 2rem 1.2rem; border-radius: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-wrapper">
+    <div class="hero-panel">
+      <div class="hero-content">
+        <div class="hero-logo">BookMyShot<span>.</span></div>
+        <div class="hero-badge">Restricted Access</div>
+        <h1 class="hero-heading"><em>Administration</em> Panel</h1>
+        <p class="hero-sub">Secure management console for platform administrators. Manage creators, bookings, commissions, and site settings.</p>
+      </div>
+    </div>
+
+    <div class="form-panel">
+      <div class="form-container">
+        <div class="form-card">
+          <div class="form-header">
+            <h2>Administration</h2>
+            <p>Secure access to management panel</p>
+          </div>
+          <form id="adminForm" novalidate>
+            <div class="form-group">
+              <label>Admin Email</label>
+              <input type="email" id="adminEmail" placeholder="admin@bookmyshot.com" required>
+            </div>
+            <div class="form-group">
+              <label>Password</label>
+              <input type="password" id="adminPassword" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn-primary" id="adminBtn">Admin Login</button>
+          </form>
+          <div class="back-link">
+            <a href="/">← Back to Homepage</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+  (function() {
+    'use strict';
+
+    function toast(msg, type) {
+      var c = document.getElementById('toastContainer');
+      if (!c) { c = document.createElement('div'); c.id = 'toastContainer'; c.className = 'toast-container'; document.body.appendChild(c); }
+      var el = document.createElement('div');
+      el.className = 'toast-msg ' + (type || 'info');
+      el.textContent = msg;
+      c.appendChild(el);
+      setTimeout(function() { el.remove(); }, 3500);
+    }
+
+    document.getElementById('adminForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      var btn = document.getElementById('adminBtn');
+      if (btn.disabled) return;
+      var email = document.getElementById('adminEmail').value.trim();
+      var password = document.getElementById('adminPassword').value;
+      if (!email) { toast('Please enter admin email', 'error'); return; }
+      if (!password) { toast('Please enter password', 'error'); return; }
+      btn.disabled = true; btn.textContent = 'Authenticating...';
+      try {
+        var data = await API.post('/auth/login', { email: email, password: password });
+        if (data.user.role !== 'admin') {
+          toast('This account does not have admin privileges.', 'error');
+          btn.disabled = false; btn.textContent = 'Admin Login'; return;
+        }
+        API.setAuth(data.token, data.user);
+        window.location.href = '/admin/dashboard.html';
+      } catch (err) {
+        toast(err.message || 'Login failed', 'error');
+        btn.disabled = false; btn.textContent = 'Admin Login';
+      }
+    });
+
+    var user = API.getUser(); var token = API.getToken();
+    if (user && token && user.role === 'admin') window.location.href = '/admin/dashboard.html';
+  })();
+  </script>
+</body>
+</html>

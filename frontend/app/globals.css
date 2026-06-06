@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: #060504;
+  color: #f5efe3;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  min-height: 100%;
+  background: radial-gradient(circle at top left, rgba(255, 200, 120, 0.08), transparent 18%),
+    radial-gradient(circle at bottom right, rgba(255, 255, 255, 0.05), transparent 28%),
+    linear-gradient(180deg, #040302 0%, #0b0907 100%);
+  color: #f5efe3;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(255, 190, 108, 0.35);
+  color: #fff;
+}
+
+body {
+  min-height: 100vh;
+}
+
+section {
+  position: relative;
+}
+
+.glass-card {
+  background: rgba(15, 12, 10, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.25);
+}
+
+.glow-text {
+  background: linear-gradient(90deg, rgba(255, 222, 172, 1), rgba(255, 176, 61, 1), rgba(255, 255, 255, 0.95));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@keyframes float-up {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+.animate-float {
+  animation: float-up 7s ease-in-out infinite;
+}
+
+.progress-ring {
+  stroke: url(#goldGradient);
+}

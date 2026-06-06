@@ -1,0 +1,71 @@
+const mongoose = require("mongoose");
+
+const packageSchema = new mongoose.Schema({
+  name: String,
+  price: Number,
+  description: String,
+  features: [String],
+});
+
+const creatorSchema = new mongoose.Schema(
+  {
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, unique: true },
+    status: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
+    specialty: { type: String, default: "" },
+    bio: { type: String, default: "" },
+    experience: { type: String, default: "" },
+    location: { type: String, default: "" },
+    city: { type: String, default: "" },
+    category: { type: String, default: "wedding" },
+    budgetMin: { type: Number, default: 0 },
+    budgetMax: { type: Number, default: 10000 },
+    rating: { type: Number, default: 5 },
+    weddingsCount: { type: Number, default: 0 },
+    featured: { type: Boolean, default: false },
+    featuredStartDate: { type: Date },
+    featuredEndDate: { type: Date },
+    featuredPaymentStatus: { type: String, enum: ["pending", "paid", "rejected", "none"], default: "none" },
+    verified: { type: Boolean, default: false },
+    verifiedAt: { type: Date },
+    badge: { 
+      type: String, 
+      enum: ["", "rank_1", "rank_2", "rank_3", "rank_4", "best_creator", "most_trusted", "premium_creator", "top_rated", "editors_choice"], 
+      default: "" 
+    },
+    rank: { type: Number, default: 0 },
+    portfolio: [{ type: String }],
+    videos: [{ type: String }],
+    packages: [packageSchema],
+    gear: [{ name: String, model: String }],
+    team: [{ name: String, role: String }],
+    social: {
+      instagram: String,
+      facebook: String,
+      pinterest: String,
+      youtube: String,
+      website: String,
+    },
+    earnings: { type: Number, default: 0 },
+    darkMode: { type: Boolean, default: true },
+    // Subscription fields
+    subscriptionPlan: { type: String, enum: ["basic"], default: "basic" },
+    subscriptionAmount: { type: Number, default: 299 },
+    subscriptionStartDate: { type: Date },
+    subscriptionEndDate: { type: Date },
+    subscriptionStatus: {
+      type: String,
+      enum: ["trial", "active", "expired", "suspended", "overdue"],
+      default: "trial",
+    },
+    autoRenew: { type: Boolean, default: true },
+    lastPaymentDate: { type: Date },
+    // Payment gateway fields (Razorpay ready)
+    razorpaySubscriptionId: { type: String, default: "" },
+    razorpayCustomerId: { type: String, default: "" },
+    paymentMethod: { type: String, default: "" },
+    paymentFailCount: { type: Number, default: 0 },
+  },
+  { timestamps: true }
+);
+
+module.exports = mongoose.model("Creator", creatorSchema);

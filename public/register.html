@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up — BookMyShot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/auth.css">
+  <style>
+    .register-method-toggle { display:flex; gap:0.5rem; margin-bottom:1.5rem; }
+    .register-method-toggle button { flex:1; padding:0.6rem; border:1px solid var(--border); border-radius:var(--radius); background:transparent; color:var(--text-muted); cursor:pointer; font-size:0.85rem; transition:all 0.2s; }
+    .register-method-toggle button.active { border-color:var(--gold); color:var(--gold); background:rgba(232,184,74,0.1); }
+    .register-method-toggle button:hover { border-color:var(--gold-light); color:var(--cream); }
+    .phone-input-group { display:flex; gap:0.5rem; }
+    .phone-input-group select { width:100px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); color:var(--text); padding:0.6rem; }
+    .phone-input-group input { flex:1; }
+  </style>
+</head>
+<body class="auth-page">
+  <div class="auth-card glass">
+    <a href="/" class="auth-logo">BookMyShot</a>
+    <h1>Create Account</h1>
+    <p class="auth-sub">Book your dream wedding photographer</p>
+    <div class="register-method-toggle">
+      <button type="button" class="active" data-method="email">📧 Email</button>
+      <button type="button" data-method="phone">📱 Phone</button>
+    </div>
+    <form id="registerForm" novalidate>
+      <div class="form-group"><label>Name</label><input type="text" id="name" name="name" class="form-control" required></div>
+      <div id="regEmailField" class="form-group"><label>Email</label><input type="email" id="email" name="email" class="form-control" required></div>
+      <div id="regPhoneField" class="form-group" style="display:none">
+        <label>Phone Number</label>
+        <div class="phone-input-group">
+          <select id="countryCode" name="countryCode">
+            <option value="+91">🇮🇳 +91</option>
+            <option value="+1">🇺🇸 +1</option>
+            <option value="+44">🇬🇧 +44</option>
+            <option value="+61">🇦🇺 +61</option>
+            <option value="+971">🇦🇪 +971</option>
+          </select>
+          <input type="tel" id="phone" name="phone" class="form-control" placeholder="9876543210">
+        </div>
+      </div>
+      <div class="form-group"><label>Password</label><input type="password" id="password" name="password" class="form-control" required minlength="6"></div>
+      <button type="submit" class="btn btn-primary btn-block">Sign Up</button>
+    </form>
+    <p class="auth-footer">Already have an account? <a href="/login.html">Login</a></p>
+  </div>
+  <script src="/js/api.js"></script>
+  <script src="/js/utils.js"></script>
+  <script>
+    let regMethod = "email";
+    document.querySelectorAll(".register-method-toggle button").forEach((b) => {
+      b.addEventListener("click", () => {
+        document.querySelectorAll(".register-method-toggle button").forEach((x) => x.classList.remove("active"));
+        b.classList.add("active");
+        regMethod = b.dataset.method;
+        document.getElementById("regEmailField").style.display = regMethod === "email" ? "block" : "none";
+        document.getElementById("regPhoneField").style.display = regMethod === "phone" ? "block" : "none";
+        document.getElementById("email").required = regMethod === "email";
+        document.getElementById("email").disabled = regMethod !== "email";
+        document.getElementById("phone").required = regMethod === "phone";
+        document.getElementById("phone").disabled = regMethod !== "phone";
+      });
+    });
+    const registerButton = document.querySelector("#registerForm button[type=submit]");
+    document.getElementById("registerForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (registerButton.disabled) return;
+      // Client-side validation
+      const name = document.getElementById("name").value.trim();
+      const password = document.getElementById("password").value;
+      if (!name) { toast("Please enter your name", "error"); registerButton.focus(); return; }
+      if (!password || password.length < 6) { toast("Password must be at least 6 characters", "error"); document.getElementById("password").focus(); return; }
+      if (regMethod === "email") {
+        const email = document.getElementById("email").value.trim();
+        if (!email) { toast("Please enter your email", "error"); document.getElementById("email").focus(); return; }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast("Please enter a valid email address", "error"); document.getElementById("email").focus(); return; }
+      } else {
+        const phone = document.getElementById("phone").value.trim();
+        if (!phone) { toast("Please enter your phone number", "error"); document.getElementById("phone").focus(); return; }
+        if (!/^\d{7,15}$/.test(phone)) { toast("Please enter a valid phone number", "error"); document.getElementById("phone").focus(); return; }
+      }
+      registerButton.disabled = true;
+      const originalText = registerButton.textContent;
+      registerButton.textContent = "Signing up...";
+      try {
+        const payload = { name, password, role: "user" };
+        if (regMethod === "email") payload.email = document.getElementById("email").value.trim();
+        else payload.phone = document.getElementById("countryCode").value + document.getElementById("phone").value.trim();
+        const data = await API.post("/auth/register", payload);
+        API.setAuth(data.token, data.user);
+        if (data.verificationToken) toast(`Verify email token: ${data.verificationToken}`, "info");
+        window.location.href = "/user/dashboard.html";
+      } catch (err) {
+        toast(err.message || "Registration failed", "error");
+      } finally {
+        registerButton.disabled = false;
+        registerButton.textContent = originalText;
+      }
+    });
+  </script>
+</body>
+</html>

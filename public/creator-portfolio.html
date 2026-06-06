@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title id="pageTitle">Creator Portfolio — BookMyShot</title>
+  <meta name="description" id="metaDesc" content="Premium photography & videography portfolio on BookMyShot">
+  <meta property="og:title" id="ogTitle" content="Creator Portfolio — BookMyShot">
+  <meta property="og:description" id="ogDesc" content="Premium photography & videography portfolio">
+  <meta property="og:image" id="ogImage" content="">
+  <meta property="og:type" content="profile">
+  <link rel="canonical" id="canonical" href="/creator-portfolio.html">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ═══════════════════════════════════════════════════════════════════════
+       BookMyShot — Public Creator Portfolio (Premium)
+       ═══════════════════════════════════════════════════════════════════════ */
+
+    :root {
+      --gold: #c9a962;
+      --gold-light: #e8d5a3;
+      --gold-dark: #a8883a;
+      --danger: #ef4444;
+      --success: #10b981;
+      --info: #3b82f6;
+      --bg: #050302;
+      --bg-card: rgba(255,255,255,0.03);
+      --bg-card-hover: rgba(255,255,255,0.06);
+      --border: rgba(255,255,255,0.07);
+      --border-hover: rgba(201,169,98,0.2);
+      --text: #f6eee7;
+      --text-muted: rgba(255,255,255,0.4);
+      --text-dim: rgba(255,255,255,0.2);
+      --radius: 16px;
+      --radius-sm: 10px;
+      --transition: 0.35s cubic-bezier(0.22,1,0.36,1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Outfit', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+    a { color: var(--gold); text-decoration: none; transition: var(--transition); }
+    a:hover { color: var(--gold-light); }
+
+    img { max-width: 100%; display: block; }
+
+    /* ─── Top Bar ─── */
+    .top-bar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.8rem 2rem;
+      background: rgba(5,3,2,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .top-bar .brand {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--gold-light);
+    }
+
+    .top-bar .brand span { color: var(--gold); }
+
+    .top-bar-actions {
+      display: flex;
+      gap: 0.6rem;
+      align-items: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.5rem 1.2rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition);
+      border: 1px solid transparent;
+      font-family: 'Outfit', sans-serif;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--gold);
+      color: #050302;
+      border-color: var(--gold);
+    }
+
+    .btn-primary:hover {
+      background: var(--gold-light);
+      border-color: var(--gold-light);
+      color: #050302;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(201,169,98,0.3);
+    }
+
+    .btn-outline {
+      background: rgba(255,255,255,0.04);
+      border-color: var(--border);
+      color: var(--text);
+    }
+
+    .btn-outline:hover {
+      border-color: var(--gold);
+      color: var(--gold-light);
+      background: rgba(201,169,98,0.08);
+    }
+
+    .btn-gold-outline {
+      background: transparent;
+      border-color: rgba(201,169,98,0.3);
+      color: var(--gold-light);
+    }
+
+    .btn-gold-outline:hover {
+      background: rgba(201,169,98,0.1);
+      border-color: var(--gold);
+    }
+
+    .btn-whatsapp {
+      background: #25D366;
+      border-color: #25D366;
+      color: #fff;
+    }
+
+    .btn-whatsapp:hover {
+      background: #20bd5a;
+      border-color: #20bd5a;
+      color: #fff;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(37,211,102,0.3);
+    }
+
+    /* ─── Banner ─── */
+    .banner-section {
+      width: 100%;
+      height: 420px;
+      position: relative;
+      overflow: hidden;
+      margin-top: 60px;
+    }
+
+    .banner-section .banner-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .banner-section .banner-gradient {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 60%;
+      background: linear-gradient(transparent, var(--bg));
+    }
+
+    .banner-section .banner-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #0a0806 0%, #1a1510 50%, #0d0b08 100%);
+      font-size: 4rem;
+      opacity: 0.15;
+    }
+
+    /* ─── Profile Section ─── */
+    .profile-section {
+      max-width: 1200px;
+      margin: -80px auto 0;
+      padding: 0 2rem;
+      position: relative;
+      z-index: 10;
+    }
+
+    .profile-card {
+      background: rgba(12,9,7,0.9);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 2rem 2.5rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 2rem;
+      flex-wrap: wrap;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    .profile-avatar-wrap {
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .profile-avatar-wrap img {
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 4px solid rgba(201,169,98,0.3);
+      box-shadow: 0 0 30px rgba(201,169,98,0.1);
+    }
+
+    .profile-verified {
+      position: absolute;
+      bottom: 4px;
+      right: -4px;
+      background: var(--gold);
+      color: #050302;
+      font-size: 0.6rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+      letter-spacing: 0.03em;
+      box-shadow: 0 2px 10px rgba(201,169,98,0.3);
+    }
+
+    .profile-info {
+      flex: 1;
+      min-width: 280px;
+    }
+
+    .profile-info h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.2rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 0 0 0.2rem;
+      line-height: 1.2;
+    }
+
+    .profile-profession {
+      font-size: 1.05rem;
+      color: var(--gold-light);
+      margin-bottom: 0.3rem;
+    }
+
+    .profile-location {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 0.6rem;
+    }
+
+    .profile-rating {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-bottom: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .profile-rating .stars {
+      color: var(--gold);
+      font-size: 1rem;
+      letter-spacing: 2px;
+    }
+
+    .profile-rating .rating-num {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .profile-rating .rating-count {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .profile-experience {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 0.8rem;
+    }
+
+    .profile-actions {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.8rem;
+    }
+
+    .profile-social {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .profile-social a {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 1rem;
+      transition: var(--transition);
+    }
+
+    .profile-social a:hover {
+      border-color: var(--gold);
+      color: var(--gold);
+      background: rgba(201,169,98,0.08);
+      transform: translateY(-2px);
+    }
+
+    .profile-social a.disabled {
+      opacity: 0.2;
+      pointer-events: none;
+    }
+
+    /* ─── Stats Row ─── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-top: 1rem;
+    }
+
+    .stat-item {
+      background: rgba(255,255,255,0.02);
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .stat-item .stat-num {
+      display: block;
+      font-family: 'Playfair Display', serif;
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .stat-item .stat-lbl {
+      display: block;
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 2px;
+    }
+
+    /* ─── Body Content ─── */
+    .body-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    /* ─── Section ─── */
+    .portfolio-section {
+      margin-bottom: 2.5rem;
+      animation: fadeUp 0.5s ease both;
+    }
+
+    .portfolio-section:nth-child(1) { animation-delay: 0.05s; }
+    .portfolio-section:nth-child(2) { animation-delay: 0.1s; }
+    .portfolio-section:nth-child(3) { animation-delay: 0.15s; }
+    .portfolio-section:nth-child(4) { animation-delay: 0.2s; }
+    .portfolio-section:nth-child(5) { animation-delay: 0.25s; }
+    .portfolio-section:nth-child(6) { animation-delay: 0.3s; }
+    .portfolio-section:nth-child(7) { animation-delay: 0.35s; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-header .icon { font-size: 1.3rem; }
+
+    .section-header h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem;
+      font-weight: 500;
+      color: var(--gold-light);
+    }
+
+    .section-empty {
+      padding: 1.5rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+    }
+
+    /* ─── About ─── */
+    .about-content {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+    }
+
+    .about-text {
+      font-size: 0.9rem;
+      line-height: 1.8;
+      color: rgba(255,255,255,0.65);
+      margin-bottom: 1rem;
+    }
+
+    .about-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .about-tag {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.35rem 0.8rem;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .about-tag .tag-icon { font-size: 0.9rem; }
+
+    /* ─── Services ─── */
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+
+    .service-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      transition: var(--transition);
+    }
+
+    .service-card:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 30px rgba(201,169,98,0.06);
+    }
+
+    .service-card h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 0.3rem;
+    }
+
+    .service-card .price {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem;
+      color: var(--gold-light);
+      margin-bottom: 0.4rem;
+    }
+
+    .service-card .desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* ─── Gallery ─── */
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 0.8rem;
+    }
+
+    .gallery-item {
+      position: relative;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      cursor: pointer;
+      aspect-ratio: 1;
+      border: 1px solid var(--border);
+      transition: var(--transition);
+    }
+
+    .gallery-item:hover {
+      border-color: var(--gold);
+      transform: scale(1.02);
+      box-shadow: 0 8px 30px rgba(201,169,98,0.1);
+    }
+
+    .gallery-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: var(--transition);
+    }
+
+    .gallery-item:hover img {
+      transform: scale(1.05);
+    }
+
+    .gallery-item .gallery-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: var(--transition);
+    }
+
+    .gallery-item:hover .gallery-overlay {
+      opacity: 1;
+    }
+
+    .gallery-item .gallery-overlay span {
+      font-size: 1.5rem;
+      color: #fff;
+    }
+
+    /* ─── Masonry Gallery ─── */
+    .masonry-gallery {
+      column-count: 3;
+      column-gap: 0.8rem;
+    }
+
+    .masonry-gallery .gallery-item {
+      break-inside: avoid;
+      margin-bottom: 0.8rem;
+      aspect-ratio: auto;
+    }
+
+    .masonry-gallery .gallery-item img {
+      height: auto;
+    }
+
+    /* ─── Categories ─── */
+    .categories-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .category-chip {
+      padding: 0.4rem 1rem;
+      border-radius: 20px;
+      background: rgba(201,169,98,0.08);
+      border: 1px solid rgba(201,169,98,0.15);
+      color: var(--gold-light);
+      font-size: 0.8rem;
+      transition: var(--transition);
+    }
+
+    .category-chip:hover {
+      background: rgba(201,169,98,0.15);
+      border-color: var(--gold);
+      transform: translateY(-1px);
+    }
+
+    /* ─── Reviews ─── */
+    .reviews-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1rem;
+    }
+
+    .review-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.2rem;
+      transition: var(--transition);
+    }
+
+    .review-card:hover {
+      border-color: var(--border-hover);
+    }
+
+    .review-card .review-header {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      margin-bottom: 0.6rem;
+    }
+
+    .review-card .review-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1px solid var(--border);
+    }
+
+    .review-card .review-name {
+      font-weight: 500;
+      font-size: 0.85rem;
+      color: var(--text);
+    }
+
+    .review-card .review-date {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+    }
+
+    .review-card .review-stars {
+      color: var(--gold);
+      font-size: 0.8rem;
+      letter-spacing: 1px;
+      margin-bottom: 0.3rem;
+    }
+
+    .review-card .review-text {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* ─── Contact / Inquiry Form ─── */
+    .contact-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+    }
+
+    .contact-section h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem;
+      font-weight: 500;
+      color: var(--gold-light);
+      margin-bottom: 0.5rem;
+    }
+
+    .contact-section .subtitle {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+    }
+
+    .contact-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .contact-form .full-width {
+      grid-column: 1 / -1;
+    }
+
+    .contact-form label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 0.3rem;
+    }
+
+    .contact-form input,
+    .contact-form textarea,
+    .contact-form select {
+      width: 100%;
+      padding: 0.6rem 0.9rem;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 0.85rem;
+      font-family: 'Outfit', sans-serif;
+      outline: none;
+      transition: var(--transition);
+    }
+
+    .contact-form input:focus,
+    .contact-form textarea:focus,
+    .contact-form select:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 12px rgba(201,169,98,0.1);
+    }
+
+    .contact-form textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .contact-form select option {
+      background: #0c0907;
+      color: var(--text);
+    }
+
+    .contact-form .form-actions {
+      grid-column: 1 / -1;
+      display: flex;
+      gap: 0.6rem;
+      justify-content: flex-end;
+    }
+
+    /* ─── Lightbox ─── */
+    .lightbox-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.92);
+      backdrop-filter: blur(12px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 2rem;
+    }
+
+    .lightbox-overlay.active { display: flex; }
+
+    .lightbox-overlay img {
+      max-width: 90vw;
+      max-height: 85vh;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      object-fit: contain;
+    }
+
+    .lightbox-close {
+      position: absolute;
+      top: 1.5rem;
+      right: 1.5rem;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #fff;
+      font-size: 1.4rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+    }
+
+    .lightbox-close:hover {
+      background: rgba(255,255,255,0.15);
+    }
+
+    .lightbox-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #fff;
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+    }
+
+    .lightbox-nav:hover { background: rgba(255,255,255,0.15); }
+    .lightbox-prev { left: 1.5rem; }
+    .lightbox-next { right: 1.5rem; }
+
+    /* ─── Toast ─── */
+    .toast-container {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .toast-msg {
+      background: rgba(12,9,7,0.95);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.7rem 1.1rem;
+      font-size: 0.8rem;
+      color: var(--text);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+      animation: toastIn 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .toast-msg.success { border-color: rgba(16,185,129,0.3); }
+    .toast-msg.error { border-color: rgba(239,68,68,0.3); }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─── Footer ─── */
+    .portfolio-footer {
+      text-align: center;
+      padding: 2rem;
+      border-top: 1px solid var(--border);
+      margin-top: 2rem;
+    }
+
+    .portfolio-footer p {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+    }
+
+    .portfolio-footer a {
+      color: var(--gold);
+    }
+
+    /* ─── Loader ─── */
+    .loader-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 1024px) {
+      .masonry-gallery { column-count: 2; }
+    }
+
+    @media (max-width: 768px) {
+      .banner-section { height: 280px; margin-top: 56px; }
+      .profile-section { margin-top: -50px; padding: 0 1rem; }
+      .profile-card { padding: 1.5rem; flex-direction: column; align-items: center; text-align: center; }
+      .profile-avatar-wrap img { width: 100px; height: 100px; }
+      .profile-info h1 { font-size: 1.6rem; }
+      .profile-actions { justify-content: center; }
+      .profile-social { justify-content: center; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .body-content { padding: 1.5rem 1rem; }
+      .services-grid { grid-template-columns: 1fr; }
+      .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+      .masonry-gallery { column-count: 2; }
+      .reviews-grid { grid-template-columns: 1fr; }
+      .contact-form { grid-template-columns: 1fr; }
+      .top-bar { padding: 0.6rem 1rem; }
+      .top-bar .brand { font-size: 1rem; }
+      .btn { font-size: 0.75rem; padding: 0.4rem 0.9rem; }
+    }
+
+    @media (max-width: 480px) {
+      .banner-section { height: 200px; }
+      .profile-card { padding: 1rem; }
+      .profile-avatar-wrap img { width: 80px; height: 80px; }
+      .profile-info h1 { font-size: 1.3rem; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+      .masonry-gallery { column-count: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═══ TOP BAR ═══ -->
+  <header class="top-bar">
+    <a href="/" class="brand">BookMyShot<span>.</span></a>
+    <div class="top-bar-actions">
+      <button class="btn btn-outline" id="shareBtn">🔗 Share</button>
+      <a href="/" class="btn btn-outline">← Home</a>
+    </div>
+  </header>
+
+  <!-- ═══ LOADER ═══ -->
+  <div class="loader-container" id="pageLoader">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- ═══ MAIN CONTENT ═══ -->
+  <div id="portfolioContent" style="display:none">
+
+    <!-- Banner -->
+    <div class="banner-section" id="bannerSection">
+      <img class="banner-img" id="bannerImg" src="" alt="Cover" style="display:none">
+      <div class="banner-placeholder" id="bannerPlaceholder">📷</div>
+      <div class="banner-gradient"></div>
+    </div>
+
+    <!-- Profile -->
+    <div class="profile-section">
+      <div class="profile-card">
+        <div class="profile-avatar-wrap">
+          <img id="profileAvatar" src="" alt="Avatar">
+          <div class="profile-verified">✓ Verified</div>
+        </div>
+        <div class="profile-info">
+          <h1 id="profileName">Creator Name</h1>
+          <div class="profile-profession" id="profileProfession">Wedding Photographer</div>
+          <div class="profile-location" id="profileLocation">📍 Mumbai, India</div>
+          <div class="profile-rating">
+            <span class="stars" id="profileStars">★★★★★</span>
+            <span class="rating-num" id="profileRatingNum">5.0</span>
+            <span class="rating-count" id="profileReviewCount">(0 reviews)</span>
+          </div>
+          <div class="profile-experience" id="profileExperience">⏳ Experience: —</div>
+          <div class="profile-actions">
+            <button class="btn btn-primary" id="bookNowBtn">📅 Book Now</button>
+            <button class="btn btn-whatsapp" id="whatsappBtn">💬 WhatsApp</button>
+          </div>
+          <div class="profile-social" id="profileSocial">
+            <a href="#" id="socialInstagram" target="_blank" rel="noopener" title="Instagram">📷</a>
+            <a href="#" id="socialYoutube" target="_blank" rel="noopener" title="YouTube">▶️</a>
+            <a href="#" id="socialWebsite" target="_blank" rel="noopener" title="Website">🌐</a>
+            <a href="#" id="socialTwitter" target="_blank" rel="noopener" title="Twitter">🐦</a>
+          </div>
+          <div class="stats-row" id="statsRow">
+            <div class="stat-item"><span class="stat-num" id="statPhotos">0</span><span class="stat-lbl">Photos</span></div>
+            <div class="stat-item"><span class="stat-num" id="statAlbums">0</span><span class="stat-lbl">Albums</span></div>
+            <div class="stat-item"><span class="stat-num" id="statCategories">0</span><span class="stat-lbl">Categories</span></div>
+            <div class="stat-item"><span class="stat-num" id="statWeddings">0</span><span class="stat-lbl">Weddings</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Body Content -->
+    <div class="body-content">
+
+      <!-- About -->
+      <div class="portfolio-section" id="aboutSection">
+        <div class="section-header">
+          <span class="icon">✍️</span>
+          <h2>About Me</h2>
+        </div>
+        <div class="about-content">
+          <div class="about-text" id="aboutText">No about description added yet.</div>
+          <div class="about-tags" id="aboutTags"></div>
+        </div>
+      </div>
+
+      <!-- Services -->
+      <div class="portfolio-section" id="servicesSection">
+        <div class="section-header">
+          <span class="icon">💎</span>
+          <h2>Services & Pricing</h2>
+        </div>
+        <div class="services-grid" id="servicesGrid">
+          <div class="section-empty">No services listed yet.</div>
+        </div>
+      </div>
+
+      <!-- Featured Gallery -->
+      <div class="portfolio-section" id="gallerySection">
+        <div class="section-header">
+          <span class="icon">📸</span>
+          <h2>Featured Work</h2>
+        </div>
+        <div class="gallery-grid" id="galleryGrid">
+          <div class="section-empty">No featured work yet.</div>
+        </div>
+      </div>
+
+      <!-- All Photos -->
+      <div class="portfolio-section" id="allPhotosSection">
+        <div class="section-header">
+          <span class="icon">🖼️</span>
+          <h2>Portfolio Gallery</h2>
+        </div>
+        <div class="masonry-gallery" id="masonryGallery">
+          <div class="section-empty">No photos uploaded yet.</div>
+        </div>
+      </div>
+
+      <!-- Categories -->
+      <div class="portfolio-section" id="categoriesSection">
+        <div class="section-header">
+          <span class="icon">🏷️</span>
+          <h2>Categories</h2>
+        </div>
+        <div class="categories-list" id="categoriesList">
+          <div class="section-empty">No categories</div>
+        </div>
+      </div>
+
+      <!-- Reviews -->
+      <div class="portfolio-section" id="reviewsSection">
+        <div class="section-header">
+          <span class="icon">⭐</span>
+          <h2>Client Reviews</h2>
+        </div>
+        <div class="reviews-grid" id="reviewsGrid">
+          <div class="section-empty">No reviews yet.</div>
+        </div>
+      </div>
+
+      <!-- Contact / Inquiry -->
+      <div class="portfolio-section" id="contactSection">
+        <div class="contact-section">
+          <h2>📩 Send an Inquiry</h2>
+          <p class="subtitle">Interested in booking? Fill out the form below and we'll get back to you.</p>
+          <form class="contact-form" id="inquiryForm">
+            <div>
+              <label for="inqName">Your Name</label>
+              <input type="text" id="inqName" placeholder="e.g. Priya Sharma" required>
+            </div>
+            <div>
+              <label for="inqEmail">Email Address</label>
+              <input type="email" id="inqEmail" placeholder="priya@example.com" required>
+            </div>
+            <div>
+              <label for="inqPhone">Phone Number</label>
+              <input type="tel" id="inqPhone" placeholder="+91 98765 43210">
+            </div>
+            <div>
+              <label for="inqService">Service Interested In</label>
+              <select id="inqService">
+                <option value="">Select a service...</option>
+              </select>
+            </div>
+            <div class="full-width">
+              <label for="inqDate">Preferred Date</label>
+              <input type="date" id="inqDate">
+            </div>
+            <div class="full-width">
+              <label for="inqMessage">Message</label>
+              <textarea id="inqMessage" placeholder="Tell us about your event or project..." required></textarea>
+            </div>
+            <div class="form-actions">
+              <button type="reset" class="btn btn-outline">Clear</button>
+              <button type="submit" class="btn btn-primary">📤 Send Inquiry</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <footer class="portfolio-footer">
+      <p>Powered by <a href="/">BookMyShot</a> — Premium Creator Portfolio</p>
+    </footer>
+  </div>
+
+  <!-- ═══ LIGHTBOX ═══ -->
+  <div class="lightbox-overlay" id="lightbox">
+    <button class="lightbox-close" id="lightboxClose">✕</button>
+    <button class="lightbox-nav lightbox-prev" id="lightboxPrev">‹</button>
+    <img id="lightboxImg" src="" alt="Preview">
+    <button class="lightbox-nav lightbox-next" id="lightboxNext">›</button>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/utils.js"></script>
+  <script>
+  // ═══════════════════════════════════════════════════════════════════════════
+  //  BookMyShot — Public Creator Portfolio
+  //  Fully API-driven. No localStorage, no demo data.
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  (function() {
+    'use strict';
+
+    // ─── Helpers ────────────────────────────────────────────────────────────
+
+    function esc(s) {
+      if (!s) return '';
+      return String(s).replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>').replace(/"/g,'"').replace(/'/g,'&#039;');
+    }
+
+    function showToast(msg, type) {
+      type = type || 'success';
+      var c = document.getElementById('toastContainer');
+      if (!c) { c = document.createElement('div'); c.id = 'toastContainer'; c.className = 'toast-container'; document.body.appendChild(c); }
+      var el = document.createElement('div');
+      el.className = 'toast-msg ' + type;
+      el.textContent = msg;
+      c.appendChild(el);
+      setTimeout(function() { el.remove(); }, 3000);
+    }
+
+    // ─── Lightbox ───────────────────────────────────────────────────────────
+
+    var lightboxImages = [];
+    var lightboxIndex = 0;
+
+    function openLightbox(images, index) {
+      lightboxImages = images;
+      lightboxIndex = index;
+      document.getElementById('lightboxImg').src = images[index];
+      document.getElementById('lightbox').classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox() {
+      document.getElementById('lightbox').classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    function lightboxNav(dir) {
+      lightboxIndex = (lightboxIndex + dir + lightboxImages.length) % lightboxImages.length;
+      document.getElementById('lightboxImg').src = lightboxImages[lightboxIndex];
+    }
+
+    document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
+    document.getElementById('lightboxPrev').addEventListener('click', function() { lightboxNav(-1); });
+    document.getElementById('lightboxNext').addEventListener('click', function() { lightboxNav(1); });
+    document.getElementById('lightbox').addEventListener('click', function(e) {
+      if (e.target === e.currentTarget) closeLightbox();
+    });
+    document.addEventListener('keydown', function(e) {
+      if (!document.getElementById('lightbox').classList.contains('active')) return;
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowLeft') lightboxNav(-1);
+      if (e.key === 'ArrowRight') lightboxNav(1);
+    });
+
+    // ─── Load Portfolio ─────────────────────────────────────────────────────
+
+    async function loadPortfolio() {
+      // Get creator ID from URL
+      var params = new URLSearchParams(window.location.search);
+      var creatorId = params.get('id');
+
+      if (!creatorId) {
+        document.getElementById('pageLoader').style.display = 'none';
+        document.getElementById('portfolioContent').style.display = 'block';
+        document.getElementById('profileName').textContent = 'Creator Not Found';
+        document.getElementById('profileProfession').textContent = 'Please provide a valid creator ID';
+        return;
+      }
+
+      try {
+        // Fetch creator profile from API
+        var result = await API.get('/creators/' + creatorId + '/public');
+        var creator = result.creator || {};
+        var user = result.user || {};
+        var portfolio = creator.portfolio || [];
+        var videos = creator.videos || [];
+        var packages = creator.packages || [];
+        var social = creator.social || {};
+
+        var name = user.name || creator.name || 'Creator';
+        var avatar = user.avatar || creator.avatar || 'https://images.unsplash.com/photo-1554048612-b6a482b17f70?w=400';
+        var bio = creator.bio || '';
+        var specialty = creator.specialty || 'Photographer';
+        var city = creator.city || 'India';
+        var rating = creator.rating || 5.0;
+        var reviewCount = creator.reviewCount || 0;
+        var weddingsCount = creator.weddingsCount || 0;
+        var experience = creator.experience || '';
+
+        // ── SEO ──
+        var desc = bio || 'Premium photography & videography portfolio on BookMyShot';
+        document.title = name + ' — BookMyShot Creator Portfolio';
+        document.getElementById('metaDesc').content = desc;
+        document.getElementById('ogTitle').content = name + ' — BookMyShot';
+        document.getElementById('ogDesc').content = desc;
+        if (avatar) document.getElementById('ogImage').content = avatar;
+        var slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        document.getElementById('canonical').href = '/creator/' + slug;
+
+        // ── Banner ──
+        var bannerImg = document.getElementById('bannerImg');
+        var bannerPlaceholder = document.getElementById('bannerPlaceholder');
+        // Always use a premium professional photography cover — never the creator's personal/profile image
+        bannerImg.src = 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=1600&q=80';
+        bannerImg.style.display = 'block';
+        bannerPlaceholder.style.display = 'none';
+
+        // ── Profile ──
+        document.getElementById('profileAvatar').src = avatar;
+        document.getElementById('profileName').textContent = name;
+        document.getElementById('profileProfession').textContent = specialty;
+        document.getElementById('profileLocation').textContent = '📍 ' + city;
+
+        var fullStars = Math.floor(rating);
+        var stars = '';
+        for (var i = 0; i < 5; i++) stars += (i < fullStars) ? '★' : '☆';
+        document.getElementById('profileStars').textContent = stars;
+        document.getElementById('profileRatingNum').textContent = rating.toFixed(1);
+        document.getElementById('profileReviewCount').textContent = '(' + reviewCount + ' review' + (reviewCount !== 1 ? 's' : '') + ')';
+        document.getElementById('profileExperience').textContent = '⏳ Experience: ' + (experience || '—');
+
+        // ── Social ──
+        var socialMap = { instagram: 'socialInstagram', youtube: 'socialYoutube', website: 'socialWebsite', twitter: 'socialTwitter' };
+        Object.keys(socialMap).forEach(function(key) {
+          var el = document.getElementById(socialMap[key]);
+          var url = social[key] || '';
+          if (url) {
+            el.href = url;
+            el.classList.remove('disabled');
+          } else {
+            el.href = '#';
+            el.classList.add('disabled');
+          }
+        });
+
+        // ── Stats ──
+        document.getElementById('statPhotos').textContent = portfolio.length;
+        document.getElementById('statAlbums').textContent = 0;
+        document.getElementById('statCategories').textContent = 0;
+        document.getElementById('statWeddings').textContent = weddingsCount || 0;
+
+        // ── About ──
+        document.getElementById('aboutText').textContent = bio || 'No about description added yet.';
+
+        var tagsEl = document.getElementById('aboutTags');
+        tagsEl.innerHTML = '';
+
+        // ── Services / Packages ──
+        var servicesGrid = document.getElementById('servicesGrid');
+        if (packages.length > 0) {
+          servicesGrid.innerHTML = packages.map(function(pkg) {
+            return '<div class="service-card">' +
+              '<h3>' + esc(pkg.name || 'Package') + '</h3>' +
+              '<div class="price">₹' + Number(pkg.price || 0).toLocaleString('en-IN') + '</div>' +
+              (pkg.description ? '<div class="desc">' + esc(pkg.description) + '</div>' : '') +
+              (pkg.features && pkg.features.length > 0 ? '<ul style="margin-top:0.5rem;padding-left:1rem;font-size:0.75rem;color:rgba(255,255,255,0.5)">' + pkg.features.map(function(f) { return '<li>' + esc(f) + '</li>'; }).join('') + '</ul>' : '') +
+              '</div>';
+          }).join('');
+        } else {
+          servicesGrid.innerHTML = '<div class="section-empty">No services listed yet.</div>';
+        }
+
+        // ── Featured Gallery (first 6 portfolio images) ──
+        var galleryGrid = document.getElementById('galleryGrid');
+        var featured = portfolio.slice(0, 6);
+        if (featured.length > 0) {
+          var featuredSrcs = [];
+          galleryGrid.innerHTML = featured.map(function(src, idx) {
+            featuredSrcs.push(src);
+            return '<div class="gallery-item" data-index="' + idx + '">' +
+              '<img src="' + src + '" loading="lazy">' +
+              '<div class="gallery-overlay"><span>🔍</span></div></div>';
+          }).join('');
+
+          galleryGrid.querySelectorAll('.gallery-item').forEach(function(item) {
+            item.addEventListener('click', function() {
+              var idx = parseInt(item.dataset.index);
+              openLightbox(featuredSrcs, idx);
+            });
+          });
+        } else {
+          galleryGrid.innerHTML = '<div class="section-empty">No featured work yet.</div>';
+        }
+
+        // ── All Photos (Masonry) ──
+        var masonryEl = document.getElementById('masonryGallery');
+        if (portfolio.length > 0) {
+          var allSrcs = [];
+          masonryEl.innerHTML = portfolio.map(function(src, idx) {
+            allSrcs.push(src);
+            return '<div class="gallery-item" data-index="' + idx + '">' +
+              '<img src="' + src + '" loading="lazy">' +
+              '<div class="gallery-overlay"><span>🔍</span></div></div>';
+          }).join('');
+
+          masonryEl.querySelectorAll('.gallery-item').forEach(function(item) {
+            item.addEventListener('click', function() {
+              var idx = parseInt(item.dataset.index);
+              openLightbox(allSrcs, idx);
+            });
+          });
+        } else {
+          masonryEl.innerHTML = '<div class="section-empty">No photos uploaded yet.</div>';
+        }
+
+        // ── Categories ──
+        document.getElementById('categoriesList').innerHTML = '<div class="section-empty">No categories</div>';
+
+        // ── Reviews ──
+        var reviewsGrid = document.getElementById('reviewsGrid');
+        try {
+          var reviewsResult = await API.get('/reviews/creator/' + creatorId);
+          var reviews = reviewsResult.reviews || [];
+          if (reviews.length > 0) {
+            reviewsGrid.innerHTML = reviews.map(function(r) {
+              var rs = '';
+              for (var i = 0; i < 5; i++) rs += (i < (r.rating || 5)) ? '★' : '☆';
+              var reviewerName = (r.user && r.user.name) || 'Anonymous';
+              var reviewerAvatar = (r.user && r.user.avatar) || 'https://images.unsplash.com/photo-1554048612-b6a482b17f70?w=100';
+              var reviewDate = r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '';
+              return '<div class="review-card">' +
+                '<div class="review-header">' +
+                '<img class="review-avatar" src="' + reviewerAvatar + '" loading="lazy">' +
+                '<div><div class="review-name">' + esc(reviewerName) + '</div><div class="review-date">' + reviewDate + '</div></div>' +
+                '</div>' +
+                '<div class="review-stars">' + rs + '</div>' +
+                '<div class="review-text">' + esc(r.comment || r.text || '') + '</div>' +
+                '</div>';
+            }).join('');
+          } else {
+            reviewsGrid.innerHTML = '<div class="section-empty">No reviews yet.</div>';
+          }
+        } catch(e) {
+          reviewsGrid.innerHTML = '<div class="section-empty">No reviews yet.</div>';
+        }
+
+        // ── Contact Form: Populate services dropdown ──
+        var serviceSelect = document.getElementById('inqService');
+        if (packages.length > 0) {
+          serviceSelect.innerHTML = '<option value="">Select a service...</option>' +
+            packages.map(function(pkg) {
+              return '<option value="' + esc(pkg.name || 'Package') + '">' + esc(pkg.name || 'Package') + ' — ₹' + Number(pkg.price || 0).toLocaleString('en-IN') + '</option>';
+            }).join('');
+        } else {
+          serviceSelect.innerHTML = '<option value="">Select a service...</option>';
+        }
+
+        // ── Book Now / WhatsApp ──
+        var phone = user.phone || creator.phone || '919876543210';
+        document.getElementById('bookNowBtn').addEventListener('click', function() {
+          window.location.href = '/user/dashboard.html?book=' + creatorId;
+        });
+
+        document.getElementById('whatsappBtn').addEventListener('click', function() {
+          var msg = encodeURIComponent('Hi ' + name.split(' ')[0] + '! I saw your portfolio on BookMyShot and would like to inquire about booking.');
+          window.open('https://wa.me/' + phone + '?text=' + msg, '_blank');
+        });
+
+        // ── Share ──
+        document.getElementById('shareBtn').addEventListener('click', function() {
+          var url = window.location.origin + '/creator-portfolio.html?id=' + creatorId;
+          if (navigator.share) {
+            navigator.share({ title: name + ' — BookMyShot', url: url }).catch(function() {});
+          } else {
+            navigator.clipboard.writeText(url).then(function() {
+              showToast('Profile link copied to clipboard!', 'success');
+            }).catch(function() {
+              showToast('Share URL: ' + url, 'success');
+            });
+          }
+        });
+
+        // ── Inquiry Form ──
+        document.getElementById('inquiryForm').addEventListener('submit', function(e) {
+          e.preventDefault();
+          var data = {
+            name: document.getElementById('inqName').value.trim(),
+            email: document.getElementById('inqEmail').value.trim(),
+            phone: document.getElementById('inqPhone').value.trim(),
+            eventType: document.getElementById('inqService').value,
+            eventDate: document.getElementById('inqDate').value,
+            message: document.getElementById('inqMessage').value.trim(),
+            creatorId: creatorId
+          };
+
+          if (!data.name || !data.email) {
+            showToast('Please fill in your name and email', 'error');
+            return;
+          }
+
+          API.post('/inquiries', data)
+            .then(function() {
+              showToast('Inquiry sent successfully! We\'ll get back to you soon.', 'success');
+              document.getElementById('inquiryForm').reset();
+            })
+            .catch(function(err) {
+              showToast(err.message || 'Failed to send inquiry. Please try again.', 'error');
+            });
+        });
+
+      } catch(e) {
+        document.getElementById('profileName').textContent = 'Creator Not Found';
+        document.getElementById('profileProfession').textContent = 'Could not load creator profile. Please check the URL.';
+      }
+
+      // ── Show content ──
+      document.getElementById('pageLoader').style.display = 'none';
+      document.getElementById('portfolioContent').style.display = 'block';
+    }
+
+    // ─── Init ───────────────────────────────────────────────────────────────
+
+    function init() {
+      loadPortfolio();
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+    if (document.readyState === 'complete' || document.readyState === 'interactive') init();
+
+  })();
+  </script>
+</body>
+</html>

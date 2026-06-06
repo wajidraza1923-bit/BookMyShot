@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Login — BookMyShot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --gold: #D4AF37;
+      --gold-light: #e8d5a3;
+      --gold-dark: #b8960c;
+      --gold-glow: rgba(212,175,55,0.15);
+      --bg: #0f0f0f;
+      --bg-card: rgba(18,18,18,0.8);
+      --border: rgba(212,175,55,0.12);
+      --border-hover: rgba(212,175,55,0.35);
+      --text: #f5f0e8;
+      --text-muted: rgba(255,255,255,0.45);
+      --danger: #ef4444;
+      --success: #10b981;
+      --radius: 16px;
+      --transition: 0.35s cubic-bezier(0.22,1,0.36,1);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Outfit', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    .auth-wrapper {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 100vh;
+    }
+
+    /* LEFT HERO PANEL */
+    .hero-panel {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 4rem 3.5rem;
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(135deg, #0a0a0a 0%, #1a1408 50%, #0f0f0f 100%);
+    }
+    .hero-panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 20% 50%, rgba(212,175,55,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, rgba(212,175,55,0.04) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    .hero-panel::after {
+      content: '';
+      position: absolute;
+      bottom: -20%; right: -10%;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(212,175,55,0.06) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .hero-content { position: relative; z-index: 1; max-width: 480px; }
+    .hero-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem; font-weight: 700;
+      color: var(--gold);
+      margin-bottom: 2rem;
+      letter-spacing: -0.02em;
+    }
+    .hero-logo span { color: var(--gold-light); }
+    .hero-heading {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.8rem; font-weight: 600;
+      line-height: 1.2;
+      color: var(--text);
+      margin-bottom: 1rem;
+    }
+    .hero-heading em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-sub {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+      margin-bottom: 2.5rem;
+    }
+    .hero-features {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+    }
+    .hero-features li {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      font-size: 0.9rem;
+      color: rgba(255,255,255,0.6);
+    }
+    .hero-features li::before {
+      content: '✦';
+      color: var(--gold);
+      font-size: 0.7rem;
+    }
+
+    /* RIGHT FORM PANEL */
+    .form-panel {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2.5rem;
+      overflow-y: auto;
+      background: var(--bg);
+      position: relative;
+    }
+    .form-panel::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      width: 1px;
+      background: linear-gradient(to bottom, transparent, var(--border), transparent);
+    }
+
+    .form-container {
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .form-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 2.5rem 2rem;
+      box-shadow: 0 24px 48px rgba(0,0,0,0.3), 0 0 80px rgba(212,175,55,0.03);
+    }
+
+    .form-header { text-align: center; margin-bottom: 2rem; }
+    .form-header h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.6rem; font-weight: 500;
+      color: var(--text);
+      margin-bottom: 0.4rem;
+    }
+    .form-header p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .form-group { margin-bottom: 1.1rem; }
+    .form-group label {
+      display: block;
+      font-size: 0.72rem; font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      color: var(--text);
+      font-size: 0.9rem;
+      font-family: inherit;
+      outline: none;
+      transition: var(--transition);
+    }
+    .form-group input:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 20px var(--gold-glow);
+      background: rgba(212,175,55,0.02);
+    }
+    .form-group input::placeholder { color: rgba(255,255,255,0.18); }
+
+    .btn-primary {
+      width: 100%;
+      padding: 0.85rem;
+      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+      border: none;
+      border-radius: 12px;
+      color: #0a0806;
+      font-size: 0.9rem; font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: var(--transition);
+      margin-top: 0.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-primary::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.15) 50%, transparent 70%);
+      transform: translateX(-100%);
+      transition: transform 0.6s;
+    }
+    .btn-primary:hover::after { transform: translateX(100%); }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(212,175,55,0.3); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .form-links {
+      text-align: center;
+      margin-top: 1.3rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .form-links a {
+      color: var(--gold-light);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .form-links a:hover { color: var(--gold); }
+
+    .form-divider {
+      text-align: center;
+      margin-top: 1.2rem;
+      padding-top: 1.2rem;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .form-divider a { color: var(--gold-light); text-decoration: none; cursor: pointer; }
+    .form-divider a:hover { color: var(--gold); }
+
+    .view { display: none; }
+    .view.active { display: block; }
+
+    .toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; }
+    .toast-msg { padding: 0.75rem 1.2rem; border-radius: 12px; font-size: 0.85rem; animation: slideIn 0.3s ease; max-width: 360px; }
+    .toast-msg.success { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.2); color: #10b981; }
+    .toast-msg.error { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.2); color: #ef4444; }
+    .toast-msg.info { background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.2); color: #3b82f6; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    /* MOBILE */
+    @media (max-width: 900px) {
+      .auth-wrapper { grid-template-columns: 1fr; }
+      .hero-panel { display: none; }
+      .form-panel {
+        min-height: 100vh;
+        padding: 2rem 1.5rem;
+        align-items: flex-start;
+        padding-top: 3rem;
+      }
+      .form-container { max-width: 100%; }
+      .form-card { border-radius: 20px; padding: 2rem 1.5rem; }
+    }
+    @media (max-width: 480px) {
+      .form-panel { padding: 1.5rem 1rem; padding-top: 2rem; }
+      .form-card { padding: 1.8rem 1.2rem; }
+      .form-header h2 { font-size: 1.4rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-wrapper">
+    <!-- LEFT HERO -->
+    <div class="hero-panel">
+      <div class="hero-content">
+        <div class="hero-logo">BookMyShot<span>.</span></div>
+        <h1 class="hero-heading">Your <em>Dream Wedding</em> Starts Here</h1>
+        <p class="hero-sub">Access your bookings, connect with premium creators, and manage your wedding planning in one place.</p>
+        <ul class="hero-features">
+          <li>Book top-rated wedding photographers</li>
+          <li>Track bookings and payments</li>
+          <li>Direct messaging with creators</li>
+          <li>Cinematic wedding highlights</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- RIGHT FORM -->
+    <div class="form-panel">
+      <div class="form-container">
+        <!-- LOGIN VIEW -->
+        <div class="view active" id="loginView">
+          <div class="form-card">
+            <div class="form-header">
+              <h2>Welcome Back</h2>
+              <p>Access your bookings and profile</p>
+            </div>
+            <form id="loginForm" novalidate>
+              <div class="form-group">
+                <label>Email or Phone</label>
+                <input type="text" id="loginEmail" placeholder="email@example.com" required>
+              </div>
+              <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="loginPassword" placeholder="••••••••" required>
+              </div>
+              <button type="submit" class="btn-primary" id="loginBtn">Sign In</button>
+            </form>
+            <div class="form-links">
+              <a href="#" id="forgotLink">Forgot Password?</a>
+            </div>
+            <div class="form-divider">
+              No account? <a id="showSignup">Sign Up</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- SIGNUP VIEW -->
+        <div class="view" id="signupView">
+          <div class="form-card">
+            <div class="form-header">
+              <h2>Create Account</h2>
+              <p>Join BookMyShot and start booking</p>
+            </div>
+            <form id="signupForm" novalidate>
+              <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="signupName" placeholder="Your full name" required>
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="signupEmail" placeholder="email@example.com" required>
+              </div>
+              <div class="form-group">
+                <label>Phone</label>
+                <input type="tel" id="signupPhone" placeholder="+91 9876543210">
+              </div>
+              <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="signupPassword" placeholder="Min 6 characters" required>
+              </div>
+              <div class="form-group">
+                <label>Confirm Password</label>
+                <input type="password" id="signupConfirm" placeholder="Repeat password" required>
+              </div>
+              <button type="submit" class="btn-primary" id="signupBtn">Create Account</button>
+            </form>
+            <div class="form-divider">
+              Already have an account? <a id="showLogin">Sign In</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+  (function() {
+    'use strict';
+
+    function toast(msg, type) {
+      var c = document.getElementById('toastContainer');
+      if (!c) { c = document.createElement('div'); c.id = 'toastContainer'; c.className = 'toast-container'; document.body.appendChild(c); }
+      var el = document.createElement('div');
+      el.className = 'toast-msg ' + (type || 'info');
+      el.textContent = msg;
+      c.appendChild(el);
+      setTimeout(function() { el.remove(); }, 3500);
+    }
+
+    document.getElementById('showSignup').addEventListener('click', function(e) {
+      e.preventDefault();
+      document.getElementById('loginView').classList.remove('active');
+      document.getElementById('signupView').classList.add('active');
+    });
+    document.getElementById('showLogin').addEventListener('click', function(e) {
+      e.preventDefault();
+      document.getElementById('signupView').classList.remove('active');
+      document.getElementById('loginView').classList.add('active');
+    });
+
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      var btn = document.getElementById('loginBtn');
+      if (btn.disabled) return;
+      var identifier = document.getElementById('loginEmail').value.trim();
+      var password = document.getElementById('loginPassword').value;
+      if (!identifier) { toast('Please enter your email or phone', 'error'); return; }
+      if (!password) { toast('Please enter your password', 'error'); return; }
+      btn.disabled = true; btn.textContent = 'Signing in...';
+      try {
+        var payload = { password: password };
+        if (identifier.includes('@')) payload.email = identifier;
+        else payload.phone = identifier;
+        var data = await API.post('/auth/login', payload);
+        if (data.user.role !== 'user' && data.user.role !== 'admin') {
+          toast('This is the User login. Use Creator login for creator accounts.', 'error');
+          btn.disabled = false; btn.textContent = 'Sign In'; return;
+        }
+        API.setAuth(data.token, data.user);
+        window.location.href = '/user/dashboard.html';
+      } catch (err) {
+        toast(err.message || 'Login failed', 'error');
+        btn.disabled = false; btn.textContent = 'Sign In';
+      }
+    });
+
+    document.getElementById('signupForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      var btn = document.getElementById('signupBtn');
+      if (btn.disabled) return;
+      var name = document.getElementById('signupName').value.trim();
+      var email = document.getElementById('signupEmail').value.trim();
+      var phone = document.getElementById('signupPhone').value.trim();
+      var password = document.getElementById('signupPassword').value;
+      var confirm = document.getElementById('signupConfirm').value;
+      if (!name) { toast('Please enter your name', 'error'); return; }
+      if (!email) { toast('Please enter your email', 'error'); return; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast('Enter a valid email', 'error'); return; }
+      if (!password || password.length < 6) { toast('Password must be at least 6 characters', 'error'); return; }
+      if (password !== confirm) { toast('Passwords do not match', 'error'); return; }
+      btn.disabled = true; btn.textContent = 'Creating account...';
+      try {
+        var payload = { name: name, email: email, password: password, role: 'user' };
+        if (phone) payload.phone = phone;
+        var data = await API.post('/auth/register', payload);
+        API.setAuth(data.token, data.user);
+        toast('Account created!', 'success');
+        setTimeout(function() { window.location.href = '/user/dashboard.html'; }, 500);
+      } catch (err) {
+        toast(err.message || 'Registration failed', 'error');
+        btn.disabled = false; btn.textContent = 'Create Account';
+      }
+    });
+
+    document.getElementById('forgotLink').addEventListener('click', async function(e) {
+      e.preventDefault();
+      var email = prompt('Enter your email:');
+      if (!email) return;
+      try {
+        var r = await API.post('/auth/forgot-password', { email: email });
+        toast(r.message || 'Reset instructions sent if account exists.', 'success');
+      } catch (err) { toast('Failed to send reset link', 'error'); }
+    });
+
+    var user = API.getUser(); var token = API.getToken();
+    if (user && token && user.role === 'user') window.location.href = '/user/dashboard.html';
+  })();
+  </script>
+</body>
+</html>

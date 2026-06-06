@@ -1,0 +1,46 @@
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: radial-gradient(ellipse at top, rgba(201,169,98,0.08), var(--bg-deep));
+}
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 2.5rem;
+  border-radius: 16px;
+}
+.auth-logo {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  color: var(--cream);
+  display: block;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+.auth-card h1 {
+  font-family: var(--font-display);
+  text-align: center;
+  color: var(--cream);
+  font-weight: 400;
+  font-size: 1.75rem;
+}
+.auth-sub { text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem; }
+.auth-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+.auth-tab {
+  flex: 1;
+  padding: 0.5rem;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.auth-tab.active { border-color: var(--gold); color: var(--gold-light); background: var(--gold-dim); }
+.auth-footer { text-align: center; margin-top: 1.5rem; font-size: 0.85rem; color: var(--text-muted); }
+.auth-footer a { color: var(--gold); }
