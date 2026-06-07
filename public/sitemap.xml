@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+<url>
+<loc>https://bookmyshot.in/</loc>
+<priority>1.0</priority>
+</url>
+
+<url>
+<loc>https://bookmyshot.in/about.html</loc>
+</url>
+
+<url>
+<loc>https://bookmyshot.in/contact.html</loc>
+</url>
+
+<url>
+<loc>https://bookmyshot.in/creators.html</loc>
+</url>
+
+<url>
+<loc>https://bookmyshot.in/login.html</loc>
+</url>
+
+<url>
+<loc>https://bookmyshot.in/register.html</loc>
+</url>
+
+</urlset>
