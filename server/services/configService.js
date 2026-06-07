@@ -16,8 +16,8 @@ const DEFAULTS = {
   platform: {
     siteName: "BookMyShot",
     siteDescription: "Premium Photography Booking Platform",
-    supportEmail: "support@bookmyshot.com",
-    supportPhone: "",
+    supportEmail: "support@bookmyshot.in",
+    supportPhone: "8492922173",
     currency: "INR",
     maintenanceMode: false,
     platformStatus: "active",
