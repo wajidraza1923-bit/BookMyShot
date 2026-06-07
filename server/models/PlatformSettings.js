@@ -4,8 +4,8 @@ const platformSettingsSchema = new mongoose.Schema(
   {
     siteName: { type: String, default: "BookMyShot" },
     siteDescription: { type: String, default: "Premium Photography Booking Platform" },
-    supportEmail: { type: String, default: "support@bookmyshot.com" },
-    supportPhone: { type: String, default: "" },
+    supportEmail: { type: String, default: "support@bookmyshot.in" },
+    supportPhone: { type: String, default: "8492922173" },
     currency: { type: String, default: "INR" },
     maintenanceMode: { type: Boolean, default: false },
     platformStatus: {
