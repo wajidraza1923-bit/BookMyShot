@@ -10,6 +10,8 @@ const promotionRequestSchema = new mongoose.Schema(
       required: true,
     },
     price: { type: Number, default: 0 },
+    screenshot: { type: String, default: "" },
+    utr: { type: String, default: "" },
     status: {
       type: String,
       enum: ["pending", "approved", "rejected", "expired"],

@@ -33,10 +33,13 @@ router.get("/plans", protect, async (req, res, next) => {
 // ═══════════════════════════════════════════════════════════════
 router.post("/apply", protect, authorize("creator"), async (req, res, next) => {
   try {
-    const { planType } = req.body;
+    const { planType, screenshot, utr } = req.body;
     const validPlans = ["homepage_featured", "rank_1", "rank_2", "rank_3", "rank_4"];
     if (!planType || !validPlans.includes(planType)) {
       return res.status(400).json({ success: false, message: "Invalid plan type" });
+    }
+    if (!screenshot || !utr) {
+      return res.status(400).json({ success: false, message: "Payment screenshot and UTR are required" });
     }
 
     const creator = await Creator.findOne({ user: req.user._id });
@@ -46,6 +49,18 @@ router.post("/apply", protect, authorize("creator"), async (req, res, next) => {
     const existing = await PromotionRequest.findOne({ creator: creator._id, planType, status: "pending" });
     if (existing) {
       return res.status(400).json({ success: false, message: "You already have a pending request for this plan" });
+    }
+
+    // Upload screenshot to Cloudinary
+    let screenshotUrl = screenshot;
+    if (screenshotUrl.startsWith("data:")) {
+      try {
+        const { uploadBase64, isConfigured } = require("../services/cloudinaryService");
+        if (isConfigured()) {
+          const result = await uploadBase64(screenshotUrl, { folder: "bookmyshot/promotion-payments" });
+          screenshotUrl = result.url;
+        }
+      } catch (e) { /* keep original */ }
     }
 
     const settings = await configService.getSubscriptionSettings();
@@ -62,9 +77,24 @@ router.post("/apply", protect, authorize("creator"), async (req, res, next) => {
       creatorName: req.user.name || "",
       planType,
       price: priceMap[planType],
+      screenshot: screenshotUrl,
+      utr: utr.trim(),
       status: "pending",
       requestDate: new Date(),
     });
+
+    // Notify admin
+    const User = require("../models/User");
+    const Notification = require("../models/Notification");
+    const admins = await User.find({ role: "admin" }).select("_id");
+    for (const admin of admins) {
+      await Notification.create({
+        user: admin._id,
+        type: "payment",
+        title: "🏆 New Promotion Payment",
+        message: `${req.user.name} submitted payment for ${planType} promotion (₹${priceMap[planType]})`,
+      });
+    }
 
     res.status(201).json({ success: true, data: request });
   } catch (e) {

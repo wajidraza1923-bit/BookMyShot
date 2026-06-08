@@ -2067,12 +2067,14 @@
         const requests = data.data || [];
         if (!requests.length) { el.innerHTML = '<div class="empty-state"><div class="icon">🏆</div><h3>No promotion requests yet</h3></div>'; return; }
         const planNames = { homepage_featured: 'Homepage Featured', rank_1: 'Rank #1', rank_2: 'Rank #2', rank_3: 'Rank #3', rank_4: 'Rank #4' };
-        let html = '<div class="table-wrap"><table><thead><tr><th>Creator</th><th>Plan</th><th>Price</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+        let html = '<div class="table-wrap"><table><thead><tr><th>Creator</th><th>Plan</th><th>Price</th><th>Screenshot</th><th>UTR</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
         requests.forEach(r => {
           const name = r.creator?.user?.name || r.creatorName || '—';
           const plan = planNames[r.planType] || r.planType;
           const price = '₹' + (r.price || 0).toLocaleString('en-IN');
           const date = r.requestDate ? new Date(r.requestDate).toLocaleDateString('en-IN') : '—';
+          const screenshotHtml = r.screenshot ? '<a href="' + r.screenshot + '" target="_blank" style="color:var(--gold);font-size:0.72rem">View 📷</a>' : '<span style="color:var(--text-dim);font-size:0.7rem">None</span>';
+          const utrText = r.utr || '—';
           const statusClass = r.status === 'approved' ? 'approved' : r.status === 'rejected' ? 'rejected' : 'pending';
           let actions = '';
           if (r.status === 'pending') {
@@ -2080,7 +2082,7 @@
           } else {
             actions = '<span style="font-size:.7rem;color:var(--text-dim)">' + r.status + '</span>';
           }
-          html += '<tr><td>' + name + '</td><td>' + plan + '</td><td>' + price + '</td><td style="font-size:.75rem">' + date + '</td><td><span class="status-badge status-' + statusClass + '">' + r.status + '</span></td><td>' + actions + '</td></tr>';
+          html += '<tr><td>' + name + '</td><td>' + plan + '</td><td>' + price + '</td><td>' + screenshotHtml + '</td><td style="font-size:.75rem">' + utrText + '</td><td style="font-size:.75rem">' + date + '</td><td><span class="status-badge status-' + statusClass + '">' + r.status + '</span></td><td>' + actions + '</td></tr>';
         });
         html += '</tbody></table></div>';
         el.innerHTML = html;
