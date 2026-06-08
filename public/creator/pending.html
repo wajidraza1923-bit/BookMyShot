@@ -3,75 +3,425 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pending Approval — BookMyShot</title>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/theme.css">
-  <link rel="stylesheet" href="/css/auth.css">
+  <title>Creator Dashboard — Under Review | BookMyShot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
-    .pending-status { display: inline-block; padding: 0.3rem 1rem; border-radius: 50px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; margin: 1rem 0; }
-    .pending-status.pending { background: rgba(232, 184, 74, 0.2); color: var(--warning); }
-    .pending-status.rejected { background: rgba(232, 93, 93, 0.15); color: var(--danger); }
-    .pending-icon { font-size: 3rem; margin-bottom: 1rem; }
-    .pending-details { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin: 1.5rem 0; text-align: left; }
-    .pending-details h3 { color: var(--gold-light); font-family: var(--font-display); margin-bottom: 0.75rem; }
-    .pending-details p { color: var(--text-muted); font-size: 0.9rem; line-height: 1.7; }
-    .pending-details ul { list-style: none; padding: 0; }
-    .pending-details ul li { padding: 0.4rem 0; color: var(--text); font-size: 0.85rem; }
-    .pending-details ul li::before { content: "✦ "; color: var(--gold); }
+    :root {
+      --bg-primary: #0a0806;
+      --bg-card: #141210;
+      --bg-card-hover: #1a1714;
+      --border: rgba(255,140,39,.12);
+      --border-active: rgba(255,140,39,.35);
+      --gold: #ff8c27;
+      --gold-light: #ffb366;
+      --cream: #f6eee7;
+      --text: #d4c8bc;
+      --text-muted: #8a7e72;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --radius: 14px;
+      --font-display: 'Cormorant Garamond', serif;
+      --font-body: 'Outfit', sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-primary);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    .dash-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 2rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-card);
+    }
+    .dash-logo {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      color: var(--cream);
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .dash-logo span { color: var(--gold); }
+    .dash-header-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .dash-user-name {
+      color: var(--text-muted);
+      font-size: .85rem;
+    }
+    .btn-logout {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: .5rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: .8rem;
+      transition: all .2s;
+    }
+    .btn-logout:hover {
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    /* Main Content */
+    .dash-main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .pending-container {
+      max-width: 640px;
+      width: 100%;
+    }
+
+    /* Status Card */
+    .status-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 3rem 2.5rem;
+      text-align: center;
+    }
+    .status-icon {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: rgba(245,158,11,.1);
+      border: 2px solid rgba(245,158,11,.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+      font-size: 2rem;
+    }
+    .status-icon.rejected {
+      background: rgba(239,68,68,.1);
+      border-color: rgba(239,68,68,.3);
+    }
+    .status-title {
+      font-family: var(--font-display);
+      font-size: 1.8rem;
+      color: var(--cream);
+      margin-bottom: .5rem;
+      font-weight: 600;
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      padding: .4rem 1.2rem;
+      border-radius: 50px;
+      font-size: .75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin: .75rem 0 1.25rem;
+    }
+    .status-badge.pending {
+      background: rgba(245,158,11,.12);
+      color: var(--warning);
+      border: 1px solid rgba(245,158,11,.25);
+    }
+    .status-badge.rejected {
+      background: rgba(239,68,68,.12);
+      color: var(--danger);
+      border: 1px solid rgba(239,68,68,.25);
+    }
+    .status-message {
+      color: var(--text-muted);
+      font-size: .95rem;
+      line-height: 1.7;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    /* Progress Steps */
+    .progress-steps {
+      display: flex;
+      flex-direction: column;
+      gap: .75rem;
+      margin-top: 2rem;
+      padding: 1.5rem;
+      background: rgba(255,255,255,.02);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      text-align: left;
+    }
+    .progress-step {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      padding: .6rem .75rem;
+      border-radius: 8px;
+    }
+    .step-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .75rem;
+      flex-shrink: 0;
+    }
+    .step-icon.done {
+      background: rgba(16,185,129,.15);
+      color: var(--success);
+    }
+    .step-icon.waiting {
+      background: rgba(245,158,11,.12);
+      color: var(--warning);
+      animation: pulse 2s infinite;
+    }
+    .step-label {
+      font-size: .88rem;
+      color: var(--text);
+    }
+    .step-label.muted { color: var(--text-muted); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .5; }
+    }
+
+    /* Actions */
+    .status-actions {
+      display: flex;
+      gap: .75rem;
+      justify-content: center;
+      margin-top: 2rem;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: .65rem 1.5rem;
+      border-radius: 8px;
+      font-size: .85rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all .2s;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+    }
+    .btn-primary {
+      background: var(--gold);
+      color: #0a0806;
+    }
+    .btn-primary:hover { background: var(--gold-light); }
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-outline:hover {
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+
+    /* Info Section */
+    .info-section {
+      margin-top: 1.5rem;
+      padding: 1.25rem;
+      background: rgba(255,140,39,.04);
+      border-radius: 10px;
+      border: 1px solid rgba(255,140,39,.1);
+    }
+    .info-section h4 {
+      color: var(--gold-light);
+      font-size: .85rem;
+      font-weight: 500;
+      margin-bottom: .5rem;
+    }
+    .info-section p {
+      color: var(--text-muted);
+      font-size: .8rem;
+      line-height: 1.6;
+    }
+
+    /* Rejection reason */
+    .rejection-reason {
+      margin-top: 1.5rem;
+      padding: 1.25rem;
+      background: rgba(239,68,68,.06);
+      border-radius: 10px;
+      border: 1px solid rgba(239,68,68,.15);
+      text-align: left;
+    }
+    .rejection-reason h4 {
+      color: var(--danger);
+      font-size: .85rem;
+      font-weight: 500;
+      margin-bottom: .5rem;
+    }
+    .rejection-reason p {
+      color: var(--text-muted);
+      font-size: .82rem;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 600px) {
+      .dash-header { padding: 1rem 1.25rem; }
+      .dash-main { padding: 1.5rem 1rem; }
+      .status-card { padding: 2rem 1.5rem; }
+      .status-title { font-size: 1.4rem; }
+      .status-actions { flex-direction: column; }
+      .btn { width: 100%; justify-content: center; }
+    }
   </style>
 </head>
-<body class="auth-page">
-  <div class="auth-card glass" style="text-align:center">
-    <div class="pending-icon" id="statusIcon">⏳</div>
-    <h1 style="font-family:var(--font-display);color:var(--cream)" id="statusTitle">Pending Approval</h1>
-    <div class="pending-status pending" id="statusBadge">Pending</div>
-    <p class="auth-sub" id="statusMessage">Your creator application is under review. You'll receive a notification once approved.</p>
-
-    <div class="pending-details">
-      <h3>What happens next?</h3>
-      <ul>
-        <li>An admin will review your application</li>
-        <li>You'll receive a notification when approved</li>
-        <li>Once approved, you can access your full dashboard</li>
-        <li>Start uploading your portfolio and setting up packages</li>
-      </ul>
+<body>
+  <!-- Header -->
+  <header class="dash-header">
+    <a href="/" class="dash-logo">BookMyShot<span>.</span></a>
+    <div class="dash-header-right">
+      <span class="dash-user-name" id="userName">Creator</span>
+      <button class="btn-logout" onclick="API.clearAuth();location.href='/'">
+        <i class="fas fa-sign-out-alt"></i> Logout
+      </button>
     </div>
+  </header>
 
-    <div style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;margin-top:1rem">
-      <a href="/" class="btn btn-outline">Back to Home</a>
-      <button class="btn btn-primary" id="checkStatusBtn">Check Status</button>
-      <button class="btn btn-outline" onclick="API.clearAuth();location.href='/'">Logout</button>
+  <!-- Main -->
+  <main class="dash-main">
+    <div class="pending-container">
+      <div class="status-card" id="statusCard">
+        <!-- Pending State (default) -->
+        <div class="status-icon" id="statusIcon">
+          <i class="fas fa-clock"></i>
+        </div>
+        <h1 class="status-title" id="statusTitle">Creator Account Under Review</h1>
+        <div class="status-badge pending" id="statusBadge">
+          <i class="fas fa-circle" style="font-size:.5rem"></i> Pending Approval
+        </div>
+        <p class="status-message" id="statusMessage">
+          Your creator account has been submitted successfully and is currently under review by our team. You will gain full access after approval.
+        </p>
+
+        <!-- Progress Steps -->
+        <div class="progress-steps" id="progressSteps">
+          <div class="progress-step">
+            <div class="step-icon done"><i class="fas fa-check"></i></div>
+            <span class="step-label">Profile Submitted</span>
+          </div>
+          <div class="progress-step">
+            <div class="step-icon done"><i class="fas fa-check"></i></div>
+            <span class="step-label">Email Verification Completed</span>
+          </div>
+          <div class="progress-step">
+            <div class="step-icon waiting"><i class="fas fa-hourglass-half"></i></div>
+            <span class="step-label muted">Admin Approval Pending</span>
+          </div>
+        </div>
+
+        <div class="info-section" id="infoSection">
+          <h4><i class="fas fa-info-circle"></i> What happens next?</h4>
+          <p>Our team reviews every creator application to maintain quality standards. This typically takes 24-48 hours. Once approved, you'll receive a notification and gain full access to your creator dashboard including portfolio management, bookings, earnings, and more.</p>
+        </div>
+
+        <!-- Rejection Reason (hidden by default) -->
+        <div class="rejection-reason" id="rejectionSection" style="display:none">
+          <h4><i class="fas fa-exclamation-triangle"></i> Reason for Rejection</h4>
+          <p id="rejectionReason">Your creator application did not meet our current requirements. Please contact support for more information or to reapply.</p>
+        </div>
+
+        <!-- Actions -->
+        <div class="status-actions">
+          <button class="btn btn-primary" id="checkStatusBtn">
+            <i class="fas fa-refresh"></i> Check Status
+          </button>
+          <a href="/" class="btn btn-outline">
+            <i class="fas fa-home"></i> Back to Home
+          </a>
+        </div>
+      </div>
     </div>
-  </div>
+  </main>
+
   <script src="/js/api.js"></script>
   <script src="/js/utils.js"></script>
   <script>
-    // Check if user is logged in and get their status
+  (function() {
+    'use strict';
+
+    // Show user name if available
+    var user = API.getUser();
+    if (user && user.name) {
+      document.getElementById('userName').textContent = user.name;
+    }
+
     async function checkStatus() {
+      var btn = document.getElementById('checkStatusBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+
       try {
-        const me = await API.get("/auth/me");
-        const status = me.creator?.status;
-        if (status === "approved") {
-          window.location.href = "/creator/dashboard.html";
+        var me = await API.get('/auth/me');
+        var status = me.creator ? me.creator.status : null;
+
+        if (status === 'approved') {
+          // Creator approved - redirect to full dashboard
+          window.location.href = '/creator/dashboard.html';
           return;
         }
-        if (status === "rejected") {
-          document.getElementById("statusIcon").textContent = "❌";
-          document.getElementById("statusTitle").textContent = "Application Rejected";
-          document.getElementById("statusBadge").textContent = "Rejected";
-          document.getElementById("statusBadge").className = "pending-status rejected";
-          document.getElementById("statusMessage").textContent = "Your creator application has been rejected. Please contact support for more information.";
+
+        if (status === 'rejected') {
+          showRejected();
+          return;
         }
+
+        // Still pending
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-refresh"></i> Check Status';
+
       } catch (e) {
-        // Not logged in, redirect to creator login
         if (!API.getToken()) {
-          window.location.href = "/creator-auth.html";
+          window.location.href = '/creator-auth.html';
+          return;
         }
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-refresh"></i> Check Status';
       }
     }
 
-    document.getElementById("checkStatusBtn").addEventListener("click", checkStatus);
+    function showRejected() {
+      document.getElementById('statusIcon').innerHTML = '<i class="fas fa-times-circle"></i>';
+      document.getElementById('statusIcon').classList.add('rejected');
+      document.getElementById('statusTitle').textContent = 'Application Not Approved';
+      document.getElementById('statusBadge').innerHTML = '<i class="fas fa-circle" style="font-size:.5rem"></i> Rejected';
+      document.getElementById('statusBadge').className = 'status-badge rejected';
+      document.getElementById('statusMessage').textContent = 'Unfortunately, your creator application was not approved at this time.';
+      document.getElementById('progressSteps').style.display = 'none';
+      document.getElementById('infoSection').style.display = 'none';
+      document.getElementById('rejectionSection').style.display = 'block';
+
+      var btn = document.getElementById('checkStatusBtn');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-refresh"></i> Check Again';
+    }
+
+    document.getElementById('checkStatusBtn').addEventListener('click', checkStatus);
+
+    // Initial check
     checkStatus();
+  })();
   </script>
 </body>
 </html>

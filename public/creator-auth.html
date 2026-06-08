@@ -358,7 +358,7 @@
       try {
         var data = await API.post('/auth/login', { email: email, password: password });
         if (data.user.role !== 'creator') {
-          toast('This is not a creator account. Use User login instead.', 'error');
+          toast('This account is not registered as a creator. Please use User login.', 'error');
           btn.disabled = false; btn.textContent = 'Login as Creator'; return;
         }
         API.setAuth(data.token, data.user);
