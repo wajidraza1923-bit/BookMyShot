@@ -6,9 +6,10 @@ const promotionRequestSchema = new mongoose.Schema(
     creatorName: { type: String, default: "" },
     planType: {
       type: String,
-      enum: ["homepage_featured", "rank_1", "rank_2", "rank_3", "rank_4"],
+      enum: ["homepage_featured", "featured_1", "featured_2", "featured_3", "featured_4", "rank_1", "rank_2", "rank_3", "rank_4"],
       required: true,
     },
+    slotNumber: { type: Number, default: 0 },
     price: { type: Number, default: 0 },
     screenshot: { type: String, default: "" },
     utr: { type: String, default: "" },

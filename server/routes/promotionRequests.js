@@ -96,15 +96,99 @@ router.get("/my-active", protect, authorize("creator"), async (req, res, next) =
 router.get("/plans", protect, async (req, res, next) => {
   try {
     const settings = await configService.getSubscriptionSettings();
+    const featuredPrice = settings.featuredPortfolioPrice || 999;
     res.json({
       success: true,
       plans: [
-        { id: "homepage_featured", name: "Homepage Featured", price: settings.homepageFeaturedPrice || 1499, benefits: ["Appear in Featured Creators section", "Higher visibility", "Priority exposure"] },
-        { id: "rank_1", name: "Rank #1", price: settings.rank1Price || 1999, benefits: ["First position in All Creators"] },
-        { id: "rank_2", name: "Rank #2", price: settings.rank2Price || 1499, benefits: ["Second position in All Creators"] },
-        { id: "rank_3", name: "Rank #3", price: settings.rank3Price || 999, benefits: ["Third position in All Creators"] },
-        { id: "rank_4", name: "Rank #4", price: settings.rank4Price || 799, benefits: ["Fourth position in All Creators"] },
+        { id: "featured_1", name: "Featured Slot #1", price: featuredPrice, category: "featured", benefits: ["Top Featured Creator badge", "Highest homepage visibility", "First in Featured section"] },
+        { id: "featured_2", name: "Featured Slot #2", price: featuredPrice, category: "featured", benefits: ["Homepage Featured section", "High visibility", "Priority exposure"] },
+        { id: "featured_3", name: "Featured Slot #3", price: featuredPrice, category: "featured", benefits: ["Homepage Featured section", "Increased visibility"] },
+        { id: "featured_4", name: "Featured Slot #4", price: featuredPrice, category: "featured", benefits: ["Homepage Featured section", "Featured badge"] },
+        { id: "rank_1", name: "Rank #1", price: settings.rank1Price || 1999, category: "rank", benefits: ["First position in All Creators"] },
+        { id: "rank_2", name: "Rank #2", price: settings.rank2Price || 1499, category: "rank", benefits: ["Second position in All Creators"] },
+        { id: "rank_3", name: "Rank #3", price: settings.rank3Price || 999, category: "rank", benefits: ["Third position in All Creators"] },
+        { id: "rank_4", name: "Rank #4", price: settings.rank4Price || 799, category: "rank", benefits: ["Fourth position in All Creators"] },
       ],
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// PUBLIC: Get featured slot occupancy
+// ═══════════════════════════════════════════════════════════════
+router.get("/featured-status", async (req, res, next) => {
+  try {
+    const now = new Date();
+    // Auto-expire old featured promotions
+    const expired = await PromotionRequest.find({ 
+      status: "approved", 
+      expiryDate: { $lte: now },
+      planType: { $in: ["featured_1", "featured_2", "featured_3", "featured_4"] },
+    });
+    for (const promo of expired) {
+      promo.status = "expired";
+      await promo.save();
+      const creator = await Creator.findById(promo.creator);
+      if (creator) { creator.featured = false; await creator.save(); }
+    }
+
+    // Get active featured holders
+    const activeFeatured = await PromotionRequest.find({
+      status: "approved",
+      expiryDate: { $gt: now },
+      planType: { $in: ["featured_1", "featured_2", "featured_3", "featured_4"] },
+    }).populate({ path: "creator", populate: { path: "user", select: "name avatar" } });
+
+    const slots = {};
+    activeFeatured.forEach(r => {
+      slots[r.planType] = {
+        occupied: true,
+        ownerName: r.creator?.user?.name || r.creatorName || "Unknown",
+        ownerAvatar: r.creator?.user?.avatar || "",
+        creatorId: r.creator?._id || r.creator,
+        expiryDate: r.expiryDate,
+        startDate: r.startDate,
+      };
+    });
+
+    res.json({ success: true, slots });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// CREATOR: Get my active featured slot
+// ═══════════════════════════════════════════════════════════════
+router.get("/my-featured", protect, authorize("creator"), async (req, res, next) => {
+  try {
+    const creator = await Creator.findOne({ user: req.user._id });
+    if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
+
+    const now = new Date();
+    const active = await PromotionRequest.findOne({
+      creator: creator._id,
+      status: "approved",
+      expiryDate: { $gt: now },
+      planType: { $in: ["featured_1", "featured_2", "featured_3", "featured_4"] },
+    });
+
+    if (!active) return res.json({ success: true, active: null });
+
+    const daysRemaining = Math.max(0, Math.ceil((active.expiryDate - now) / 86400000));
+    res.json({
+      success: true,
+      active: {
+        planType: active.planType,
+        slotNumber: parseInt(active.planType.replace("featured_", ""), 10),
+        price: active.price,
+        startDate: active.startDate,
+        expiryDate: active.expiryDate,
+        daysRemaining,
+        status: "active",
+      },
     });
   } catch (e) {
     next(e);
@@ -117,7 +201,7 @@ router.get("/plans", protect, async (req, res, next) => {
 router.post("/apply", protect, authorize("creator"), async (req, res, next) => {
   try {
     const { planType, screenshot, utr } = req.body;
-    const validPlans = ["homepage_featured", "rank_1", "rank_2", "rank_3", "rank_4"];
+    const validPlans = ["homepage_featured", "featured_1", "featured_2", "featured_3", "featured_4", "rank_1", "rank_2", "rank_3", "rank_4"];
     if (!planType || !validPlans.includes(planType)) {
       return res.status(400).json({ success: false, message: "Invalid plan type" });
     }
@@ -147,8 +231,13 @@ router.post("/apply", protect, authorize("creator"), async (req, res, next) => {
     }
 
     const settings = await configService.getSubscriptionSettings();
+    const featuredPrice = settings.featuredPortfolioPrice || 999;
     const priceMap = {
       homepage_featured: settings.homepageFeaturedPrice || 1499,
+      featured_1: featuredPrice,
+      featured_2: featuredPrice,
+      featured_3: featuredPrice,
+      featured_4: featuredPrice,
       rank_1: settings.rank1Price || 1999,
       rank_2: settings.rank2Price || 1499,
       rank_3: settings.rank3Price || 999,
@@ -231,7 +320,7 @@ router.patch("/admin/:id/approve", protect, authorize("admin"), async (req, res,
     // Apply promotion to creator
     const creator = await Creator.findById(promo.creator);
     if (creator) {
-      if (promo.planType === "homepage_featured") {
+      if (promo.planType === "homepage_featured" || promo.planType.startsWith("featured_")) {
         creator.featured = true;
         creator.featuredStartDate = now;
         creator.featuredEndDate = expiry;
