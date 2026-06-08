@@ -287,4 +287,89 @@ router.patch("/admin/:id/reject", protect, authorize("admin"), async (req, res, 
   }
 });
 
+// ═══════════════════════════════════════════════════════════════
+// ADMIN: Force expire a promotion
+// ═══════════════════════════════════════════════════════════════
+router.patch("/admin/:id/expire", protect, authorize("admin"), async (req, res, next) => {
+  try {
+    const promo = await PromotionRequest.findById(req.params.id);
+    if (!promo) return res.status(404).json({ success: false, message: "Request not found" });
+
+    promo.status = "expired";
+    promo.expiryDate = new Date();
+    await promo.save();
+
+    // Remove rank from creator
+    const creator = await Creator.findById(promo.creator);
+    if (creator) {
+      if (promo.planType === "homepage_featured") {
+        creator.featured = false;
+      } else if (promo.planType.startsWith("rank_")) {
+        const rankNum = parseInt(promo.planType.split("_")[1], 10);
+        if (creator.rank === rankNum) creator.rank = 0;
+      }
+      await creator.save();
+    }
+
+    await auditService.logAction({
+      adminId: req.user._id,
+      adminName: req.user.name || "",
+      action: "expire_promotion",
+      target: "promotion_request",
+      targetId: promo._id.toString(),
+      previousValues: { status: "approved" },
+      newValues: { status: "expired" },
+      ip: req.ip,
+    });
+
+    res.json({ success: true, data: promo });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// ADMIN: Extend promotion by 30 days
+// ═══════════════════════════════════════════════════════════════
+router.patch("/admin/:id/extend", protect, authorize("admin"), async (req, res, next) => {
+  try {
+    const promo = await PromotionRequest.findById(req.params.id);
+    if (!promo) return res.status(404).json({ success: false, message: "Request not found" });
+
+    const days = parseInt(req.body.days, 10) || 30;
+    const currentExpiry = promo.expiryDate ? new Date(promo.expiryDate) : new Date();
+    currentExpiry.setDate(currentExpiry.getDate() + days);
+    promo.expiryDate = currentExpiry;
+    if (promo.status === "expired") promo.status = "approved";
+    await promo.save();
+
+    // Re-apply rank if it was expired
+    const creator = await Creator.findById(promo.creator);
+    if (creator && promo.planType.startsWith("rank_")) {
+      const rankNum = parseInt(promo.planType.split("_")[1], 10);
+      creator.rank = rankNum;
+      await creator.save();
+    } else if (creator && promo.planType === "homepage_featured") {
+      creator.featured = true;
+      creator.featuredEndDate = currentExpiry;
+      await creator.save();
+    }
+
+    await auditService.logAction({
+      adminId: req.user._id,
+      adminName: req.user.name || "",
+      action: "extend_promotion",
+      target: "promotion_request",
+      targetId: promo._id.toString(),
+      previousValues: null,
+      newValues: { expiryDate: currentExpiry, days },
+      ip: req.ip,
+    });
+
+    res.json({ success: true, data: promo });
+  } catch (e) {
+    next(e);
+  }
+});
+
 module.exports = router;

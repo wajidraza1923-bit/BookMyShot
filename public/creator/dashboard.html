@@ -4210,11 +4210,15 @@
             html += '<div style="font-size:0.6rem;color:rgba(255,255,255,0.3)">' + slot.ownerName + '</div>';
             html += '<div style="font-size:0.58rem;color:rgba(255,255,255,0.25)">Until ' + new Date(slot.expiryDate).toLocaleDateString('en-IN',{day:'2-digit',month:'short'}) + '</div>';
           } else if (myActive && price > myPrice) {
-            // Show upgrade option
+            // Slot is available AND creator has a lower rank — show upgrade with price difference
             var upgradeCost = price - myPrice;
-            html += '<button class="btn btn-outline btn-sm" style="font-size:0.62rem;margin-top:0.2rem" onclick="applyPromotion(\'' + rankId + '\')">Upgrade ₹' + upgradeCost + '</button>';
+            html += '<button class="btn btn-outline btn-sm" style="font-size:0.62rem;margin-top:0.2rem" onclick="applyPromotion(\'' + rankId + '\')">Upgrade ₹' + upgradeCost.toLocaleString('en-IN') + '</button>';
+          } else if (!myActive || price < myPrice) {
+            // No active rank or this is a lower rank — show Apply
+            html += '<button class="btn btn-primary btn-sm" style="font-size:0.65rem;margin-top:0.2rem" onclick="applyPromotion(\'' + rankId + '\')">Apply ₹' + price.toLocaleString('en-IN') + '</button>';
           } else {
-            html += '<button class="btn btn-primary btn-sm" style="font-size:0.65rem;margin-top:0.2rem" onclick="applyPromotion(\'' + rankId + '\')">Apply</button>';
+            // Creator has a higher rank already
+            html += '<div style="font-size:0.6rem;color:rgba(255,255,255,0.25)">Lower rank</div>';
           }
           html += '</div>';
         });

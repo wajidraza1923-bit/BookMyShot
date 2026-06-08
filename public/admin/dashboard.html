@@ -2079,6 +2079,8 @@
           let actions = '';
           if (r.status === 'pending') {
             actions = '<button class="btn btn-success btn-sm" onclick="approvePromo(\'' + r._id + '\')">Approve</button> <button class="btn btn-danger btn-sm" onclick="rejectPromo(\'' + r._id + '\')">Reject</button>';
+          } else if (r.status === 'approved') {
+            actions = '<button class="btn btn-outline btn-sm" onclick="extendPromo(\'' + r._id + '\')">+30d</button> <button class="btn btn-danger btn-sm" onclick="expirePromo(\'' + r._id + '\')">Expire</button>';
           } else {
             actions = '<span style="font-size:.7rem;color:var(--text-dim)">' + r.status + '</span>';
           }
@@ -2096,6 +2098,15 @@
     window.rejectPromo = async function(id) {
       const reason = prompt("Rejection reason (optional):");
       try { await API.patch("/promotions/admin/" + id + "/reject", { reason: reason || '' }); toast("Promotion rejected", "success"); loadPromotionRequests(); }
+      catch (e) { toast(e.message, "error"); }
+    };
+    window.expirePromo = async function(id) {
+      if (!confirm("Force expire this promotion? Creator will lose their rank immediately.")) return;
+      try { await API.patch("/promotions/admin/" + id + "/expire"); toast("Promotion expired", "success"); loadPromotionRequests(); }
+      catch (e) { toast(e.message, "error"); }
+    };
+    window.extendPromo = async function(id) {
+      try { await API.patch("/promotions/admin/" + id + "/extend", { days: 30 }); toast("Promotion extended by 30 days", "success"); loadPromotionRequests(); }
       catch (e) { toast(e.message, "error"); }
     };
 
