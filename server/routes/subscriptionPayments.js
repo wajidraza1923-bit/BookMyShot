@@ -31,23 +31,19 @@ router.get("/info", authorize("creator"), async (req, res, next) => {
       status: "pending",
     });
 
-    // Calculate commission from bookings using STORED commission amounts (frozen at time of booking)
-    // This prevents percentage changes from affecting already-calculated commissions
+    // Calculate commission from bookings using ONLY stored commission amounts
+    // Historical commission is frozen permanently — never recalculated from current settings
     const bookings = await Booking.find({ creator: creator._id, status: { $nin: ["rejected", "cancelled"] } });
     let totalCommissionGenerated = 0;
+    let totalRevenue = 0;
     
     for (const b of bookings) {
+      totalRevenue += (b.amount || 0);
+      // ONLY use stored commissionAmount — never recalculate from current percentage
       if (b.commissionAmount && b.commissionAmount > 0) {
-        // Use the stored commission amount (frozen at time booking amount was set)
         totalCommissionGenerated += b.commissionAmount;
-      } else if (b.amount && b.amount > 0) {
-        // Fallback for bookings without stored commission: calculate from current settings
-        const leadSource = b.leadSource || "bookmyshot";
-        const pct = leadSource === "creator" 
-          ? (commSettings.creatorLeadCommissionPercent || 3) 
-          : (commSettings.bmsLeadCommissionPercent || 5);
-        totalCommissionGenerated += Math.round(b.amount * pct / 100);
       }
+      // Bookings without stored commissionAmount have not been processed yet (commission = 0)
     }
 
     // Commission paid is tracked on Creator document (permanently frozen after approval)
@@ -77,6 +73,7 @@ router.get("/info", authorize("creator"), async (req, res, next) => {
         totalGenerated: totalCommissionGenerated,
         totalDue: totalCommissionDue,
         totalPaid: totalCommissionPaid,
+        totalRevenue: totalRevenue,
         pendingPayment: pendingCommissionPayment || null,
       },
     });
