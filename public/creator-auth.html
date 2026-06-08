@@ -208,13 +208,33 @@
     @media (max-width: 900px) {
       .auth-wrapper { grid-template-columns: 1fr; }
       .hero-panel { display: none; }
-      .form-panel { min-height: 100vh; min-height: 100dvh; padding: 2rem 1.5rem; align-items: flex-start; padding-top: 3rem; }
+      .form-panel { min-height: 100vh; min-height: 100dvh; padding: 1.5rem 1.25rem; align-items: center; }
       .form-container { max-width: 100%; }
+      body { overflow: hidden; }
+      .form-panel { overflow-y: auto; }
     }
     @media (max-width: 480px) {
-      .form-panel { padding: 1.5rem 1rem; padding-top: 2rem; }
       .form-card { padding: 1.8rem 1.2rem; border-radius: 20px; }
       .form-row { grid-template-columns: 1fr; }
+    }
+
+    /* OTP Boxes */
+    .otp-box {
+      width: 44px; height: 52px;
+      text-align: center;
+      font-size: 1.3rem; font-weight: 600;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      color: var(--text);
+      outline: none;
+      transition: var(--transition);
+      font-family: 'Outfit', monospace;
+    }
+    .otp-box:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 16px var(--gold-glow);
+      background: rgba(212,175,55,0.03);
     }
   </style>
   <script src="/js/ga.js"></script>
@@ -314,6 +334,68 @@
             </form>
             <div class="form-divider">
               Already registered? <a id="showLogin">Login</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- FORGOT PASSWORD VIEW: Step 1 - Email -->
+        <div class="view" id="forgotView">
+          <div class="form-card">
+            <div class="form-header">
+              <h2>Reset Password</h2>
+              <p>Enter your registered email to receive OTP</p>
+            </div>
+            <div class="form-group">
+              <label>Email Address</label>
+              <input type="email" id="forgotEmail" placeholder="creator@example.com">
+            </div>
+            <button class="btn-primary" id="sendOtpBtn">Send OTP</button>
+            <div class="form-divider">
+              <a id="backToLogin1">← Back to Login</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- FORGOT PASSWORD VIEW: Step 2 - OTP -->
+        <div class="view" id="otpView">
+          <div class="form-card">
+            <div class="form-header">
+              <h2>Verify OTP</h2>
+              <p>Enter the 6-digit code sent to your email</p>
+            </div>
+            <div style="display:flex;gap:0.5rem;justify-content:center;margin-bottom:1.2rem" id="otpBoxes">
+              <input type="text" maxlength="1" class="otp-box" data-idx="0" inputmode="numeric" autocomplete="one-time-code">
+              <input type="text" maxlength="1" class="otp-box" data-idx="1" inputmode="numeric">
+              <input type="text" maxlength="1" class="otp-box" data-idx="2" inputmode="numeric">
+              <input type="text" maxlength="1" class="otp-box" data-idx="3" inputmode="numeric">
+              <input type="text" maxlength="1" class="otp-box" data-idx="4" inputmode="numeric">
+              <input type="text" maxlength="1" class="otp-box" data-idx="5" inputmode="numeric">
+            </div>
+            <button class="btn-primary" id="verifyOtpBtn">Verify OTP</button>
+            <div class="form-divider">
+              <a id="backToLogin2">← Back to Login</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- FORGOT PASSWORD VIEW: Step 3 - New Password -->
+        <div class="view" id="resetView">
+          <div class="form-card">
+            <div class="form-header">
+              <h2>New Password</h2>
+              <p>Set your new password</p>
+            </div>
+            <div class="form-group">
+              <label>New Password</label>
+              <input type="password" id="newPassword" placeholder="Min 8 characters">
+            </div>
+            <div class="form-group">
+              <label>Confirm Password</label>
+              <input type="password" id="confirmPassword" placeholder="Repeat password">
+            </div>
+            <button class="btn-primary" id="resetPassBtn">Reset Password</button>
+            <div class="form-divider">
+              <a id="backToLogin3">← Back to Login</a>
             </div>
           </div>
         </div>
@@ -418,36 +500,87 @@
       }
     });
 
-    document.getElementById('forgotLink').addEventListener('click', async function(e) {
+    document.getElementById('forgotLink').addEventListener('click', function(e) {
       e.preventDefault();
-      var email = prompt('Enter your registered creator email:');
-      if (!email || !email.trim()) return;
-      email = email.trim();
-      
+      showView('forgotView');
+    });
+
+    // Back to login links
+    ['backToLogin1','backToLogin2','backToLogin3'].forEach(function(id) {
+      document.getElementById(id).addEventListener('click', function(e) { e.preventDefault(); showView('loginView'); });
+    });
+
+    function showView(id) {
+      document.querySelectorAll('.view').forEach(function(v) { v.classList.remove('active'); });
+      document.getElementById(id).classList.add('active');
+    }
+
+    // Forgot Password state
+    var fpEmail = '';
+    var fpResetToken = '';
+
+    // Step 1: Send OTP
+    document.getElementById('sendOtpBtn').addEventListener('click', async function() {
+      var btn = this;
+      fpEmail = document.getElementById('forgotEmail').value.trim();
+      if (!fpEmail) { toast('Please enter your email', 'error'); return; }
+      btn.disabled = true; btn.textContent = 'Sending...';
       try {
-        await API.post('/auth/forgot-password', { email: email });
-        toast('OTP sent to ' + email, 'success');
-      } catch (err) { toast(err.message || 'Failed to send OTP', 'error'); return; }
-      
-      // Step 2: Ask for OTP
-      var otp = prompt('Enter the 6-digit OTP sent to ' + email + ':');
-      if (!otp || otp.trim().length !== 6) { toast('Invalid OTP', 'error'); return; }
-      
-      var resetToken;
+        await API.post('/auth/forgot-password', { email: fpEmail });
+        toast('OTP sent to ' + fpEmail, 'success');
+        showView('otpView');
+        document.querySelector('.otp-box[data-idx="0"]').focus();
+      } catch (err) { toast(err.message || 'Failed to send OTP', 'error'); }
+      btn.disabled = false; btn.textContent = 'Send OTP';
+    });
+
+    // OTP box auto-advance
+    document.querySelectorAll('.otp-box').forEach(function(box, i, boxes) {
+      box.addEventListener('input', function() {
+        if (this.value.length === 1 && i < 5) boxes[i+1].focus();
+      });
+      box.addEventListener('keydown', function(e) {
+        if (e.key === 'Backspace' && !this.value && i > 0) boxes[i-1].focus();
+      });
+      box.addEventListener('paste', function(e) {
+        e.preventDefault();
+        var data = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 6);
+        for (var j = 0; j < data.length && j < 6; j++) { boxes[j].value = data[j]; }
+        if (data.length >= 6) boxes[5].focus();
+      });
+    });
+
+    // Step 2: Verify OTP
+    document.getElementById('verifyOtpBtn').addEventListener('click', async function() {
+      var btn = this;
+      var boxes = document.querySelectorAll('.otp-box');
+      var otp = '';
+      boxes.forEach(function(b) { otp += b.value; });
+      if (otp.length !== 6) { toast('Please enter complete 6-digit OTP', 'error'); return; }
+      btn.disabled = true; btn.textContent = 'Verifying...';
       try {
-        var verifyRes = await API.post('/auth/verify-reset-otp', { email: email, otp: otp.trim() });
-        resetToken = verifyRes.resetToken;
+        var res = await API.post('/auth/verify-reset-otp', { email: fpEmail, otp: otp });
+        fpResetToken = res.resetToken;
         toast('OTP verified!', 'success');
-      } catch (err) { toast(err.message || 'OTP verification failed', 'error'); return; }
-      
-      // Step 3: New password
-      var newPassword = prompt('Enter your new password (min 8 characters):');
-      if (!newPassword || newPassword.length < 8) { toast('Password must be at least 8 characters', 'error'); return; }
-      
+        showView('resetView');
+      } catch (err) { toast(err.message || 'Invalid OTP', 'error'); }
+      btn.disabled = false; btn.textContent = 'Verify OTP';
+    });
+
+    // Step 3: Reset Password
+    document.getElementById('resetPassBtn').addEventListener('click', async function() {
+      var btn = this;
+      var pass = document.getElementById('newPassword').value;
+      var confirm = document.getElementById('confirmPassword').value;
+      if (!pass || pass.length < 8) { toast('Password must be at least 8 characters', 'error'); return; }
+      if (pass !== confirm) { toast('Passwords do not match', 'error'); return; }
+      btn.disabled = true; btn.textContent = 'Resetting...';
       try {
-        await API.post('/auth/reset-password', { email: email, resetToken: resetToken, password: newPassword });
+        await API.post('/auth/reset-password', { email: fpEmail, resetToken: fpResetToken, password: pass });
         toast('Password reset successfully! You can now login.', 'success');
+        showView('loginView');
       } catch (err) { toast(err.message || 'Failed to reset password', 'error'); }
+      btn.disabled = false; btn.textContent = 'Reset Password';
     });
 
     var user = API.getUser(); var token = API.getToken();
