@@ -420,12 +420,35 @@
 
     document.getElementById('forgotLink').addEventListener('click', async function(e) {
       e.preventDefault();
-      var email = prompt('Enter your creator email:');
-      if (!email) return;
+      var email = prompt('Enter your registered creator email:');
+      if (!email || !email.trim()) return;
+      email = email.trim();
+      
       try {
-        var r = await API.post('/auth/forgot-password', { email: email });
-        toast(r.message || 'Reset instructions sent if account exists.', 'success');
-      } catch (err) { toast('Failed to send reset link', 'error'); }
+        await API.post('/auth/forgot-password', { email: email });
+        toast('OTP sent to ' + email, 'success');
+      } catch (err) { toast(err.message || 'Failed to send OTP', 'error'); return; }
+      
+      // Step 2: Ask for OTP
+      var otp = prompt('Enter the 6-digit OTP sent to ' + email + ':');
+      if (!otp || otp.trim().length !== 6) { toast('Invalid OTP', 'error'); return; }
+      
+      var resetToken;
+      try {
+        var verifyRes = await API.post('/auth/verify-reset-otp', { email: email, otp: otp.trim() });
+        resetToken = verifyRes.resetToken;
+        toast('OTP verified!', 'success');
+      } catch (err) { toast(err.message || 'OTP verification failed', 'error'); return; }
+      
+      // Step 3: New password
+      var newPassword = prompt('Enter your new password (min 8 characters):');
+      if (!newPassword || newPassword.length < 8) { toast('Password must be at least 8 characters', 'error'); return; }
+      
+      try {
+        await API.post('/auth/reset-password', { email: email, resetToken: resetToken, password: newPassword });
+        toast('Password reset successfully! You can now login.', 'success');
+      } catch (err) { toast(err.message || 'Failed to reset password', 'error'); }
+    });
     });
 
     var user = API.getUser(); var token = API.getToken();
