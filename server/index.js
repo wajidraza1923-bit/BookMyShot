@@ -121,8 +121,8 @@ app.use("/api/admin/dashboard-overview", protect, authorize("admin"), adminDashb
 app.use("/api/admin/social-links", protect, authorize("admin"), adminSocialLinksRoutes);
 
 // Admin: general-purpose image upload to Cloudinary
-const upload = require("./middleware/upload");
-app.post("/api/admin/upload", protect, authorize("admin"), upload.single("file"), async (req, res) => {
+const { upload: adminUpload } = require("./middleware/upload");
+app.post("/api/admin/upload", protect, authorize("admin"), adminUpload.single("file"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ success: false, message: "No file" });
     const { uploadBuffer, isConfigured } = require("./services/cloudinaryService");

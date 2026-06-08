@@ -56,7 +56,7 @@ const API = {
   post: (url, body) => API.request(url, { method: "POST", body: JSON.stringify(body) }),
   put: (url, body) => API.request(url, { method: "PUT", body: JSON.stringify(body) }),
   patch: (url, body) => API.request(url, { method: "PATCH", body: JSON.stringify(body) }),
-  delete: (url) => API.request(url, { method: "DELETE" }),
+  delete: (url, body) => API.request(url, { method: "DELETE", body: body ? JSON.stringify(body) : undefined }),
 
   async upload(url, formData) {
     const token = this.getToken();

@@ -3299,23 +3299,26 @@
       container.innerHTML =
         '<div style="display:flex;flex-direction:column;gap:1rem">' +
           '<div class="card-panel">' +
-            '<h3 style="font-family:Playfair Display,serif;color:var(--gold-light);margin:0 0 0.5rem">🎬 Upload Reels & Videos</h3>' +
-            '<p style="color:rgba(255,255,255,0.3);font-size:0.85rem;margin:0 0 1rem">Upload cinematic reels, wedding highlights, and promotional videos (MP4, WebM, MOV — max 50MB each)</p>' +
-            '<div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap">' +
-              '<label class="btn btn-primary" style="cursor:pointer">📤 Upload Videos<input type="file" id="videoUploadInput" multiple accept="video/*" style="display:none"></label>' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem">' +
+              '<div>' +
+                '<h3 style="font-family:Playfair Display,serif;color:var(--gold-light);margin:0 0 0.3rem">🎬 Video Portfolio</h3>' +
+                '<p style="color:rgba(255,255,255,0.3);font-size:0.82rem;margin:0">MP4, MOV, AVI, WEBM — max 50MB each</p>' +
+              '</div>' +
+              '<div id="videoSlotCounter" style="background:rgba(255,140,39,0.1);border:1px solid rgba(255,140,39,0.2);border-radius:8px;padding:0.4rem 0.8rem;font-size:0.8rem;color:var(--gold-light);font-weight:500">Videos: — / 4</div>' +
+            '</div>' +
+            '<div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;margin-top:0.75rem">' +
+              '<label class="btn btn-primary" style="cursor:pointer" id="videoUploadLabel">📤 Upload Videos<input type="file" id="videoUploadInput" multiple accept="video/mp4,video/mov,video/avi,video/webm,.mp4,.mov,.avi,.webm" style="display:none"></label>' +
               '<span id="videoUploadStatus" style="color:rgba(255,255,255,0.3);font-size:0.8rem"></span>' +
             '</div>' +
           '</div>' +
           '<div class="card-panel">' +
-            '<h3 style="font-family:Playfair Display,serif;color:var(--gold-light);margin:0 0 0.5rem">📹 Your Videos</h3>' +
-            '<div id="videoGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem"></div>' +
+            '<h3 style="font-family:Playfair Display,serif;color:var(--gold-light);margin:0 0 0.75rem">📹 Your Videos</h3>' +
+            '<div id="videoGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1rem"></div>' +
           '</div>' +
         '</div>';
 
-      // Load existing videos
       loadVideos();
 
-      // Bind upload
       var uploadInput = document.getElementById('videoUploadInput');
       if (uploadInput) {
         uploadInput.addEventListener('change', function(e) {
@@ -3335,16 +3338,38 @@
         var res = await API.get('/creators/profile');
         var videos = (res.creator && res.creator.videos) || [];
 
+        // Update counter
+        var counter = document.getElementById('videoSlotCounter');
+        if (counter) counter.textContent = 'Videos: ' + videos.length + ' / 4 Used';
+        
+        // Disable upload if at max
+        var uploadLabel = document.getElementById('videoUploadLabel');
+        if (uploadLabel) {
+          if (videos.length >= 4) {
+            uploadLabel.style.opacity = '0.5';
+            uploadLabel.style.pointerEvents = 'none';
+          } else {
+            uploadLabel.style.opacity = '1';
+            uploadLabel.style.pointerEvents = 'auto';
+          }
+        }
+
         if (!videos.length) {
-          grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🎬</div><h3>No videos yet</h3><p>Upload your first video above</p></div>';
+          grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🎬</div><h3>No videos yet</h3><p>Upload your first video (max 4)</p></div>';
           return;
         }
 
-        grid.innerHTML = videos.map(function(v) {
-          return '<div style="position:relative;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);aspect-ratio:16/9;background:#000">' +
-            '<video src="' + v + '" style="width:100%;height:100%;object-fit:cover" preload="metadata"></video>' +
-            '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.3);cursor:pointer" onclick="this.previousElementSibling.play()">' +
-              '<span style="font-size:2.5rem;color:var(--gold);opacity:0.8">▶</span>' +
+        grid.innerHTML = videos.map(function(v, idx) {
+          return '<div style="position:relative;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);background:#000">' +
+            '<div style="aspect-ratio:16/9;position:relative">' +
+              '<video src="' + v + '" style="width:100%;height:100%;object-fit:cover" preload="metadata"></video>' +
+              '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.3);cursor:pointer" onclick="this.style.display=\'none\';this.previousElementSibling.controls=true;this.previousElementSibling.play()">' +
+                '<span style="font-size:2.5rem;color:var(--gold);opacity:0.9">▶</span>' +
+              '</div>' +
+            '</div>' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0.75rem;background:rgba(255,255,255,0.02)">' +
+              '<span style="font-size:0.75rem;color:rgba(255,255,255,0.4)">Video ' + (idx + 1) + '</span>' +
+              '<button onclick="deleteVideo(\'' + v.replace(/'/g, "\\'") + '\')" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#ef4444;padding:0.25rem 0.6rem;border-radius:6px;font-size:0.7rem;cursor:pointer">🗑 Delete</button>' +
             '</div>' +
           '</div>';
         }).join('');
@@ -3353,14 +3378,42 @@
       }
     }
 
+    window.deleteVideo = async function(url) {
+      if (!confirm('Delete this video? This cannot be undone.')) return;
+      try {
+        await API.delete('/creators/videos', { url: url });
+        toast('Video deleted', 'success');
+        loadVideos();
+      } catch (e) {
+        toast(e.message || 'Failed to delete video', 'error');
+      }
+    };
+
     async function uploadVideos(files) {
       var statusEl = document.getElementById('videoUploadStatus');
       if (!statusEl) return;
-      statusEl.textContent = 'Uploading ' + files.length + ' video(s)...';
+      
+      // Client-side validation
+      var validFiles = [];
+      for (var i = 0; i < files.length; i++) {
+        if (files[i].size > 50 * 1024 * 1024) {
+          toast('Video "' + files[i].name + '" exceeds 50 MB limit.', 'error');
+          continue;
+        }
+        var ext = files[i].name.split('.').pop().toLowerCase();
+        if (!['mp4', 'mov', 'avi', 'webm'].includes(ext)) {
+          toast('Invalid format: ' + files[i].name + '. Allowed: MP4, MOV, AVI, WEBM', 'error');
+          continue;
+        }
+        validFiles.push(files[i]);
+      }
+      if (!validFiles.length) { statusEl.textContent = ''; return; }
+      
+      statusEl.textContent = 'Uploading ' + validFiles.length + ' video(s)...';
 
       var fd = new FormData();
-      for (var i = 0; i < files.length; i++) {
-        fd.append('videos', files[i]);
+      for (var j = 0; j < validFiles.length; j++) {
+        fd.append('videos', validFiles[j]);
       }
 
       try {
@@ -3382,23 +3435,26 @@
       container.innerHTML =
         '<div style="display:flex;flex-direction:column;gap:1rem">' +
           '<div class="card-panel">' +
-            '<h3 style="font-family:Playfair Display,serif;color:var(--gold-light);margin:0 0 0.5rem">📸 Upload Portfolio Photos</h3>' +
-            '<p style="color:rgba(255,255,255,0.3);font-size:0.85rem;margin:0 0 1rem">Upload your best work. Images appear on your public portfolio page (JPG, PNG, WebP — max 50MB each)</p>' +
-            '<div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap">' +
-              '<label class="btn btn-primary" style="cursor:pointer">📤 Upload Photos<input type="file" id="photoUploadInput" multiple accept="image/*" style="display:none"></label>' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem">' +
+              '<div>' +
+                '<h3 style="font-family:Playfair Display,serif;color:var(--gold-light);margin:0 0 0.3rem">📸 Photo Portfolio</h3>' +
+                '<p style="color:rgba(255,255,255,0.3);font-size:0.82rem;margin:0">JPG, JPEG, PNG, WEBP — max 10MB each</p>' +
+              '</div>' +
+              '<div id="photoSlotCounter" style="background:rgba(255,140,39,0.1);border:1px solid rgba(255,140,39,0.2);border-radius:8px;padding:0.4rem 0.8rem;font-size:0.8rem;color:var(--gold-light);font-weight:500">Photos: — / 10</div>' +
+            '</div>' +
+            '<div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;margin-top:0.75rem">' +
+              '<label class="btn btn-primary" style="cursor:pointer" id="photoUploadLabel">📤 Upload Photos<input type="file" id="photoUploadInput" multiple accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" style="display:none"></label>' +
               '<span id="photoUploadStatus" style="color:rgba(255,255,255,0.3);font-size:0.8rem"></span>' +
             '</div>' +
           '</div>' +
           '<div class="card-panel">' +
-            '<h3 style="font-family:Playfair Display,serif;color:var(--gold-light);margin:0 0 0.5rem">🖼 Your Portfolio</h3>' +
-            '<div id="photoGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem"></div>' +
+            '<h3 style="font-family:Playfair Display,serif;color:var(--gold-light);margin:0 0 0.75rem">🖼 Your Portfolio</h3>' +
+            '<div id="photoGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1rem"></div>' +
           '</div>' +
         '</div>';
 
-      // Load existing photos
       loadPortfolioPhotos();
 
-      // Bind upload
       var uploadInput = document.getElementById('photoUploadInput');
       if (uploadInput) {
         uploadInput.addEventListener('change', function(e) {
@@ -3418,14 +3474,36 @@
         var res = await API.get('/creators/profile');
         var portfolio = (res.creator && res.creator.portfolio) || [];
 
+        // Update counter
+        var counter = document.getElementById('photoSlotCounter');
+        if (counter) counter.textContent = 'Photos: ' + portfolio.length + ' / 10 Used';
+        
+        // Disable upload if at max
+        var uploadLabel = document.getElementById('photoUploadLabel');
+        if (uploadLabel) {
+          if (portfolio.length >= 10) {
+            uploadLabel.style.opacity = '0.5';
+            uploadLabel.style.pointerEvents = 'none';
+          } else {
+            uploadLabel.style.opacity = '1';
+            uploadLabel.style.pointerEvents = 'auto';
+          }
+        }
+
         if (!portfolio.length) {
-          grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">📸</div><h3>No photos yet</h3><p>Upload your first photo above</p></div>';
+          grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">📸</div><h3>No photos yet</h3><p>Upload your first photo (max 10)</p></div>';
           return;
         }
 
-        grid.innerHTML = portfolio.map(function(p) {
-          return '<div style="position:relative;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);aspect-ratio:4/3;cursor:pointer" onclick="window.open(\'' + p + '\',\'_blank\')">' +
-            '<img src="' + p + '" style="width:100%;height:100%;object-fit:cover" loading="lazy">' +
+        grid.innerHTML = portfolio.map(function(p, idx) {
+          return '<div style="position:relative;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,0.07)">' +
+            '<div style="aspect-ratio:4/3;cursor:pointer" onclick="window.open(\'' + p + '\',\'_blank\')">' +
+              '<img src="' + p + '" style="width:100%;height:100%;object-fit:cover" loading="lazy">' +
+            '</div>' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0.6rem;background:rgba(255,255,255,0.02)">' +
+              '<span style="font-size:0.7rem;color:rgba(255,255,255,0.4)">Photo ' + (idx + 1) + '</span>' +
+              '<button onclick="deletePhoto(\'' + p.replace(/'/g, "\\'") + '\')" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#ef4444;padding:0.2rem 0.5rem;border-radius:6px;font-size:0.68rem;cursor:pointer">🗑</button>' +
+            '</div>' +
           '</div>';
         }).join('');
       } catch (e) {
@@ -3433,14 +3511,42 @@
       }
     }
 
+    window.deletePhoto = async function(url) {
+      if (!confirm('Delete this photo? This cannot be undone.')) return;
+      try {
+        await API.delete('/creators/portfolio', { url: url });
+        toast('Photo deleted', 'success');
+        loadPortfolioPhotos();
+      } catch (e) {
+        toast(e.message || 'Failed to delete photo', 'error');
+      }
+    };
+
     async function uploadPhotos(files) {
       var statusEl = document.getElementById('photoUploadStatus');
       if (!statusEl) return;
-      statusEl.textContent = 'Uploading ' + files.length + ' photo(s)...';
+      
+      // Client-side validation
+      var validFiles = [];
+      for (var i = 0; i < files.length; i++) {
+        if (files[i].size > 10 * 1024 * 1024) {
+          toast('Photo "' + files[i].name + '" exceeds 10 MB limit.', 'error');
+          continue;
+        }
+        var ext = files[i].name.split('.').pop().toLowerCase();
+        if (!['jpg', 'jpeg', 'png', 'webp'].includes(ext)) {
+          toast('Invalid format: ' + files[i].name + '. Allowed: JPG, JPEG, PNG, WEBP', 'error');
+          continue;
+        }
+        validFiles.push(files[i]);
+      }
+      if (!validFiles.length) { statusEl.textContent = ''; return; }
+      
+      statusEl.textContent = 'Uploading ' + validFiles.length + ' photo(s)...';
 
       var fd = new FormData();
-      for (var i = 0; i < files.length; i++) {
-        fd.append('photos', files[i]);
+      for (var j = 0; j < validFiles.length; j++) {
+        fd.append('photos', validFiles[j]);
       }
 
       try {

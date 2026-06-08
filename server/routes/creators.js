@@ -3,7 +3,11 @@ const Creator = require("../models/Creator");
 const User = require("../models/User");
 const CalendarEvent = require("../models/CalendarEvent");
 const { protect, authorize } = require("../middleware/auth");
-const upload = require("../middleware/upload");
+const { upload, uploadPhotos, uploadVideos } = require("../middleware/upload");
+
+// Media slot limits
+const MAX_PHOTOS = 10;
+const MAX_VIDEOS = 4;
 
 const router = express.Router();
 
@@ -141,6 +145,39 @@ router.get("/:id/availability", async (req, res, next) => {
   }
 });
 
+// Get media stats (slots, sizes) — must be BEFORE /:id to avoid conflict
+router.get(
+  "/media-stats",
+  protect,
+  authorize("creator"),
+  async (req, res, next) => {
+    try {
+      const creator = await Creator.findOne({ user: req.user._id });
+      if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
+
+      const photoCount = (creator.portfolio || []).length;
+      const videoCount = (creator.videos || []).length;
+
+      let totalBytes = 0;
+      (creator.portfolio || []).forEach((item) => {
+        if (typeof item === "object" && item.size) totalBytes += item.size;
+      });
+      (creator.videos || []).forEach((item) => {
+        if (typeof item === "object" && item.size) totalBytes += item.size;
+      });
+
+      res.json({
+        success: true,
+        photos: { used: photoCount, max: MAX_PHOTOS, remaining: MAX_PHOTOS - photoCount },
+        videos: { used: videoCount, max: MAX_VIDEOS, remaining: MAX_VIDEOS - videoCount },
+        storage: { totalBytes, totalMB: Math.round(totalBytes / (1024 * 1024) * 10) / 10 },
+      });
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
 // Public: single creator (NO email exposed)
 // MUST be AFTER /profile, /:id/public, /:id/availability to avoid catching those paths
 router.get("/:id", async (req, res, next) => {
@@ -207,40 +244,68 @@ router.post(
   "/upload/portfolio",
   protect,
   authorize("creator"),
-  upload.array("photos", 12),
+  uploadPhotos.array("photos", 10),
   async (req, res, next) => {
     try {
       if (!req.files || !req.files.length) return res.status(400).json({ success: false, message: "No files" });
       
-      const { uploadBuffer, isConfigured } = require("../services/cloudinaryService");
       const creator = await Creator.findOne({ user: req.user._id });
+      const currentCount = (creator.portfolio || []).length;
+      const availableSlots = MAX_PHOTOS - currentCount;
+      
+      if (availableSlots <= 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Maximum ${MAX_PHOTOS} portfolio photos allowed. Delete an existing photo to upload a new one.`,
+          currentCount,
+          maxAllowed: MAX_PHOTOS,
+        });
+      }
+      
+      // Limit files to available slots
+      const filesToUpload = req.files.slice(0, availableSlots);
+      if (filesToUpload.length < req.files.length) {
+        // Some files won't be uploaded due to slot limits
+      }
+      
+      const { uploadBuffer, isConfigured } = require("../services/cloudinaryService");
       let items;
       
       if (isConfigured()) {
         const uploads = await Promise.all(
-          req.files.map((f) => uploadBuffer(f.buffer, {
+          filesToUpload.map((f) => uploadBuffer(f.buffer, {
             folder: "bookmyshot/portfolio",
             resourceType: "image",
           }))
         );
-        items = uploads.map((u) => ({ url: u.url, publicId: u.publicId }));
+        items = uploads.map((u, i) => ({ url: u.url, publicId: u.publicId, size: filesToUpload[i].size, uploadedAt: new Date() }));
       } else {
-        // Fallback: save locally
         const fs = require("fs");
         const path = require("path");
         const uploadDir = path.join(__dirname, "../../public/uploads/portfolio");
         if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-        items = req.files.map((f) => {
+        items = filesToUpload.map((f) => {
           const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(f.originalname)}`;
           fs.writeFileSync(path.join(uploadDir, filename), f.buffer);
-          return { url: `/uploads/portfolio/${filename}`, publicId: "" };
+          return { url: `/uploads/portfolio/${filename}`, publicId: "", size: f.size, uploadedAt: new Date() };
         });
       }
       
       creator.portfolio.push(...items);
       await creator.save();
-      res.json({ success: true, portfolio: creator.portfolio });
+      
+      const newCount = creator.portfolio.length;
+      res.json({ 
+        success: true, 
+        portfolio: creator.portfolio,
+        uploaded: items.length,
+        skipped: req.files.length - filesToUpload.length,
+        slots: { used: newCount, max: MAX_PHOTOS, remaining: MAX_PHOTOS - newCount },
+      });
     } catch (e) {
+      if (e.message && e.message.includes("File too large")) {
+        return res.status(400).json({ success: false, message: "Photo size exceeds 10 MB limit." });
+      }
       next(e);
     }
   }
@@ -251,40 +316,65 @@ router.post(
   "/upload/videos",
   protect,
   authorize("creator"),
-  upload.array("videos", 5),
+  uploadVideos.array("videos", 4),
   async (req, res, next) => {
     try {
       if (!req.files || !req.files.length) return res.status(400).json({ success: false, message: "No files" });
       
-      const { uploadBuffer, isConfigured } = require("../services/cloudinaryService");
       const creator = await Creator.findOne({ user: req.user._id });
+      const currentCount = (creator.videos || []).length;
+      const availableSlots = MAX_VIDEOS - currentCount;
+      
+      if (availableSlots <= 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Maximum ${MAX_VIDEOS} portfolio videos allowed. Delete an existing video to upload a new one.`,
+          currentCount,
+          maxAllowed: MAX_VIDEOS,
+        });
+      }
+      
+      // Limit files to available slots
+      const filesToUpload = req.files.slice(0, availableSlots);
+      
+      const { uploadBuffer, isConfigured } = require("../services/cloudinaryService");
       let items;
       
       if (isConfigured()) {
         const uploads = await Promise.all(
-          req.files.map((f) => uploadBuffer(f.buffer, {
+          filesToUpload.map((f) => uploadBuffer(f.buffer, {
             folder: "bookmyshot/videos",
             resourceType: "video",
           }))
         );
-        items = uploads.map((u) => ({ url: u.url, publicId: u.publicId }));
+        items = uploads.map((u, i) => ({ url: u.url, publicId: u.publicId, size: filesToUpload[i].size, uploadedAt: new Date() }));
       } else {
-        // Fallback: save locally
         const fs = require("fs");
         const path = require("path");
         const uploadDir = path.join(__dirname, "../../public/uploads/videos");
         if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-        items = req.files.map((f) => {
+        items = filesToUpload.map((f) => {
           const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(f.originalname)}`;
           fs.writeFileSync(path.join(uploadDir, filename), f.buffer);
-          return { url: `/uploads/videos/${filename}`, publicId: "" };
+          return { url: `/uploads/videos/${filename}`, publicId: "", size: f.size, uploadedAt: new Date() };
         });
       }
       
       creator.videos.push(...items);
       await creator.save();
-      res.json({ success: true, videos: creator.videos });
+      
+      const newCount = creator.videos.length;
+      res.json({ 
+        success: true, 
+        videos: creator.videos,
+        uploaded: items.length,
+        skipped: req.files.length - filesToUpload.length,
+        slots: { used: newCount, max: MAX_VIDEOS, remaining: MAX_VIDEOS - newCount },
+      });
     } catch (e) {
+      if (e.message && e.message.includes("File too large")) {
+        return res.status(400).json({ success: false, message: "Video size exceeds 50 MB limit." });
+      }
       next(e);
     }
   }
@@ -303,7 +393,6 @@ router.delete(
       const creator = await Creator.findOne({ user: req.user._id });
       if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
 
-      // Find and remove the item (supports both old string format and new object format)
       const idx = creator.portfolio.findIndex((item) => {
         if (typeof item === "string") return item === url;
         return item.url === url || item.publicId === publicId;
@@ -324,7 +413,12 @@ router.delete(
         }
       }
 
-      res.json({ success: true, portfolio: creator.portfolio });
+      const newCount = creator.portfolio.length;
+      res.json({ 
+        success: true, 
+        portfolio: creator.portfolio,
+        slots: { used: newCount, max: MAX_PHOTOS, remaining: MAX_PHOTOS - newCount },
+      });
     } catch (e) {
       next(e);
     }
@@ -344,7 +438,6 @@ router.delete(
       const creator = await Creator.findOne({ user: req.user._id });
       if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
 
-      // Find and remove the item
       const idx = creator.videos.findIndex((item) => {
         if (typeof item === "string") return item === url;
         return item.url === url || item.publicId === publicId;
@@ -365,7 +458,12 @@ router.delete(
         }
       }
 
-      res.json({ success: true, videos: creator.videos });
+      const newCount = creator.videos.length;
+      res.json({ 
+        success: true, 
+        videos: creator.videos,
+        slots: { used: newCount, max: MAX_VIDEOS, remaining: MAX_VIDEOS - newCount },
+      });
     } catch (e) {
       next(e);
     }
