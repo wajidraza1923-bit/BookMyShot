@@ -169,6 +169,8 @@ app.get("/api/config/public", async (req, res) => {
         monthlyPlanPrice: subSettings.monthlyPlanPrice,
         yearlyPlanPrice: subSettings.yearlyPlanPrice,
         trialDays: subSettings.trialDays,
+        freeTrialEnabled: subSettings.freeTrialEnabled !== false,
+        gracePeriodDays: subSettings.gracePeriodDays || 7,
         featuredPortfolioPrice: subSettings.featuredPortfolioPrice,
         searchBoostPrice: subSettings.searchBoostPrice,
         homepageFeaturedPrice: subSettings.homepageFeaturedPrice,

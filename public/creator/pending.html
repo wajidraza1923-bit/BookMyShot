@@ -376,9 +376,15 @@
       try {
         var me = await API.get('/auth/me');
         var status = me.creator ? me.creator.status : null;
+        var subStatus = me.creator ? me.creator.subscriptionStatus : null;
+
+        // If subscription not active/trial, redirect to subscription page
+        if (!subStatus || (subStatus !== 'active' && subStatus !== 'trial')) {
+          window.location.href = '/creator/subscription.html';
+          return;
+        }
 
         if (status === 'approved') {
-          // Creator approved - redirect to full dashboard
           window.location.href = '/creator/dashboard.html';
           return;
         }

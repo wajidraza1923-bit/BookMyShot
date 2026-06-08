@@ -3821,8 +3821,9 @@
 
     var paymentModalData = null;
 
-    async function openPaymentModal(type) {
+    async function openPaymentModal(type, overrideAmount) {
       // type: 'subscription' or 'commission'
+      // overrideAmount: optional — allows partial payment amount
       try {
         // Fetch payment info (QR, UPI) and subscription/commission info in parallel
         var [payInfo, subInfo] = await Promise.all([
@@ -3842,8 +3843,9 @@
           label = 'Monthly Subscription';
           pendingPayment = subInfo.subscription && subInfo.subscription.pendingPayment;
         } else {
-          amount = (subInfo.commission && subInfo.commission.totalDue) || 0;
-          label = 'Commission Due';
+          // Commission: use the totalDue from backend OR the override amount passed
+          amount = overrideAmount || (subInfo.commission && subInfo.commission.totalDue) || 0;
+          label = 'Commission Payment';
           pendingPayment = subInfo.commission && subInfo.commission.pendingPayment;
         }
 
@@ -3852,8 +3854,8 @@
           return;
         }
 
-        if (type === 'commission' && amount <= 0) {
-          toast('No commission dues pending.', 'info');
+        if (amount <= 0) {
+          toast('No dues pending at this time.', 'info');
           return;
         }
 
@@ -3868,8 +3870,9 @@
               '<button onclick="closePaymentModal()" style="background:none;border:none;color:rgba(255,255,255,0.5);font-size:1.3rem;cursor:pointer">×</button>' +
             '</div>' +
             '<div style="text-align:center;padding:1rem;background:rgba(255,140,39,0.06);border-radius:12px;border:1px solid rgba(255,140,39,0.15);margin-bottom:1rem">' +
-              '<div style="font-size:0.75rem;color:rgba(255,255,255,0.4);margin-bottom:0.3rem">Amount Due</div>' +
+              '<div style="font-size:0.75rem;color:rgba(255,255,255,0.4);margin-bottom:0.3rem">' + (type === 'commission' ? 'Total Commission Due' : 'Amount Due') + '</div>' +
               '<div style="font-size:1.8rem;font-weight:700;color:#ff8c27">₹' + amount.toLocaleString('en-IN') + '</div>' +
+              (type === 'commission' ? '<div style="margin-top:0.6rem"><label style="font-size:0.68rem;color:rgba(255,255,255,0.4)">Pay Amount (partial allowed):</label><input type="number" id="payAmountInput" value="' + amount + '" min="1" max="' + amount + '" style="width:100%;margin-top:0.25rem;padding:0.5rem;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#ff8c27;font-size:1rem;font-weight:600;text-align:center" onchange="updatePayAmount(this.value)"></div>' : '') +
               '<div style="font-size:0.7rem;color:rgba(255,255,255,0.3);margin-top:0.2rem">' + label + '</div>' +
             '</div>' +
             (qrImage ? '<div style="text-align:center;margin-bottom:1rem"><img src="' + qrImage + '" style="width:180px;height:180px;border-radius:12px;border:1px solid rgba(255,255,255,0.1)" alt="QR Code"></div>' : '') +
@@ -3930,6 +3933,12 @@
       var modal = document.getElementById('paymentModal');
       if (modal) modal.remove();
       paymentModalData = null;
+    };
+
+    window.updatePayAmount = function(val) {
+      if (paymentModalData) {
+        paymentModalData.amount = parseInt(val) || 0;
+      }
     };
 
     var payScreenshotDataUrl = null;

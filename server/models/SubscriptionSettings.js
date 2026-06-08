@@ -5,6 +5,7 @@ const subscriptionSettingsSchema = new mongoose.Schema(
     monthlyPlanPrice: { type: Number, default: 299 },
     yearlyPlanPrice: { type: Number, default: 2999 },
     trialDays: { type: Number, default: 30 },
+    freeTrialEnabled: { type: Boolean, default: true },
     autoRenewDefault: { type: Boolean, default: true },
     gracePeriodDays: { type: Number, default: 7 },
     featuredPortfolioPrice: { type: Number, default: 999 },
