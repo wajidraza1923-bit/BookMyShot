@@ -31,17 +31,26 @@ router.get("/info", authorize("creator"), async (req, res, next) => {
       status: "pending",
     });
 
-    // Calculate commission from bookings (same as frontend)
+    // Calculate commission from bookings using STORED commission amounts (frozen at time of booking)
+    // This prevents percentage changes from affecting already-calculated commissions
     const bookings = await Booking.find({ creator: creator._id, status: { $nin: ["rejected", "cancelled"] } });
-    const bmsLeads = bookings.filter(b => b.leadSource === "bookmyshot" || !b.leadSource);
-    const creatorLeads = bookings.filter(b => b.leadSource === "creator");
-    const bmsRevenue = bmsLeads.reduce((s, b) => s + (b.amount || 0), 0);
-    const creatorRevenue = creatorLeads.reduce((s, b) => s + (b.amount || 0), 0);
-    const bmsCommission = Math.round(bmsRevenue * (commSettings.bmsLeadCommissionPercent || 5) / 100);
-    const creatorCommission = Math.round(creatorRevenue * (commSettings.creatorLeadCommissionPercent || 3) / 100);
-    const totalCommissionGenerated = bmsCommission + creatorCommission;
+    let totalCommissionGenerated = 0;
+    
+    for (const b of bookings) {
+      if (b.commissionAmount && b.commissionAmount > 0) {
+        // Use the stored commission amount (frozen at time booking amount was set)
+        totalCommissionGenerated += b.commissionAmount;
+      } else if (b.amount && b.amount > 0) {
+        // Fallback for bookings without stored commission: calculate from current settings
+        const leadSource = b.leadSource || "bookmyshot";
+        const pct = leadSource === "creator" 
+          ? (commSettings.creatorLeadCommissionPercent || 3) 
+          : (commSettings.bmsLeadCommissionPercent || 5);
+        totalCommissionGenerated += Math.round(b.amount * pct / 100);
+      }
+    }
 
-    // Commission paid is tracked on Creator document
+    // Commission paid is tracked on Creator document (permanently frozen after approval)
     const totalCommissionPaid = creator.commissionPaid || 0;
     const totalCommissionDue = Math.max(0, totalCommissionGenerated - totalCommissionPaid);
 

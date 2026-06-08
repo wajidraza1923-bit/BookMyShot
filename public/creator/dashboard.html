@@ -3701,8 +3701,9 @@
         var totalRevenue = validBookings.reduce(function(s, b) { return s + (b.amount || 0); }, 0);
         var bmsRevenue = bmsLeads.reduce(function(s, b) { return s + (b.amount || 0); }, 0);
         var creatorRevenue = creatorLeads.reduce(function(s, b) { return s + (b.amount || 0); }, 0);
-        var bmsCommission = Math.round(bmsRevenue * (platformConfig.commission.bmsLeadPercent / 100));
-        var creatorCommission = Math.round(creatorRevenue * (platformConfig.commission.creatorLeadPercent / 100));
+        // Use stored commissionAmount from bookings (frozen at time of booking) for accuracy
+        var bmsCommission = bmsLeads.reduce(function(s, b) { return s + (b.commissionAmount || Math.round((b.amount || 0) * (platformConfig.commission.bmsLeadPercent / 100))); }, 0);
+        var creatorCommission = creatorLeads.reduce(function(s, b) { return s + (b.commissionAmount || Math.round((b.amount || 0) * (platformConfig.commission.creatorLeadPercent / 100))); }, 0);
         var totalCommission = bmsCommission + creatorCommission;
         var totalReceivable = totalRevenue - totalCommission;
 
