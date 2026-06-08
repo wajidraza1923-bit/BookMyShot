@@ -278,27 +278,41 @@ router.post("/resend-otp", async (req, res, next) => {
 router.post("/forgot-password", async (req, res, next) => {
   try {
     const { email, phone } = req.body;
+    console.log(`[AUTH] ═══ FORGOT PASSWORD REQUEST ═══`);
+    console.log(`[AUTH] Email provided: ${email || 'NONE'}`);
+    console.log(`[AUTH] Phone provided: ${phone || 'NONE'}`);
+    
     let user;
     if (email) user = await User.findOne({ email });
     else if (phone) user = await User.findOne({ phone });
     
-    if (!user) return res.json({ success: true, message: "If account exists, reset code sent" });
+    if (!user) {
+      console.log(`[AUTH] ❌ No user found for: ${email || phone}`);
+      return res.json({ success: true, message: "If account exists, reset code sent" });
+    }
+
+    console.log(`[AUTH] ✅ User found: { id: ${user._id}, email: ${user.email}, role: ${user.role}, name: ${user.name} }`);
 
     // Rate limiting
     if (user.otpLastSent && (Date.now() - new Date(user.otpLastSent).getTime()) < 60000) {
+      console.log(`[AUTH] ⚠️ Rate limited. Last OTP sent: ${user.otpLastSent}`);
       return res.status(429).json({ success: false, message: "Please wait before requesting again" });
     }
 
     const otp = generateOTP();
+    console.log(`[AUTH] 🔑 OTP generated: ${otp}`);
+    
     user.resetPasswordOtp = otp;
     user.resetPasswordOtpExpiry = new Date(Date.now() + 10 * 60 * 1000);
     user.otpLastSent = new Date();
     await user.save();
+    console.log(`[AUTH] 💾 OTP saved to database. Expiry: ${user.resetPasswordOtpExpiry}`);
 
     // Send OTP to user's registered email (same for all roles)
-    console.log(`[AUTH] Password reset OTP: ${otp} → sending to: ${user.email} (role: ${user.role})`);
+    console.log(`[AUTH] 📧 Calling sendPasswordResetOTP(${user.email}, ${otp}, ${user.name})`);
     const result = await sendPasswordResetOTP(user.email, otp, user.name);
-    console.log(`[AUTH] Email send result:`, result.success ? "SUCCESS" : "FAILED - " + (result.error || "unknown"));
+    console.log(`[AUTH] 📧 Email send result:`, JSON.stringify(result));
+    console.log(`[AUTH] ═══ FORGOT PASSWORD ${result.success ? 'SUCCESS' : 'FAILED'} ═══`);
 
     res.json({
       success: true,
@@ -306,6 +320,7 @@ router.post("/forgot-password", async (req, res, next) => {
       emailSent: result.success,
     });
   } catch (e) {
+    console.error(`[AUTH] ❌ FORGOT PASSWORD EXCEPTION:`, e.message);
     next(e);
   }
 });
@@ -411,30 +426,44 @@ router.put("/profile", protect, async (req, res, next) => {
 router.post("/admin-login-otp", async (req, res, next) => {
   try {
     const { email } = req.body;
+    console.log(`[AUTH] ═══ ADMIN LOGIN OTP REQUEST ═══`);
+    console.log(`[AUTH] Email provided: ${email || 'NONE'}`);
+    
     if (!email) return res.status(400).json({ success: false, message: "Email required" });
 
     // Don't reveal if email exists
     const user = await User.findOne({ email, role: "admin" });
-    if (!user) return res.json({ success: true, message: "If account exists, OTP sent" });
+    if (!user) {
+      console.log(`[AUTH] ❌ No admin user found for: ${email}`);
+      return res.json({ success: true, message: "If account exists, OTP sent" });
+    }
+
+    console.log(`[AUTH] ✅ Admin found: { id: ${user._id}, email: ${user.email}, name: ${user.name} }`);
 
     // Rate limiting
     if (user.otpLastSent && (Date.now() - new Date(user.otpLastSent).getTime()) < 60000) {
+      console.log(`[AUTH] ⚠️ Rate limited. Last OTP sent: ${user.otpLastSent}`);
       return res.status(429).json({ success: false, message: "Please wait before requesting again" });
     }
 
     const otp = generateOTP();
+    console.log(`[AUTH] 🔑 Admin OTP generated: ${otp}`);
+    
     user.emailVerificationOtp = otp;
     user.emailVerificationOtpExpiry = new Date(Date.now() + 10 * 60 * 1000);
     user.otpLastSent = new Date();
     await user.save();
+    console.log(`[AUTH] 💾 Admin OTP saved to database. Expiry: ${user.emailVerificationOtpExpiry}`);
 
     // Send OTP directly to admin's registered email (same as user/creator flow)
-    console.log(`[AUTH] Admin login OTP: ${otp} → sending to: ${user.email}`);
+    console.log(`[AUTH] 📧 Calling sendVerificationOTP(${user.email}, ${otp}, ${user.name})`);
     const otpResult = await sendVerificationOTP(user.email, otp, user.name);
-    console.log(`[AUTH] Admin OTP send result:`, otpResult.success ? "SUCCESS" : "FAILED - " + (otpResult.error || "unknown"));
+    console.log(`[AUTH] 📧 Admin OTP send result:`, JSON.stringify(otpResult));
+    console.log(`[AUTH] ═══ ADMIN LOGIN OTP ${otpResult.success ? 'SUCCESS' : 'FAILED'} ═══`);
 
     res.json({ success: true, message: "OTP sent to admin recovery email" });
   } catch (e) {
+    console.error(`[AUTH] ❌ ADMIN LOGIN OTP EXCEPTION:`, e.message);
     next(e);
   }
 });

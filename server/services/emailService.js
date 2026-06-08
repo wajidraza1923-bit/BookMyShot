@@ -1,14 +1,37 @@
 const { Resend } = require("resend");
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const apiKey = process.env.RESEND_API_KEY;
+console.log(`[EmailService] Initializing Resend. API key present: ${!!apiKey}, key prefix: ${apiKey ? apiKey.substring(0, 8) + '...' : 'MISSING'}`);
+
+let resend;
+try {
+  resend = apiKey ? new Resend(apiKey) : null;
+  if (!resend) console.warn(`[EmailService] ⚠️ Resend client NOT initialized (no API key). Emails will fail.`);
+} catch (e) {
+  console.error(`[EmailService] ❌ Failed to initialize Resend:`, e.message);
+  resend = null;
+}
 const FROM_EMAIL = "BookMyShot <otp@bookmyshot.in>";
 
 /**
  * Send Email Verification OTP
  */
 async function sendVerificationOTP(email, otp, name) {
+  console.log(`[EmailService] ═══ sendVerificationOTP START ═══`);
+  console.log(`[EmailService] Target email: ${email}`);
+  console.log(`[EmailService] OTP generated: ${otp}`);
+  console.log(`[EmailService] Recipient name: ${name || "unknown"}`);
+  console.log(`[EmailService] From: ${FROM_EMAIL}`);
+  console.log(`[EmailService] API key available: ${!!apiKey}`);
+  console.log(`[EmailService] Resend client initialized: ${!!resend}`);
+  
+  if (!resend) {
+    console.error(`[EmailService] ❌ Cannot send email - Resend client not initialized (RESEND_API_KEY missing)`);
+    return { success: false, error: "RESEND_API_KEY not configured" };
+  }
+  
   try {
-    await resend.emails.send({
+    const response = await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
       subject: "Verify your BookMyShot account",
@@ -27,9 +50,15 @@ async function sendVerificationOTP(email, otp, name) {
         </div>
       `,
     });
-    return { success: true };
+    console.log(`[EmailService] ✅ Resend API response:`, JSON.stringify(response));
+    console.log(`[EmailService] ═══ sendVerificationOTP SUCCESS ═══`);
+    return { success: true, resendResponse: response };
   } catch (err) {
-    console.error("[EmailService] Verification OTP failed:", err.message);
+    console.error(`[EmailService] ❌ Verification OTP FAILED`);
+    console.error(`[EmailService] Error message: ${err.message}`);
+    console.error(`[EmailService] Error name: ${err.name}`);
+    console.error(`[EmailService] Full error:`, JSON.stringify(err, Object.getOwnPropertyNames(err)));
+    console.log(`[EmailService] ═══ sendVerificationOTP FAILED ═══`);
     return { success: false, error: err.message };
   }
 }
@@ -38,8 +67,21 @@ async function sendVerificationOTP(email, otp, name) {
  * Send Password Reset OTP
  */
 async function sendPasswordResetOTP(email, otp, name) {
+  console.log(`[EmailService] ═══ sendPasswordResetOTP START ═══`);
+  console.log(`[EmailService] Target email: ${email}`);
+  console.log(`[EmailService] OTP generated: ${otp}`);
+  console.log(`[EmailService] Recipient name: ${name || "unknown"}`);
+  console.log(`[EmailService] From: ${FROM_EMAIL}`);
+  console.log(`[EmailService] API key available: ${!!apiKey}`);
+  console.log(`[EmailService] Resend client initialized: ${!!resend}`);
+  
+  if (!resend) {
+    console.error(`[EmailService] ❌ Cannot send email - Resend client not initialized (RESEND_API_KEY missing)`);
+    return { success: false, error: "RESEND_API_KEY not configured" };
+  }
+  
   try {
-    await resend.emails.send({
+    const response = await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
       subject: "Reset your BookMyShot password",
@@ -58,9 +100,15 @@ async function sendPasswordResetOTP(email, otp, name) {
         </div>
       `,
     });
-    return { success: true };
+    console.log(`[EmailService] ✅ Resend API response:`, JSON.stringify(response));
+    console.log(`[EmailService] ═══ sendPasswordResetOTP SUCCESS ═══`);
+    return { success: true, resendResponse: response };
   } catch (err) {
-    console.error("[EmailService] Reset OTP failed:", err.message);
+    console.error(`[EmailService] ❌ Password Reset OTP FAILED`);
+    console.error(`[EmailService] Error message: ${err.message}`);
+    console.error(`[EmailService] Error name: ${err.name}`);
+    console.error(`[EmailService] Full error:`, JSON.stringify(err, Object.getOwnPropertyNames(err)));
+    console.log(`[EmailService] ═══ sendPasswordResetOTP FAILED ═══`);
     return { success: false, error: err.message };
   }
 }
