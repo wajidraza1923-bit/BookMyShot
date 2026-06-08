@@ -87,12 +87,12 @@
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      padding: 0.6rem 1rem;
+      padding: 0.5rem 0.85rem;
       border-radius: 10px;
       cursor: pointer;
       transition: var(--transition);
       color: var(--text-muted);
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       font-weight: 400;
       text-decoration: none;
     }
@@ -111,7 +111,7 @@
     .sidebar-nav a .icon { width: 20px; text-align: center; font-size: 1rem; flex-shrink: 0; }
 
     .sidebar-footer {
-      padding: 0.8rem 0.6rem;
+      padding: 0.5rem 0.6rem;
       border-top: 1px solid var(--border-light);
     }
 
@@ -119,15 +119,16 @@
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      padding: 0.6rem 1rem;
+      padding: 0.5rem 0.85rem;
       border-radius: 10px;
       color: var(--text-muted);
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       text-decoration: none;
       transition: var(--transition);
     }
 
     .sidebar-footer a:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+    .sidebar-footer a .icon { width: 20px; text-align: center; font-size: 1rem; flex-shrink: 0; }
 
     /* ─── Main Content ─── */
     .main-content {
@@ -860,6 +861,9 @@
     @media (max-width: 768px) {
       .sidebar { transform: translateX(-100%); z-index: 999; transition: transform 0.3s ease; }
       .sidebar.open { transform: translateX(0); }
+      .sidebar-nav a { padding: 0.45rem 0.8rem; font-size: 0.8rem; }
+      .sidebar-footer a { padding: 0.45rem 0.8rem; font-size: 0.8rem; }
+      .sidebar-logo { padding: 0.8rem 1rem; font-size: 1.3rem; }
       .main-content { margin-left: 0; }
       .menu-toggle { display: block; }
       .header { padding: 0 1rem; }
@@ -893,8 +897,8 @@
         <a href="#" data-panel="profile"><span class="icon"><i class="fa-solid fa-user"></i></span> My Profile</a>
       </nav>
       <div class="sidebar-footer">
-        <a href="/" target="_blank"><i class="fa-solid fa-globe" style="width:20px;text-align:center;margin-right:0.5rem"></i> View Site</a>
-        <a href="#" id="logoutBtn"><i class="fa-solid fa-right-from-bracket" style="width:20px;text-align:center;margin-right:0.5rem"></i> Logout</a>
+        <a href="/" target="_blank"><span class="icon"><i class="fa-solid fa-globe"></i></span> View Site</a>
+        <a href="#" id="logoutBtn"><span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span> Logout</a>
       </div>
     </aside>
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
