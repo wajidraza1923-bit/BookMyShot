@@ -155,6 +155,98 @@ app.get("/api/social-links", async (req, res) => {
   }
 });
 
+// ═══ TEMPORARY DEBUG: Admin check & ensure endpoint ═══
+app.get("/api/debug/admin-check", async (req, res) => {
+  try {
+    const User = require("./models/User");
+    const admins = await User.find({ role: "admin" }).select("name email role emailVerified createdAt");
+    console.log("[DEBUG] Admin accounts in DB:", JSON.stringify(admins));
+    
+    if (admins.length === 0) {
+      // No admin exists - create one
+      const bcrypt = require("bcryptjs");
+      const adminEmail = process.env.ADMIN_EMAIL || "bookmyshott@gmail.com";
+      const adminPassword = process.env.ADMIN_PASSWORD || "REDACTED_PASSWORD";
+      const newAdmin = await User.create({
+        name: "Admin",
+        email: adminEmail,
+        password: adminPassword,
+        role: "admin",
+        emailVerified: true,
+      });
+      console.log("[DEBUG] Created new admin:", newAdmin.email);
+      return res.json({ success: true, message: "Admin created", admin: { email: newAdmin.email, id: newAdmin._id } });
+    }
+    
+    // If admin exists but email is not bookmyshott@gmail.com, update it
+    const targetEmail = "bookmyshott@gmail.com";
+    const existingAdmin = admins[0];
+    if (existingAdmin.email !== targetEmail) {
+      await User.findByIdAndUpdate(existingAdmin._id, { email: targetEmail });
+      console.log(`[DEBUG] Updated admin email from ${existingAdmin.email} to ${targetEmail}`);
+      return res.json({ 
+        success: true, 
+        message: `Admin email updated from ${existingAdmin.email} to ${targetEmail}`,
+        admins: admins.map(a => ({ id: a._id, email: a.email, name: a.name }))
+      });
+    }
+    
+    res.json({ 
+      success: true, 
+      message: "Admin(s) found",
+      admins: admins.map(a => ({ id: a._id, email: a.email, name: a.name, emailVerified: a.emailVerified }))
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ═══ TEMPORARY DEBUG: Ensure admin with bookmyshott@gmail.com exists and reset password ═══
+app.post("/api/debug/ensure-admin", async (req, res) => {
+  try {
+    const User = require("./models/User");
+    const targetEmail = "bookmyshott@gmail.com";
+    
+    let admin = await User.findOne({ role: "admin" });
+    
+    if (!admin) {
+      // Create admin
+      admin = await User.create({
+        name: "Admin",
+        email: targetEmail,
+        password: "REDACTED_PASSWORD",
+        role: "admin",
+        emailVerified: true,
+      });
+      console.log("[DEBUG] Created admin:", admin.email);
+      return res.json({ success: true, action: "created", email: admin.email });
+    }
+    
+    // Update email if different
+    if (admin.email !== targetEmail) {
+      const oldEmail = admin.email;
+      admin.email = targetEmail;
+      admin.emailVerified = true;
+      await admin.save();
+      console.log(`[DEBUG] Updated admin email: ${oldEmail} → ${targetEmail}`);
+      return res.json({ success: true, action: "email_updated", oldEmail, newEmail: targetEmail });
+    }
+    
+    // Admin exists with correct email - reset password to ensure login works
+    admin.password = "REDACTED_PASSWORD";
+    admin.emailVerified = true;
+    // Clear any rate limiting
+    admin.otpLastSent = null;
+    admin.otpAttempts = 0;
+    await admin.save();
+    console.log("[DEBUG] Admin verified and password reset:", admin.email);
+    
+    return res.json({ success: true, action: "verified_and_reset", email: admin.email, id: admin._id });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 app.use("/api/creator", creatorRoutes);
 app.use("/api/creators", creatorsRoutes);
 app.use("/api/user", userRoutes);
