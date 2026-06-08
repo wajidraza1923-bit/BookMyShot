@@ -185,7 +185,7 @@
     <div class="sidebar-panel" style="padding:1.5rem 1.25rem;display:flex;flex-direction:column;height:100%">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem">
         <span style="font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;color:var(--accent,#ff8c27);letter-spacing:.05em">BOOKMYSHOT</span>
-        <button class="sidebar-close" id="sidebarClose" aria-label="Close menu" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:10px;width:36px;height:36px;display:grid;place-items:center;color:rgba(255,255,255,.5);font-size:1.1rem;cursor:pointer">×</button>
+        <button class="sidebar-close" id="sidebarClose" aria-label="Close menu" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:10px;width:36px;height:36px;display:grid;place-items:center;color:rgba(255,255,255,.5);font-size:1.1rem;cursor:pointer"><i class="fas fa-times"></i></button>
       </div>
       <nav style="display:flex;flex-direction:column;gap:.25rem;flex:1">
         <a href="#home" class="sidebar-link" style="display:flex;align-items:center;gap:.75rem;padding:.7rem .85rem;border-radius:10px;color:rgba(255,255,255,.6);font-size:.85rem;font-weight:500;transition:all .2s;text-decoration:none"><i class="fa-solid fa-house" style="width:18px;text-align:center;color:var(--accent,#ff8c27);font-size:.8rem"></i> Home</a>
@@ -230,7 +230,7 @@
               <div class="promo-content">
                 <div class="promo-icon"><i class="fas fa-video"></i></div>
                 <h3>Find Your Perfect Wedding Creator</h3>
-                <p class="promo-sub">Photographers • Videographers • Cinematographers</p>
+                <p class="promo-sub">Photographers <i class="fas fa-circle" style="font-size:4px;vertical-align:middle;margin:0 4px;opacity:.5"></i> Videographers <i class="fas fa-circle" style="font-size:4px;vertical-align:middle;margin:0 4px;opacity:.5"></i> Cinematographers</p>
                 <div class="promo-features">
                   <span><i class="fas fa-check-circle"></i> Verified Creators</span>
                   <span><i class="fas fa-camera"></i> Premium Portfolio</span>
@@ -367,7 +367,7 @@
     if (pl) pl.classList.add('hidden');
   </script>
   <script>
-    // Load social links into footer — always show icons, active only when URL exists
+    // Load social links into footer ï¿½ always show icons, active only when URL exists
     (async function loadFooterSocial() {
       var container = document.getElementById('footerSocialIcons');
       if (!container) return;
