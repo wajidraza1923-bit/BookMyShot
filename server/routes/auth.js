@@ -295,7 +295,16 @@ router.post("/forgot-password", async (req, res, next) => {
     user.otpLastSent = new Date();
     await user.save();
 
-    const result = await sendPasswordResetOTP(user.email, otp, user.name);
+    // For admin accounts, send to recovery email; for others, send to their registered email
+    let targetEmail = user.email;
+    if (user.role === "admin" && process.env.ADMIN_RECOVERY_EMAIL) {
+      targetEmail = process.env.ADMIN_RECOVERY_EMAIL;
+    }
+
+    console.log(`[AUTH] Password reset OTP: ${otp} → sending to: ${targetEmail} (user: ${user.email}, role: ${user.role})`);
+    const result = await sendPasswordResetOTP(targetEmail, otp, user.name);
+    console.log(`[AUTH] Email send result:`, result.success ? "SUCCESS" : "FAILED - " + (result.error || "unknown"));
+
     res.json({
       success: true,
       message: "Password reset code sent to your email",
@@ -426,7 +435,9 @@ router.post("/admin-login-otp", async (req, res, next) => {
 
     // Send to admin recovery email or the user's email
     const recoveryEmail = process.env.ADMIN_RECOVERY_EMAIL || user.email;
-    await sendVerificationOTP(recoveryEmail, otp, user.name);
+    console.log(`[AUTH] Admin login OTP: ${otp} → sending to: ${recoveryEmail} (admin: ${user.email})`);
+    const otpResult = await sendVerificationOTP(recoveryEmail, otp, user.name);
+    console.log(`[AUTH] Admin OTP send result:`, otpResult.success ? "SUCCESS" : "FAILED - " + (otpResult.error || "unknown"));
 
     res.json({ success: true, message: "OTP sent to admin recovery email" });
   } catch (e) {
