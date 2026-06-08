@@ -11,6 +11,7 @@
   <meta property="og:type" content="profile">
   <link rel="canonical" id="canonical" href="/creator-portfolio.html">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
     /* ═══════════════════════════════════════════════════════════════════════
        BookMyShot — Public Creator Portfolio (Premium)
@@ -945,14 +946,15 @@
             <button class="btn btn-whatsapp" id="whatsappBtn">💬 WhatsApp</button>
           </div>
           <div class="profile-social" id="profileSocial">
-            <a href="#" id="socialInstagram" target="_blank" rel="noopener" title="Instagram">📷</a>
-            <a href="#" id="socialYoutube" target="_blank" rel="noopener" title="YouTube">▶️</a>
-            <a href="#" id="socialWebsite" target="_blank" rel="noopener" title="Website">🌐</a>
-            <a href="#" id="socialTwitter" target="_blank" rel="noopener" title="Twitter">🐦</a>
+            <a href="#" id="socialInstagram" target="_blank" rel="noopener" title="Instagram"><i class="fab fa-instagram"></i></a>
+            <a href="#" id="socialYoutube" target="_blank" rel="noopener" title="YouTube"><i class="fab fa-youtube"></i></a>
+            <a href="#" id="socialWhatsapp" target="_blank" rel="noopener" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+            <a href="#" id="socialEmail" title="Email"><i class="fas fa-envelope"></i></a>
+            <a href="#" id="socialWebsite" target="_blank" rel="noopener" title="Website"><i class="fas fa-globe"></i></a>
           </div>
           <div class="stats-row" id="statsRow">
             <div class="stat-item"><span class="stat-num" id="statPhotos">0</span><span class="stat-lbl">Photos</span></div>
-            <div class="stat-item"><span class="stat-num" id="statAlbums">0</span><span class="stat-lbl">Albums</span></div>
+            <div class="stat-item"><span class="stat-num" id="statVideos">0</span><span class="stat-lbl">Videos</span></div>
             <div class="stat-item"><span class="stat-num" id="statCategories">0</span><span class="stat-lbl">Categories</span></div>
             <div class="stat-item"><span class="stat-num" id="statWeddings">0</span><span class="stat-lbl">Weddings</span></div>
           </div>
@@ -1005,6 +1007,17 @@
         </div>
         <div class="masonry-gallery" id="masonryGallery">
           <div class="section-empty">No photos uploaded yet.</div>
+        </div>
+      </div>
+
+      <!-- Videos -->
+      <div class="portfolio-section" id="videosSection">
+        <div class="section-header">
+          <span class="icon"><i class="fas fa-video" style="color:var(--gold)"></i></span>
+          <h2>Videos</h2>
+        </div>
+        <div id="videosGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.25rem">
+          <div class="section-empty">No videos uploaded yet.</div>
         </div>
       </div>
 
@@ -1219,23 +1232,34 @@
         document.getElementById('profileExperience').textContent = '⏳ Experience: ' + (experience || '—');
 
         // ── Social ──
-        var socialMap = { instagram: 'socialInstagram', youtube: 'socialYoutube', website: 'socialWebsite', twitter: 'socialTwitter' };
-        Object.keys(socialMap).forEach(function(key) {
-          var el = document.getElementById(socialMap[key]);
-          var url = social[key] || '';
-          if (url) {
-            el.href = url;
-            el.classList.remove('disabled');
-          } else {
-            el.href = '#';
-            el.classList.add('disabled');
-          }
-        });
+        var socialEl;
+        // Instagram
+        socialEl = document.getElementById('socialInstagram');
+        if (social.instagram) { socialEl.href = social.instagram; socialEl.classList.remove('disabled'); }
+        else { socialEl.href = '#'; socialEl.classList.add('disabled'); }
+        // YouTube
+        socialEl = document.getElementById('socialYoutube');
+        if (social.youtube) { socialEl.href = social.youtube; socialEl.classList.remove('disabled'); }
+        else { socialEl.href = '#'; socialEl.classList.add('disabled'); }
+        // WhatsApp
+        socialEl = document.getElementById('socialWhatsapp');
+        var whatsappNum = user.phone || creator.phone || '';
+        if (whatsappNum) { socialEl.href = 'https://wa.me/' + whatsappNum.replace(/[^0-9]/g, ''); socialEl.classList.remove('disabled'); }
+        else { socialEl.href = '#'; socialEl.classList.add('disabled'); }
+        // Email
+        socialEl = document.getElementById('socialEmail');
+        var emailAddr = user.email || '';
+        if (emailAddr && !emailAddr.endsWith('@bookmyshot.app')) { socialEl.href = 'mailto:' + emailAddr; socialEl.classList.remove('disabled'); }
+        else { socialEl.href = '#'; socialEl.classList.add('disabled'); }
+        // Website
+        socialEl = document.getElementById('socialWebsite');
+        if (social.website) { socialEl.href = social.website; socialEl.classList.remove('disabled'); }
+        else { socialEl.href = '#'; socialEl.classList.add('disabled'); }
 
         // ── Stats ──
         document.getElementById('statPhotos').textContent = portfolio.length;
-        document.getElementById('statAlbums').textContent = 0;
-        document.getElementById('statCategories').textContent = 0;
+        document.getElementById('statVideos').textContent = videos.length;
+        document.getElementById('statCategories').textContent = creator.category ? 1 : 0;
         document.getElementById('statWeddings').textContent = weddingsCount || 0;
 
         // ── About ──
@@ -1305,6 +1329,30 @@
         // ── Categories ──
         document.getElementById('categoriesList').innerHTML = '<div class="section-empty">No categories</div>';
 
+        // ── Videos ──
+        var videosGrid = document.getElementById('videosGrid');
+        if (videos.length > 0) {
+          videosGrid.innerHTML = videos.map(function(v, idx) {
+            return '<div style="border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.08);background:#0a0806">' +
+              '<div style="position:relative;aspect-ratio:16/9;background:#000">' +
+                '<video src="' + v + '" style="width:100%;height:100%;object-fit:cover" preload="metadata" playsinline></video>' +
+                '<div class="video-play-overlay" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.35);cursor:pointer;transition:background 0.2s" onclick="this.style.display=\'none\';var vid=this.previousElementSibling;vid.controls=true;vid.play();vid.requestFullscreen?vid.requestFullscreen():vid.webkitRequestFullscreen&&vid.webkitRequestFullscreen()">' +
+                  '<div style="width:52px;height:52px;border-radius:50%;background:rgba(255,140,39,0.9);display:flex;align-items:center;justify-content:center">' +
+                    '<i class="fas fa-play" style="color:#fff;font-size:1.1rem;margin-left:3px"></i>' +
+                  '</div>' +
+                '</div>' +
+              '</div>' +
+              '<div style="padding:0.6rem 0.8rem;display:flex;justify-content:space-between;align-items:center">' +
+                '<span style="font-size:0.75rem;color:rgba(255,255,255,0.4)"><i class="fas fa-video" style="margin-right:4px"></i>Video ' + (idx + 1) + '</span>' +
+                '<span style="font-size:0.7rem;color:rgba(255,255,255,0.25)">Click to play</span>' +
+              '</div>' +
+            '</div>';
+          }).join('');
+          document.getElementById('videosSection').style.display = 'block';
+        } else {
+          document.getElementById('videosSection').style.display = 'none';
+        }
+
         // ── Reviews ──
         var reviewsGrid = document.getElementById('reviewsGrid');
         try {
@@ -1345,14 +1393,24 @@
         }
 
         // ── Book Now / WhatsApp ──
-        var phone = user.phone || creator.phone || '919876543210';
+        var phone = user.phone || creator.phone || '';
         document.getElementById('bookNowBtn').addEventListener('click', function() {
-          window.location.href = '/user/dashboard.html?book=' + creatorId;
+          var contactSection = document.getElementById('contactSection');
+          if (contactSection) {
+            contactSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // Focus the name field after scroll
+            setTimeout(function() {
+              var nameInput = document.getElementById('inqName');
+              if (nameInput) nameInput.focus();
+            }, 600);
+          }
         });
 
         document.getElementById('whatsappBtn').addEventListener('click', function() {
+          var wpNum = phone.replace(/[^0-9]/g, '');
+          if (!wpNum) { showToast('WhatsApp number not available', 'error'); return; }
           var msg = encodeURIComponent('Hi ' + name.split(' ')[0] + '! I saw your portfolio on BookMyShot and would like to inquire about booking.');
-          window.open('https://wa.me/' + phone + '?text=' + msg, '_blank');
+          window.open('https://wa.me/' + wpNum + '?text=' + msg, '_blank');
         });
 
         // ── Share ──
