@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./css/premium-homepage.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
   <link rel="icon" type="image/png" href="/favico.png">
 <meta name="robots" content="index, follow">
 
@@ -60,83 +61,25 @@
   </header>
 
   <aside class="mobile-sidebar" id="mobileSidebar" aria-label="Mobile navigation">
-    <div class="sidebar-panel">
-      <button class="sidebar-close" id="sidebarClose" aria-label="Close menu">×</button>
-      <div class="sidebar-header">
-        <span class="sidebar-title">BOOKMYSHOT</span>
+    <div class="sidebar-panel" style="padding:1.5rem 1.25rem;display:flex;flex-direction:column;height:100%">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem">
+        <span style="font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;color:var(--accent,#ff8c27);letter-spacing:.05em">BOOKMYSHOT</span>
+        <button class="sidebar-close" id="sidebarClose" aria-label="Close menu" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:10px;width:36px;height:36px;display:grid;place-items:center;color:rgba(255,255,255,.5);font-size:1.1rem;cursor:pointer">×</button>
       </div>
-      <div class="sidebar-menu">
-        <a href="#home" class="sidebar-link">
-          <span class="sidebar-icon">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10.5L12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-5H10v5H5a1 1 0 0 1-1-1v-9.5Z" fill="currentColor"/></svg>
-          </span>
-          <div>
-            <strong>Home</strong>
-            <small>Welcome experience</small>
-          </div>
-          <span class="sidebar-arrow">›</span>
-        </a>
-        <a href="#cinematic" class="sidebar-link">
-          <span class="sidebar-icon">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v12H3V6Zm2 2v8h14V8H5Zm2-4h2v2H7V4Zm4 0h2v2h-2V4Zm4 0h2v2h-2V4Z" fill="currentColor"/></svg>
-          </span>
-          <div>
-            <strong>Cinematic</strong>
-            <small>Video showcase</small>
-          </div>
-          <span class="sidebar-arrow">›</span>
-        </a>
-        <a href="#wedding" class="sidebar-link">
-          <span class="sidebar-icon">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s8-4.35 8-10.5S15.5 3 12 7.5 4 4.5 4 10.5 12 21 12 21Z" fill="currentColor"/></svg>
-          </span>
-          <div>
-            <strong>Wedding</strong>
-            <small>Luxury packages</small>
-          </div>
-          <span class="sidebar-arrow">›</span>
-        </a>
-        <a href="#booking" class="sidebar-link">
-          <span class="sidebar-icon">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h2v2H7V3Zm8 0h2v2h-2V3ZM5 7h14v11H5V7Zm2 2v7h10V9H7Zm3 3h4v2H10v-2Z" fill="currentColor"/></svg>
-          </span>
-          <div>
-            <strong>Booking</strong>
-            <small>Reserve your date</small>
-          </div>
-          <span class="sidebar-arrow">›</span>
-        </a>
-        <div class="sidebar-divider"></div>
-        <a href="/user-auth.html" class="sidebar-link sidebar-dashboard-card" id="sidebarUserDash">
-          <span class="sidebar-icon">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-3 0-5.5 1.5-5.5 3.5V20h11v-2.5C17.5 15.5 15 14 12 14Z" fill="currentColor"/></svg>
-          </span>
-          <div>
-            <strong>User Dashboard</strong>
-            <small>Profile & bookings</small>
-          </div>
-          <span class="sidebar-arrow">›</span>
-        </a>
-        <a href="/creator-auth.html" class="sidebar-link sidebar-dashboard-card" id="sidebarCreatorDash">
-          <span class="sidebar-icon">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.7 5.3 18.7 3.3a1 1 0 0 0-1.4 0L5 15.6V19h3.4L20.7 6.7a1 1 0 0 0 0-1.4ZM7.7 17H6v-1.7l9.6-9.6 1.7 1.7L7.7 17Z" fill="currentColor"/></svg>
-          </span>
-          <div>
-            <strong>Creator Dashboard</strong>
-            <small>Portfolio & requests</small>
-          </div>
-          <span class="sidebar-arrow">›</span>
-        </a>
-        <a href="/admin-login.html" class="sidebar-link sidebar-dashboard-card" id="sidebarAdminDash">
-          <span class="sidebar-icon">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 7 5.2 7 10.7 4 13.8l1.3 5.1 5.7 2.4 5.7-2.4L20 13.8l-3-3.1V5.2L12 2Zm0 2.3 3 1.6V10l2.6 2.7-1 4-3.6 1.5-3.6-1.5-1-4L9 10V5.9l3-1.6Z" fill="currentColor"/></svg>
-          </span>
-          <div>
-            <strong>Admin Dashboard</strong>
-            <small>Site management</small>
-          </div>
-          <span class="sidebar-arrow">›</span>
-        </a>
+      <nav style="display:flex;flex-direction:column;gap:.25rem;flex:1">
+        <a href="#home" class="sidebar-link" style="display:flex;align-items:center;gap:.75rem;padding:.7rem .85rem;border-radius:10px;color:rgba(255,255,255,.6);font-size:.85rem;font-weight:500;transition:all .2s;text-decoration:none"><i class="fa-solid fa-house" style="width:18px;text-align:center;color:var(--accent,#ff8c27);font-size:.8rem"></i> Home</a>
+        <a href="#creators" class="sidebar-link" style="display:flex;align-items:center;gap:.75rem;padding:.7rem .85rem;border-radius:10px;color:rgba(255,255,255,.6);font-size:.85rem;font-weight:500;transition:all .2s;text-decoration:none"><i class="fa-solid fa-users" style="width:18px;text-align:center;color:var(--accent,#ff8c27);font-size:.8rem"></i> Creators</a>
+        <a href="#how-it-works" class="sidebar-link" style="display:flex;align-items:center;gap:.75rem;padding:.7rem .85rem;border-radius:10px;color:rgba(255,255,255,.6);font-size:.85rem;font-weight:500;transition:all .2s;text-decoration:none"><i class="fa-solid fa-circle-info" style="width:18px;text-align:center;color:var(--accent,#ff8c27);font-size:.8rem"></i> How It Works</a>
+        <a href="#faq" class="sidebar-link" style="display:flex;align-items:center;gap:.75rem;padding:.7rem .85rem;border-radius:10px;color:rgba(255,255,255,.6);font-size:.85rem;font-weight:500;transition:all .2s;text-decoration:none"><i class="fa-solid fa-circle-question" style="width:18px;text-align:center;color:var(--accent,#ff8c27);font-size:.8rem"></i> FAQ</a>
+        <a href="/contact.html" class="sidebar-link" style="display:flex;align-items:center;gap:.75rem;padding:.7rem .85rem;border-radius:10px;color:rgba(255,255,255,.6);font-size:.85rem;font-weight:500;transition:all .2s;text-decoration:none"><i class="fa-solid fa-envelope" style="width:18px;text-align:center;color:var(--accent,#ff8c27);font-size:.8rem"></i> Contact</a>
+        <div style="border-top:1px solid rgba(255,255,255,.06);margin:.6rem 0"></div>
+        <a href="/creator/dashboard.html" class="sidebar-link" id="sidebarCreatorDash" style="display:flex;align-items:center;gap:.75rem;padding:.7rem .85rem;border-radius:10px;color:rgba(255,255,255,.6);font-size:.85rem;font-weight:500;transition:all .2s;text-decoration:none"><i class="fa-solid fa-palette" style="width:18px;text-align:center;color:var(--accent,#ff8c27);font-size:.8rem"></i> Creator Dashboard</a>
+        <a href="/user/dashboard.html" class="sidebar-link" id="sidebarUserDash" style="display:flex;align-items:center;gap:.75rem;padding:.7rem .85rem;border-radius:10px;color:rgba(255,255,255,.6);font-size:.85rem;font-weight:500;transition:all .2s;text-decoration:none"><i class="fa-solid fa-user" style="width:18px;text-align:center;color:var(--accent,#ff8c27);font-size:.8rem"></i> User Dashboard</a>
+        <a href="/admin-login.html" class="sidebar-link" id="sidebarAdminDash" style="display:flex;align-items:center;gap:.75rem;padding:.7rem .85rem;border-radius:10px;color:rgba(255,255,255,.6);font-size:.85rem;font-weight:500;transition:all .2s;text-decoration:none"><i class="fa-solid fa-shield-halved" style="width:18px;text-align:center;color:var(--accent,#ff8c27);font-size:.8rem"></i> Admin Login</a>
+      </nav>
+      <div style="border-top:1px solid rgba(255,255,255,.06);padding-top:.75rem;display:flex;gap:.5rem">
+        <a href="/login.html" style="flex:1;text-align:center;padding:.6rem;border-radius:10px;border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.6);font-size:.78rem;font-weight:500;text-decoration:none;transition:all .2s">Login</a>
+        <a href="/register.html" style="flex:1;text-align:center;padding:.6rem;border-radius:10px;background:var(--accent,#ff8c27);color:#111;font-size:.78rem;font-weight:600;text-decoration:none;transition:all .2s">Sign Up</a>
       </div>
     </div>
   </aside>
