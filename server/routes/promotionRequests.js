@@ -68,6 +68,7 @@ router.get("/my-active", protect, authorize("creator"), async (req, res, next) =
       creator: creator._id,
       status: "approved",
       expiryDate: { $gt: now },
+      planType: { $in: ["rank_1", "rank_2", "rank_3", "rank_4"] },
     });
 
     if (!active) return res.json({ success: true, active: null });
