@@ -199,6 +199,7 @@
         <a href="#" data-panel="finance-control"><span class="icon">🏦</span> Finance</a>
         <a href="#" data-panel="creator-accounts"><span class="icon">👤</span> Creator Accounts</a>
         <a href="#" data-panel="payment-settings"><span class="icon">🏧</span> Payment Settings</a>
+        <a href="#" data-panel="payment-requests"><span class="icon">📋</span> Payment Requests</a>
         <a href="#" data-panel="audit"><span class="icon">📋</span> Audit Logs</a>
       </nav>
       <div class="sidebar-footer">
@@ -355,6 +356,18 @@
             <button type="submit" class="btn btn-primary">Save Payment Settings</button>
           </form>
         </div>
+      </div>
+
+      <!-- Payment Requests Panel -->
+      <div class="panel" id="panel-payment-requests">
+        <div class="panel-header"><h2>Payment Requests</h2><p>Review and approve creator subscription & commission payments</p></div>
+        <div style="margin-bottom:1rem;display:flex;gap:0.5rem;flex-wrap:wrap">
+          <button class="btn btn-sm" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--text);font-size:0.78rem" onclick="loadPaymentRequests('all')">All</button>
+          <button class="btn btn-sm" style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);color:#f59e0b;font-size:0.78rem" onclick="loadPaymentRequests('pending')">Pending</button>
+          <button class="btn btn-sm" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);color:var(--success);font-size:0.78rem" onclick="loadPaymentRequests('approved')">Approved</button>
+          <button class="btn btn-sm" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:var(--danger);font-size:0.78rem" onclick="loadPaymentRequests('rejected')">Rejected</button>
+        </div>
+        <div id="paymentRequestsContent"><div class="loader"></div></div>
       </div>
 
       <!-- Promotion Requests Panel -->
@@ -739,6 +752,7 @@
           else if (p === "homepage") loadHomepageCMS();
           else if (p === "social-links") loadSocialLinks();
           else if (p === "payment-settings") loadPaymentSettings();
+          else if (p === "payment-requests") loadPaymentRequests('pending');
           else if (p === "promotion-requests") loadPromotionRequests();
           else if (p === "revenue") loadRevenuePanel();
           else if (p === "subscriptions") loadSubscriptionsPanel();
@@ -1181,6 +1195,76 @@
         document.getElementById("psErrors").textContent = err.message || 'Failed to save';
       }
     });
+
+    // ─── PAYMENT REQUESTS ───────────────────────────────────────────
+
+    async function loadPaymentRequests(statusFilter) {
+      var container = document.getElementById('paymentRequestsContent');
+      container.innerHTML = '<div class="loader"></div>';
+      try {
+        var url = '/subscription-payments/admin/requests';
+        if (statusFilter && statusFilter !== 'all') url += '?status=' + statusFilter;
+        var data = await API.get(url);
+        var payments = data.payments || [];
+
+        if (!payments.length) {
+          container.innerHTML = '<div style="text-align:center;padding:2rem;color:rgba(255,255,255,0.4)"><p>No payment requests found.</p></div>';
+          return;
+        }
+
+        var html = '<div class="table-wrap"><table><thead><tr><th>Creator</th><th>Type</th><th>Amount</th><th>UTR</th><th>Screenshot</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+        payments.forEach(function(p) {
+          var creatorName = (p.creator && p.creator.user && p.creator.user.name) || 'Unknown';
+          var creatorEmail = (p.creator && p.creator.user && p.creator.user.email) || '';
+          var typeLabel = p.type === 'subscription' ? '<span style="color:var(--gold)">Subscription</span>' : '<span style="color:var(--info,#3b82f6)">Commission</span>';
+          var statusBadge = p.status === 'approved' ? '<span class="status-badge status-approved">Approved</span>' :
+                            p.status === 'rejected' ? '<span class="status-badge status-rejected">Rejected</span>' :
+                            '<span class="status-badge status-pending">Pending</span>';
+          var date = p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'}) : '—';
+          var screenshotHtml = p.screenshot ? '<a href="' + p.screenshot + '" target="_blank" style="color:var(--gold);font-size:0.72rem">View 📷</a>' : '<span style="color:rgba(255,255,255,0.3);font-size:0.72rem">None</span>';
+          var actions = '';
+          if (p.status === 'pending') {
+            actions = '<button class="btn btn-success btn-sm" onclick="approvePaymentReq(\'' + p._id + '\')">✓</button> <button class="btn btn-danger btn-sm" onclick="rejectPaymentReq(\'' + p._id + '\')">✗</button>';
+          }
+          html += '<tr>' +
+            '<td><div style="font-size:0.8rem;font-weight:500">' + creatorName + '</div><div style="font-size:0.68rem;color:rgba(255,255,255,0.3)">' + creatorEmail + '</div></td>' +
+            '<td>' + typeLabel + '</td>' +
+            '<td style="font-weight:600;color:var(--gold)">₹' + (p.amount || 0).toLocaleString('en-IN') + '</td>' +
+            '<td style="font-size:0.75rem">' + (p.utr || '—') + '</td>' +
+            '<td>' + screenshotHtml + '</td>' +
+            '<td style="font-size:0.72rem">' + date + '</td>' +
+            '<td>' + statusBadge + '</td>' +
+            '<td style="display:flex;gap:0.3rem">' + actions + '</td>' +
+          '</tr>';
+        });
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
+      } catch (err) {
+        container.innerHTML = '<div style="color:var(--danger);padding:1rem">Failed to load: ' + (err.message || '') + '</div>';
+      }
+    }
+
+    window.approvePaymentReq = async function(id) {
+      if (!confirm('Approve this payment?')) return;
+      try {
+        await API.patch('/subscription-payments/admin/' + id + '/approve', {});
+        toast('Payment approved!', 'success');
+        loadPaymentRequests('pending');
+      } catch (err) {
+        toast(err.message || 'Failed to approve', 'error');
+      }
+    };
+
+    window.rejectPaymentReq = async function(id) {
+      var reason = prompt('Rejection reason (optional):');
+      try {
+        await API.patch('/subscription-payments/admin/' + id + '/reject', { reason: reason || '' });
+        toast('Payment rejected', 'success');
+        loadPaymentRequests('pending');
+      } catch (err) {
+        toast(err.message || 'Failed to reject', 'error');
+      }
+    };
 
     // Modal helpers
     window.closeModal = (id) => { document.getElementById(id).classList.remove("active"); };

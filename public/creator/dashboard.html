@@ -3907,8 +3907,8 @@
                 '<label style="font-size:0.72rem;color:rgba(255,255,255,0.4);display:block;margin-bottom:0.3rem">Payment Screenshot *</label>' +
                 '<div id="payScreenshotArea" onclick="document.getElementById(\'payScreenshotInput\').click()" style="border:1px dashed rgba(255,140,39,0.3);border-radius:8px;padding:1rem;text-align:center;cursor:pointer">' +
                   '<div style="font-size:1.2rem;margin-bottom:0.3rem">📤</div>' +
-                  '<div style="font-size:0.72rem;color:rgba(255,255,255,0.4)" id="payScreenshotLabel">Click to upload screenshot</div>' +
-                  '<input type="file" id="payScreenshotInput" accept="image/*" style="display:none" onchange="handlePayScreenshot(event)">' +
+                  '<div style="font-size:0.72rem;color:rgba(255,255,255,0.4)" id="payScreenshotLabel">Click to upload screenshot (JPG, PNG, WEBP)</div>' +
+                  '<input type="file" id="payScreenshotInput" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" style="display:none" onchange="handlePayScreenshot(event)">' +
                 '</div>' +
               '</div>' +
               '<button onclick="submitPaymentRequest()" style="width:100%;padding:0.7rem;background:linear-gradient(135deg,#e85a14,#ff9b2e);color:#100803;border:none;border-radius:8px;font-size:0.85rem;font-weight:600;cursor:pointer">Submit Payment Request</button>' +
@@ -3957,13 +3957,32 @@
 
     window.handlePayScreenshot = function(event) {
       var file = event.target.files[0];
-      if (!file) return;
+      if (!file) { console.log('[Payment] No file selected'); return; }
+      console.log('[Payment] File selected:', file.name, file.type, (file.size/1024/1024).toFixed(2) + 'MB');
+      
+      // Validate format
+      var validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!validTypes.includes(file.type) && !file.name.match(/\.(jpg|jpeg|png|webp)$/i)) {
+        toast('Invalid format. Use JPG, JPEG, PNG, or WEBP.', 'error');
+        return;
+      }
       if (file.size > 10 * 1024 * 1024) { toast('File too large. Max 10MB.', 'error'); return; }
+      
       var reader = new FileReader();
       reader.onload = function(e) {
         payScreenshotDataUrl = e.target.result;
+        console.log('[Payment] Screenshot loaded, size:', (payScreenshotDataUrl.length / 1024).toFixed(0) + 'KB');
         var label = document.getElementById('payScreenshotLabel');
-        if (label) label.textContent = '✅ Screenshot uploaded (' + (file.size / 1024 / 1024).toFixed(1) + ' MB)';
+        if (label) label.innerHTML = '<span style="color:var(--success)">✅ Screenshot ready (' + (file.size / 1024 / 1024).toFixed(1) + ' MB)</span>';
+        // Show preview
+        var area = document.getElementById('payScreenshotArea');
+        if (area) {
+          area.innerHTML = '<img src="' + payScreenshotDataUrl + '" style="max-width:100%;max-height:120px;border-radius:6px;margin-bottom:0.3rem"><div style="font-size:0.68rem;color:var(--success)">✅ ' + file.name + ' (' + (file.size/1024/1024).toFixed(1) + ' MB)</div><div style="font-size:0.6rem;color:rgba(255,255,255,0.3);margin-top:0.2rem">Click to change</div><input type="file" id="payScreenshotInput" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" style="display:none" onchange="handlePayScreenshot(event)">';
+        }
+      };
+      reader.onerror = function() {
+        toast('Failed to read file. Please try again.', 'error');
+        console.error('[Payment] FileReader error');
       };
       reader.readAsDataURL(file);
     };
