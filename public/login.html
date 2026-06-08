@@ -4,7 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login — BookMyShot</title>
-  <script>window.location.replace('/user-auth.html');</script>
+  <script>
+    // Smart redirect based on stored role or registration context
+    var regRole = localStorage.getItem('bms_register_role');
+    var storedUser = null;
+    try { storedUser = JSON.parse(localStorage.getItem('bms_user')); } catch(e) {}
+    
+    if (regRole === 'creator' || (storedUser && storedUser.role === 'creator')) {
+      window.location.replace('/creator-auth.html');
+    } else if (storedUser && storedUser.role === 'admin') {
+      window.location.replace('/admin-login.html');
+    } else {
+      window.location.replace('/user-auth.html');
+    }
+  </script>
 </head>
 <body>
   <p>Redirecting to login...</p>

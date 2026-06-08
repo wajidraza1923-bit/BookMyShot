@@ -223,7 +223,7 @@ router.post("/verify-otp", async (req, res, next) => {
     user.otpAttempts = 0;
     await user.save();
 
-    res.json({ success: true, message: "Email verified successfully" });
+    res.json({ success: true, message: "Email verified successfully", role: user.role });
   } catch (e) {
     next(e);
   }

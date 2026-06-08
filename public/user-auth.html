@@ -393,8 +393,10 @@
         else payload.phone = identifier;
         var data = await API.post('/auth/login', payload);
         if (data.user.role !== 'user' && data.user.role !== 'admin') {
-          toast('This is the User login. Use Creator login for creator accounts.', 'error');
-          btn.disabled = false; btn.textContent = 'Sign In'; return;
+          toast('This is the User login. Redirecting to Creator login...', 'error');
+          API.setAuth(data.token, data.user);
+          setTimeout(function() { window.location.href = '/creator-auth.html'; }, 1500);
+          return;
         }
         API.setAuth(data.token, data.user);
         if (data.user.role === 'creator') {

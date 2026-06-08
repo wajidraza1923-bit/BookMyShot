@@ -37,7 +37,7 @@
       </div>
 
       <div class="auth-footer">
-        <a href="/login.html">← Back to Login</a>
+        <a href="#" id="backToLoginLink">← Back to Login</a>
       </div>
     </div>
   </div>
@@ -64,7 +64,31 @@
         var res = await API.post('/auth/verify-otp', { email: email, otp: otp });
         sucEl.textContent = res.message || 'Email verified!';
         localStorage.removeItem('bms_verify_email');
-        setTimeout(function() { window.location.href = '/login.html'; }, 1500);
+        
+        // Redirect to the correct login page based on role
+        var redirectUrl = '/user-auth.html';
+        
+        // Check role from server response (most reliable)
+        if (res.role === 'creator') {
+          redirectUrl = '/creator-auth.html';
+        } else if (res.role === 'admin') {
+          redirectUrl = '/admin-login.html';
+        }
+        
+        // Check localStorage role hint set during registration
+        var regRole = localStorage.getItem('bms_register_role');
+        if (regRole === 'creator') {
+          redirectUrl = '/creator-auth.html';
+          localStorage.removeItem('bms_register_role');
+        }
+        
+        // Check stored user
+        var storedUser = API.getUser();
+        if (storedUser && storedUser.role === 'creator') {
+          redirectUrl = '/creator-auth.html';
+        }
+        
+        setTimeout(function() { window.location.href = redirectUrl; }, 1500);
       } catch (err) {
         errEl.textContent = err.message || 'Verification failed';
         document.getElementById('verifyBtn').disabled = false;
@@ -96,6 +120,18 @@
         }
       }, 1000);
     }
+
+    // Smart back-to-login link
+    document.getElementById('backToLoginLink').addEventListener('click', function(e) {
+      e.preventDefault();
+      var regRole = localStorage.getItem('bms_register_role');
+      var storedUser = API.getUser();
+      if (regRole === 'creator' || (storedUser && storedUser.role === 'creator')) {
+        window.location.href = '/creator-auth.html';
+      } else {
+        window.location.href = '/user-auth.html';
+      }
+    });
   </script>
 </body>
 </html>

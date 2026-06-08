@@ -370,6 +370,7 @@
         if (err.data && err.data.requiresVerification) {
           toast('Please verify your email first', 'error');
           localStorage.setItem('bms_verify_email', err.data.email);
+          localStorage.setItem('bms_register_role', 'creator');
           setTimeout(function() { window.location.href = '/verify-email.html?email=' + encodeURIComponent(err.data.email); }, 1500);
         } else {
           toast(err.message || 'Login failed', 'error');
@@ -403,6 +404,7 @@
         } catch (e) {}
         if (data.requiresVerification) {
           localStorage.setItem('bms_verify_email', data.user.email);
+          localStorage.setItem('bms_register_role', 'creator');
           toast('Please verify your email first', 'info');
           setTimeout(function() { window.location.href = '/verify-email.html?email=' + encodeURIComponent(data.user.email); }, 1000);
         } else {

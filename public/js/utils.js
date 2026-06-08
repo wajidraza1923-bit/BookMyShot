@@ -20,7 +20,14 @@ const Utils = {
   requireAuth(roles) {
     const user = API.getUser();
     if (!user || !API.getToken()) {
-      window.location.href = "/login.html";
+      // Redirect to the appropriate login page based on the requested role
+      if (roles && roles.includes('creator')) {
+        window.location.href = "/creator-auth.html";
+      } else if (roles && roles.includes('admin')) {
+        window.location.href = "/admin-login.html";
+      } else {
+        window.location.href = "/user-auth.html";
+      }
       return null;
     }
     if (roles && !roles.includes(user.role)) {

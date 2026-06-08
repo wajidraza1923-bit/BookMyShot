@@ -63,9 +63,9 @@
           document.getElementById("statusMessage").textContent = "Your creator application has been rejected. Please contact support for more information.";
         }
       } catch (e) {
-        // Not logged in, redirect to login
+        // Not logged in, redirect to creator login
         if (!API.getToken()) {
-          window.location.href = "/login.html";
+          window.location.href = "/creator-auth.html";
         }
       }
     }

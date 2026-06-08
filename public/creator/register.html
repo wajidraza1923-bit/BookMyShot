@@ -53,6 +53,7 @@
         }
         if (data.requiresVerification) {
           localStorage.setItem('bms_verify_email', data.user.email);
+          localStorage.setItem('bms_register_role', 'creator');
           window.location.href = "/verify-email.html?email=" + encodeURIComponent(data.user.email);
         } else {
           window.location.href = "/creator/pending.html";
