@@ -399,7 +399,13 @@
         API.setAuth(data.token, data.user);
         window.location.href = '/user/dashboard.html';
       } catch (err) {
-        toast(err.message || 'Login failed', 'error');
+        if (err.data && err.data.requiresVerification) {
+          toast('Please verify your email first', 'error');
+          localStorage.setItem('bms_verify_email', err.data.email);
+          setTimeout(function() { window.location.href = '/verify-email.html?email=' + encodeURIComponent(err.data.email); }, 1500);
+        } else {
+          toast(err.message || 'Login failed', 'error');
+        }
         btn.disabled = false; btn.textContent = 'Sign In';
       }
     });
@@ -424,8 +430,14 @@
         if (phone) payload.phone = phone;
         var data = await API.post('/auth/register', payload);
         API.setAuth(data.token, data.user);
-        toast('Account created!', 'success');
-        setTimeout(function() { window.location.href = '/user/dashboard.html'; }, 500);
+        if (data.requiresVerification) {
+          localStorage.setItem('bms_verify_email', data.user.email);
+          toast('Please verify your email', 'info');
+          setTimeout(function() { window.location.href = '/verify-email.html?email=' + encodeURIComponent(data.user.email); }, 500);
+        } else {
+          toast('Account created!', 'success');
+          setTimeout(function() { window.location.href = '/user/dashboard.html'; }, 500);
+        }
       } catch (err) {
         toast(err.message || 'Registration failed', 'error');
         btn.disabled = false; btn.textContent = 'Create Account';

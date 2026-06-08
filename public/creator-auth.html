@@ -367,7 +367,13 @@
         }
         window.location.href = '/creator/dashboard.html';
       } catch (err) {
-        toast(err.message || 'Login failed', 'error');
+        if (err.data && err.data.requiresVerification) {
+          toast('Please verify your email first', 'error');
+          localStorage.setItem('bms_verify_email', err.data.email);
+          setTimeout(function() { window.location.href = '/verify-email.html?email=' + encodeURIComponent(err.data.email); }, 1500);
+        } else {
+          toast(err.message || 'Login failed', 'error');
+        }
         btn.disabled = false; btn.textContent = 'Login as Creator';
       }
     });
@@ -395,8 +401,14 @@
         try {
           await API.put('/creators/profile', { specialty: specialty, city: city, experience: experience, social: portfolio ? { instagram: portfolio } : {} });
         } catch (e) {}
-        toast('Application submitted! Awaiting approval.', 'success');
-        setTimeout(function() { window.location.href = '/creator/pending.html'; }, 1000);
+        if (data.requiresVerification) {
+          localStorage.setItem('bms_verify_email', data.user.email);
+          toast('Please verify your email first', 'info');
+          setTimeout(function() { window.location.href = '/verify-email.html?email=' + encodeURIComponent(data.user.email); }, 1000);
+        } else {
+          toast('Application submitted! Awaiting approval.', 'success');
+          setTimeout(function() { window.location.href = '/creator/pending.html'; }, 1000);
+        }
       } catch (err) {
         toast(err.message || 'Registration failed', 'error');
         btn.disabled = false; btn.textContent = 'Apply as Creator';

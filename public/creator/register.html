@@ -49,7 +49,12 @@
           specialty: document.getElementById("specialty").value.trim(),
           city: document.getElementById("city").value.trim(),
         }).catch(() => {});
-        window.location.href = "/creator/pending.html";
+        if (data.requiresVerification) {
+          localStorage.setItem('bms_verify_email', data.user.email);
+          window.location.href = "/verify-email.html?email=" + encodeURIComponent(data.user.email);
+        } else {
+          window.location.href = "/creator/pending.html";
+        }
       } catch (err) { toast(err.message, "error"); }
     });
   </script>
