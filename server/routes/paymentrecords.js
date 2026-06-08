@@ -209,7 +209,18 @@ router.patch("/booking/:bookingId/amount", async (req, res, next) => {
     const booking = await Booking.findOne({ _id: req.params.bookingId, creator: creator._id });
     if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
 
-    booking.amount = req.body.amount || booking.amount;
+    const newAmount = req.body.amount || booking.amount;
+
+    // COMMISSION LOCK: If commission was already calculated, only allow amount to increase
+    // This prevents creators from reducing booking amount to lower their commission
+    if (booking.commissionAmount && booking.commissionAmount > 0 && newAmount < booking.amount) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Cannot reduce booking amount after commission has been calculated. Commission is locked at ₹" + booking.commissionAmount 
+      });
+    }
+
+    booking.amount = newAmount;
 
     // Auto-calculate commission from database settings
     const configService = require("../services/configService");
