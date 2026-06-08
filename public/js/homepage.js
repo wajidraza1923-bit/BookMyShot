@@ -202,7 +202,8 @@ async function loadAllCreators() {
       return ra - rb;
     });
     if (section) section.style.display = '';
-    creators.forEach((c) => {
+    // Show only 4 creators on homepage
+    creators.slice(0, 4).forEach((c) => {
       const card = document.createElement('article');
       card.className = 'cinematic-card';
       card.style.position = 'relative';
