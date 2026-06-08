@@ -166,7 +166,27 @@ router.post(
   async (req, res, next) => {
     try {
       if (!req.file) return res.status(400).json({ success: false, message: "No file" });
-      const url = `/uploads/avatars/${req.file.filename}`;
+      
+      const { uploadBuffer, isConfigured } = require("../services/cloudinaryService");
+      let url;
+      
+      if (isConfigured()) {
+        const result = await uploadBuffer(req.file.buffer, {
+          folder: "bookmyshot/avatars",
+          resourceType: "image",
+        });
+        url = result.url;
+      } else {
+        // Fallback: save locally (dev environment)
+        const fs = require("fs");
+        const path = require("path");
+        const uploadDir = path.join(__dirname, "../../public/uploads/avatars");
+        if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+        const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(req.file.originalname)}`;
+        fs.writeFileSync(path.join(uploadDir, filename), req.file.buffer);
+        url = `/uploads/avatars/${filename}`;
+      }
+      
       await User.findByIdAndUpdate(req.user._id, { avatar: url });
       res.json({ success: true, url });
     } catch (e) {
@@ -183,8 +203,33 @@ router.post(
   upload.array("photos", 12),
   async (req, res, next) => {
     try {
+      if (!req.files || !req.files.length) return res.status(400).json({ success: false, message: "No files" });
+      
+      const { uploadBuffer, isConfigured } = require("../services/cloudinaryService");
       const creator = await Creator.findOne({ user: req.user._id });
-      const urls = req.files.map((f) => `/uploads/portfolio/${f.filename}`);
+      let urls;
+      
+      if (isConfigured()) {
+        const uploads = await Promise.all(
+          req.files.map((f) => uploadBuffer(f.buffer, {
+            folder: "bookmyshot/portfolio",
+            resourceType: "image",
+          }))
+        );
+        urls = uploads.map((u) => u.url);
+      } else {
+        // Fallback: save locally
+        const fs = require("fs");
+        const path = require("path");
+        const uploadDir = path.join(__dirname, "../../public/uploads/portfolio");
+        if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+        urls = req.files.map((f) => {
+          const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(f.originalname)}`;
+          fs.writeFileSync(path.join(uploadDir, filename), f.buffer);
+          return `/uploads/portfolio/${filename}`;
+        });
+      }
+      
       creator.portfolio.push(...urls);
       await creator.save();
       res.json({ success: true, portfolio: creator.portfolio });
@@ -202,8 +247,33 @@ router.post(
   upload.array("videos", 5),
   async (req, res, next) => {
     try {
+      if (!req.files || !req.files.length) return res.status(400).json({ success: false, message: "No files" });
+      
+      const { uploadBuffer, isConfigured } = require("../services/cloudinaryService");
       const creator = await Creator.findOne({ user: req.user._id });
-      const urls = req.files.map((f) => `/uploads/videos/${f.filename}`);
+      let urls;
+      
+      if (isConfigured()) {
+        const uploads = await Promise.all(
+          req.files.map((f) => uploadBuffer(f.buffer, {
+            folder: "bookmyshot/videos",
+            resourceType: "video",
+          }))
+        );
+        urls = uploads.map((u) => u.url);
+      } else {
+        // Fallback: save locally
+        const fs = require("fs");
+        const path = require("path");
+        const uploadDir = path.join(__dirname, "../../public/uploads/videos");
+        if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+        urls = req.files.map((f) => {
+          const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(f.originalname)}`;
+          fs.writeFileSync(path.join(uploadDir, filename), f.buffer);
+          return `/uploads/videos/${filename}`;
+        });
+      }
+      
       creator.videos.push(...urls);
       await creator.save();
       res.json({ success: true, videos: creator.videos });

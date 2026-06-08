@@ -120,6 +120,33 @@ app.use("/api/admin/announcements", protect, authorize("admin"), adminAnnounceme
 app.use("/api/admin/dashboard-overview", protect, authorize("admin"), adminDashboardRoutes);
 app.use("/api/admin/social-links", protect, authorize("admin"), adminSocialLinksRoutes);
 
+// Admin: general-purpose image upload to Cloudinary
+const upload = require("./middleware/upload");
+app.post("/api/admin/upload", protect, authorize("admin"), upload.single("file"), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, message: "No file" });
+    const { uploadBuffer, isConfigured } = require("./services/cloudinaryService");
+    const folder = req.body.folder || "bookmyshot/general";
+    
+    if (isConfigured()) {
+      const resourceType = req.file.mimetype.startsWith("video") ? "video" : "image";
+      const result = await uploadBuffer(req.file.buffer, { folder, resourceType });
+      return res.json({ success: true, url: result.url, publicId: result.publicId });
+    } else {
+      // Fallback: save locally
+      const fs = require("fs");
+      const pathMod = require("path");
+      const uploadDir = pathMod.join(__dirname, "../public/uploads/general");
+      if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+      const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${pathMod.extname(req.file.originalname)}`;
+      fs.writeFileSync(pathMod.join(uploadDir, filename), req.file.buffer);
+      return res.json({ success: true, url: `/uploads/general/${filename}` });
+    }
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message || "Upload failed" });
+  }
+});
+
 // Maintenance mode check — applied after auth/admin routes.
 // Internally bypasses admin users and /api/auth paths.
 app.use(maintenanceMode);

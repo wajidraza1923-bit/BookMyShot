@@ -21,12 +21,28 @@ router.post("/", protect, async (req, res, next) => {
       return res.status(403).json({ success: false, message: "Not your booking" });
     }
 
+    // Upload screenshot to Cloudinary if it's a base64 data URL
+    let screenshotUrl = screenshot || "";
+    if (screenshotUrl && screenshotUrl.startsWith("data:")) {
+      try {
+        const { uploadBase64, isConfigured } = require("../services/cloudinaryService");
+        if (isConfigured()) {
+          const result = await uploadBase64(screenshotUrl, {
+            folder: "bookmyshot/payment-proofs",
+          });
+          screenshotUrl = result.url;
+        }
+      } catch (uploadErr) {
+        console.error("[PaymentProof] Cloudinary upload failed, storing as-is:", uploadErr.message);
+      }
+    }
+
     const proof = await PaymentProof.create({
       user: req.user._id,
       booking: bookingId,
       creator: booking.creator,
       amount,
-      screenshot: screenshot || "",
+      screenshot: screenshotUrl,
       note: note || "",
     });
 

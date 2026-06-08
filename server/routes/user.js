@@ -97,6 +97,20 @@ router.post("/payment-proofs", async (req, res, next) => {
       return res.status(400).json({ success: false, message: "Missing required fields" });
     }
     
+    // Upload screenshot to Cloudinary if base64
+    let screenshotUrl = screenshot;
+    if (screenshotUrl && screenshotUrl.startsWith("data:")) {
+      try {
+        const { uploadBase64, isConfigured } = require("../services/cloudinaryService");
+        if (isConfigured()) {
+          const result = await uploadBase64(screenshotUrl, { folder: "bookmyshot/payment-proofs" });
+          screenshotUrl = result.url;
+        }
+      } catch (uploadErr) {
+        console.error("[User] Payment proof Cloudinary upload failed:", uploadErr.message);
+      }
+    }
+    
     let creatorId;
     let eventType = "Booking";
     
@@ -111,7 +125,7 @@ router.post("/payment-proofs", async (req, res, next) => {
         booking: bookingId,
         creator: creatorId,
         amount: amount || booking.remaining || booking.amount || 0,
-        screenshot,
+        screenshot: screenshotUrl,
         transactionId,
         note,
         status: "pending",
@@ -148,7 +162,7 @@ router.post("/payment-proofs", async (req, res, next) => {
         inquiry: inquiryId,
         creator: creatorId,
         amount: amount || inquiry.budget || 0,
-        screenshot,
+        screenshot: screenshotUrl,
         transactionId,
         note,
         status: "pending",
