@@ -666,20 +666,27 @@ router.patch("/bookings/:id/complete", async (req, res, next) => {
 router.get("/earnings", async (req, res, next) => {
   try {
     const creator = await getCreator(req.user._id);
-    const commissions = await Commission.find({ creator: creator._id })
-      .populate({ path: "booking", select: "eventType eventDate clientName" })
-      .sort("-createdAt");
-    const total = commissions.reduce((sum, c) => sum + (c.creatorEarning || 0), 0);
-    const pending = commissions
-      .filter((c) => c.status === "pending")
-      .reduce((sum, c) => sum + (c.creatorEarning || 0), 0);
-    const completed = commissions
-      .filter((c) => c.status === "paid")
-      .reduce((sum, c) => sum + (c.creatorEarning || 0), 0);
+    
+    // Calculate from bookings directly (not Commission records which may not exist for all bookings)
+    const bookings = await Booking.find({ 
+      creator: creator._id, 
+      status: { $nin: ["rejected", "cancelled"] } 
+    });
+
+    // Total earnings = sum of all booking amounts where amount > 0
+    const total = bookings.reduce((sum, b) => sum + (b.amount || 0), 0);
+    
+    // Completed = bookings that are fully paid or completed
+    const completed = bookings
+      .filter((b) => b.paymentStatus === "paid" || b.status === "Completed")
+      .reduce((sum, b) => sum + (b.amount || 0), 0);
+    
+    // Pending = total - completed
+    const pending = total - completed;
+
     res.json({
       success: true,
       earnings: { total, pending, completed },
-      commissions,
       totalEarnings: total,
       pendingEarnings: pending,
     });
