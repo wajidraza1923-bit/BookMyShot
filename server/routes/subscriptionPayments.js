@@ -63,10 +63,6 @@ router.get("/info", authorize("creator"), async (req, res, next) => {
         totalPaid: totalCommissionPaid,
         pendingPayment: pendingCommissionPayment || null,
       },
-      upi: {
-        id: process.env.BMS_UPI_ID || "bookmyshot@upi",
-        qrImage: process.env.BMS_QR_IMAGE || "/uploads/general/qr-code.png",
-      },
     });
   } catch (e) {
     next(e);
