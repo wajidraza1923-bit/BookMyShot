@@ -3761,7 +3761,7 @@
               '<div style="font-size:0.65rem;color:rgba(255,255,255,0.3)">per month</div>' +
             '</div>' +
           '</div>' +
-          (subStatus === 'expired' || subStatus === 'overdue' || subStatus === 'suspended' || !subStatus ? '<button class="btn btn-primary btn-sm" style="margin-top:0.75rem" onclick="window.renewSubscription()"><i class="fas fa-credit-card"></i> Pay & Renew ₹' + platformConfig.subscription.monthlyPlanPrice + '</button>' : '') +
+          (subStatus === 'expired' || subStatus === 'overdue' || subStatus === 'suspended' || !subStatus ? '<button class="btn btn-primary btn-sm" style="margin-top:0.75rem;width:100%" onclick="window.renewSubscription()"><i class="fas fa-credit-card"></i> Pay Subscription ₹' + subscriptionAmount + '</button>' : '<button class="btn btn-outline btn-sm" style="margin-top:0.75rem;width:100%" onclick="window.renewSubscription()"><i class="fas fa-credit-card"></i> Pay Subscription ₹' + subscriptionAmount + '</button>') +
         '</div>';
 
         // Commission Section (separate)
@@ -3796,8 +3796,7 @@
             '<div style="display:flex;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid rgba(255,255,255,0.04)"><span style="color:rgba(255,255,255,0.5)">BookMyShot Commission (' + platformConfig.commission.bmsLeadPercent + '%)</span><span style="color:var(--danger)">₹' + bmsCommission.toLocaleString('en-IN') + '</span></div>' +
             '<div style="display:flex;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid rgba(255,255,255,0.04)"><span style="color:rgba(255,255,255,0.5)">Creator Leads Revenue</span><span style="color:var(--text)">₹' + creatorRevenue.toLocaleString('en-IN') + '</span></div>' +
             '<div style="display:flex;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid rgba(255,255,255,0.04)"><span style="color:rgba(255,255,255,0.5)">Creator Commission (' + platformConfig.commission.creatorLeadPercent + '%)</span><span style="color:var(--danger)">₹' + creatorCommission.toLocaleString('en-IN') + '</span></div>' +
-            '<div style="display:flex;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid rgba(255,255,255,0.04)"><span style="color:rgba(255,255,255,0.5)">Subscription</span><span style="color:var(--danger)">₹' + platformConfig.subscription.monthlyPlanPrice + '</span></div>' +
-            '<div style="display:flex;justify-content:space-between;padding:0.6rem 0;font-weight:600"><span style="color:var(--gold-light)">Total Due This Month</span><span style="color:var(--gold)">₹' + totalDue.toLocaleString('en-IN') + '</span></div>' +
+            '<div style="display:flex;justify-content:space-between;padding:0.6rem 0;font-weight:600"><span style="color:var(--gold-light)">Total Commission Due</span><span style="color:var(--gold)">₹' + commissionDue.toLocaleString('en-IN') + '</span></div>' +
           '</div>' +
         '</div>';
 
