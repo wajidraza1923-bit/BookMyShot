@@ -57,7 +57,7 @@
       <button type="submit" class="btn btn-primary btn-block">Sign In</button>
     </form>
     <p class="auth-footer">
-      <a href="#" id="forgotLink">Forgot password?</a><br>
+      <a href="/forgot-password.html" id="forgotLink">Forgot password?</a><br>
       No account? <a href="/register.html">Sign up</a> ·
       <a href="/creator/register.html">Join as Creator</a>
     </p>
@@ -127,7 +127,13 @@
         const routes = { admin: "/admin/dashboard.html", creator: "/creator/dashboard.html", user: "/user/dashboard.html" };
         window.location.href = routes[data.user.role] || "/";
       } catch (err) {
-        toast(err.message || "Login failed", "error");
+        if (err.data && err.data.requiresVerification) {
+          toast("Please verify your email first", "error");
+          localStorage.setItem('bms_verify_email', err.data.email);
+          setTimeout(function() { window.location.href = "/verify-email.html?email=" + encodeURIComponent(err.data.email); }, 1500);
+        } else {
+          toast(err.message || "Login failed", "error");
+        }
       } finally {
         loginButton.disabled = false;
         loginButton.textContent = originalText;

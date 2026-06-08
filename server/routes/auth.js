@@ -5,6 +5,7 @@ const Creator = require("../models/Creator");
 const Planning = require("../models/Planning");
 const generateToken = require("../utils/generateToken");
 const { protect } = require("../middleware/auth");
+const { sendVerificationOTP, sendPasswordResetOTP, generateOTP } = require("../services/emailService");
 
 const router = express.Router();
 
@@ -68,8 +69,7 @@ router.post("/register", async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: user.role === "creator" ? "Registration pending admin approval" : "Account created successfully",
-      verificationToken: process.env.NODE_ENV === "development" && email ? undefined : undefined,
+      message: user.role === "creator" ? "Registration pending admin approval. Please verify your email." : "Account created. Please verify your email.",
       token: generateToken(user._id),
       user: {
         id: user._id,
@@ -79,7 +79,18 @@ router.post("/register", async (req, res, next) => {
         role: user.role,
         emailVerified: user.emailVerified,
       },
+      requiresVerification: !user.emailVerified,
     });
+
+    // Send verification OTP in background (don't block response)
+    if (email && !user.emailVerified) {
+      const otp = generateOTP();
+      user.emailVerificationOtp = otp;
+      user.emailVerificationOtpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+      user.otpLastSent = new Date();
+      await user.save();
+      sendVerificationOTP(email, otp, user.name).catch(() => {});
+    }
   } catch (e) {
     next(e);
   }
@@ -101,6 +112,16 @@ router.post("/login", async (req, res, next) => {
 
     if (!user || !(await user.matchPassword(password))) {
       return res.status(401).json({ success: false, message: "Invalid credentials" });
+    }
+
+    // Check email verification (skip for phone-only accounts and admin)
+    if (!user.emailVerified && user.role !== "admin" && !user.email.endsWith("@bookmyshot.app")) {
+      return res.status(403).json({
+        success: false,
+        message: "Please verify your email before logging in.",
+        requiresVerification: true,
+        email: user.email,
+      });
     }
 
     if (user.role === "creator") {
@@ -164,7 +185,96 @@ router.post("/verify-email", async (req, res, next) => {
   }
 });
 
-// Forgot password
+// ═══════════════════════════════════════════════════════════════
+// OTP-BASED EMAIL VERIFICATION
+// ═══════════════════════════════════════════════════════════════
+
+// Verify OTP (email verification)
+router.post("/verify-otp", async (req, res, next) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) return res.status(400).json({ success: false, message: "Email and OTP required" });
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    if (user.emailVerified) return res.json({ success: true, message: "Email already verified" });
+
+    if (!user.emailVerificationOtp || !user.emailVerificationOtpExpiry) {
+      return res.status(400).json({ success: false, message: "No OTP found. Please request a new one." });
+    }
+
+    if (new Date() > user.emailVerificationOtpExpiry) {
+      return res.status(400).json({ success: false, message: "OTP expired. Please request a new one." });
+    }
+
+    if (user.emailVerificationOtp !== otp.trim()) {
+      user.otpAttempts = (user.otpAttempts || 0) + 1;
+      await user.save();
+      if (user.otpAttempts >= 5) {
+        return res.status(429).json({ success: false, message: "Too many failed attempts. Request a new OTP." });
+      }
+      return res.status(400).json({ success: false, message: "Invalid OTP" });
+    }
+
+    user.emailVerified = true;
+    user.emailVerificationOtp = undefined;
+    user.emailVerificationOtpExpiry = undefined;
+    user.otpAttempts = 0;
+    await user.save();
+
+    res.json({ success: true, message: "Email verified successfully" });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Send/Resend verification OTP
+router.post("/send-otp", async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ success: false, message: "Email required" });
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    if (user.emailVerified) return res.json({ success: true, message: "Email already verified" });
+
+    // Rate limiting: 60 seconds between OTP sends
+    if (user.otpLastSent && (Date.now() - new Date(user.otpLastSent).getTime()) < 60000) {
+      const wait = Math.ceil((60000 - (Date.now() - new Date(user.otpLastSent).getTime())) / 1000);
+      return res.status(429).json({ success: false, message: `Please wait ${wait} seconds before requesting again` });
+    }
+
+    const otp = generateOTP();
+    user.emailVerificationOtp = otp;
+    user.emailVerificationOtpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+    user.otpLastSent = new Date();
+    user.otpAttempts = 0;
+    await user.save();
+
+    const result = await sendVerificationOTP(email, otp, user.name);
+    if (!result.success) {
+      return res.status(500).json({ success: false, message: "Failed to send OTP. Please try again." });
+    }
+
+    res.json({ success: true, message: "Verification OTP sent to your email" });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Resend OTP (alias for send-otp)
+router.post("/resend-otp", async (req, res, next) => {
+  req.url = "/send-otp";
+  router.handle(req, res, next);
+});
+
+// ═══════════════════════════════════════════════════════════════
+// OTP-BASED PASSWORD RESET
+// ═══════════════════════════════════════════════════════════════
+
+// Forgot password - send OTP
 router.post("/forgot-password", async (req, res, next) => {
   try {
     const { email, phone } = req.body;
@@ -172,36 +282,90 @@ router.post("/forgot-password", async (req, res, next) => {
     if (email) user = await User.findOne({ email });
     else if (phone) user = await User.findOne({ phone });
     
-    if (!user) return res.json({ success: true, message: "If account exists, reset link sent" });
-    
-    const resetToken = crypto.randomBytes(20).toString("hex");
-    user.resetPasswordToken = crypto.createHash("sha256").update(resetToken).digest("hex");
-    user.resetPasswordExpire = Date.now() + 3600000;
+    if (!user) return res.json({ success: true, message: "If account exists, reset code sent" });
+
+    // Rate limiting
+    if (user.otpLastSent && (Date.now() - new Date(user.otpLastSent).getTime()) < 60000) {
+      return res.status(429).json({ success: false, message: "Please wait before requesting again" });
+    }
+
+    const otp = generateOTP();
+    user.resetPasswordOtp = otp;
+    user.resetPasswordOtpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+    user.otpLastSent = new Date();
     await user.save();
+
+    const result = await sendPasswordResetOTP(user.email, otp, user.name);
     res.json({
       success: true,
-      message: "Reset token generated. Contact support if you need help.",
-      resetToken: process.env.NODE_ENV === "development" ? resetToken : undefined,
+      message: "Password reset code sent to your email",
+      emailSent: result.success,
     });
   } catch (e) {
     next(e);
   }
 });
 
-// Reset password
-router.post("/reset-password/:token", async (req, res, next) => {
+// Verify reset OTP
+router.post("/verify-reset-otp", async (req, res, next) => {
   try {
-    const hashed = crypto.createHash("sha256").update(req.params.token).digest("hex");
+    const { email, otp } = req.body;
+    if (!email || !otp) return res.status(400).json({ success: false, message: "Email and OTP required" });
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    if (!user.resetPasswordOtp || !user.resetPasswordOtpExpiry) {
+      return res.status(400).json({ success: false, message: "No reset OTP found. Request a new one." });
+    }
+
+    if (new Date() > user.resetPasswordOtpExpiry) {
+      return res.status(400).json({ success: false, message: "OTP expired. Request a new one." });
+    }
+
+    if (user.resetPasswordOtp !== otp.trim()) {
+      return res.status(400).json({ success: false, message: "Invalid OTP" });
+    }
+
+    // Generate a temporary reset token (valid for 5 minutes)
+    const resetToken = crypto.randomBytes(20).toString("hex");
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpire = Date.now() + 5 * 60 * 1000;
+    user.resetPasswordOtp = undefined;
+    user.resetPasswordOtpExpiry = undefined;
+    await user.save();
+
+    res.json({ success: true, message: "OTP verified. You can now reset your password.", resetToken });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Reset password with token
+router.post("/reset-password", async (req, res, next) => {
+  try {
+    const { email, resetToken, password } = req.body;
+    if (!email || !resetToken || !password) {
+      return res.status(400).json({ success: false, message: "Email, token, and new password required" });
+    }
+    if (password.length < 8) {
+      return res.status(400).json({ success: false, message: "Password must be at least 8 characters" });
+    }
+
     const user = await User.findOne({
-      resetPasswordToken: hashed,
+      email,
+      resetPasswordToken: resetToken,
       resetPasswordExpire: { $gt: Date.now() },
     });
-    if (!user) return res.status(400).json({ success: false, message: "Invalid or expired token" });
-    user.password = req.body.password;
+
+    if (!user) return res.status(400).json({ success: false, message: "Invalid or expired reset token" });
+
+    user.password = password;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
     await user.save();
-    res.json({ success: true, message: "Password updated" });
+
+    res.json({ success: true, message: "Password reset successfully. You can now login." });
   } catch (e) {
     next(e);
   }

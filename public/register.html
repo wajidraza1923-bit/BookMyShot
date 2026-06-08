@@ -91,8 +91,12 @@
         else payload.phone = document.getElementById("countryCode").value + document.getElementById("phone").value.trim();
         const data = await API.post("/auth/register", payload);
         API.setAuth(data.token, data.user);
-        if (data.verificationToken) toast(`Verify email token: ${data.verificationToken}`, "info");
-        window.location.href = "/user/dashboard.html";
+        if (data.requiresVerification) {
+          localStorage.setItem('bms_verify_email', data.user.email);
+          window.location.href = "/verify-email.html?email=" + encodeURIComponent(data.user.email);
+        } else {
+          window.location.href = "/user/dashboard.html";
+        }
       } catch (err) {
         toast(err.message || "Registration failed", "error");
       } finally {

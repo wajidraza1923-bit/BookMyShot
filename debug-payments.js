@@ -1,4 +1,78 @@
-/**
+BookMyShot API Debug Report
+
+Analyze the entire BookMyShot codebase and generate a detailed Markdown report.
+
+I need you to find:
+
+1. All frontend API calls:
+   
+   - fetch(...)
+   - axios(...)
+   - axios.post(...)
+   - axios.get(...)
+   - axios.put(...)
+   - axios.delete(...)
+
+2. For each API call provide:
+   
+   - File path
+   - Line number
+   - HTTP method
+   - Full URL being called
+   - Environment variable used (if any)
+
+3. Find all environment variables:
+   
+   - NEXT_PUBLIC_API_URL
+   - API_URL
+   - BACKEND_URL
+   - Any other API related variables
+
+4. Find all Express route registrations:
+   
+   - app.use(...)
+   - router.use(...)
+   - auth routes
+   - booking routes
+   - payment routes
+   - creator routes
+   - admin routes
+
+5. Show where the register endpoint is defined:
+   
+   - router.post('/register')
+   - router.get('/register')
+   - Any related auth controller
+
+6. Show the exact route mount path:
+   Example:
+   app.use('/api/auth', authRoutes)
+
+7. Produce a table:
+
+Frontend Request| Backend Route| Match Status
+/auth/register| /api/auth/register| Mismatch
+...| ...| ...
+
+8. Identify all route mismatches that can cause:
+   
+   - 404 errors
+   - Cannot GET errors
+   - Failed registration
+   - Failed login
+
+9. Provide exact fixes:
+   
+   - File name
+   - Line number
+   - Current code
+   - Correct code
+
+10. Generate the report as:
+    API_DEBUG_REPORT.md
+
+Goal:
+Find why user registration returns 404 "Request failed (404)" on production while backend is running successfully on Northflank and frontend is deployed on Vercel./**
  * DEBUG SCRIPT: Run this to check payment data state
  * Usage: node debug-payments.js
  */

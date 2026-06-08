@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Email — BookMyShot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/auth.css">
+</head>
+<body>
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <a href="/" class="auth-logo">BOOKMYSHOT</a>
+        <h1>Verify Your Email</h1>
+        <p id="subtitleText">Enter the 6-digit code sent to your email</p>
+      </div>
+
+      <form id="otpForm" class="auth-form">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="otpEmail" required readonly>
+        </div>
+        <div class="form-group">
+          <label>6-Digit OTP Code</label>
+          <input type="text" id="otpCode" maxlength="6" pattern="[0-9]{6}" placeholder="000000" required style="font-size:1.5rem;letter-spacing:.5rem;text-align:center;font-weight:700">
+        </div>
+        <div id="otpError" style="color:#ef4444;font-size:.82rem;margin-bottom:.5rem"></div>
+        <div id="otpSuccess" style="color:#10b981;font-size:.82rem;margin-bottom:.5rem"></div>
+        <button type="submit" class="btn btn-primary btn-block" id="verifyBtn">Verify Email</button>
+      </form>
+
+      <div style="text-align:center;margin-top:1.25rem">
+        <button id="resendBtn" class="btn btn-outline" style="font-size:.8rem" onclick="resendOTP()">Resend OTP</button>
+        <p id="cooldownText" style="font-size:.75rem;color:var(--text-muted);margin-top:.5rem"></p>
+      </div>
+
+      <div class="auth-footer">
+        <a href="/login.html">← Back to Login</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    var email = new URLSearchParams(window.location.search).get('email') || localStorage.getItem('bms_verify_email') || '';
+    document.getElementById('otpEmail').value = email;
+
+    document.getElementById('otpForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      var otp = document.getElementById('otpCode').value.trim();
+      var errEl = document.getElementById('otpError');
+      var sucEl = document.getElementById('otpSuccess');
+      errEl.textContent = '';
+      sucEl.textContent = '';
+
+      if (!email || !otp || otp.length !== 6) { errEl.textContent = 'Enter valid 6-digit code'; return; }
+
+      document.getElementById('verifyBtn').disabled = true;
+      document.getElementById('verifyBtn').textContent = 'Verifying...';
+
+      try {
+        var res = await API.post('/auth/verify-otp', { email: email, otp: otp });
+        sucEl.textContent = res.message || 'Email verified!';
+        localStorage.removeItem('bms_verify_email');
+        setTimeout(function() { window.location.href = '/login.html'; }, 1500);
+      } catch (err) {
+        errEl.textContent = err.message || 'Verification failed';
+        document.getElementById('verifyBtn').disabled = false;
+        document.getElementById('verifyBtn').textContent = 'Verify Email';
+      }
+    });
+
+    var cooldown = 0;
+    function resendOTP() {
+      if (cooldown > 0 || !email) return;
+      document.getElementById('resendBtn').disabled = true;
+      API.post('/auth/send-otp', { email: email }).then(function(res) {
+        document.getElementById('otpSuccess').textContent = res.message || 'OTP sent!';
+        startCooldown(60);
+      }).catch(function(err) {
+        document.getElementById('otpError').textContent = err.message || 'Failed to send';
+        document.getElementById('resendBtn').disabled = false;
+      });
+    }
+
+    function startCooldown(sec) {
+      cooldown = sec;
+      var iv = setInterval(function() {
+        cooldown--;
+        document.getElementById('cooldownText').textContent = cooldown > 0 ? 'Resend available in ' + cooldown + 's' : '';
+        if (cooldown <= 0) {
+          clearInterval(iv);
+          document.getElementById('resendBtn').disabled = false;
+        }
+      }, 1000);
+    }
+  </script>
+</body>
+</html>
