@@ -162,7 +162,7 @@
             (upiId ? '<button onclick="copyText(\'' + upiId + '\',this)">📋 Copy</button>' : '') +
           '</div>' +
           (holderName ? '<div style="font-size:.72rem;color:var(--muted);margin-bottom:.75rem">Account: ' + holderName + '</div>' : '') +
-          (upiLink ? '<a href="' + upiLink + '" class="pay-open"><i class="fas fa-mobile-alt"></i> Open UPI App & Pay ₹' + amount + '</a>' : '') +
+          (upiId ? '<div style="padding:.5rem;background:rgba(255,140,39,.06);border:1px solid rgba(255,140,39,.12);border-radius:8px;text-align:center;margin-bottom:.75rem"><span style="font-size:.72rem;color:var(--muted)">📱 Open your preferred UPI app and pay using QR Code or copied UPI ID.</span></div>' : '') +
           '<div style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem;font-weight:500">After payment, upload proof below:</div>' +
           '<div class="form-group"><label>UTR / Transaction ID *</label><input type="text" id="subUtr" placeholder="Enter UTR number"></div>' +
           '<div class="form-group"><label>Payment Screenshot *</label><div class="upload-area" onclick="document.getElementById(\'subScreenshot\').click()"><i class="fas fa-upload"></i> <span id="subScreenLabel">Click to upload screenshot</span><input type="file" id="subScreenshot" accept="image/*" style="display:none" onchange="handleScreenUpload(event)"></div></div>' +
