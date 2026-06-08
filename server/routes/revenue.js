@@ -65,31 +65,43 @@ router.post("/creator/subscribe", authorize("creator"), async (req, res, next) =
     // Load subscription pricing from database
     const configService = require("../services/configService");
     const subSettings = await configService.getSubscriptionSettings();
-    const price = subSettings.monthlyPlanPrice || 299;
+    const price = subSettings.monthlyPlanPrice || 0;
+    const trialDays = subSettings.trialDays || 30;
 
     const now = new Date();
     const endDate = new Date(now);
-    endDate.setMonth(endDate.getMonth() + 1);
 
-    creator.subscriptionStatus = "active";
+    // If price is 0 or free trial enabled, activate as trial
+    if (price === 0 || (subSettings.freeTrialEnabled && trialDays > 0)) {
+      endDate.setDate(endDate.getDate() + trialDays);
+      creator.subscriptionStatus = "trial";
+    } else {
+      endDate.setMonth(endDate.getMonth() + 1);
+      creator.subscriptionStatus = "active";
+    }
+
     creator.subscriptionStartDate = now;
     creator.subscriptionEndDate = endDate;
     creator.subscriptionAmount = price;
+    creator.lastPaymentDate = now;
     await creator.save();
 
-    // Create subscription invoice
-    const invoice = await Invoice.create({
-      creator: creator._id,
-      invoiceNumber: "BMS-SUB-" + Date.now(),
-      type: "subscription",
-      description: "Monthly Subscription - " + now.toLocaleDateString("en-IN", { month: "long", year: "numeric" }),
-      amount: price,
-      status: "paid",
-      paidAt: now,
-      dueDate: endDate,
-    });
+    // Create subscription invoice (only if price > 0)
+    let invoice = null;
+    if (price > 0) {
+      invoice = await Invoice.create({
+        creator: creator._id,
+        invoiceNumber: "BMS-SUB-" + Date.now(),
+        type: "subscription",
+        description: "Monthly Subscription - " + now.toLocaleDateString("en-IN", { month: "long", year: "numeric" }),
+        amount: price,
+        status: "paid",
+        paidAt: now,
+        dueDate: endDate,
+      });
+    }
 
-    res.json({ success: true, subscription: { status: "active", startDate: now, endDate }, invoice });
+    res.json({ success: true, subscription: { status: creator.subscriptionStatus, startDate: now, endDate }, invoice });
   } catch (e) {
     next(e);
   }

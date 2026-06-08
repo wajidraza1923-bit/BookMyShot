@@ -1497,7 +1497,7 @@
 
     // Platform config loaded from database (replaces hardcoded values)
     var platformConfig = {
-      subscription: { monthlyPlanPrice: 299 },
+      subscription: { monthlyPlanPrice: 0 },
       commission: { bmsLeadPercent: 5, creatorLeadPercent: 3 },
       platform: { currency: 'INR' }
     };
@@ -1538,6 +1538,12 @@
       if (!creatorProfile) return;
       var subStatus = creatorProfile.subscriptionStatus || '';
       var endDate = creatorProfile.subscriptionEndDate ? new Date(creatorProfile.subscriptionEndDate) : null;
+
+      // If subscription is pending_payment, redirect to subscription screen
+      if (subStatus === 'pending_payment' || !subStatus) {
+        window.location.href = '/creator/subscription.html';
+        return;
+      }
 
       // Check if expired by date even if status hasn't been updated
       if (endDate && endDate < new Date() && subStatus !== 'active') {
@@ -3844,7 +3850,7 @@
         var pendingPayment = null;
 
         if (type === 'subscription') {
-          amount = platformConfig.subscription.monthlyPlanPrice || 299;
+          amount = platformConfig.subscription.monthlyPlanPrice || 0;
           label = 'Monthly Subscription';
           pendingPayment = subInfo.subscription && subInfo.subscription.pendingPayment;
         } else {

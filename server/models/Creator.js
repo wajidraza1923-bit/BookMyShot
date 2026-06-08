@@ -49,13 +49,13 @@ const creatorSchema = new mongoose.Schema(
     darkMode: { type: Boolean, default: true },
     // Subscription fields
     subscriptionPlan: { type: String, enum: ["basic"], default: "basic" },
-    subscriptionAmount: { type: Number, default: 299 },
+    subscriptionAmount: { type: Number, default: 0 },
     subscriptionStartDate: { type: Date },
     subscriptionEndDate: { type: Date },
     subscriptionStatus: {
       type: String,
-      enum: ["trial", "active", "expired", "suspended", "overdue"],
-      default: "trial",
+      enum: ["pending_payment", "trial", "active", "expired", "suspended", "overdue"],
+      default: "pending_payment",
     },
     autoRenew: { type: Boolean, default: true },
     lastPaymentDate: { type: Date },

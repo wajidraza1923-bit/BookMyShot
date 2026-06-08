@@ -52,16 +52,12 @@ router.post("/register", async (req, res, next) => {
       // Load subscription settings from database
       const configService = require("../services/configService");
       const subSettings = await configService.getSubscriptionSettings();
-      const trialEnd = new Date();
-      trialEnd.setDate(trialEnd.getDate() + (subSettings.trialDays || 30));
       await Creator.create({
         user: user._id,
         status: "pending",
         subscriptionPlan: "basic",
-        subscriptionAmount: subSettings.monthlyPlanPrice || 299,
-        subscriptionStartDate: new Date(),
-        subscriptionEndDate: trialEnd,
-        subscriptionStatus: "trial",
+        subscriptionAmount: subSettings.monthlyPlanPrice || 0,
+        subscriptionStatus: "pending_payment",
         autoRenew: subSettings.autoRenewDefault !== false,
       });
       await Planning.create({ creator: (await Creator.findOne({ user: user._id }))._id });

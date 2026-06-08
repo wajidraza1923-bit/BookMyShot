@@ -99,10 +99,9 @@
           return;
         }
 
-        // Check if subscription is already active
+        // Check if subscription is already active/trial - go to pending approval
         var subStatus = subPayInfo.subscription && subPayInfo.subscription.status;
         if (subStatus === 'active' || subStatus === 'trial') {
-          // Already has subscription - go to pending approval
           window.location.href = '/creator/pending.html';
           return;
         }
@@ -194,7 +193,10 @@
     };
 
     window.startFreeTrial = async function() {
-      // Trial was already activated during registration — just proceed to pending
+      try {
+        // Activate trial via backend - sets status to "trial" with proper dates
+        await API.post('/revenue/creator/subscribe', {});
+      } catch (e) { /* proceed anyway */ }
       window.location.href = '/creator/pending.html';
     };
 
