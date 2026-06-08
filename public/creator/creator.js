@@ -26,7 +26,7 @@
 
   document.getElementById("logoutBtn").onclick = function() {
     API.clearAuth();
-    window.location.href = "/login.html";
+    window.location.href = "/";
   };
 
   const titles = {

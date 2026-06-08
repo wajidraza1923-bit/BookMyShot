@@ -8,7 +8,7 @@ let activeChatUser = null;
 
 Utils.initSidebar();
 document.getElementById("menuDash")?.addEventListener("click", () => document.getElementById("sidebar").classList.toggle("open"));
-document.getElementById("logoutBtn").onclick = () => { API.clearAuth(); location.href = "/login.html"; };
+document.getElementById("logoutBtn").onclick = () => { API.clearAuth(); location.href = "/"; };
 
 document.querySelectorAll(".nav-item[data-panel]").forEach((item) => {
   item.addEventListener("click", (e) => {

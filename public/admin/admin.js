@@ -6,7 +6,7 @@ if (!user) return;
 
 Utils.initSidebar();
 document.getElementById("menuDash")?.addEventListener("click", () => document.getElementById("sidebar").classList.toggle("open"));
-document.getElementById("logoutBtn").onclick = () => { API.clearAuth(); location.href = "/login.html"; };
+document.getElementById("logoutBtn").onclick = () => { API.clearAuth(); location.href = "/"; };
 
 const titles = {
   overview: "Admin Overview",
