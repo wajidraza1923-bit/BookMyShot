@@ -2,7 +2,7 @@
  * BookMyShot API Client
  */
 const API = {
-  base: "",
+  base: "https://site--bookmyshot--ykz2mr8mzlrv.code.run",
 
   getToken() {
     return localStorage.getItem("bms_token");
