@@ -8,6 +8,88 @@ const { protect, authorize } = require("../middleware/auth");
 const router = express.Router();
 
 // ═══════════════════════════════════════════════════════════════
+// PUBLIC: Get rank slot occupancy (who owns each rank currently)
+// ═══════════════════════════════════════════════════════════════
+router.get("/rank-status", async (req, res, next) => {
+  try {
+    const now = new Date();
+    // Auto-expire old promotions
+    const expired = await PromotionRequest.find({ status: "approved", expiryDate: { $lte: now } });
+    for (const promo of expired) {
+      promo.status = "expired";
+      await promo.save();
+      // Remove rank from creator
+      const creator = await Creator.findById(promo.creator);
+      if (creator) {
+        if (promo.planType === "homepage_featured") {
+          creator.featured = false;
+        } else if (promo.planType.startsWith("rank_")) {
+          const rankNum = parseInt(promo.planType.split("_")[1], 10);
+          if (creator.rank === rankNum) creator.rank = 0;
+        }
+        await creator.save();
+      }
+    }
+
+    // Get active rank holders
+    const activeRanks = await PromotionRequest.find({
+      status: "approved",
+      expiryDate: { $gt: now },
+      planType: { $in: ["rank_1", "rank_2", "rank_3", "rank_4"] },
+    }).populate({ path: "creator", populate: { path: "user", select: "name" } });
+
+    const slots = {};
+    activeRanks.forEach(r => {
+      slots[r.planType] = {
+        occupied: true,
+        ownerName: r.creator?.user?.name || r.creatorName || "Unknown",
+        creatorId: r.creator?._id || r.creator,
+        expiryDate: r.expiryDate,
+        startDate: r.startDate,
+      };
+    });
+
+    res.json({ success: true, slots });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// CREATOR: Get my active promotion
+// ═══════════════════════════════════════════════════════════════
+router.get("/my-active", protect, authorize("creator"), async (req, res, next) => {
+  try {
+    const creator = await Creator.findOne({ user: req.user._id });
+    if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
+
+    const now = new Date();
+    const active = await PromotionRequest.findOne({
+      creator: creator._id,
+      status: "approved",
+      expiryDate: { $gt: now },
+    });
+
+    if (!active) return res.json({ success: true, active: null });
+
+    const daysRemaining = Math.max(0, Math.ceil((active.expiryDate - now) / 86400000));
+    res.json({
+      success: true,
+      active: {
+        planType: active.planType,
+        price: active.price,
+        startDate: active.startDate,
+        expiryDate: active.expiryDate,
+        daysRemaining,
+        status: "active",
+      },
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
 // CREATOR: Get available promotion plans with prices
 // ═══════════════════════════════════════════════════════════════
 router.get("/plans", protect, async (req, res, next) => {
