@@ -239,16 +239,24 @@ router.patch("/admin/:id/approve", authorize("admin"), async (req, res, next) =>
     const creator = await Creator.findById(payment.creator);
 
     if (payment.type === "subscription" && creator) {
-      // Activate subscription
+      // EXTEND subscription from current expiry date (not reset from today)
       const now = new Date();
-      const endDate = new Date(now);
-      endDate.setMonth(endDate.getMonth() + 1);
+      const currentEnd = creator.subscriptionEndDate ? new Date(creator.subscriptionEndDate) : now;
+      // Extend from whichever is later: current expiry or today
+      const baseDate = currentEnd > now ? currentEnd : now;
+      const newEndDate = new Date(baseDate);
+      newEndDate.setMonth(newEndDate.getMonth() + 1);
 
       creator.subscriptionStatus = "active";
-      creator.subscriptionStartDate = now;
-      creator.subscriptionEndDate = endDate;
+      if (!creator.subscriptionStartDate) creator.subscriptionStartDate = now;
+      creator.subscriptionEndDate = newEndDate;
       creator.lastPaymentDate = now;
       await creator.save();
+
+      // Store period on payment record
+      payment.periodStart = baseDate;
+      payment.periodEnd = newEndDate;
+      await payment.save();
 
       // Create invoice
       await Invoice.create({
@@ -259,24 +267,32 @@ router.patch("/admin/:id/approve", authorize("admin"), async (req, res, next) =>
         amount: payment.amount,
         status: "paid",
         paidAt: now,
-        dueDate: endDate,
+        dueDate: newEndDate,
       });
     }
 
     if (payment.type === "commission" && creator) {
-      // Mark pending commissions as paid up to the amount
-      let remaining = payment.amount;
+      // Deduct approved amount from pending commissions (partial support)
+      let remainingToPay = payment.amount;
       const pendingCommissions = await Commission.find({
         creator: creator._id,
         status: "pending",
       }).sort("createdAt");
 
       for (const comm of pendingCommissions) {
-        if (remaining <= 0) break;
-        if (remaining >= comm.commissionAmount) {
+        if (remainingToPay <= 0) break;
+        if (remainingToPay >= comm.commissionAmount) {
+          // Fully pay this commission
           comm.status = "paid";
           comm.paidAt = new Date();
-          remaining -= comm.commissionAmount;
+          comm.notes = (comm.notes || "") + " | Paid via payment #" + payment._id;
+          remainingToPay -= comm.commissionAmount;
+          await comm.save();
+        } else {
+          // Partial: reduce the commission amount and mark partial payment
+          comm.commissionAmount = comm.commissionAmount - remainingToPay;
+          comm.notes = (comm.notes || "") + " | Partial ₹" + remainingToPay + " deducted via #" + payment._id;
+          remainingToPay = 0;
           await comm.save();
         }
       }

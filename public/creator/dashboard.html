@@ -3751,22 +3751,16 @@
           (subStatus === 'expired' || subStatus === 'overdue' || subStatus === 'suspended' || !subStatus ? '<button class="btn btn-primary btn-sm" style="margin-top:0.75rem" onclick="window.renewSubscription()"><i class="fas fa-credit-card"></i> Pay & Renew ₹' + platformConfig.subscription.monthlyPlanPrice + '</button>' : '') +
         '</div>';
 
-        // Due Amount Card
-        html += '<div class="card-panel" style="margin-bottom:1rem;background:linear-gradient(135deg, rgba(212,175,55,0.06), rgba(255,140,66,0.04))">' +
-          '<h3 style="font-family:Playfair Display,serif;color:var(--gold-light);margin:0 0 0.6rem;font-size:0.95rem"><i class="fas fa-file-invoice" style="color:var(--gold);margin-right:0.4rem"></i>Current Month Due</h3>' +
-          '<div style="display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0;border-bottom:1px solid rgba(255,255,255,0.04)">' +
-            '<span style="font-size:0.8rem;color:rgba(255,255,255,0.5)">Commission Due</span>' +
-            '<span style="font-size:0.85rem;color:var(--text);font-weight:500">₹' + totalCommission.toLocaleString('en-IN') + '</span>' +
+        // Commission Section (separate)
+        html += '<div class="card-panel" style="margin-bottom:1rem;border-left:3px solid var(--gold)">' +
+          '<h3 style="font-family:Playfair Display,serif;color:var(--gold-light);margin:0 0 0.5rem;font-size:0.95rem"><i class="fas fa-receipt" style="color:var(--gold);margin-right:0.4rem"></i>Commission</h3>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.4rem 1rem;font-size:0.78rem;margin-bottom:0.6rem">' +
+            '<div><span style="color:rgba(255,255,255,0.4)">Total Earnings:</span> <span style="color:var(--text)">₹' + totalRevenue.toLocaleString('en-IN') + '</span></div>' +
+            '<div><span style="color:rgba(255,255,255,0.4)">Commission %:</span> <span style="color:var(--text)">' + platformConfig.commission.bmsLeadPercent + '% / ' + platformConfig.commission.creatorLeadPercent + '%</span></div>' +
+            '<div><span style="color:rgba(255,255,255,0.4)">Total Due:</span> <span style="color:var(--danger);font-weight:600">₹' + totalCommission.toLocaleString('en-IN') + '</span></div>' +
+            '<div><span style="color:rgba(255,255,255,0.4)">Paid:</span> <span style="color:var(--success)">₹0</span></div>' +
           '</div>' +
-          '<div style="display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0;border-bottom:1px solid rgba(255,255,255,0.04)">' +
-            '<span style="font-size:0.8rem;color:rgba(255,255,255,0.5)">Subscription</span>' +
-            '<span style="font-size:0.85rem;color:var(--text);font-weight:500">₹' + platformConfig.subscription.monthlyPlanPrice + '</span>' +
-          '</div>' +
-          '<div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0;margin-top:0.2rem">' +
-            '<span style="font-size:0.9rem;color:var(--gold-light);font-weight:600">Total Due</span>' +
-            '<span style="font-size:1.1rem;color:var(--gold);font-weight:700">₹' + totalDue.toLocaleString('en-IN') + '</span>' +
-          '</div>' +
-          '<button class="btn btn-primary btn-sm" style="margin-top:0.5rem;width:100%" onclick="window.payDues()"><i class="fas fa-credit-card"></i> Pay Now</button>' +
+          (totalCommission > 0 ? '<button class="btn btn-primary btn-sm" style="width:100%" onclick="window.payCommission()"><i class="fas fa-credit-card"></i> Pay Commission ₹' + totalCommission.toLocaleString('en-IN') + '</button>' : '<div style="font-size:0.75rem;color:var(--success);text-align:center">✅ No commission dues</div>') +
         '</div>';
 
         // Stats Grid
@@ -4022,6 +4016,16 @@
 
     window.renewSubscription = function() {
       openPaymentModal('subscription');
+    };
+
+    window.payCommission = function() {
+      var commDue = window._currentCommissionDue || 0;
+      console.log('[PayCommission] Commission Due:', commDue);
+      if (commDue > 0) {
+        openPaymentModal('commission', commDue);
+      } else {
+        toast('No commission dues pending.', 'info');
+      }
     };
 
     window.payDues = function() {
