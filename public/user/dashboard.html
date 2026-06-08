@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>User Dashboard — BookMyShot</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
   <link href="/css/premium-homepage.css" rel="stylesheet">
   <style>
     /* ═══════════════════════════════════════════════════════════════════════
@@ -840,9 +841,24 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
+    /* ─── Mobile Overlay ─── */
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 998;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .sidebar-overlay.active {
+      display: block;
+      opacity: 1;
+    }
+
     /* ─── Responsive ─── */
     @media (max-width: 768px) {
-      .sidebar { transform: translateX(-100%); }
+      .sidebar { transform: translateX(-100%); z-index: 999; transition: transform 0.3s ease; }
       .sidebar.open { transform: translateX(0); }
       .main-content { margin-left: 0; }
       .menu-toggle { display: block; }
@@ -868,25 +884,26 @@
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-logo">Book<span>MyShot</span></div>
       <nav class="sidebar-nav">
-        <a href="#" class="active" data-panel="home"><span class="icon">🏠</span> Home</a>
-        <a href="#" data-panel="dashboard"><span class="icon">📊</span> Dashboard</a>
-        <a href="#" data-panel="bookings"><span class="icon">📅</span> My Bookings</a>
-        <a href="#" data-panel="payments"><span class="icon">💰</span> Payments</a>
-        <a href="#" data-panel="favorites"><span class="icon">❤️</span> Favorites</a>
-        <a href="#" data-panel="messages"><span class="icon">💬</span> Messages</a>
-        <a href="#" data-panel="profile"><span class="icon">👤</span> My Profile</a>
+        <a href="#" class="active" data-panel="home"><span class="icon"><i class="fa-solid fa-house"></i></span> Home</a>
+        <a href="#" data-panel="dashboard"><span class="icon"><i class="fa-solid fa-chart-line"></i></span> Dashboard</a>
+        <a href="#" data-panel="bookings"><span class="icon"><i class="fa-solid fa-calendar-check"></i></span> My Bookings</a>
+        <a href="#" data-panel="payments"><span class="icon"><i class="fa-solid fa-credit-card"></i></span> Payments</a>
+        <a href="#" data-panel="favorites"><span class="icon"><i class="fa-solid fa-heart"></i></span> Favorites</a>
+        <a href="#" data-panel="messages"><span class="icon"><i class="fa-solid fa-comment-dots"></i></span> Messages</a>
+        <a href="#" data-panel="profile"><span class="icon"><i class="fa-solid fa-user"></i></span> My Profile</a>
       </nav>
       <div class="sidebar-footer">
-        <a href="/" target="_blank">🌐 View Site</a>
-        <a href="#" id="logoutBtn">🚪 Logout</a>
+        <a href="/" target="_blank"><i class="fa-solid fa-globe" style="width:20px;text-align:center;margin-right:0.5rem"></i> View Site</a>
+        <a href="#" id="logoutBtn"><i class="fa-solid fa-right-from-bracket" style="width:20px;text-align:center;margin-right:0.5rem"></i> Logout</a>
       </div>
     </aside>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <!-- ═══ MAIN CONTENT ═══ -->
     <div class="main-content">
       <header class="header">
         <div class="header-left">
-          <button class="menu-toggle" id="menuToggle">☰</button>
+          <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
           <span style="color:var(--text-muted2);font-size:0.9rem;font-weight:500" id="pageTitle">Home</span>
         </div>
         <div class="header-right">
@@ -1022,6 +1039,8 @@
           if (panel) panel.classList.add("active");
           document.getElementById("pageTitle").textContent = a.textContent.trim();
           document.getElementById("sidebar").classList.remove("open");
+          document.getElementById("sidebarOverlay").classList.remove("active");
+          document.body.style.overflow = "";
 
           switch (a.dataset.panel) {
             case "home": loadHome(); break;
@@ -1036,7 +1055,23 @@
       });
 
       document.getElementById("menuToggle").addEventListener("click", () => {
-        document.getElementById("sidebar").classList.toggle("open");
+        var sidebar = document.getElementById("sidebar");
+        var overlay = document.getElementById("sidebarOverlay");
+        sidebar.classList.toggle("open");
+        if (sidebar.classList.contains("open")) {
+          overlay.classList.add("active");
+          document.body.style.overflow = "hidden";
+        } else {
+          overlay.classList.remove("active");
+          document.body.style.overflow = "";
+        }
+      });
+
+      // Close sidebar when clicking overlay
+      document.getElementById("sidebarOverlay").addEventListener("click", () => {
+        document.getElementById("sidebar").classList.remove("open");
+        document.getElementById("sidebarOverlay").classList.remove("active");
+        document.body.style.overflow = "";
       });
 
       document.getElementById("logoutBtn").addEventListener("click", e => {
