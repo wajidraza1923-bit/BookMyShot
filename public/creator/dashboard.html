@@ -630,9 +630,22 @@
     @media (max-width: 768px) {
       .sidebar {
         transform: translateX(-100%);
+        z-index: 1001;
       }
       .sidebar.open {
         transform: translateX(0);
+      }
+      .sidebar-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        background: rgba(0,0,0,0.5);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+      }
+      .sidebar-backdrop.active {
+        display: block;
       }
       .main-wrapper { margin-left: 0; }
       .menu-toggle { display: block; }
@@ -1094,6 +1107,9 @@
   <script src="/js/ga.js"></script>
 </head>
 <body>
+
+  <!-- ═══ SIDEBAR BACKDROP ═══ -->
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
   <!-- ═══ SIDEBAR ═══ -->
   <aside class="sidebar" id="sidebar">
@@ -1625,12 +1641,31 @@
 
       // Close mobile sidebar
       document.getElementById('sidebar').classList.remove('open');
+      var backdrop = document.getElementById('sidebarBackdrop');
+      if (backdrop) backdrop.classList.remove('active');
+      document.body.style.overflow = '';
     }
 
     // ─── Menu Toggle ────────────────────────────────────────────────────────
 
     document.getElementById('menuToggle').addEventListener('click', function() {
-      document.getElementById('sidebar').classList.toggle('open');
+      var sidebar = document.getElementById('sidebar');
+      var backdrop = document.getElementById('sidebarBackdrop');
+      sidebar.classList.toggle('open');
+      if (sidebar.classList.contains('open')) {
+        backdrop.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      } else {
+        backdrop.classList.remove('active');
+        document.body.style.overflow = '';
+      }
+    });
+
+    // Close sidebar when clicking backdrop
+    document.getElementById('sidebarBackdrop').addEventListener('click', function() {
+      document.getElementById('sidebar').classList.remove('open');
+      this.classList.remove('active');
+      document.body.style.overflow = '';
     });
 
     // ─── Logout ─────────────────────────────────────────────────────────────
