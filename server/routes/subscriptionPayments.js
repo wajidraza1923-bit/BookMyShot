@@ -22,22 +22,28 @@ router.get("/info", authorize("creator"), async (req, res, next) => {
 
     const subSettings = await configService.getSubscriptionSettings();
     const commSettings = await configService.getCommissionSettings();
+    const Booking = require("../models/Booking");
 
-    // Check pending payment request
+    // Check pending subscription payment request
     const pendingPayment = await SubscriptionPayment.findOne({
       creator: creator._id,
       type: "subscription",
       status: "pending",
     });
 
-    // Calculate commission dues
-    const commissions = await Commission.find({ creator: creator._id });
-    const totalCommissionDue = commissions
-      .filter((c) => c.status === "pending")
-      .reduce((s, c) => s + c.commissionAmount, 0);
-    const totalCommissionPaid = commissions
-      .filter((c) => c.status === "paid")
-      .reduce((s, c) => s + c.commissionAmount, 0);
+    // Calculate commission from bookings (same as frontend)
+    const bookings = await Booking.find({ creator: creator._id, status: { $nin: ["rejected", "cancelled"] } });
+    const bmsLeads = bookings.filter(b => b.leadSource === "bookmyshot" || !b.leadSource);
+    const creatorLeads = bookings.filter(b => b.leadSource === "creator");
+    const bmsRevenue = bmsLeads.reduce((s, b) => s + (b.amount || 0), 0);
+    const creatorRevenue = creatorLeads.reduce((s, b) => s + (b.amount || 0), 0);
+    const bmsCommission = Math.round(bmsRevenue * (commSettings.bmsLeadCommissionPercent || 5) / 100);
+    const creatorCommission = Math.round(creatorRevenue * (commSettings.creatorLeadCommissionPercent || 3) / 100);
+    const totalCommissionGenerated = bmsCommission + creatorCommission;
+
+    // Commission paid is tracked on Creator document
+    const totalCommissionPaid = creator.commissionPaid || 0;
+    const totalCommissionDue = Math.max(0, totalCommissionGenerated - totalCommissionPaid);
 
     // Check pending commission payment
     const pendingCommissionPayment = await SubscriptionPayment.findOne({
@@ -59,6 +65,7 @@ router.get("/info", authorize("creator"), async (req, res, next) => {
       commission: {
         bmsPercent: commSettings.bmsLeadCommissionPercent,
         creatorPercent: commSettings.creatorLeadCommissionPercent,
+        totalGenerated: totalCommissionGenerated,
         totalDue: totalCommissionDue,
         totalPaid: totalCommissionPaid,
         pendingPayment: pendingCommissionPayment || null,
@@ -272,30 +279,10 @@ router.patch("/admin/:id/approve", authorize("admin"), async (req, res, next) =>
     }
 
     if (payment.type === "commission" && creator) {
-      // Deduct approved amount from pending commissions (partial support)
-      let remainingToPay = payment.amount;
-      const pendingCommissions = await Commission.find({
-        creator: creator._id,
-        status: "pending",
-      }).sort("createdAt");
-
-      for (const comm of pendingCommissions) {
-        if (remainingToPay <= 0) break;
-        if (remainingToPay >= comm.commissionAmount) {
-          // Fully pay this commission
-          comm.status = "paid";
-          comm.paidAt = new Date();
-          comm.notes = (comm.notes || "") + " | Paid via payment #" + payment._id;
-          remainingToPay -= comm.commissionAmount;
-          await comm.save();
-        } else {
-          // Partial: reduce the commission amount and mark partial payment
-          comm.commissionAmount = comm.commissionAmount - remainingToPay;
-          comm.notes = (comm.notes || "") + " | Partial ₹" + remainingToPay + " deducted via #" + payment._id;
-          remainingToPay = 0;
-          await comm.save();
-        }
-      }
+      // Add approved amount to creator's commissionPaid tracker
+      creator.commissionPaid = (creator.commissionPaid || 0) + payment.amount;
+      await creator.save();
+      console.log(`[Commission] Approved ₹${payment.amount} for creator ${creator._id}. Total paid now: ₹${creator.commissionPaid}`);
     }
 
     // Notify creator

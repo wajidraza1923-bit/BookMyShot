@@ -46,6 +46,7 @@ const creatorSchema = new mongoose.Schema(
       website: String,
     },
     earnings: { type: Number, default: 0 },
+    commissionPaid: { type: Number, default: 0 },
     darkMode: { type: Boolean, default: true },
     // Subscription fields
     subscriptionPlan: { type: String, enum: ["basic"], default: "basic" },

@@ -3707,9 +3707,11 @@
         var totalReceivable = totalRevenue - totalCommission;
 
         // Use backend-calculated commission values (accurate after approvals)
-        var commissionDue = (subPay.commission && subPay.commission.totalDue) || totalCommission;
+        var commissionDue = (subPay.commission && subPay.commission.totalDue !== undefined) ? subPay.commission.totalDue : totalCommission;
         var commissionPaid = (subPay.commission && subPay.commission.totalPaid) || 0;
         var subscriptionAmount = platformConfig.subscription.monthlyPlanPrice || 0;
+        // Net earnings = total revenue - commission paid (creator keeps the rest until they pay commission)
+        var netEarnings = totalRevenue - commissionPaid;
 
         // Store for payment modal access
         window._currentTotalDue = commissionDue + subscriptionAmount;
@@ -3783,7 +3785,7 @@
           '<div class="stat-card"><div class="stat-icon"><i class="fas fa-user-plus" style="color:var(--gold)"></i></div><div class="stat-value">' + creatorLeads.length + '</div><div class="stat-label">Creator Leads</div></div>' +
           '<div class="stat-card"><div class="stat-icon"><i class="fas fa-indian-rupee-sign" style="color:var(--gold)"></i></div><div class="stat-value">₹' + totalRevenue.toLocaleString('en-IN') + '</div><div class="stat-label">Total Revenue</div></div>' +
           '<div class="stat-card"><div class="stat-icon"><i class="fas fa-receipt" style="color:var(--gold)"></i></div><div class="stat-value">₹' + totalCommission.toLocaleString('en-IN') + '</div><div class="stat-label">Platform Fee</div></div>' +
-          '<div class="stat-card"><div class="stat-icon"><i class="fas fa-wallet" style="color:var(--gold)"></i></div><div class="stat-value">₹' + totalReceivable.toLocaleString('en-IN') + '</div><div class="stat-label">Your Earnings</div></div>' +
+          '<div class="stat-card"><div class="stat-icon"><i class="fas fa-wallet" style="color:var(--gold)"></i></div><div class="stat-value">₹' + (totalRevenue - totalCommission).toLocaleString('en-IN') + '</div><div class="stat-label">Your Earnings</div></div>' +
         '</div>';
 
         // Monthly Statement
