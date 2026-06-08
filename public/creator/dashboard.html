@@ -3680,10 +3680,19 @@
       container.innerHTML = '<div class="loader"></div>';
 
       try {
-        var bookingsRes = await API.get('/bookings/creator');
+        var [bookingsRes, meRes, payInfoRes, subPayRes, payHistRes] = await Promise.all([
+          API.get('/bookings/creator'),
+          API.get('/auth/me'),
+          API.get('/payment-info'),
+          API.get('/subscription-payments/info'),
+          API.get('/subscription-payments/history'),
+        ]);
+
         var bookings = bookingsRes.bookings || [];
-        var meRes = await API.get('/auth/me');
         var creator = meRes.creator || {};
+        var payInfo = payInfoRes.data || {};
+        var subPay = subPayRes || {};
+        var payHistory = payHistRes.payments || [];
 
         var validBookings = bookings.filter(function(b) { return b.status !== 'rejected' && b.status !== 'cancelled'; });
         var bmsLeads = validBookings.filter(function(b) { return b.leadSource === 'bookmyshot' || !b.leadSource; });
@@ -3696,13 +3705,16 @@
         var creatorCommission = Math.round(creatorRevenue * (platformConfig.commission.creatorLeadPercent / 100));
         var totalCommission = bmsCommission + creatorCommission;
         var totalReceivable = totalRevenue - totalCommission;
-        var subscriptionDue = platformConfig.subscription.monthlyPlanPrice;
-        var totalDue = totalCommission + subscriptionDue;
+
+        // Use backend-calculated commission values (accurate after approvals)
+        var commissionDue = (subPay.commission && subPay.commission.totalDue) || totalCommission;
+        var commissionPaid = (subPay.commission && subPay.commission.totalPaid) || 0;
+        var subscriptionAmount = platformConfig.subscription.monthlyPlanPrice || 0;
 
         // Store for payment modal access
-        window._currentTotalDue = totalDue;
-        window._currentCommissionDue = totalCommission;
-        window._currentSubscriptionDue = subscriptionDue;
+        window._currentTotalDue = commissionDue + subscriptionAmount;
+        window._currentCommissionDue = commissionDue;
+        window._currentSubscriptionDue = subscriptionAmount;
 
         // Subscription details
         var subStatus = creator.subscriptionStatus || '';
@@ -3757,10 +3769,10 @@
           '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.4rem 1rem;font-size:0.78rem;margin-bottom:0.6rem">' +
             '<div><span style="color:rgba(255,255,255,0.4)">Total Earnings:</span> <span style="color:var(--text)">₹' + totalRevenue.toLocaleString('en-IN') + '</span></div>' +
             '<div><span style="color:rgba(255,255,255,0.4)">Commission %:</span> <span style="color:var(--text)">' + platformConfig.commission.bmsLeadPercent + '% / ' + platformConfig.commission.creatorLeadPercent + '%</span></div>' +
-            '<div><span style="color:rgba(255,255,255,0.4)">Total Due:</span> <span style="color:var(--danger);font-weight:600">₹' + totalCommission.toLocaleString('en-IN') + '</span></div>' +
-            '<div><span style="color:rgba(255,255,255,0.4)">Paid:</span> <span style="color:var(--success)">₹0</span></div>' +
+            '<div><span style="color:rgba(255,255,255,0.4)">Commission Due:</span> <span style="color:var(--danger);font-weight:600">₹' + commissionDue.toLocaleString('en-IN') + '</span></div>' +
+            '<div><span style="color:rgba(255,255,255,0.4)">Commission Paid:</span> <span style="color:var(--success)">₹' + commissionPaid.toLocaleString('en-IN') + '</span></div>' +
           '</div>' +
-          (totalCommission > 0 ? '<button class="btn btn-primary btn-sm" style="width:100%" onclick="window.payCommission()"><i class="fas fa-credit-card"></i> Pay Commission ₹' + totalCommission.toLocaleString('en-IN') + '</button>' : '<div style="font-size:0.75rem;color:var(--success);text-align:center">✅ No commission dues</div>') +
+          (commissionDue > 0 ? '<button class="btn btn-primary btn-sm" style="width:100%" onclick="window.payCommission()"><i class="fas fa-credit-card"></i> Pay Commission ₹' + commissionDue.toLocaleString('en-IN') + '</button>' : '<div style="font-size:0.75rem;color:var(--success);text-align:center;padding:0.3rem">✅ No commission dues</div>') +
         '</div>';
 
         // Stats Grid
@@ -3792,6 +3804,38 @@
         html += '<div style="margin-bottom:1rem;text-align:center">' +
           '<button class="btn btn-outline btn-sm" onclick="window.showFeeInfo()" style="font-size:0.72rem"><i class="fas fa-info-circle"></i> How Fees Work</button>' +
         '</div>';
+
+        // Payment History Section
+        if (payHistory.length > 0) {
+          html += '<div class="card-panel" style="margin-bottom:1rem">' +
+            '<h3 style="font-family:Playfair Display,serif;color:var(--gold-light);margin:0 0 0.75rem;font-size:0.95rem"><i class="fas fa-history" style="color:var(--gold);margin-right:0.4rem"></i>Recent Payments</h3>' +
+            '<div style="overflow-x:auto"><table style="width:100%;font-size:0.75rem;border-collapse:collapse">' +
+            '<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.06)">' +
+              '<th style="text-align:left;padding:0.4rem;color:rgba(255,255,255,0.4);font-weight:500">Date</th>' +
+              '<th style="text-align:left;padding:0.4rem;color:rgba(255,255,255,0.4);font-weight:500">Type</th>' +
+              '<th style="text-align:right;padding:0.4rem;color:rgba(255,255,255,0.4);font-weight:500">Amount</th>' +
+              '<th style="text-align:center;padding:0.4rem;color:rgba(255,255,255,0.4);font-weight:500">Status</th>' +
+              '<th style="text-align:left;padding:0.4rem;color:rgba(255,255,255,0.4);font-weight:500">UTR</th>' +
+            '</tr></thead><tbody>';
+          payHistory.slice(0, 12).forEach(function(p) {
+            var date = p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'2-digit'}) : '—';
+            var typeLabel = p.type === 'subscription' ? '<span style="color:var(--gold)">Subscription</span>' : '<span style="color:#3b82f6">Commission</span>';
+            var statusColor = p.status === 'approved' ? 'var(--success)' : p.status === 'rejected' ? 'var(--danger)' : '#f59e0b';
+            var statusLabel = p.status === 'approved' ? '✅ Approved' : p.status === 'rejected' ? '❌ Rejected' : '⏳ Pending';
+            html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.03)">' +
+              '<td style="padding:0.4rem;color:var(--text)">' + date + '</td>' +
+              '<td style="padding:0.4rem">' + typeLabel + '</td>' +
+              '<td style="padding:0.4rem;text-align:right;color:var(--gold);font-weight:500">₹' + (p.amount || 0).toLocaleString('en-IN') + '</td>' +
+              '<td style="padding:0.4rem;text-align:center;color:' + statusColor + '">' + statusLabel + '</td>' +
+              '<td style="padding:0.4rem;color:rgba(255,255,255,0.4)">' + (p.utr || '—') + '</td>' +
+            '</tr>';
+          });
+          html += '</tbody></table></div>';
+          if (payHistory.length > 12) {
+            html += '<div style="text-align:center;margin-top:0.5rem;font-size:0.72rem;color:rgba(255,255,255,0.3)">Showing latest 12 of ' + payHistory.length + ' payments</div>';
+          }
+          html += '</div>';
+        }
 
         // Booking Revenue Breakdown
         var bookingsWithAmount = validBookings.filter(function(b) { return b.amount > 0; });
