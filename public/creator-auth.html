@@ -208,7 +208,7 @@
     @media (max-width: 900px) {
       .auth-wrapper { grid-template-columns: 1fr; }
       .hero-panel { display: none; }
-      .form-panel { min-height: 100vh; padding: 2rem 1.5rem; align-items: flex-start; padding-top: 3rem; }
+      .form-panel { min-height: 100vh; min-height: 100dvh; padding: 2rem 1.5rem; align-items: flex-start; padding-top: 3rem; }
       .form-container { max-width: 100%; }
     }
     @media (max-width: 480px) {
@@ -448,7 +448,6 @@
         await API.post('/auth/reset-password', { email: email, resetToken: resetToken, password: newPassword });
         toast('Password reset successfully! You can now login.', 'success');
       } catch (err) { toast(err.message || 'Failed to reset password', 'error'); }
-    });
     });
 
     var user = API.getUser(); var token = API.getToken();
