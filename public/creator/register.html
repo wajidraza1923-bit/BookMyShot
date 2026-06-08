@@ -44,11 +44,13 @@
           password,
           role: "creator",
         });
-        API.setAuth(data.token, data.user);
-        await API.put("/creators/profile", {
-          specialty: document.getElementById("specialty").value.trim(),
-          city: document.getElementById("city").value.trim(),
-        }).catch(() => {});
+        if (data.token) {
+          API.setAuth(data.token, data.user);
+          await API.put("/creators/profile", {
+            specialty: document.getElementById("specialty").value.trim(),
+            city: document.getElementById("city").value.trim(),
+          }).catch(() => {});
+        }
         if (data.requiresVerification) {
           localStorage.setItem('bms_verify_email', data.user.email);
           window.location.href = "/verify-email.html?email=" + encodeURIComponent(data.user.email);

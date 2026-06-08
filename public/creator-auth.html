@@ -397,9 +397,9 @@
       btn.disabled = true; btn.textContent = 'Submitting...';
       try {
         var data = await API.post('/auth/register', { name: name, email: email, phone: phone, password: password, role: 'creator' });
-        API.setAuth(data.token, data.user);
+        if (data.token) API.setAuth(data.token, data.user);
         try {
-          await API.put('/creators/profile', { specialty: specialty, city: city, experience: experience, social: portfolio ? { instagram: portfolio } : {} });
+          if (data.token) await API.put('/creators/profile', { specialty: specialty, city: city, experience: experience, social: portfolio ? { instagram: portfolio } : {} });
         } catch (e) {}
         if (data.requiresVerification) {
           localStorage.setItem('bms_verify_email', data.user.email);

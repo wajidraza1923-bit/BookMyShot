@@ -17,11 +17,18 @@ function hideLoader() {
 function toggleSidebar() {
   if (mobileSidebar) mobileSidebar.classList.toggle('open');
   if (menuToggle) menuToggle.classList.toggle('open');
+  // Lock body scroll when menu is open
+  if (mobileSidebar && mobileSidebar.classList.contains('open')) {
+    document.body.style.overflow = 'hidden';
+  } else {
+    document.body.style.overflow = '';
+  }
 }
 
 function closeSidebar() {
   if (mobileSidebar) mobileSidebar.classList.remove('open');
   if (menuToggle) menuToggle.classList.remove('open');
+  document.body.style.overflow = '';
 }
 
 function handleScroll() {

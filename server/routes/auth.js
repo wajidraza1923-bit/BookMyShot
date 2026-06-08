@@ -70,7 +70,7 @@ router.post("/register", async (req, res, next) => {
     res.status(201).json({
       success: true,
       message: user.role === "creator" ? "Registration pending admin approval. Please verify your email." : "Account created. Please verify your email.",
-      token: generateToken(user._id),
+      token: user.emailVerified ? generateToken(user._id) : undefined,
       user: {
         id: user._id,
         name: user.name,

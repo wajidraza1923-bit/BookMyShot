@@ -90,11 +90,11 @@
         if (regMethod === "email") payload.email = document.getElementById("email").value.trim();
         else payload.phone = document.getElementById("countryCode").value + document.getElementById("phone").value.trim();
         const data = await API.post("/auth/register", payload);
-        API.setAuth(data.token, data.user);
         if (data.requiresVerification) {
           localStorage.setItem('bms_verify_email', data.user.email);
           window.location.href = "/verify-email.html?email=" + encodeURIComponent(data.user.email);
         } else {
+          if (data.token) API.setAuth(data.token, data.user);
           window.location.href = "/user/dashboard.html";
         }
       } catch (err) {

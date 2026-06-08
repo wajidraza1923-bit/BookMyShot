@@ -429,12 +429,12 @@
         var payload = { name: name, email: email, password: password, role: 'user' };
         if (phone) payload.phone = phone;
         var data = await API.post('/auth/register', payload);
-        API.setAuth(data.token, data.user);
         if (data.requiresVerification) {
           localStorage.setItem('bms_verify_email', data.user.email);
           toast('Please verify your email', 'info');
           setTimeout(function() { window.location.href = '/verify-email.html?email=' + encodeURIComponent(data.user.email); }, 500);
         } else {
+          if (data.token) API.setAuth(data.token, data.user);
           toast('Account created!', 'success');
           setTimeout(function() { window.location.href = '/user/dashboard.html'; }, 500);
         }
