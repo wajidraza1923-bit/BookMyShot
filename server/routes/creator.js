@@ -296,24 +296,32 @@ router.post("/upload/profile-image", async (req, res, next) => {
     if (!imageUrl) return res.status(400).json({ success: false, message: "No image URL provided" });
     
     let finalUrl = imageUrl;
+    let publicId = "";
     
     // If it's a base64 data URL, upload to Cloudinary
     if (imageUrl.startsWith("data:")) {
       try {
-        const { uploadBase64, isConfigured } = require("../services/cloudinaryService");
+        const { uploadBase64, deleteFile, isConfigured } = require("../services/cloudinaryService");
         if (isConfigured()) {
           const result = await uploadBase64(imageUrl, { folder: "bookmyshot/avatars" });
           finalUrl = result.url;
+          publicId = result.publicId;
+          
+          // Delete old avatar from Cloudinary
+          const User = require("../models/User");
+          const existingUser = await User.findById(req.user._id).select("avatarPublicId");
+          if (existingUser && existingUser.avatarPublicId) {
+            await deleteFile(existingUser.avatarPublicId, "image");
+          }
         }
       } catch (uploadErr) {
         console.error("[Creator] Profile image Cloudinary upload failed:", uploadErr.message);
-        // Keep the original base64/URL as fallback
       }
     }
     
     // Update the user's avatar
     const User = require("../models/User");
-    await User.findByIdAndUpdate(req.user._id, { avatar: finalUrl });
+    await User.findByIdAndUpdate(req.user._id, { avatar: finalUrl, avatarPublicId: publicId || undefined });
     
     res.json({ success: true, url: finalUrl });
   } catch (e) {

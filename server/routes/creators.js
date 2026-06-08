@@ -167,8 +167,8 @@ router.post(
     try {
       if (!req.file) return res.status(400).json({ success: false, message: "No file" });
       
-      const { uploadBuffer, isConfigured } = require("../services/cloudinaryService");
-      let url;
+      const { uploadBuffer, deleteFile, isConfigured } = require("../services/cloudinaryService");
+      let url, publicId = "";
       
       if (isConfigured()) {
         const result = await uploadBuffer(req.file.buffer, {
@@ -176,6 +176,13 @@ router.post(
           resourceType: "image",
         });
         url = result.url;
+        publicId = result.publicId;
+        
+        // Delete old avatar from Cloudinary if exists
+        const existingUser = await User.findById(req.user._id).select("avatarPublicId");
+        if (existingUser && existingUser.avatarPublicId) {
+          await deleteFile(existingUser.avatarPublicId, "image");
+        }
       } else {
         // Fallback: save locally (dev environment)
         const fs = require("fs");
@@ -187,7 +194,7 @@ router.post(
         url = `/uploads/avatars/${filename}`;
       }
       
-      await User.findByIdAndUpdate(req.user._id, { avatar: url });
+      await User.findByIdAndUpdate(req.user._id, { avatar: url, avatarPublicId: publicId });
       res.json({ success: true, url });
     } catch (e) {
       next(e);
@@ -207,7 +214,7 @@ router.post(
       
       const { uploadBuffer, isConfigured } = require("../services/cloudinaryService");
       const creator = await Creator.findOne({ user: req.user._id });
-      let urls;
+      let items;
       
       if (isConfigured()) {
         const uploads = await Promise.all(
@@ -216,21 +223,21 @@ router.post(
             resourceType: "image",
           }))
         );
-        urls = uploads.map((u) => u.url);
+        items = uploads.map((u) => ({ url: u.url, publicId: u.publicId }));
       } else {
         // Fallback: save locally
         const fs = require("fs");
         const path = require("path");
         const uploadDir = path.join(__dirname, "../../public/uploads/portfolio");
         if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-        urls = req.files.map((f) => {
+        items = req.files.map((f) => {
           const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(f.originalname)}`;
           fs.writeFileSync(path.join(uploadDir, filename), f.buffer);
-          return `/uploads/portfolio/${filename}`;
+          return { url: `/uploads/portfolio/${filename}`, publicId: "" };
         });
       }
       
-      creator.portfolio.push(...urls);
+      creator.portfolio.push(...items);
       await creator.save();
       res.json({ success: true, portfolio: creator.portfolio });
     } catch (e) {
@@ -251,7 +258,7 @@ router.post(
       
       const { uploadBuffer, isConfigured } = require("../services/cloudinaryService");
       const creator = await Creator.findOne({ user: req.user._id });
-      let urls;
+      let items;
       
       if (isConfigured()) {
         const uploads = await Promise.all(
@@ -260,22 +267,104 @@ router.post(
             resourceType: "video",
           }))
         );
-        urls = uploads.map((u) => u.url);
+        items = uploads.map((u) => ({ url: u.url, publicId: u.publicId }));
       } else {
         // Fallback: save locally
         const fs = require("fs");
         const path = require("path");
         const uploadDir = path.join(__dirname, "../../public/uploads/videos");
         if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-        urls = req.files.map((f) => {
+        items = req.files.map((f) => {
           const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(f.originalname)}`;
           fs.writeFileSync(path.join(uploadDir, filename), f.buffer);
-          return `/uploads/videos/${filename}`;
+          return { url: `/uploads/videos/${filename}`, publicId: "" };
         });
       }
       
-      creator.videos.push(...urls);
+      creator.videos.push(...items);
       await creator.save();
+      res.json({ success: true, videos: creator.videos });
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+// Delete portfolio image
+router.delete(
+  "/portfolio",
+  protect,
+  authorize("creator"),
+  async (req, res, next) => {
+    try {
+      const { url, publicId } = req.body;
+      if (!url && !publicId) return res.status(400).json({ success: false, message: "URL or publicId required" });
+
+      const creator = await Creator.findOne({ user: req.user._id });
+      if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
+
+      // Find and remove the item (supports both old string format and new object format)
+      const idx = creator.portfolio.findIndex((item) => {
+        if (typeof item === "string") return item === url;
+        return item.url === url || item.publicId === publicId;
+      });
+
+      if (idx === -1) return res.status(404).json({ success: false, message: "Image not found in portfolio" });
+
+      const removed = creator.portfolio[idx];
+      creator.portfolio.splice(idx, 1);
+      await creator.save();
+
+      // Delete from Cloudinary
+      const { deleteFile, isConfigured } = require("../services/cloudinaryService");
+      if (isConfigured()) {
+        const pid = typeof removed === "string" ? "" : (removed.publicId || "");
+        if (pid) {
+          await deleteFile(pid, "image");
+        }
+      }
+
+      res.json({ success: true, portfolio: creator.portfolio });
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+// Delete video
+router.delete(
+  "/videos",
+  protect,
+  authorize("creator"),
+  async (req, res, next) => {
+    try {
+      const { url, publicId } = req.body;
+      if (!url && !publicId) return res.status(400).json({ success: false, message: "URL or publicId required" });
+
+      const creator = await Creator.findOne({ user: req.user._id });
+      if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
+
+      // Find and remove the item
+      const idx = creator.videos.findIndex((item) => {
+        if (typeof item === "string") return item === url;
+        return item.url === url || item.publicId === publicId;
+      });
+
+      if (idx === -1) return res.status(404).json({ success: false, message: "Video not found" });
+
+      const removed = creator.videos[idx];
+      creator.videos.splice(idx, 1);
+      await creator.save();
+
+      // Delete from Cloudinary
+      const { deleteFile, isConfigured } = require("../services/cloudinaryService");
+      if (isConfigured()) {
+        const pid = typeof removed === "string" ? "" : (removed.publicId || "");
+        if (pid) {
+          await deleteFile(pid, "video");
+        }
+      }
+
       res.json({ success: true, videos: creator.videos });
     } catch (e) {
       next(e);

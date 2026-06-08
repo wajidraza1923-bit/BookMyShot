@@ -33,8 +33,8 @@ const creatorSchema = new mongoose.Schema(
       default: "" 
     },
     rank: { type: Number, default: 0 },
-    portfolio: [{ type: String }],
-    videos: [{ type: String }],
+    portfolio: [{ type: mongoose.Schema.Types.Mixed }],
+    videos: [{ type: mongoose.Schema.Types.Mixed }],
     packages: [packageSchema],
     gear: [{ name: String, model: String }],
     team: [{ name: String, role: String }],
@@ -67,5 +67,23 @@ const creatorSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Normalize portfolio/videos to URL strings when serializing to JSON
+// This ensures backward compatibility with frontend code that expects string arrays
+creatorSchema.set("toJSON", {
+  transform: function (doc, ret) {
+    if (ret.portfolio) {
+      ret.portfolio = ret.portfolio.map((item) =>
+        typeof item === "string" ? item : (item && item.url) || ""
+      );
+    }
+    if (ret.videos) {
+      ret.videos = ret.videos.map((item) =>
+        typeof item === "string" ? item : (item && item.url) || ""
+      );
+    }
+    return ret;
+  },
+});
 
 module.exports = mongoose.model("Creator", creatorSchema);
