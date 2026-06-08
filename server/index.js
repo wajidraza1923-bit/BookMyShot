@@ -247,6 +247,68 @@ app.post("/api/debug/ensure-admin", async (req, res) => {
   }
 });
 
+// ═══ TEMPORARY DEBUG: Full OTP test with captured logs ═══
+app.post("/api/debug/test-admin-otp", async (req, res) => {
+  const logs = [];
+  const log = (msg) => { logs.push(`${new Date().toISOString()} ${msg}`); console.log(msg); };
+  
+  try {
+    const User = require("./models/User");
+    const { sendPasswordResetOTP, generateOTP } = require("./services/emailService");
+    
+    log(`[TEST] ═══ ADMIN OTP FULL TEST START ═══`);
+    
+    // Step 1: Find admin
+    const admin = await User.findOne({ email: "bookmyshott@gmail.com", role: "admin" });
+    if (!admin) {
+      log(`[TEST] ❌ No admin found with bookmyshott@gmail.com`);
+      return res.json({ success: false, logs, error: "Admin not found" });
+    }
+    log(`[TEST] ✅ Admin found: id=${admin._id}, email=${admin.email}, name=${admin.name}`);
+    
+    // Step 2: Clear rate limiting
+    admin.otpLastSent = null;
+    await admin.save();
+    log(`[TEST] ✅ Rate limiting cleared`);
+    
+    // Step 3: Generate OTP
+    const otp = generateOTP();
+    log(`[TEST] ✅ OTP generated: ${otp}`);
+    
+    // Step 4: Save OTP to DB
+    admin.resetPasswordOtp = otp;
+    admin.resetPasswordOtpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+    admin.otpLastSent = new Date();
+    await admin.save();
+    log(`[TEST] ✅ OTP saved to database. Expiry: ${admin.resetPasswordOtpExpiry}`);
+    
+    // Step 5: Send email
+    log(`[TEST] 📧 Calling sendPasswordResetOTP(${admin.email}, ${otp}, ${admin.name})`);
+    const result = await sendPasswordResetOTP(admin.email, otp, admin.name);
+    log(`[TEST] 📧 Resend response: ${JSON.stringify(result)}`);
+    
+    if (result.success) {
+      log(`[TEST] ✅ EMAIL SENT SUCCESSFULLY`);
+      log(`[TEST] ═══ ADMIN OTP FULL TEST PASSED ═══`);
+    } else {
+      log(`[TEST] ❌ EMAIL SEND FAILED: ${result.error}`);
+      log(`[TEST] ═══ ADMIN OTP FULL TEST FAILED ═══`);
+    }
+    
+    res.json({ 
+      success: result.success, 
+      logs,
+      emailResult: result,
+      adminEmail: admin.email,
+      otpGenerated: otp,
+      otpExpiry: admin.resetPasswordOtpExpiry
+    });
+  } catch (err) {
+    log(`[TEST] ❌ EXCEPTION: ${err.message}`);
+    res.status(500).json({ success: false, logs, error: err.message });
+  }
+});
+
 app.use("/api/creator", creatorRoutes);
 app.use("/api/creators", creatorsRoutes);
 app.use("/api/user", userRoutes);
