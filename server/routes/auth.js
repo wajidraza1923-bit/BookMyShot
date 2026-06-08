@@ -399,6 +399,85 @@ router.put("/profile", protect, async (req, res, next) => {
   }
 });
 
+// ═══════════════════════════════════════════════════════════════
+// ADMIN OTP LOGIN
+// ═══════════════════════════════════════════════════════════════
+
+// Send OTP for admin login (passwordless)
+router.post("/admin-login-otp", async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ success: false, message: "Email required" });
+
+    // Don't reveal if email exists
+    const user = await User.findOne({ email, role: "admin" });
+    if (!user) return res.json({ success: true, message: "If account exists, OTP sent" });
+
+    // Rate limiting
+    if (user.otpLastSent && (Date.now() - new Date(user.otpLastSent).getTime()) < 60000) {
+      return res.status(429).json({ success: false, message: "Please wait before requesting again" });
+    }
+
+    const otp = generateOTP();
+    user.emailVerificationOtp = otp;
+    user.emailVerificationOtpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+    user.otpLastSent = new Date();
+    await user.save();
+
+    // Send to admin recovery email or the user's email
+    const recoveryEmail = process.env.ADMIN_RECOVERY_EMAIL || user.email;
+    await sendVerificationOTP(recoveryEmail, otp, user.name);
+
+    res.json({ success: true, message: "OTP sent to admin recovery email" });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Verify OTP and login as admin
+router.post("/admin-verify-otp-login", async (req, res, next) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) return res.status(400).json({ success: false, message: "Email and OTP required" });
+
+    const user = await User.findOne({ email, role: "admin" });
+    if (!user) return res.status(401).json({ success: false, message: "Invalid credentials" });
+
+    if (!user.emailVerificationOtp || !user.emailVerificationOtpExpiry) {
+      return res.status(400).json({ success: false, message: "No OTP found. Request a new one." });
+    }
+
+    if (new Date() > user.emailVerificationOtpExpiry) {
+      return res.status(400).json({ success: false, message: "OTP expired. Request a new one." });
+    }
+
+    if (user.emailVerificationOtp !== otp.trim()) {
+      return res.status(400).json({ success: false, message: "Invalid OTP" });
+    }
+
+    // Clear OTP (single-use)
+    user.emailVerificationOtp = undefined;
+    user.emailVerificationOtpExpiry = undefined;
+    user.otpAttempts = 0;
+    await user.save();
+
+    res.json({
+      success: true,
+      token: generateToken(user._id),
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar,
+        emailVerified: true,
+      },
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
 // Change password (authenticated user)
 router.put("/change-password", protect, async (req, res, next) => {
   try {

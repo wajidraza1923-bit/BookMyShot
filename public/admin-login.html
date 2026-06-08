@@ -212,7 +212,25 @@
           </form>
           <div class="back-link" style="margin-top:1rem;text-align:center">
             <a href="/forgot-password.html" style="color:rgba(212,175,55,.7);font-size:.82rem;text-decoration:none">Forgot Password?</a>
+            <span style="color:rgba(255,255,255,.2);margin:0 .5rem">|</span>
+            <a href="#" id="showOtpLogin" style="color:rgba(212,175,55,.7);font-size:.82rem;text-decoration:none">Login with OTP</a>
           </div>
+
+          <!-- OTP Login Form (hidden by default) -->
+          <div id="otpLoginSection" style="display:none;margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid rgba(255,255,255,.06)">
+            <p style="font-size:.8rem;color:rgba(255,255,255,.5);margin-bottom:.75rem;text-align:center">Enter admin email to receive a one-time login code</p>
+            <div class="form-group" style="margin-bottom:.75rem">
+              <input type="email" id="otpLoginEmail" placeholder="admin@bookmyshot.com" style="width:100%;padding:.7rem 1rem;border-radius:10px;border:1px solid rgba(212,175,55,.12);background:rgba(255,255,255,.04);color:#f5f0e8;font-size:.85rem;outline:none">
+            </div>
+            <div id="otpLoginStep2" style="display:none">
+              <div class="form-group" style="margin-bottom:.75rem">
+                <input type="text" id="otpLoginCode" maxlength="6" placeholder="6-digit OTP" style="width:100%;padding:.7rem 1rem;border-radius:10px;border:1px solid rgba(212,175,55,.12);background:rgba(255,255,255,.04);color:#f5f0e8;font-size:1.2rem;text-align:center;letter-spacing:.4rem;font-weight:700;outline:none">
+              </div>
+            </div>
+            <button type="button" id="otpLoginBtn" class="btn-primary" style="width:100%;margin-top:.25rem">Send OTP</button>
+            <p id="otpLoginMsg" style="font-size:.78rem;margin-top:.5rem;text-align:center;min-height:1rem"></p>
+          </div>
+
           <div class="back-link">
             <a href="/">← Back to Homepage</a>
           </div>
@@ -261,6 +279,51 @@
 
     var user = API.getUser(); var token = API.getToken();
     if (user && token && user.role === 'admin') window.location.href = '/admin/dashboard.html';
+
+    // OTP Login
+    var otpStep = 1;
+    document.getElementById('showOtpLogin').addEventListener('click', function(e) {
+      e.preventDefault();
+      var sec = document.getElementById('otpLoginSection');
+      sec.style.display = sec.style.display === 'none' ? 'block' : 'none';
+    });
+
+    document.getElementById('otpLoginBtn').addEventListener('click', async function() {
+      var btn = this;
+      var msg = document.getElementById('otpLoginMsg');
+      msg.textContent = ''; msg.style.color = '';
+
+      if (otpStep === 1) {
+        var email = document.getElementById('otpLoginEmail').value.trim();
+        if (!email) { msg.textContent = 'Enter admin email'; msg.style.color = '#ef4444'; return; }
+        btn.disabled = true; btn.textContent = 'Sending...';
+        try {
+          await API.post('/auth/admin-login-otp', { email: email });
+          msg.textContent = 'OTP sent to recovery email'; msg.style.color = '#10b981';
+          document.getElementById('otpLoginStep2').style.display = 'block';
+          btn.textContent = 'Verify & Login';
+          otpStep = 2;
+        } catch (err) {
+          msg.textContent = err.message || 'Failed'; msg.style.color = '#ef4444';
+          btn.textContent = 'Send OTP';
+        }
+        btn.disabled = false;
+      } else {
+        var email = document.getElementById('otpLoginEmail').value.trim();
+        var otp = document.getElementById('otpLoginCode').value.trim();
+        if (!otp || otp.length !== 6) { msg.textContent = 'Enter 6-digit code'; msg.style.color = '#ef4444'; return; }
+        btn.disabled = true; btn.textContent = 'Verifying...';
+        try {
+          var data = await API.post('/auth/admin-verify-otp-login', { email: email, otp: otp });
+          API.setAuth(data.token, data.user);
+          msg.textContent = 'Success! Redirecting...'; msg.style.color = '#10b981';
+          setTimeout(function() { window.location.href = '/admin/dashboard.html'; }, 500);
+        } catch (err) {
+          msg.textContent = err.message || 'Invalid OTP'; msg.style.color = '#ef4444';
+          btn.textContent = 'Verify & Login'; btn.disabled = false;
+        }
+      }
+    });
   })();
   </script>
 </body>
