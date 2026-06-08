@@ -4145,19 +4145,24 @@
       var requestsContainer = document.getElementById('myPromotionRequests');
       
       try {
-        var [plansRes, activeRes, slotsRes, requestsRes] = await Promise.all([
+        var [plansRes, activeRes, slotsRes, featuredRes, myFeaturedRes, requestsRes] = await Promise.all([
           API.get('/promotions/plans'),
           API.get('/promotions/my-active'),
           API.get('/promotions/rank-status'),
+          API.get('/promotions/featured-status'),
+          API.get('/promotions/my-featured'),
           API.get('/promotions/my-requests'),
         ]);
 
         var plans = plansRes.plans || [];
         var myActive = activeRes.active;
+        var myFeatured = myFeaturedRes.active;
         var slots = slotsRes.slots || {};
+        var featuredSlots = featuredRes.slots || {};
         var requests = requestsRes.data || [];
-        var rankNames = { rank_1: 'Rank #1', rank_2: 'Rank #2', rank_3: 'Rank #3', rank_4: 'Rank #4', homepage_featured: 'Homepage Featured' };
-        var rankIcons = { rank_1: '🥇', rank_2: '🥈', rank_3: '🥉', rank_4: '🏅', homepage_featured: '⭐' };
+        var rankNames = { rank_1: 'Rank #1', rank_2: 'Rank #2', rank_3: 'Rank #3', rank_4: 'Rank #4' };
+        var rankIcons = { rank_1: '🥇', rank_2: '🥈', rank_3: '🥉', rank_4: '🏅' };
+        var featuredNames = { featured_1: 'Featured #1', featured_2: 'Featured #2', featured_3: 'Featured #3', featured_4: 'Featured #4' };
 
         var html = '';
 
@@ -4190,6 +4195,44 @@
             '<p style="font-size:0.78rem;color:rgba(255,255,255,0.4);margin:0">You currently do not hold any active promotion rank. Browse available ranks below to boost your visibility.</p>' +
           '</div>';
         }
+
+        // === FEATURED SLOTS SECTION ===
+        html += '<div class="card-panel" style="margin-bottom:1.25rem">' +
+          '<h3 style="font-family:Playfair Display,serif;color:var(--gold-light);margin:0 0 0.5rem;font-size:0.95rem"><i class="fas fa-star" style="color:var(--gold);margin-right:0.4rem"></i>Featured Creator Slots</h3>' +
+          '<p style="font-size:0.72rem;color:rgba(255,255,255,0.35);margin-bottom:0.75rem">Get featured on the homepage. Only 4 slots available.</p>';
+
+        if (myFeatured) {
+          var fDays = myFeatured.daysRemaining || 0;
+          html += '<div style="background:rgba(16,185,129,0.05);border:1px solid rgba(16,185,129,0.2);border-radius:10px;padding:0.75rem;margin-bottom:0.75rem;display:flex;align-items:center;gap:0.75rem">' +
+            '<div style="font-size:1.5rem">⭐</div>' +
+            '<div style="flex:1">' +
+              '<div style="font-size:0.82rem;font-weight:600;color:var(--success)">You Hold ' + (featuredNames[myFeatured.planType] || 'Featured Slot') + '</div>' +
+              '<div style="font-size:0.68rem;color:rgba(255,255,255,0.4)">Expires: ' + new Date(myFeatured.expiryDate).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) + ' · ' + (fDays > 0 ? fDays + ' days left' : 'Expired') + '</div>' +
+            '</div>' +
+          '</div>';
+        }
+
+        html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:0.5rem">';
+        var featuredPrice = (plans.find(function(p){return p.id==='featured_1'}) || {}).price || 999;
+
+        ['featured_1','featured_2','featured_3','featured_4'].forEach(function(fId) {
+          var fSlot = featuredSlots[fId];
+          var isMySlot = myFeatured && myFeatured.planType === fId;
+          html += '<div style="background:rgba(255,255,255,0.02);border:1px solid ' + (isMySlot ? 'var(--success)' : fSlot && fSlot.occupied ? 'rgba(239,68,68,0.15)' : 'var(--border)') + ';border-radius:10px;padding:0.6rem;text-align:center">';
+          html += '<div style="font-size:1rem;margin-bottom:0.2rem">⭐</div>';
+          html += '<div style="font-size:0.72rem;font-weight:600;color:var(--cream)">' + (featuredNames[fId]) + '</div>';
+          html += '<div style="font-size:0.8rem;font-weight:700;color:var(--gold);margin:0.2rem 0">₹' + featuredPrice.toLocaleString('en-IN') + '</div>';
+          if (isMySlot) {
+            html += '<div style="font-size:0.6rem;color:var(--success);font-weight:600">YOU OWN THIS</div>';
+          } else if (fSlot && fSlot.occupied) {
+            html += '<div style="font-size:0.58rem;color:rgba(255,255,255,0.35)">' + fSlot.ownerName + '</div>';
+            html += '<div style="font-size:0.55rem;color:rgba(255,255,255,0.2)">Until ' + new Date(fSlot.expiryDate).toLocaleDateString('en-IN',{day:'2-digit',month:'short'}) + '</div>';
+          } else {
+            html += '<button class="btn btn-primary btn-sm" style="font-size:0.6rem;margin-top:0.2rem;padding:0.2rem 0.5rem" onclick="applyPromotion(\'' + fId + '\')">Apply</button>';
+          }
+          html += '</div>';
+        });
+        html += '</div></div>';
 
         // === RANK SLOTS GRID ===
         html += '<div class="card-panel" style="margin-bottom:1.25rem">' +

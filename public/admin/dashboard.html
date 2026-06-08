@@ -2066,7 +2066,7 @@
         const data = await API.get("/promotions/admin/all");
         const requests = data.data || [];
         if (!requests.length) { el.innerHTML = '<div class="empty-state"><div class="icon">🏆</div><h3>No promotion requests yet</h3></div>'; return; }
-        const planNames = { homepage_featured: 'Homepage Featured', rank_1: 'Rank #1', rank_2: 'Rank #2', rank_3: 'Rank #3', rank_4: 'Rank #4' };
+        const planNames = { homepage_featured: 'Homepage Featured', featured_1: 'Featured #1', featured_2: 'Featured #2', featured_3: 'Featured #3', featured_4: 'Featured #4', rank_1: 'Rank #1', rank_2: 'Rank #2', rank_3: 'Rank #3', rank_4: 'Rank #4' };
         let html = '<div class="table-wrap"><table><thead><tr><th>Creator</th><th>Plan</th><th>Price</th><th>Screenshot</th><th>UTR</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
         requests.forEach(r => {
           const name = r.creator?.user?.name || r.creatorName || '—';
