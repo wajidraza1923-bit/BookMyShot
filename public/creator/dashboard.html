@@ -4144,35 +4144,100 @@
       var plansContainer = document.getElementById('promotionPlansContent');
       var requestsContainer = document.getElementById('myPromotionRequests');
       
-      // Load plans
       try {
-        var res = await API.get('/promotions/plans');
-        var plans = res.plans || [];
-        var icons = { homepage_featured: '⭐', rank_1: '🥇', rank_2: '🥈', rank_3: '🥉', rank_4: '🏅' };
-        plansContainer.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1rem">' + plans.map(function(p) {
-          return '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;text-align:center">' +
-            '<div style="font-size:2rem;margin-bottom:.5rem">' + (icons[p.id] || '🏆') + '</div>' +
-            '<h3 style="font-family:var(--font-display);color:var(--gold-light);font-size:1rem;margin-bottom:.3rem">' + p.name + '</h3>' +
-            '<div style="font-size:1.3rem;font-weight:700;color:var(--cream);margin-bottom:.75rem">₹' + p.price.toLocaleString('en-IN') + '<span style="font-size:.7rem;color:var(--text-muted)">/month</span></div>' +
-            '<ul style="list-style:none;padding:0;margin:0 0 1rem">' + p.benefits.map(function(b) { return '<li style="font-size:.78rem;color:var(--text-muted);padding:.2rem 0">✓ ' + b + '</li>'; }).join('') + '</ul>' +
-            '<button class="btn btn-primary btn-sm" onclick="applyPromotion(\'' + p.id + '\')">Apply Now</button>' +
-          '</div>';
-        }).join('') + '</div>';
-      } catch (e) { plansContainer.innerHTML = '<p style="color:var(--text-muted)">Failed to load plans.</p>'; }
+        var [plansRes, activeRes, slotsRes, requestsRes] = await Promise.all([
+          API.get('/promotions/plans'),
+          API.get('/promotions/my-active'),
+          API.get('/promotions/rank-status'),
+          API.get('/promotions/my-requests'),
+        ]);
 
-      // Load my requests
+        var plans = plansRes.plans || [];
+        var myActive = activeRes.active;
+        var slots = slotsRes.slots || {};
+        var requests = requestsRes.data || [];
+        var rankNames = { rank_1: 'Rank #1', rank_2: 'Rank #2', rank_3: 'Rank #3', rank_4: 'Rank #4', homepage_featured: 'Homepage Featured' };
+        var rankIcons = { rank_1: '🥇', rank_2: '🥈', rank_3: '🥉', rank_4: '🏅', homepage_featured: '⭐' };
+
+        var html = '';
+
+        // === MY ACTIVE PROMOTION (top card) ===
+        if (myActive) {
+          var daysLeft = myActive.daysRemaining || 0;
+          var progressPct = Math.min(100, Math.round((daysLeft / 30) * 100));
+          html += '<div class="card-panel" style="margin-bottom:1.25rem;border-left:3px solid var(--success);background:linear-gradient(135deg,rgba(16,185,129,0.04),rgba(212,175,55,0.03))">' +
+            '<div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">' +
+              '<div style="font-size:2.5rem">' + (rankIcons[myActive.planType] || '🏆') + '</div>' +
+              '<div style="flex:1;min-width:200px">' +
+                '<h3 style="font-family:Playfair Display,serif;color:var(--gold-light);margin:0 0 0.3rem;font-size:1.1rem">🏆 My Active Promotion</h3>' +
+                '<div style="font-size:1.2rem;font-weight:700;color:var(--cream);margin-bottom:0.4rem">You Hold ' + (rankNames[myActive.planType] || myActive.planType) + '</div>' +
+                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.3rem 1rem;font-size:0.75rem">' +
+                  '<div><span style="color:rgba(255,255,255,0.4)">Status:</span> <span style="color:var(--success);font-weight:600">Active</span></div>' +
+                  '<div><span style="color:rgba(255,255,255,0.4)">Position:</span> <span style="color:var(--cream)">' + (myActive.planType.replace('rank_','') + (myActive.planType.startsWith('rank_') ? 'st/nd/rd/th place' : '')) + '</span></div>' +
+                  '<div><span style="color:rgba(255,255,255,0.4)">Start:</span> <span style="color:var(--cream)">' + new Date(myActive.startDate).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) + '</span></div>' +
+                  '<div><span style="color:rgba(255,255,255,0.4)">Expires:</span> <span style="color:var(--cream)">' + new Date(myActive.expiryDate).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) + '</span></div>' +
+                  '<div><span style="color:rgba(255,255,255,0.4)">Remaining:</span> <span style="color:' + (daysLeft <= 5 ? 'var(--danger)' : 'var(--gold)') + ';font-weight:600">' + daysLeft + ' Days</span></div>' +
+                  '<div><span style="color:rgba(255,255,255,0.4)">Paid:</span> <span style="color:var(--cream)">₹' + (myActive.price || 0).toLocaleString('en-IN') + '</span></div>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+        }
+
+        // === RANK SLOTS GRID ===
+        html += '<div class="card-panel" style="margin-bottom:1.25rem">' +
+          '<h3 style="font-family:Playfair Display,serif;color:var(--gold-light);margin:0 0 0.75rem;font-size:0.95rem"><i class="fas fa-trophy" style="color:var(--gold);margin-right:0.4rem"></i>Promotion Ranks</h3>' +
+          '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:0.6rem">';
+
+        var myRankType = myActive ? myActive.planType : null;
+        var myPrice = myActive ? myActive.price : 0;
+
+        ['rank_1','rank_2','rank_3','rank_4'].forEach(function(rankId) {
+          var plan = plans.find(function(p) { return p.id === rankId; });
+          var slot = slots[rankId];
+          var isMyRank = (myRankType === rankId);
+          var price = plan ? plan.price : 0;
+
+          html += '<div style="background:rgba(255,255,255,0.02);border:1px solid ' + (isMyRank ? 'var(--success)' : slot && slot.occupied ? 'rgba(239,68,68,0.2)' : 'var(--border)') + ';border-radius:12px;padding:0.8rem;text-align:center">';
+          html += '<div style="font-size:1.3rem;margin-bottom:0.3rem">' + (rankIcons[rankId] || '🏅') + '</div>';
+          html += '<div style="font-size:0.8rem;font-weight:600;color:var(--cream);margin-bottom:0.2rem">' + (rankNames[rankId]) + '</div>';
+          html += '<div style="font-size:0.95rem;font-weight:700;color:var(--gold);margin-bottom:0.3rem">₹' + price.toLocaleString('en-IN') + '</div>';
+
+          if (isMyRank) {
+            html += '<div style="font-size:0.65rem;color:var(--success);font-weight:600;padding:0.2rem 0.5rem;background:rgba(16,185,129,0.1);border-radius:6px;display:inline-block">YOU OWN THIS</div>';
+          } else if (slot && slot.occupied) {
+            html += '<div style="font-size:0.62rem;color:rgba(255,255,255,0.4);margin-bottom:0.2rem">Occupied</div>';
+            html += '<div style="font-size:0.6rem;color:rgba(255,255,255,0.3)">' + slot.ownerName + '</div>';
+            html += '<div style="font-size:0.58rem;color:rgba(255,255,255,0.25)">Until ' + new Date(slot.expiryDate).toLocaleDateString('en-IN',{day:'2-digit',month:'short'}) + '</div>';
+          } else if (myActive && price > myPrice) {
+            // Show upgrade option
+            var upgradeCost = price - myPrice;
+            html += '<button class="btn btn-outline btn-sm" style="font-size:0.62rem;margin-top:0.2rem" onclick="applyPromotion(\'' + rankId + '\')">Upgrade ₹' + upgradeCost + '</button>';
+          } else {
+            html += '<button class="btn btn-primary btn-sm" style="font-size:0.65rem;margin-top:0.2rem" onclick="applyPromotion(\'' + rankId + '\')">Apply</button>';
+          }
+          html += '</div>';
+        });
+
+        html += '</div></div>';
+
+        plansContainer.innerHTML = html;
+
+      } catch (e) { plansContainer.innerHTML = '<p style="color:var(--text-muted)">Failed to load promotions.</p>'; }
+
+      // === MY REQUESTS HISTORY (table below) ===
       try {
         var res2 = await API.get('/promotions/my-requests');
         var requests = res2.data || [];
         if (!requests.length) { requestsContainer.innerHTML = '<p style="color:var(--text-muted);font-size:.82rem">No promotion requests yet.</p>'; return; }
         var planNames = { homepage_featured: 'Homepage Featured', rank_1: 'Rank #1', rank_2: 'Rank #2', rank_3: 'Rank #3', rank_4: 'Rank #4' };
-        requestsContainer.innerHTML = '<div class="table-wrap" style="border:1px solid var(--border);border-radius:var(--radius);overflow-x:auto"><table style="width:100%;font-size:.8rem"><thead><tr style="background:var(--bg-card)"><th style="padding:.6rem;color:var(--gold)">Plan</th><th style="padding:.6rem;color:var(--gold)">Price</th><th style="padding:.6rem;color:var(--gold)">Status</th><th style="padding:.6rem;color:var(--gold)">Date</th></tr></thead><tbody>' +
+        requestsContainer.innerHTML = '<h4 style="font-family:Playfair Display,serif;color:var(--gold-light);font-size:0.85rem;margin-bottom:0.5rem">Request History</h4><div class="table-wrap" style="border:1px solid var(--border);border-radius:var(--radius);overflow-x:auto"><table style="width:100%;font-size:.78rem"><thead><tr style="background:var(--bg-card)"><th style="padding:.5rem;color:var(--gold)">Plan</th><th style="padding:.5rem;color:var(--gold)">Price</th><th style="padding:.5rem;color:var(--gold)">Status</th><th style="padding:.5rem;color:var(--gold)">Date</th></tr></thead><tbody>' +
           requests.map(function(r) {
-            var statusColor = r.status === 'approved' ? 'var(--success)' : r.status === 'rejected' ? 'var(--danger)' : 'var(--gold)';
-            return '<tr><td style="padding:.5rem">' + (planNames[r.planType] || r.planType) + '</td><td style="padding:.5rem">₹' + (r.price||0) + '</td><td style="padding:.5rem;color:' + statusColor + '">' + r.status + '</td><td style="padding:.5rem;font-size:.72rem">' + new Date(r.requestDate).toLocaleDateString('en-IN') + '</td></tr>';
+            var statusColor = r.status === 'approved' ? 'var(--success)' : r.status === 'rejected' ? 'var(--danger)' : r.status === 'expired' ? 'rgba(255,255,255,0.3)' : 'var(--gold)';
+            return '<tr><td style="padding:.4rem">' + (planNames[r.planType] || r.planType) + '</td><td style="padding:.4rem">₹' + (r.price||0) + '</td><td style="padding:.4rem;color:' + statusColor + '">' + r.status + '</td><td style="padding:.4rem;font-size:.7rem">' + new Date(r.requestDate).toLocaleDateString('en-IN') + '</td></tr>';
           }).join('') +
         '</tbody></table></div>';
-      } catch (e) { requestsContainer.innerHTML = '<p style="color:var(--text-muted);font-size:.82rem">Failed to load requests.</p>'; }
+      } catch (e) { requestsContainer.innerHTML = ''; }
     }
 
     window.applyPromotion = async function(planType) {
