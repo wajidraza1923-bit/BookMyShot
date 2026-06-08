@@ -413,6 +413,17 @@
             <button type="submit" class="btn btn-primary" style="margin-top:1rem">Save Platform Settings</button>
           </form>
         </div>
+        <div class="card" style="margin-top:1.25rem">
+          <h4 style="color:var(--gold-light);font-family:var(--font-display);margin-bottom:1rem">🔒 Change Admin Password</h4>
+          <form id="changePasswordForm">
+            <div class="form-group"><label>Current Password</label><input type="password" id="cpCurrent" required></div>
+            <div class="form-group"><label>New Password (min 8 chars)</label><input type="password" id="cpNew" required minlength="8"></div>
+            <div class="form-group"><label>Confirm New Password</label><input type="password" id="cpConfirm" required minlength="8"></div>
+            <div id="cpErrors" style="color:var(--danger);font-size:0.8rem;margin-top:0.5rem"></div>
+            <div id="cpSuccess" style="color:var(--success);font-size:0.8rem;margin-top:0.5rem"></div>
+            <button type="submit" class="btn btn-primary" style="margin-top:0.75rem">Change Password</button>
+          </form>
+        </div>
       </div>
 
       <!-- Subscription Settings Panel -->
@@ -1430,6 +1441,37 @@
       } catch (err) {
         const msg = err.data?.errors?.map(e => e.message).join(', ') || err.message;
         document.getElementById("psErrors").textContent = msg;
+      }
+    });
+
+    // ─── CHANGE PASSWORD ────────────────────────────────────────────
+
+    document.getElementById("changePasswordForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      document.getElementById("cpErrors").textContent = '';
+      document.getElementById("cpSuccess").textContent = '';
+      const current = document.getElementById("cpCurrent").value;
+      const newPw = document.getElementById("cpNew").value;
+      const confirm = document.getElementById("cpConfirm").value;
+
+      if (!current || !newPw || !confirm) {
+        document.getElementById("cpErrors").textContent = 'All fields are required';
+        return;
+      }
+      if (newPw.length < 8) {
+        document.getElementById("cpErrors").textContent = 'New password must be at least 8 characters';
+        return;
+      }
+      if (newPw !== confirm) {
+        document.getElementById("cpErrors").textContent = 'Passwords do not match';
+        return;
+      }
+      try {
+        await API.put("/auth/change-password", { currentPassword: current, newPassword: newPw });
+        document.getElementById("cpSuccess").textContent = 'Password changed successfully!';
+        document.getElementById("changePasswordForm").reset();
+      } catch (err) {
+        document.getElementById("cpErrors").textContent = err.message || 'Failed to change password';
       }
     });
 
