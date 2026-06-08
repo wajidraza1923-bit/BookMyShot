@@ -3693,6 +3693,11 @@
         var subscriptionDue = platformConfig.subscription.monthlyPlanPrice;
         var totalDue = totalCommission + subscriptionDue;
 
+        // Store for payment modal access
+        window._currentTotalDue = totalDue;
+        window._currentCommissionDue = totalCommission;
+        window._currentSubscriptionDue = subscriptionDue;
+
         // Subscription details
         var subStatus = creator.subscriptionStatus || '';
         var subEnd = creator.subscriptionEndDate ? new Date(creator.subscriptionEndDate) : null;
@@ -3843,9 +3848,9 @@
           label = 'Monthly Subscription';
           pendingPayment = subInfo.subscription && subInfo.subscription.pendingPayment;
         } else {
-          // Commission: use the totalDue from backend OR the override amount passed
+          // Commission: use the override amount (totalDue from revenue card) OR backend value
           amount = overrideAmount || (subInfo.commission && subInfo.commission.totalDue) || 0;
-          label = 'Commission Payment';
+          label = 'Total Due (Commission + Subscription)';
           pendingPayment = subInfo.commission && subInfo.commission.pendingPayment;
         }
 
@@ -3854,7 +3859,8 @@
           return;
         }
 
-        if (amount <= 0) {
+        // Only show "no dues" if amount is genuinely 0 and no override was passed
+        if (amount <= 0 && !overrideAmount) {
           toast('No dues pending at this time.', 'info');
           return;
         }
@@ -3994,7 +4000,13 @@
     };
 
     window.payDues = function() {
-      openPaymentModal('commission');
+      var totalDue = window._currentTotalDue || 0;
+      console.log('[PayDues] Commission Due:', window._currentCommissionDue, 'Subscription Due:', window._currentSubscriptionDue, 'Total Due:', totalDue);
+      if (totalDue > 0) {
+        openPaymentModal('commission', totalDue);
+      } else {
+        toast('No dues pending at this time.', 'info');
+      }
     };
 
     window.showFeeInfo = function() {
