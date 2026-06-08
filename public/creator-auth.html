@@ -364,7 +364,7 @@
         }
         API.setAuth(data.token, data.user);
         if (data.user.creatorStatus && data.user.creatorStatus !== 'approved') {
-          window.location.href = '/creator/pending.html'; return;
+          window.location.href = '/creator/subscription.html'; return;
         }
         window.location.href = '/creator/dashboard.html';
       } catch (err) {
@@ -410,7 +410,7 @@
           setTimeout(function() { window.location.href = '/verify-email.html?email=' + encodeURIComponent(data.user.email); }, 1000);
         } else {
           toast('Application submitted! Awaiting approval.', 'success');
-          setTimeout(function() { window.location.href = '/creator/pending.html'; }, 1000);
+          setTimeout(function() { window.location.href = '/creator/subscription.html'; }, 1000);
         }
       } catch (err) {
         toast(err.message || 'Registration failed', 'error');

@@ -194,13 +194,8 @@
     };
 
     window.startFreeTrial = async function() {
-      try {
-        await API.post('/revenue/creator/subscribe', {});
-        window.location.href = '/creator/pending.html';
-      } catch (e) {
-        // Even if this fails, trial was set during registration — proceed
-        window.location.href = '/creator/pending.html';
-      }
+      // Trial was already activated during registration — just proceed to pending
+      window.location.href = '/creator/pending.html';
     };
 
     window.handleScreenUpload = function(event) {
