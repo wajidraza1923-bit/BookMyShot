@@ -397,7 +397,13 @@
           btn.disabled = false; btn.textContent = 'Sign In'; return;
         }
         API.setAuth(data.token, data.user);
-        window.location.href = '/user/dashboard.html';
+        if (data.user.role === 'creator') {
+          window.location.href = '/creator/dashboard.html';
+        } else if (data.user.role === 'admin') {
+          window.location.href = '/admin/dashboard.html';
+        } else {
+          window.location.href = '/user/dashboard.html';
+        }
       } catch (err) {
         if (err.data && err.data.requiresVerification) {
           toast('Please verify your email first', 'error');
@@ -455,7 +461,11 @@
     });
 
     var user = API.getUser(); var token = API.getToken();
-    if (user && token && user.role === 'user') window.location.href = '/user/dashboard.html';
+    if (user && token) {
+      if (user.role === 'creator') window.location.href = '/creator/dashboard.html';
+      else if (user.role === 'admin') window.location.href = '/admin/dashboard.html';
+      else window.location.href = '/user/dashboard.html';
+    }
   })();
   </script>
 </body>
