@@ -49,6 +49,78 @@ router.get("/analytics", async (req, res, next) => {
   }
 });
 
+// Comprehensive dashboard data (single API call)
+router.get("/dashboard", async (req, res, next) => {
+  try {
+    const creator = await getCreator(req.user._id);
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+    const bookings = await Booking.find({ creator: creator._id, status: { $nin: ["rejected", "cancelled"] } });
+    const allInquiries = await Inquiry.find({ creator: creator._id }).sort("-createdAt");
+    const reviews = await Review.countDocuments({ creator: creator._id });
+    const favorites = await require("../models/User").countDocuments({ favorites: creator._id });
+
+    // Earnings
+    const paidBookings = bookings.filter(b => ["Creator Accepted", "Payment Approved", "Event Scheduled", "Completed"].includes(b.status));
+    const totalEarnings = paidBookings.reduce((s, b) => s + (b.amount || 0), 0);
+    const monthlyEarnings = paidBookings.filter(b => b.createdAt >= monthStart).reduce((s, b) => s + (b.amount || 0), 0);
+    const prevMonthEarnings = paidBookings.filter(b => b.createdAt >= prevMonthStart && b.createdAt < monthStart).reduce((s, b) => s + (b.amount || 0), 0);
+    const earningsGrowth = prevMonthEarnings > 0 ? Math.round(((monthlyEarnings - prevMonthEarnings) / prevMonthEarnings) * 100) : 0;
+
+    // Stats
+    const pendingPayments = bookings.filter(b => b.paymentStatus === "unpaid" || b.paymentStatus === "pending-verification").length;
+    const upcomingEvents = bookings.filter(b => new Date(b.eventDate) > now && !["rejected","cancelled"].includes(b.status));
+    const newInquiries = allInquiries.filter(i => i.status === "pending").length;
+
+    // Profile completion
+    const fields = [creator.bio, creator.specialty, creator.city, creator.experience, req.user.avatar, req.user.phone];
+    const portfolioCount = (creator.portfolio || []).length;
+    const completed = fields.filter(Boolean).length + (portfolioCount > 0 ? 1 : 0) + ((creator.packages || []).length > 0 ? 1 : 0);
+    const profileCompletion = Math.round((completed / 8) * 100);
+
+    res.json({
+      success: true,
+      creatorName: req.user.name || "Creator",
+      creatorCategory: creator.specialty || creator.category || "Creator",
+      profileImage: req.user.avatar || "",
+      profileCompletion,
+      totalEarnings,
+      monthlyEarnings,
+      earningsGrowth,
+      totalBookings: bookings.length,
+      pendingPayments,
+      upcomingEventsCount: upcomingEvents.length,
+      newInquiries,
+      reels: (creator.videos || []).length,
+      photos: (creator.portfolio || []).length,
+      reviews,
+      favorites,
+      subscriptionStatus: creator.subscriptionStatus || "trial",
+      subscriptionExpiry: creator.subscriptionEndDate,
+      upcomingBookings: upcomingEvents.slice(0, 3).map(b => ({
+        _id: b._id,
+        clientName: b.clientName,
+        eventType: b.eventType,
+        eventDate: b.eventDate,
+        status: b.status,
+        packageName: b.packageName,
+      })),
+      latestInquiries: allInquiries.slice(0, 3).map(i => ({
+        _id: i._id,
+        name: i.name,
+        eventType: i.eventType,
+        budget: i.budget,
+        status: i.status,
+        createdAt: i.createdAt,
+      })),
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
 // Planning notebook
 router.get("/planning", async (req, res, next) => {
   try {

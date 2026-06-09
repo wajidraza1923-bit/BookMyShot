@@ -1704,89 +1704,93 @@
 
     function loadDashboard() {
       var container = document.getElementById('dashContent');
-      container.innerHTML = '<div class="loader"></div>';
+      container.innerHTML = '<div style="display:flex;flex-direction:column;gap:0.6rem"><div style="height:50px;background:rgba(255,255,255,0.03);border-radius:10px;animation:pulse 1.5s infinite"></div><div style="height:80px;background:rgba(255,255,255,0.03);border-radius:14px;animation:pulse 1.5s infinite"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem"><div style="height:60px;background:rgba(255,255,255,0.03);border-radius:10px;animation:pulse 1.5s infinite"></div><div style="height:60px;background:rgba(255,255,255,0.03);border-radius:10px;animation:pulse 1.5s infinite"></div></div></div>';
 
-      API.get('/creator/analytics')
-        .then(function(result) {
-          var s = result.stats || {};
-          var upcoming = result.upcomingEvents || [];
-          var name = (currentUser && currentUser.name) ? currentUser.name.split(' ')[0] : 'Creator';
-          var avatar = (currentUser && currentUser.avatar) || '';
-          var category = (creatorProfile && creatorProfile.specialty) || (creatorProfile && creatorProfile.category) || 'Creator';
-          var totalEarnings = s.earnings || 0;
-          var totalBookings = s.totalBookings || 0;
-          var pending = s.pending || 0;
-          var upcomingCount = s.upcoming || 0;
-          var reels = s.reels || 0;
-          var reviews = s.reviews || 0;
-
+      API.get('/creator/dashboard')
+        .then(function(d) {
           var html = '';
 
           // Welcome
-          html += '<div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem">' +
-            (avatar ? '<img src="' + avatar + '" style="width:42px;height:42px;border-radius:50%;object-fit:cover;border:2px solid rgba(212,175,55,0.3)">' : '<div style="width:42px;height:42px;border-radius:50%;background:rgba(212,175,55,0.1);display:grid;place-items:center;font-size:1.1rem;color:var(--gold)"><i class="fas fa-user"></i></div>') +
-            '<div style="flex:1"><div style="font-size:1rem;font-weight:600;color:var(--cream)">Welcome, ' + esc(name) + '</div><div style="font-size:0.68rem;color:rgba(255,255,255,0.35);display:flex;align-items:center;gap:0.4rem"><span style="background:rgba(212,175,55,0.1);color:var(--gold);padding:0.1rem 0.4rem;border-radius:4px;font-size:0.6rem">' + esc(category) + '</span></div></div>' +
+          html += '<div style="display:flex;align-items:center;gap:0.7rem;margin-bottom:0.8rem">' +
+            (d.profileImage ? '<img src="' + d.profileImage + '" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid rgba(212,175,55,0.3)">' : '<div style="width:40px;height:40px;border-radius:50%;background:rgba(212,175,55,0.1);display:grid;place-items:center;color:var(--gold)"><i class="fas fa-user"></i></div>') +
+            '<div style="flex:1"><div style="font-size:0.95rem;font-weight:600;color:var(--cream)">Welcome, ' + esc(d.creatorName.split(' ')[0]) + '</div>' +
+            '<div style="display:flex;align-items:center;gap:0.4rem;margin-top:0.1rem"><span style="background:rgba(212,175,55,0.1);color:var(--gold);padding:0.1rem 0.4rem;border-radius:4px;font-size:0.58rem;font-weight:500">' + esc(d.creatorCategory) + '</span><span style="font-size:0.55rem;color:rgba(255,255,255,0.25)">' + d.profileCompletion + '% complete</span></div></div>' +
           '</div>';
 
-          // Earnings Hero Card
-          html += '<div style="background:linear-gradient(135deg,rgba(212,175,55,0.08),rgba(212,175,55,0.02));border:1px solid rgba(212,175,55,0.15);border-radius:14px;padding:1rem;margin-bottom:1rem">' +
-            '<div style="display:flex;justify-content:space-between;align-items:center">' +
-              '<div><div style="font-size:0.62rem;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em">Total Earnings</div><div style="font-size:1.6rem;font-weight:700;color:var(--gold-light);margin-top:0.15rem">₹' + totalEarnings.toLocaleString('en-IN') + '</div></div>' +
-              '<div style="width:40px;height:40px;border-radius:12px;background:rgba(212,175,55,0.12);display:grid;place-items:center"><i class="fas fa-chart-line" style="color:var(--gold);font-size:1rem"></i></div>' +
-            '</div>' +
-            '<div style="display:flex;gap:1.5rem;margin-top:0.6rem;font-size:0.68rem;color:rgba(255,255,255,0.4)">' +
-              '<span><i class="fas fa-calendar" style="margin-right:0.2rem"></i>' + totalBookings + ' bookings</span>' +
-              '<span><i class="fas fa-video" style="margin-right:0.2rem"></i>' + reels + ' reels</span>' +
-              '<span><i class="fas fa-star" style="margin-right:0.2rem"></i>' + reviews + ' reviews</span>' +
-            '</div>' +
+          // Earnings Hero
+          html += '<div style="background:linear-gradient(135deg,rgba(212,175,55,0.08),rgba(212,175,55,0.02));border:1px solid rgba(212,175,55,0.15);border-radius:14px;padding:0.9rem;margin-bottom:0.8rem">' +
+            '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+              '<div><div style="font-size:0.58rem;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.06em">Total Earnings</div><div style="font-size:1.5rem;font-weight:700;color:var(--gold-light);margin-top:0.1rem">₹' + (d.totalEarnings || 0).toLocaleString('en-IN') + '</div></div>' +
+              '<div style="text-align:right"><div style="font-size:0.58rem;color:rgba(255,255,255,0.3)">This Month</div><div style="font-size:0.9rem;font-weight:600;color:var(--cream)">₹' + (d.monthlyEarnings || 0).toLocaleString('en-IN') + '</div>' +
+              (d.earningsGrowth ? '<div style="font-size:0.58rem;color:' + (d.earningsGrowth >= 0 ? 'var(--success)' : 'var(--danger)') + '">' + (d.earningsGrowth >= 0 ? '↑' : '↓') + Math.abs(d.earningsGrowth) + '%</div>' : '') +
+            '</div></div>' +
           '</div>';
 
-          // Stats Grid (2x2)
-          html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:1rem">' +
-            '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:0.7rem;text-align:center"><div style="font-size:1.1rem;font-weight:700;color:var(--cream)">' + totalBookings + '</div><div style="font-size:0.6rem;color:rgba(255,255,255,0.35)">Bookings</div></div>' +
-            '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:0.7rem;text-align:center"><div style="font-size:1.1rem;font-weight:700;color:#f59e0b">' + pending + '</div><div style="font-size:0.6rem;color:rgba(255,255,255,0.35)">Pending</div></div>' +
-            '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:0.7rem;text-align:center"><div style="font-size:1.1rem;font-weight:700;color:var(--success)">' + upcomingCount + '</div><div style="font-size:0.6rem;color:rgba(255,255,255,0.35)">Upcoming</div></div>' +
-            '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:0.7rem;text-align:center"><div style="font-size:1.1rem;font-weight:700;color:#3b82f6">' + reels + '</div><div style="font-size:0.6rem;color:rgba(255,255,255,0.35)">Reels</div></div>' +
+          // Stats 2x2
+          html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.4rem;margin-bottom:0.8rem">' +
+            '<div onclick="switchPanel(\'bookings\')" style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.05);border-radius:10px;padding:0.6rem;text-align:center;cursor:pointer"><div style="font-size:1rem;font-weight:700;color:var(--cream)">' + (d.totalBookings || 0) + '</div><div style="font-size:0.58rem;color:rgba(255,255,255,0.35)">📅 Bookings</div></div>' +
+            '<div onclick="switchPanel(\'earnings\')" style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.05);border-radius:10px;padding:0.6rem;text-align:center;cursor:pointer"><div style="font-size:1rem;font-weight:700;color:#f59e0b">' + (d.pendingPayments || 0) + '</div><div style="font-size:0.58rem;color:rgba(255,255,255,0.35)">⏳ Pending</div></div>' +
+            '<div onclick="switchPanel(\'calendar-private\')" style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.05);border-radius:10px;padding:0.6rem;text-align:center;cursor:pointer"><div style="font-size:1rem;font-weight:700;color:var(--success)">' + (d.upcomingEventsCount || 0) + '</div><div style="font-size:0.58rem;color:rgba(255,255,255,0.35)">🎉 Upcoming</div></div>' +
+            '<div onclick="switchPanel(\'inquiries\')" style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.05);border-radius:10px;padding:0.6rem;text-align:center;cursor:pointer"><div style="font-size:1rem;font-weight:700;color:#3b82f6">' + (d.newInquiries || 0) + '</div><div style="font-size:0.58rem;color:rgba(255,255,255,0.35)">💬 Inquiries</div></div>' +
           '</div>';
 
           // Quick Actions
-          html += '<div style="margin-bottom:1rem"><div style="font-size:0.72rem;font-weight:600;color:rgba(255,255,255,0.5);margin-bottom:0.5rem">Quick Actions</div>' +
-            '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.4rem">';
-          var actions = [
-            {icon:'fa-calendar-days',label:'Calendar',panel:'calendar-private'},
-            {icon:'fa-clock',label:'Availability',panel:'calendar-public'},
-            {icon:'fa-images',label:'Portfolio',panel:'photos'},
-            {icon:'fa-gem',label:'Packages',panel:'packages'},
-            {icon:'fa-clipboard-list',label:'Requests',panel:'booking-requests'},
-            {icon:'fa-envelope-open-text',label:'Inquiries',panel:'inquiries'},
-            {icon:'fa-credit-card',label:'Payments',panel:'payment-proofs'},
-            {icon:'fa-chart-pie',label:'Revenue',panel:'revenue'},
-          ];
-          actions.forEach(function(a) {
-            html += '<div onclick="switchPanel(\'' + a.panel + '\')" style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:10px;padding:0.5rem 0.3rem;text-align:center;cursor:pointer"><i class="fas ' + a.icon + '" style="color:var(--gold);font-size:0.85rem;display:block;margin-bottom:0.2rem"></i><span style="font-size:0.55rem;color:rgba(255,255,255,0.4)">' + a.label + '</span></div>';
+          html += '<div style="margin-bottom:0.8rem"><div style="font-size:0.65rem;font-weight:600;color:rgba(255,255,255,0.4);margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.05em">Quick Actions</div>' +
+            '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.35rem">';
+          [{i:'fa-calendar-days',l:'Calendar',p:'calendar-private'},{i:'fa-clock',l:'Availability',p:'calendar-public'},{i:'fa-images',l:'Portfolio',p:'photos'},{i:'fa-gem',l:'Packages',p:'packages'},{i:'fa-clipboard-list',l:'Requests',p:'booking-requests'},{i:'fa-envelope-open-text',l:'Inquiries',p:'inquiries'},{i:'fa-credit-card',l:'Payments',p:'payment-proofs'},{i:'fa-chart-pie',l:'Revenue',p:'revenue'}].forEach(function(a) {
+            html += '<div onclick="switchPanel(\'' + a.p + '\')" style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:8px;padding:0.45rem 0.2rem;text-align:center;cursor:pointer"><i class="fas ' + a.i + '" style="color:var(--gold);font-size:0.8rem;display:block;margin-bottom:0.15rem"></i><span style="font-size:0.5rem;color:rgba(255,255,255,0.35)">' + a.l + '</span></div>';
           });
           html += '</div></div>';
 
-          // Upcoming Events
-          html += '<div style="margin-bottom:1rem"><div style="font-size:0.72rem;font-weight:600;color:rgba(255,255,255,0.5);margin-bottom:0.4rem">Upcoming Events</div>';
-          if (upcoming.length > 0) {
-            upcoming.slice(0, 3).forEach(function(b) {
-              var date = b.eventDate ? new Date(b.eventDate).toLocaleDateString('en-IN', {day:'2-digit',month:'short'}) : '—';
-              html += '<div style="display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0;border-bottom:1px solid rgba(255,255,255,0.03)">' +
-                '<div style="width:36px;height:36px;border-radius:8px;background:rgba(212,175,55,0.08);display:grid;place-items:center;font-size:0.65rem;color:var(--gold);flex-shrink:0">' + date + '</div>' +
-                '<div style="flex:1;min-width:0"><div style="font-size:0.78rem;color:var(--cream);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(b.clientName || 'Client') + '</div><div style="font-size:0.62rem;color:rgba(255,255,255,0.3)">' + esc(b.eventType || 'Event') + '</div></div>' +
-                '<div style="font-size:0.6rem;color:var(--success)">●</div>' +
+          // Latest Inquiries
+          if (d.latestInquiries && d.latestInquiries.length > 0) {
+            html += '<div style="margin-bottom:0.8rem"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.35rem"><span style="font-size:0.65rem;font-weight:600;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em">Latest Inquiries</span><span onclick="switchPanel(\'inquiries\')" style="font-size:0.58rem;color:var(--gold);cursor:pointer">View All →</span></div>';
+            d.latestInquiries.forEach(function(inq) {
+              var statusColor = inq.status === 'accepted' ? 'var(--success)' : inq.status === 'rejected' ? 'var(--danger)' : '#f59e0b';
+              html += '<div style="display:flex;align-items:center;gap:0.5rem;padding:0.4rem 0;border-bottom:1px solid rgba(255,255,255,0.03)">' +
+                '<div style="flex:1;min-width:0"><div style="font-size:0.75rem;color:var(--cream);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(inq.name || 'Client') + '</div><div style="font-size:0.58rem;color:rgba(255,255,255,0.3)">' + esc(inq.eventType || '') + (inq.budget ? ' · ₹' + inq.budget : '') + '</div></div>' +
+                '<div style="width:6px;height:6px;border-radius:50%;background:' + statusColor + ';flex-shrink:0"></div>' +
               '</div>';
             });
-          } else {
-            html += '<div style="text-align:center;padding:1rem;font-size:0.75rem;color:rgba(255,255,255,0.25)">No upcoming events</div>';
+            html += '</div>';
           }
-          html += '</div>';
+
+          // Upcoming Events
+          if (d.upcomingBookings && d.upcomingBookings.length > 0) {
+            html += '<div style="margin-bottom:0.8rem"><div style="font-size:0.65rem;font-weight:600;color:rgba(255,255,255,0.4);margin-bottom:0.35rem;text-transform:uppercase;letter-spacing:0.05em">Upcoming Events</div>';
+            d.upcomingBookings.forEach(function(b) {
+              var date = b.eventDate ? new Date(b.eventDate).toLocaleDateString('en-IN', {day:'2-digit',month:'short'}) : '—';
+              html += '<div style="display:flex;align-items:center;gap:0.5rem;padding:0.4rem 0;border-bottom:1px solid rgba(255,255,255,0.03)">' +
+                '<div style="min-width:38px;height:34px;border-radius:7px;background:rgba(212,175,55,0.08);display:flex;align-items:center;justify-content:center;font-size:0.58rem;color:var(--gold);font-weight:600">' + date + '</div>' +
+                '<div style="flex:1;min-width:0"><div style="font-size:0.75rem;color:var(--cream);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(b.clientName || 'Client') + '</div><div style="font-size:0.58rem;color:rgba(255,255,255,0.3)">' + esc(b.eventType || 'Event') + '</div></div>' +
+                '<div style="font-size:0.55rem;color:var(--success)">●</div>' +
+              '</div>';
+            });
+            html += '</div>';
+          }
+
+          // Performance Stats
+          html += '<div style="margin-bottom:0.8rem"><div style="font-size:0.65rem;font-weight:600;color:rgba(255,255,255,0.4);margin-bottom:0.35rem;text-transform:uppercase;letter-spacing:0.05em">Performance</div>' +
+            '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.35rem">' +
+              '<div style="text-align:center;padding:0.4rem;background:rgba(255,255,255,0.02);border-radius:8px"><div style="font-size:0.85rem;font-weight:700;color:var(--cream)">' + (d.favorites || 0) + '</div><div style="font-size:0.5rem;color:rgba(255,255,255,0.3)">❤️ Favs</div></div>' +
+              '<div style="text-align:center;padding:0.4rem;background:rgba(255,255,255,0.02);border-radius:8px"><div style="font-size:0.85rem;font-weight:700;color:var(--cream)">' + (d.reviews || 0) + '</div><div style="font-size:0.5rem;color:rgba(255,255,255,0.3)">⭐ Reviews</div></div>' +
+              '<div style="text-align:center;padding:0.4rem;background:rgba(255,255,255,0.02);border-radius:8px"><div style="font-size:0.85rem;font-weight:700;color:var(--cream)">' + (d.photos || 0) + '</div><div style="font-size:0.5rem;color:rgba(255,255,255,0.3)">📸 Photos</div></div>' +
+              '<div style="text-align:center;padding:0.4rem;background:rgba(255,255,255,0.02);border-radius:8px"><div style="font-size:0.85rem;font-weight:700;color:var(--cream)">' + (d.reels || 0) + '</div><div style="font-size:0.5rem;color:rgba(255,255,255,0.3)">🎬 Reels</div></div>' +
+            '</div></div>';
+
+          // Subscription Banner
+          if (d.subscriptionStatus === 'trial' || d.subscriptionStatus === 'pending_payment') {
+            html += '<div onclick="switchPanel(\'revenue\')" style="background:linear-gradient(135deg,rgba(212,175,55,0.06),rgba(212,175,55,0.02));border:1px solid rgba(212,175,55,0.12);border-radius:12px;padding:0.75rem;cursor:pointer;display:flex;align-items:center;gap:0.6rem">' +
+              '<div style="font-size:1.2rem">👑</div>' +
+              '<div style="flex:1"><div style="font-size:0.78rem;font-weight:600;color:var(--gold-light)">Upgrade Your Plan</div><div style="font-size:0.58rem;color:rgba(255,255,255,0.35)">Get verified badge, featured placement & more</div></div>' +
+              '<i class="fas fa-chevron-right" style="color:var(--gold);font-size:0.7rem"></i>' +
+            '</div>';
+          }
 
           container.innerHTML = html;
         })
         .catch(function(e) {
-          container.innerHTML = '<div style="text-align:center;padding:2rem;color:rgba(255,255,255,0.3)"><i class="fas fa-exclamation-circle" style="font-size:1.5rem;margin-bottom:0.5rem;display:block"></i>Failed to load dashboard</div>';
+          container.innerHTML = '<div style="text-align:center;padding:2rem"><i class="fas fa-exclamation-circle" style="font-size:1.5rem;color:var(--gold);display:block;margin-bottom:0.5rem"></i><p style="font-size:0.8rem;color:rgba(255,255,255,0.3)">Failed to load dashboard</p><button onclick="loadDashboard()" style="margin-top:0.5rem;padding:0.4rem 1rem;background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.2);color:var(--gold);border-radius:8px;font-size:0.75rem;cursor:pointer">Retry</button></div>';
         });
 
       updateHeader();
