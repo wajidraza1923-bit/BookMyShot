@@ -557,6 +557,7 @@
     }
 
     @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
     /* ─── Profile Edit Form ─── */
     .profile-edit-form { max-width: 700px; }
@@ -1229,7 +1230,14 @@
 
       <!-- ─── DASHBOARD PANEL ─── -->
       <div class="panel-content" id="panel-dashboard" style="display:block">
-        <div id="dashContent"><div class="loader"></div></div>
+        <div id="dashContent">
+          <div style="display:flex;flex-direction:column;gap:0.6rem">
+            <div style="height:48px;background:rgba(255,255,255,0.03);border-radius:10px;animation:pulse 1.5s infinite"></div>
+            <div style="height:78px;background:rgba(255,255,255,0.03);border-radius:14px;animation:pulse 1.5s infinite"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.4rem"><div style="height:56px;background:rgba(255,255,255,0.03);border-radius:10px;animation:pulse 1.5s infinite"></div><div style="height:56px;background:rgba(255,255,255,0.03);border-radius:10px;animation:pulse 1.5s infinite"></div><div style="height:56px;background:rgba(255,255,255,0.03);border-radius:10px;animation:pulse 1.5s infinite"></div><div style="height:56px;background:rgba(255,255,255,0.03);border-radius:10px;animation:pulse 1.5s infinite"></div></div>
+            <div style="height:100px;background:rgba(255,255,255,0.03);border-radius:10px;animation:pulse 1.5s infinite"></div>
+          </div>
+        </div>
       </div>
 
       <!-- ─── PROFILE PANEL ─── -->
@@ -1728,12 +1736,32 @@
 
     // ─── Dashboard ──────────────────────────────────────────────────────────
 
+    var _dashCache = null;
+    var _dashCacheTime = 0;
+
     function loadDashboard() {
       var container = document.getElementById('dashContent');
-      container.innerHTML = '<div style="display:flex;flex-direction:column;gap:0.6rem"><div style="height:50px;background:rgba(255,255,255,0.03);border-radius:10px;animation:pulse 1.5s infinite"></div><div style="height:80px;background:rgba(255,255,255,0.03);border-radius:14px;animation:pulse 1.5s infinite"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem"><div style="height:60px;background:rgba(255,255,255,0.03);border-radius:10px;animation:pulse 1.5s infinite"></div><div style="height:60px;background:rgba(255,255,255,0.03);border-radius:10px;animation:pulse 1.5s infinite"></div></div></div>';
+      
+      // Use cached data if less than 60 seconds old
+      if (_dashCache && (Date.now() - _dashCacheTime < 60000)) {
+        renderDashboard(container, _dashCache);
+        return;
+      }
 
       API.get('/creator/dashboard')
         .then(function(d) {
+          _dashCache = d;
+          _dashCacheTime = Date.now();
+          renderDashboard(container, d);
+        })
+        .catch(function(e) {
+          container.innerHTML = '<div style="text-align:center;padding:2rem"><i class="fas fa-exclamation-circle" style="font-size:1.5rem;color:var(--gold);display:block;margin-bottom:0.5rem"></i><p style="font-size:0.8rem;color:rgba(255,255,255,0.3)">Failed to load dashboard</p><button onclick="loadDashboard()" style="margin-top:0.5rem;padding:0.4rem 1rem;background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.2);color:var(--gold);border-radius:8px;font-size:0.75rem;cursor:pointer">Retry</button></div>';
+        });
+
+      updateHeader();
+    }
+
+    function renderDashboard(container, d) {
           var html = '';
 
           // Welcome
@@ -1814,12 +1842,6 @@
           }
 
           container.innerHTML = html;
-        })
-        .catch(function(e) {
-          container.innerHTML = '<div style="text-align:center;padding:2rem"><i class="fas fa-exclamation-circle" style="font-size:1.5rem;color:var(--gold);display:block;margin-bottom:0.5rem"></i><p style="font-size:0.8rem;color:rgba(255,255,255,0.3)">Failed to load dashboard</p><button onclick="loadDashboard()" style="margin-top:0.5rem;padding:0.4rem 1rem;background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.2);color:var(--gold);border-radius:8px;font-size:0.75rem;cursor:pointer">Retry</button></div>';
-        });
-
-      updateHeader();
     }
     window.loadDashboard = loadDashboard;
 
