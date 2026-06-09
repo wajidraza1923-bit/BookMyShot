@@ -1650,6 +1650,22 @@
     // Expose switchPanel globally for inline onclick handlers
     window.switchPanel = switchPanel;
 
+    // Sync bottom nav when switching panels from sidebar
+    var origSwitchPanel = switchPanel;
+    function switchPanelWithNav(panel) {
+      origSwitchPanel(panel);
+      // Update bottom nav
+      document.querySelectorAll('.bnav-item').forEach(function(b) {
+        b.classList.toggle('active', b.dataset.panel === panel);
+      });
+      // Push history
+      if (history.state && history.state.panel !== panel) {
+        history.pushState({ panel: panel }, '', '#' + panel);
+      }
+    }
+    switchPanel = switchPanelWithNav;
+    window.switchPanel = switchPanelWithNav;
+
     // ─── Menu Toggle ────────────────────────────────────────────────────────
 
     document.getElementById('menuToggle').addEventListener('click', function() {
@@ -4596,6 +4612,88 @@
       </form>
     </div>
   </div>
+
+  <!-- Bottom Navigation (Mobile) -->
+  <nav class="bottom-nav" id="bottomNav">
+    <button class="bnav-item active" data-panel="dashboard"><i class="fas fa-home"></i><span>Home</span></button>
+    <button class="bnav-item" data-panel="bookings"><i class="fas fa-calendar-check"></i><span>Bookings</span></button>
+    <button class="bnav-item" data-panel="calendar-private"><i class="fas fa-calendar-days"></i><span>Calendar</span></button>
+    <button class="bnav-item" data-panel="inquiries"><i class="fas fa-comments"></i><span>Inquiries</span></button>
+    <button class="bnav-item" data-panel="profile"><i class="fas fa-ellipsis-h"></i><span>More</span></button>
+  </nav>
+
+  <style>
+    .bottom-nav {
+      display: none;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 999;
+      background: #0a0a0a;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding: 0.4rem 0;
+      padding-bottom: calc(0.4rem + env(safe-area-inset-bottom, 0px));
+      justify-content: space-around;
+      align-items: center;
+    }
+    .bnav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.15rem;
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.35);
+      font-size: 0.55rem;
+      font-family: inherit;
+      cursor: pointer;
+      padding: 0.3rem 0.5rem;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+    .bnav-item i { font-size: 1rem; }
+    .bnav-item.active { color: var(--gold); }
+    .bnav-item:active { transform: scale(0.92); }
+    @media (max-width: 768px) {
+      .bottom-nav { display: flex; }
+      .main-content { padding-bottom: 70px !important; }
+      body { overflow-x: hidden; max-width: 100vw; }
+    }
+  </style>
+
+  <script>
+    // Bottom navigation click handlers
+    document.querySelectorAll('.bnav-item').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var panel = btn.dataset.panel;
+        document.querySelectorAll('.bnav-item').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        switchPanel(panel);
+        // Push state for back button support
+        history.pushState({ panel: panel }, '', '#' + panel);
+      });
+    });
+
+    // Browser back button support — stay inside dashboard
+    window.addEventListener('popstate', function(e) {
+      if (e.state && e.state.panel) {
+        switchPanel(e.state.panel);
+        // Update bottom nav active state
+        document.querySelectorAll('.bnav-item').forEach(function(b) {
+          b.classList.toggle('active', b.dataset.panel === e.state.panel);
+        });
+      } else {
+        // Default to dashboard instead of leaving
+        switchPanel('dashboard');
+        document.querySelectorAll('.bnav-item').forEach(function(b) {
+          b.classList.toggle('active', b.dataset.panel === 'dashboard');
+        });
+        history.pushState({ panel: 'dashboard' }, '', '#dashboard');
+      }
+    });
+
+    // Initialize history state
+    history.replaceState({ panel: 'dashboard' }, '', '#dashboard');
+  </script>
 
 </body>
 </html>
