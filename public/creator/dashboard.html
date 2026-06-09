@@ -1647,6 +1647,9 @@
       document.body.style.overflow = '';
     }
 
+    // Expose switchPanel globally for inline onclick handlers
+    window.switchPanel = switchPanel;
+
     // ─── Menu Toggle ────────────────────────────────────────────────────────
 
     document.getElementById('menuToggle').addEventListener('click', function() {
@@ -1795,6 +1798,7 @@
 
       updateHeader();
     }
+    window.loadDashboard = loadDashboard;
 
     // ─── Header ─────────────────────────────────────────────────────────────
 
