@@ -1222,20 +1222,7 @@
 
       <!-- ─── DASHBOARD PANEL ─── -->
       <div class="panel-content" id="panel-dashboard" style="display:block">
-        <div class="welcome-section">
-          <h1 id="welcomeName">Welcome back</h1>
-          <p>Here's your creator overview</p>
-        </div>
-        <div class="stats-grid" id="statsGrid">
-          <div class="stat-card"><div class="stat-icon"><i class="fas fa-calendar-days"></i></div><div class="stat-value">0</div><div class="stat-label">Upcoming Bookings</div></div>
-          <div class="stat-card"><div class="stat-icon"><i class="fas fa-video"></i></div><div class="stat-value">0</div><div class="stat-label">Uploaded Reels</div></div>
-          <div class="stat-card"><div class="stat-icon"><i class="fas fa-star"></i></div><div class="stat-value">0</div><div class="stat-label">Reviews</div></div>
-          <div class="stat-card"><div class="stat-icon"><i class="fas fa-indian-rupee-sign"></i></div><div class="stat-value">₹0</div><div class="stat-label">Total Earnings</div></div>
-        </div>
-        <div class="card-panel">
-          <h3 style="font-family:'Playfair Display',serif;color:var(--gold-light);margin:0 0 1rem">Upcoming Events</h3>
-          <div id="upcomingEventsList"><p style="color:rgba(255,255,255,0.3)">No upcoming events</p></div>
-        </div>
+        <div id="dashContent"><div class="loader"></div></div>
       </div>
 
       <!-- ─── PROFILE PANEL ─── -->
@@ -1716,35 +1703,90 @@
     // ─── Dashboard ──────────────────────────────────────────────────────────
 
     function loadDashboard() {
-      var nameEl = document.getElementById('welcomeName');
-      if (currentUser && currentUser.name) {
-        nameEl.textContent = 'Welcome back, ' + currentUser.name.split(' ')[0];
-      }
+      var container = document.getElementById('dashContent');
+      container.innerHTML = '<div class="loader"></div>';
 
-      // Load stats from API
       API.get('/creator/analytics')
         .then(function(result) {
-          var stats = result.stats || {};
-          var statsGrid = document.getElementById('statsGrid');
-          statsGrid.innerHTML =
-            '<div class="stat-card"><div class="stat-icon"><i class="fas fa-calendar-check"></i></div><div class="stat-value">' + (stats.totalBookings || 0) + '</div><div class="stat-label">Total Bookings</div></div>' +
-            '<div class="stat-card"><div class="stat-icon"><i class="fas fa-hourglass-half"></i></div><div class="stat-value">' + (stats.pending || 0) + '</div><div class="stat-label">Pending Payments</div></div>' +
-            '<div class="stat-card"><div class="stat-icon"><i class="fas fa-calendar-days"></i></div><div class="stat-value">' + (stats.upcoming || 0) + '</div><div class="stat-label">Upcoming Events</div></div>' +
-            '<div class="stat-card"><div class="stat-icon"><i class="fas fa-indian-rupee-sign"></i></div><div class="stat-value">₹' + ((stats.earnings || 0).toLocaleString('en-IN')) + '</div><div class="stat-label">Total Earnings</div></div>';
-
-          // Upcoming events
+          var s = result.stats || {};
           var upcoming = result.upcomingEvents || [];
-          var upcomingEl = document.getElementById('upcomingEventsList');
+          var name = (currentUser && currentUser.name) ? currentUser.name.split(' ')[0] : 'Creator';
+          var avatar = (currentUser && currentUser.avatar) || '';
+          var category = (creatorProfile && creatorProfile.specialty) || (creatorProfile && creatorProfile.category) || 'Creator';
+          var totalEarnings = s.earnings || 0;
+          var totalBookings = s.totalBookings || 0;
+          var pending = s.pending || 0;
+          var upcomingCount = s.upcoming || 0;
+          var reels = s.reels || 0;
+          var reviews = s.reviews || 0;
+
+          var html = '';
+
+          // Welcome
+          html += '<div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem">' +
+            (avatar ? '<img src="' + avatar + '" style="width:42px;height:42px;border-radius:50%;object-fit:cover;border:2px solid rgba(212,175,55,0.3)">' : '<div style="width:42px;height:42px;border-radius:50%;background:rgba(212,175,55,0.1);display:grid;place-items:center;font-size:1.1rem;color:var(--gold)"><i class="fas fa-user"></i></div>') +
+            '<div style="flex:1"><div style="font-size:1rem;font-weight:600;color:var(--cream)">Welcome, ' + esc(name) + '</div><div style="font-size:0.68rem;color:rgba(255,255,255,0.35);display:flex;align-items:center;gap:0.4rem"><span style="background:rgba(212,175,55,0.1);color:var(--gold);padding:0.1rem 0.4rem;border-radius:4px;font-size:0.6rem">' + esc(category) + '</span></div></div>' +
+          '</div>';
+
+          // Earnings Hero Card
+          html += '<div style="background:linear-gradient(135deg,rgba(212,175,55,0.08),rgba(212,175,55,0.02));border:1px solid rgba(212,175,55,0.15);border-radius:14px;padding:1rem;margin-bottom:1rem">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center">' +
+              '<div><div style="font-size:0.62rem;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em">Total Earnings</div><div style="font-size:1.6rem;font-weight:700;color:var(--gold-light);margin-top:0.15rem">₹' + totalEarnings.toLocaleString('en-IN') + '</div></div>' +
+              '<div style="width:40px;height:40px;border-radius:12px;background:rgba(212,175,55,0.12);display:grid;place-items:center"><i class="fas fa-chart-line" style="color:var(--gold);font-size:1rem"></i></div>' +
+            '</div>' +
+            '<div style="display:flex;gap:1.5rem;margin-top:0.6rem;font-size:0.68rem;color:rgba(255,255,255,0.4)">' +
+              '<span><i class="fas fa-calendar" style="margin-right:0.2rem"></i>' + totalBookings + ' bookings</span>' +
+              '<span><i class="fas fa-video" style="margin-right:0.2rem"></i>' + reels + ' reels</span>' +
+              '<span><i class="fas fa-star" style="margin-right:0.2rem"></i>' + reviews + ' reviews</span>' +
+            '</div>' +
+          '</div>';
+
+          // Stats Grid (2x2)
+          html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:1rem">' +
+            '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:0.7rem;text-align:center"><div style="font-size:1.1rem;font-weight:700;color:var(--cream)">' + totalBookings + '</div><div style="font-size:0.6rem;color:rgba(255,255,255,0.35)">Bookings</div></div>' +
+            '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:0.7rem;text-align:center"><div style="font-size:1.1rem;font-weight:700;color:#f59e0b">' + pending + '</div><div style="font-size:0.6rem;color:rgba(255,255,255,0.35)">Pending</div></div>' +
+            '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:0.7rem;text-align:center"><div style="font-size:1.1rem;font-weight:700;color:var(--success)">' + upcomingCount + '</div><div style="font-size:0.6rem;color:rgba(255,255,255,0.35)">Upcoming</div></div>' +
+            '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:0.7rem;text-align:center"><div style="font-size:1.1rem;font-weight:700;color:#3b82f6">' + reels + '</div><div style="font-size:0.6rem;color:rgba(255,255,255,0.35)">Reels</div></div>' +
+          '</div>';
+
+          // Quick Actions
+          html += '<div style="margin-bottom:1rem"><div style="font-size:0.72rem;font-weight:600;color:rgba(255,255,255,0.5);margin-bottom:0.5rem">Quick Actions</div>' +
+            '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.4rem">';
+          var actions = [
+            {icon:'fa-calendar-days',label:'Calendar',panel:'calendar-private'},
+            {icon:'fa-clock',label:'Availability',panel:'calendar-public'},
+            {icon:'fa-images',label:'Portfolio',panel:'photos'},
+            {icon:'fa-gem',label:'Packages',panel:'packages'},
+            {icon:'fa-clipboard-list',label:'Requests',panel:'booking-requests'},
+            {icon:'fa-envelope-open-text',label:'Inquiries',panel:'inquiries'},
+            {icon:'fa-credit-card',label:'Payments',panel:'payment-proofs'},
+            {icon:'fa-chart-pie',label:'Revenue',panel:'revenue'},
+          ];
+          actions.forEach(function(a) {
+            html += '<div onclick="switchPanel(\'' + a.panel + '\')" style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:10px;padding:0.5rem 0.3rem;text-align:center;cursor:pointer"><i class="fas ' + a.icon + '" style="color:var(--gold);font-size:0.85rem;display:block;margin-bottom:0.2rem"></i><span style="font-size:0.55rem;color:rgba(255,255,255,0.4)">' + a.label + '</span></div>';
+          });
+          html += '</div></div>';
+
+          // Upcoming Events
+          html += '<div style="margin-bottom:1rem"><div style="font-size:0.72rem;font-weight:600;color:rgba(255,255,255,0.5);margin-bottom:0.4rem">Upcoming Events</div>';
           if (upcoming.length > 0) {
-            upcomingEl.innerHTML = upcoming.map(function(b) {
-              return '<p>📅 ' + (b.eventDate ? new Date(b.eventDate).toLocaleDateString() : 'TBD') + ' — ' + esc(b.clientName || 'Client') + ' (' + esc(b.eventType || 'Event') + ')</p>';
-            }).join('');
+            upcoming.slice(0, 3).forEach(function(b) {
+              var date = b.eventDate ? new Date(b.eventDate).toLocaleDateString('en-IN', {day:'2-digit',month:'short'}) : '—';
+              html += '<div style="display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0;border-bottom:1px solid rgba(255,255,255,0.03)">' +
+                '<div style="width:36px;height:36px;border-radius:8px;background:rgba(212,175,55,0.08);display:grid;place-items:center;font-size:0.65rem;color:var(--gold);flex-shrink:0">' + date + '</div>' +
+                '<div style="flex:1;min-width:0"><div style="font-size:0.78rem;color:var(--cream);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(b.clientName || 'Client') + '</div><div style="font-size:0.62rem;color:rgba(255,255,255,0.3)">' + esc(b.eventType || 'Event') + '</div></div>' +
+                '<div style="font-size:0.6rem;color:var(--success)">●</div>' +
+              '</div>';
+            });
           } else {
-            upcomingEl.innerHTML = '<p style="color:rgba(255,255,255,0.3)">No upcoming events</p>';
+            html += '<div style="text-align:center;padding:1rem;font-size:0.75rem;color:rgba(255,255,255,0.25)">No upcoming events</div>';
           }
+          html += '</div>';
+
+          container.innerHTML = html;
         })
-        .catch(function() {
-          // Stats failed to load, keep defaults
+        .catch(function(e) {
+          container.innerHTML = '<div style="text-align:center;padding:2rem;color:rgba(255,255,255,0.3)"><i class="fas fa-exclamation-circle" style="font-size:1.5rem;margin-bottom:0.5rem;display:block"></i>Failed to load dashboard</div>';
         });
 
       updateHeader();
