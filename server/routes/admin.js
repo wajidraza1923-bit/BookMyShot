@@ -542,8 +542,9 @@ router.delete("/calendar/:id", async (req, res, next) => {
 // POST: Trigger subscription expiry reminders (admin or cron job)
 router.post("/subscription-alerts", async (req, res, next) => {
   try {
+    const emailService = require("../services/emailService");
     const now = new Date();
-    const creators = await Creator.find({ subscriptionStatus: { $in: ["active", "trial"] } });
+    const creators = await Creator.find({ subscriptionStatus: { $in: ["active", "trial"] } }).populate("user", "name email");
     let sent = 0;
 
     for (const c of creators) {
@@ -555,40 +556,64 @@ router.post("/subscription-alerts", async (req, res, next) => {
         c.subscriptionStatus = "expired";
         await c.save();
         await Notification.create({
-          user: c.user, type: "subscription",
+          user: c.user._id, type: "subscription",
           title: "⚠️ Subscription Expired",
           message: "Your BookMyShot subscription has expired. Please renew to continue using all features.",
         });
-        // Notify admin about this expiry
-        const User = require("../models/User");
-        const admins = await User.find({ role: "admin" }).select("_id");
-        for (const admin of admins) {
-          await Notification.create({
-            user: admin._id, type: "admin-alert",
-            title: "Creator Subscription Expired",
-            message: `Creator ${c.user} subscription has expired and account is now restricted.`,
-          });
+
+        // ══ EMAIL: Creator — Subscription Expired ══
+        if (c.user.email) {
+          emailService.sendSubscriptionExpired({
+            email: c.user.email,
+            name: c.user.name,
+            creatorId: c._id,
+            userId: c.user._id,
+          }).catch(e => console.error("[Email] alert expired:", e.message));
         }
+
+        // ══ EMAIL: Admin — Subscription Expired ══
+        emailService.sendAdminSubscriptionExpired({
+          creatorName: c.user.name || "Unknown",
+          creatorEmail: c.user.email || "",
+        }).catch(e => console.error("[Email] admin alert expired:", e.message));
+
         sent++;
-      } else if (daysLeft <= 5) {
-        // Check if we already sent a reminder today
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const existing = await Notification.findOne({
-          user: c.user, type: "subscription",
-          createdAt: { $gte: today },
-        });
-        if (!existing) {
-          await Notification.create({
-            user: c.user, type: "subscription",
-            title: `⏰ Subscription Expires in ${daysLeft} Day${daysLeft > 1 ? 's' : ''}`,
-            message: `Your BookMyShot subscription expires in ${daysLeft} day${daysLeft > 1 ? 's' : ''}. Renew now to avoid interruption.`,
+      } else if (daysLeft <= 7) {
+        // Send reminder at 7, 3, and 1 day(s) before expiry
+        const reminderDays = [7, 3, 1];
+        if (reminderDays.includes(daysLeft)) {
+          // Check if we already sent a reminder today
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          const existing = await Notification.findOne({
+            user: c.user._id, type: "subscription",
+            createdAt: { $gte: today },
           });
-          sent++;
+          if (!existing) {
+            await Notification.create({
+              user: c.user._id, type: "subscription",
+              title: `⏰ Subscription Expires in ${daysLeft} Day${daysLeft > 1 ? 's' : ''}`,
+              message: `Your BookMyShot subscription expires in ${daysLeft} day${daysLeft > 1 ? 's' : ''}. Renew now to avoid interruption.`,
+            });
+
+            // ══ EMAIL: Creator — Expiry Reminder ══
+            if (c.user.email) {
+              emailService.sendSubscriptionExpiryReminder({
+                email: c.user.email,
+                name: c.user.name,
+                daysLeft,
+                endDate: c.subscriptionEndDate,
+                creatorId: c._id,
+                userId: c.user._id,
+              }).catch(e => console.error("[Email] alert reminder:", e.message));
+            }
+
+            sent++;
+          }
         }
       }
     }
 
-    await logAction(req.user._id, "subscription_alerts", "system", "", `Sent ${sent} alerts`, req.ip);
+    await logAction(req.user._id, "subscription_alerts", "system", "", `Sent ${sent} alerts (with emails)`, req.ip);
     res.json({ success: true, sent });
   } catch (e) { next(e); }
 });

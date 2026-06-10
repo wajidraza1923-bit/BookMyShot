@@ -2,9 +2,11 @@ const express = require("express");
 const razorpayService = require("../services/razorpayService");
 const configService = require("../services/configService");
 const Creator = require("../models/Creator");
+const User = require("../models/User");
 const Notification = require("../models/Notification");
 const Invoice = require("../models/Invoice");
 const { protect, authorize } = require("../middleware/auth");
+const emailService = require("../services/emailService");
 
 const router = express.Router();
 
@@ -154,12 +156,13 @@ router.post("/verify-payment", protect, async (req, res, next) => {
 
       // Create invoice
       const subSettings = await configService.getSubscriptionSettings();
+      const amount = subSettings.monthlyPlanPrice || 99;
       await Invoice.create({
         creator: creator._id,
         invoiceNumber: "BMS-RZP-" + Date.now(),
         type: "subscription",
         description: "Monthly Subscription (Razorpay)",
-        amount: subSettings.monthlyPlanPrice || 99,
+        amount,
         status: "paid",
         paidAt: now,
         dueDate: newEndDate,
@@ -171,18 +174,48 @@ router.post("/verify-payment", protect, async (req, res, next) => {
         title: "✅ Subscription Activated",
         message: "Your subscription payment was successful. Account is now active!",
       });
+
+      // ══ EMAIL: Creator — Subscription Activated + Payment Receipt ══
+      emailService.sendSubscriptionActivated({
+        email: req.user.email,
+        name: req.user.name,
+        planName: "Monthly Subscription",
+        amount,
+        endDate: newEndDate,
+        paymentId: razorpay_payment_id,
+        creatorId: creator._id,
+        userId: req.user._id,
+      }).catch(e => console.error("[Email] sendSubscriptionActivated failed:", e.message));
+
+      emailService.sendPaymentReceipt({
+        email: req.user.email,
+        name: req.user.name,
+        amount,
+        paymentId: razorpay_payment_id,
+        description: "Monthly Subscription",
+        date: now,
+        creatorId: creator._id,
+        userId: req.user._id,
+      }).catch(e => console.error("[Email] sendPaymentReceipt failed:", e.message));
+
+      // ══ EMAIL: Admin — New Subscription ══
+      emailService.sendAdminNewSubscription({
+        creatorName: req.user.name,
+        creatorEmail: req.user.email,
+        amount,
+        paymentId: razorpay_payment_id,
+      }).catch(e => console.error("[Email] sendAdminNewSubscription failed:", e.message));
     }
 
     // Handle promotion payment
     if (type === "promotion" && planType && creator) {
       const PromotionRequest = require("../models/PromotionRequest");
-      const subSettings = await configService.getSubscriptionSettings();
 
       const now = new Date();
       const expiry = new Date(now);
       expiry.setDate(expiry.getDate() + 30);
 
-      const promo = await PromotionRequest.create({
+      await PromotionRequest.create({
         creator: creator._id,
         creatorName: req.user.name || "",
         planType,
@@ -210,6 +243,38 @@ router.post("/verify-payment", protect, async (req, res, next) => {
         title: "🏆 Promotion Activated",
         message: `Your ${planType} promotion is now active for 30 days!`,
       });
+
+      // ══ EMAIL: Creator — Promotion Activated ══
+      emailService.sendPromotionActivated({
+        email: req.user.email,
+        name: req.user.name,
+        planType,
+        amount: req.body.amount || 0,
+        expiryDate: expiry,
+        paymentId: razorpay_payment_id,
+        creatorId: creator._id,
+        userId: req.user._id,
+      }).catch(e => console.error("[Email] sendPromotionActivated failed:", e.message));
+
+      emailService.sendPaymentReceipt({
+        email: req.user.email,
+        name: req.user.name,
+        amount: req.body.amount || 0,
+        paymentId: razorpay_payment_id,
+        description: `Promotion: ${planType}`,
+        date: now,
+        creatorId: creator._id,
+        userId: req.user._id,
+      }).catch(e => console.error("[Email] sendPaymentReceipt (promo) failed:", e.message));
+
+      // ══ EMAIL: Admin — Promotion Purchase ══
+      emailService.sendAdminPromotionPurchase({
+        creatorName: req.user.name,
+        creatorEmail: req.user.email,
+        planType,
+        amount: req.body.amount || 0,
+        paymentId: razorpay_payment_id,
+      }).catch(e => console.error("[Email] sendAdminPromotionPurchase failed:", e.message));
     }
 
     res.json({ success: true, message: "Payment verified and activated", paymentId: razorpay_payment_id });
@@ -240,6 +305,27 @@ router.post("/verify-subscription", protect, async (req, res, next) => {
       creator.subscriptionEndDate = endDate;
       creator.lastPaymentDate = new Date();
       await creator.save();
+
+      // ══ EMAIL: Creator — Subscription Activated ══
+      const subSettings = await configService.getSubscriptionSettings();
+      emailService.sendSubscriptionActivated({
+        email: req.user.email,
+        name: req.user.name,
+        planName: "Monthly Subscription (AutoPay)",
+        amount: subSettings.monthlyPlanPrice || 99,
+        endDate,
+        paymentId: razorpay_payment_id,
+        creatorId: creator._id,
+        userId: req.user._id,
+      }).catch(e => console.error("[Email] sendSubscriptionActivated (autopay) failed:", e.message));
+
+      // ══ EMAIL: Admin — New Subscription ══
+      emailService.sendAdminNewSubscription({
+        creatorName: req.user.name,
+        creatorEmail: req.user.email,
+        amount: subSettings.monthlyPlanPrice || 99,
+        paymentId: razorpay_payment_id,
+      }).catch(e => console.error("[Email] sendAdminNewSubscription (autopay) failed:", e.message));
     }
 
     res.json({ success: true, message: "Subscription verified and activated" });
@@ -269,15 +355,13 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
 
     switch (eventType) {
       case "payment.captured": {
-        // Payment successful
         console.log("[Razorpay] Payment captured:", payload.payment?.entity?.id);
         break;
       }
 
       case "subscription.activated": {
-        // Subscription started
         const subId = payload.subscription?.entity?.id;
-        const creator = await Creator.findOne({ razorpaySubscriptionId: subId });
+        const creator = await Creator.findOne({ razorpaySubscriptionId: subId }).populate("user");
         if (creator) {
           creator.subscriptionStatus = "active";
           if (!creator.subscriptionStartDate) creator.subscriptionStartDate = new Date();
@@ -286,14 +370,37 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
           creator.subscriptionEndDate = end;
           await creator.save();
           console.log("[Razorpay] Subscription activated for creator:", creator._id);
+
+          // ══ EMAIL: Creator — Subscription Activated ══
+          if (creator.user?.email) {
+            const subSettings = await configService.getSubscriptionSettings();
+            emailService.sendSubscriptionActivated({
+              email: creator.user.email,
+              name: creator.user.name,
+              planName: "Monthly Subscription (AutoPay)",
+              amount: subSettings.monthlyPlanPrice || 99,
+              endDate: end,
+              paymentId: payload.subscription?.entity?.id,
+              creatorId: creator._id,
+              userId: creator.user._id,
+            }).catch(e => console.error("[Email] webhook sub activated:", e.message));
+
+            emailService.sendAdminNewSubscription({
+              creatorName: creator.user.name,
+              creatorEmail: creator.user.email,
+              amount: subSettings.monthlyPlanPrice || 99,
+              paymentId: subId,
+            }).catch(e => console.error("[Email] admin webhook sub activated:", e.message));
+          }
         }
         break;
       }
 
       case "subscription.charged": {
-        // Recurring payment success
         const subId = payload.subscription?.entity?.id;
-        const creator = await Creator.findOne({ razorpaySubscriptionId: subId });
+        const paymentId = payload.payment?.entity?.id || "";
+        const amount = payload.payment?.entity?.amount ? payload.payment.entity.amount / 100 : 0;
+        const creator = await Creator.findOne({ razorpaySubscriptionId: subId }).populate("user");
         if (creator) {
           creator.subscriptionStatus = "active";
           creator.lastPaymentDate = new Date();
@@ -301,7 +408,52 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
           end.setMonth(end.getMonth() + 1);
           creator.subscriptionEndDate = end;
           await creator.save();
+
+          // Create invoice for recurring payment
+          await Invoice.create({
+            creator: creator._id,
+            invoiceNumber: "BMS-AP-" + Date.now(),
+            type: "subscription",
+            description: "Monthly Subscription (AutoPay Renewal)",
+            amount: amount || (await configService.getSubscriptionSettings()).monthlyPlanPrice || 99,
+            status: "paid",
+            paidAt: new Date(),
+            dueDate: end,
+          });
+
           console.log("[Razorpay] Subscription charged for creator:", creator._id);
+
+          // ══ EMAIL: Creator — Subscription Renewed ══
+          if (creator.user?.email) {
+            const chargedAmount = amount || (await configService.getSubscriptionSettings()).monthlyPlanPrice || 99;
+            emailService.sendSubscriptionRenewed({
+              email: creator.user.email,
+              name: creator.user.name,
+              amount: chargedAmount,
+              endDate: end,
+              paymentId,
+              creatorId: creator._id,
+              userId: creator.user._id,
+            }).catch(e => console.error("[Email] webhook sub renewed:", e.message));
+
+            emailService.sendPaymentReceipt({
+              email: creator.user.email,
+              name: creator.user.name,
+              amount: chargedAmount,
+              paymentId,
+              description: "Monthly Subscription (AutoPay)",
+              date: new Date(),
+              creatorId: creator._id,
+              userId: creator.user._id,
+            }).catch(e => console.error("[Email] webhook payment receipt:", e.message));
+
+            emailService.sendAdminNewSubscription({
+              creatorName: creator.user.name,
+              creatorEmail: creator.user.email,
+              amount: chargedAmount,
+              paymentId,
+            }).catch(e => console.error("[Email] admin webhook renewal:", e.message));
+          }
         }
         break;
       }
@@ -309,31 +461,67 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
       case "subscription.cancelled":
       case "subscription.completed": {
         const subId = payload.subscription?.entity?.id;
-        const creator = await Creator.findOne({ razorpaySubscriptionId: subId });
+        const creator = await Creator.findOne({ razorpaySubscriptionId: subId }).populate("user");
         if (creator) {
           creator.subscriptionStatus = "expired";
           await creator.save();
           console.log("[Razorpay] Subscription cancelled/completed for creator:", creator._id);
+
+          // ══ EMAIL: Creator — Subscription Expired ══
+          if (creator.user?.email) {
+            emailService.sendSubscriptionExpired({
+              email: creator.user.email,
+              name: creator.user.name,
+              creatorId: creator._id,
+              userId: creator.user._id,
+            }).catch(e => console.error("[Email] webhook sub expired:", e.message));
+
+            emailService.sendAdminSubscriptionExpired({
+              creatorName: creator.user.name,
+              creatorEmail: creator.user.email,
+            }).catch(e => console.error("[Email] admin webhook sub expired:", e.message));
+          }
         }
         break;
       }
 
       case "payment.failed": {
         const subId = payload.payment?.entity?.subscription_id;
+        const amount = payload.payment?.entity?.amount ? payload.payment.entity.amount / 100 : 0;
+        const reason = payload.payment?.entity?.error_description || payload.payment?.entity?.error_reason || "";
         if (subId) {
-          const creator = await Creator.findOne({ razorpaySubscriptionId: subId });
+          const creator = await Creator.findOne({ razorpaySubscriptionId: subId }).populate("user");
           if (creator) {
             creator.subscriptionStatus = "overdue";
             creator.paymentFailCount = (creator.paymentFailCount || 0) + 1;
             await creator.save();
-            // Notify creator
+
             await Notification.create({
-              user: creator.user,
+              user: creator.user._id || creator.user,
               type: "payment",
               title: "⚠️ Payment Failed",
               message: "Your subscription payment failed. Please update your payment method.",
             });
             console.log("[Razorpay] Payment failed for creator:", creator._id);
+
+            // ══ EMAIL: Creator — Payment Failed ══
+            if (creator.user?.email) {
+              emailService.sendPaymentFailed({
+                email: creator.user.email,
+                name: creator.user.name,
+                amount,
+                reason,
+                creatorId: creator._id,
+                userId: creator.user._id,
+              }).catch(e => console.error("[Email] webhook payment failed:", e.message));
+
+              emailService.sendAdminPaymentFailed({
+                creatorName: creator.user.name,
+                creatorEmail: creator.user.email,
+                amount,
+                reason,
+              }).catch(e => console.error("[Email] admin webhook payment failed:", e.message));
+            }
           }
         }
         break;
