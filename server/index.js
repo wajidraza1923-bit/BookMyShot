@@ -21,7 +21,6 @@ const adminRevenueCenterRoutes = require("./routes/admin/revenueCenter");
 const adminAnnouncementsRoutes = require("./routes/admin/announcements");
 const adminDashboardRoutes = require("./routes/admin/dashboard");
 const adminSocialLinksRoutes = require("./routes/admin/socialLinks");
-const adminPaymentSettingsRoutes = require("./routes/admin/paymentSettings");
 const creatorRoutes = require("./routes/creator");
 const creatorsRoutes = require("./routes/creators");
 const userRoutes = require("./routes/user");
@@ -39,7 +38,6 @@ const paymentRecordRoutes = require("./routes/paymentrecords");
 const bookingEventRoutes = require("./routes/bookingevents");
 const revenueRoutes = require("./routes/revenue");
 const promotionRoutes = require("./routes/promotionRequests");
-const subscriptionPaymentRoutes = require("./routes/subscriptionPayments");
 const razorpayRoutes = require("./routes/razorpay");
 
 const app = express();
@@ -122,7 +120,6 @@ app.use("/api/admin/revenue-center", protect, authorize("admin"), adminRevenueCe
 app.use("/api/admin/announcements", protect, authorize("admin"), adminAnnouncementsRoutes);
 app.use("/api/admin/dashboard-overview", protect, authorize("admin"), adminDashboardRoutes);
 app.use("/api/admin/social-links", protect, authorize("admin"), adminSocialLinksRoutes);
-app.use("/api/admin/payment-settings", protect, authorize("admin"), adminPaymentSettingsRoutes);
 
 // Admin: general-purpose image upload to Cloudinary
 const { upload: adminUpload } = require("./middleware/upload");
@@ -206,31 +203,6 @@ app.get("/api/social-links", async (req, res) => {
   }
 });
 
-// Public payment settings endpoint (QR, UPI for creator payment modals)
-app.get("/api/payment-info", async (req, res) => {
-  try {
-    const PaymentSettings = require("./models/PaymentSettings");
-    const settings = await PaymentSettings.getSettings();
-    res.json({
-      success: true,
-      data: {
-        upiId: settings.upiId || process.env.BMS_UPI_ID || "",
-        accountHolderName: settings.accountHolderName || "",
-        qrImage: settings.qrImage || process.env.BMS_QR_IMAGE || "",
-      },
-    });
-  } catch (err) {
-    res.json({
-      success: true,
-      data: {
-        upiId: process.env.BMS_UPI_ID || "",
-        accountHolderName: "",
-        qrImage: process.env.BMS_QR_IMAGE || "",
-      },
-    });
-  }
-});
-
 app.use("/api/creator", creatorRoutes);
 app.use("/api/creators", creatorsRoutes);
 app.use("/api/user", userRoutes);
@@ -248,7 +220,6 @@ app.use("/api/payment-records", paymentRecordRoutes);
 app.use("/api/booking-events", bookingEventRoutes);
 app.use("/api/revenue", revenueRoutes);
 app.use("/api/promotions", promotionRoutes);
-app.use("/api/subscription-payments", subscriptionPaymentRoutes);
 app.use("/api/razorpay", razorpayRoutes);
 
 // Clean URL routes for static pages (legal, info)

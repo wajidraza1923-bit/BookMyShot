@@ -6,6 +6,7 @@
   <title>Creator Subscription — BookMyShot</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <script src="/js/ga.js"></script>
   <style>
     :root{--bg:#0a0806;--card:#141210;--border:rgba(255,140,39,.12);--gold:#ff8c27;--gold-light:#ffb366;--cream:#f6eee7;--text:#d4c8bc;--muted:#8a7e72;--success:#10b981;--danger:#ef4444;--radius:14px;--font-display:'Cormorant Garamond',serif;--font-body:'Outfit',sans-serif}
@@ -27,22 +28,9 @@
     .sub-details .label{color:var(--muted)}.sub-details .value{color:var(--cream);font-weight:500}
     .btn-pay{width:100%;padding:.75rem;background:linear-gradient(135deg,#e85a14,#ff9b2e);color:#100803;border:none;border-radius:10px;font-size:.9rem;font-weight:600;cursor:pointer;transition:all .2s}
     .btn-pay:hover{box-shadow:0 8px 32px rgba(255,140,39,.3)}
+    .btn-pay:disabled{opacity:.5;cursor:not-allowed}
     .btn-free{width:100%;padding:.75rem;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);color:var(--success);border-radius:10px;font-size:.9rem;font-weight:600;cursor:pointer;transition:all .2s}
     .btn-free:hover{background:rgba(16,185,129,.2)}
-    /* Payment Section (hidden by default) */
-    .pay-section{display:none;text-align:left;margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--border)}
-    .pay-section.active{display:block}
-    .pay-qr{text-align:center;margin-bottom:1rem}
-    .pay-qr img{width:160px;height:160px;border-radius:10px;border:1px solid rgba(255,255,255,.08)}
-    .pay-upi{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:.6rem .8rem;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
-    .pay-upi span{flex:1;font-size:.82rem;color:var(--cream);word-break:break-all}
-    .pay-upi button{background:rgba(255,140,39,.1);border:1px solid rgba(255,140,39,.25);color:var(--gold);padding:.25rem .5rem;border-radius:6px;font-size:.68rem;cursor:pointer}
-    .pay-open{display:block;width:100%;padding:.6rem;background:linear-gradient(135deg,#e85a14,#ff9b2e);color:#100803;border:none;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;text-align:center;text-decoration:none;margin-bottom:1rem}
-    .form-group{margin-bottom:.75rem}
-    .form-group label{display:block;font-size:.72rem;color:var(--muted);margin-bottom:.25rem}
-    .form-group input{width:100%;padding:.55rem .7rem;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--cream);font-size:.82rem}
-    .upload-area{border:1px dashed rgba(255,140,39,.3);border-radius:8px;padding:.8rem;text-align:center;cursor:pointer;font-size:.72rem;color:var(--muted)}
-    .btn-submit{width:100%;padding:.65rem;background:var(--gold);color:#100803;border:none;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;margin-top:.5rem}
     .status-card{text-align:center;padding:1.5rem}
     .status-card .icon{font-size:2rem;margin-bottom:.5rem}
     .status-card h3{color:var(--cream);font-size:1rem;margin-bottom:.3rem}
@@ -57,179 +45,127 @@
   </header>
   <main class="main">
     <div class="sub-card" id="subCard">
-      <div class="loader" id="loader" style="text-align:center;padding:2rem"><i class="fas fa-spinner fa-spin" style="color:var(--gold);font-size:1.5rem"></i></div>
+      <div style="display:flex;flex-direction:column;gap:0.6rem">
+        <div style="height:48px;background:rgba(255,255,255,0.03);border-radius:10px;animation:pulse 1.5s infinite"></div>
+        <div style="height:78px;background:rgba(255,255,255,0.03);border-radius:14px;animation:pulse 1.5s infinite"></div>
+      </div>
     </div>
   </main>
+  <style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}</style>
   <script src="/js/api.js"></script>
   <script>
   (function() {
     'use strict';
-
-    // Must be logged in as creator
     var user = API.getUser();
     var token = API.getToken();
-    if (!user || !token || user.role !== 'creator') {
-      window.location.href = '/creator-auth.html';
-      return;
-    }
-
-    var screenshotData = null;
+    if (!user || !token || user.role !== 'creator') { window.location.href = '/creator-auth.html'; return; }
 
     async function init() {
       try {
-        // Fetch config and payment info
-        var [config, payInfo, subPayInfo] = await Promise.all([
+        var [config, rpConfig] = await Promise.all([
           API.get('/config/public'),
-          API.get('/payment-info'),
-          API.get('/subscription-payments/info'),
+          API.get('/razorpay/config'),
         ]);
 
         var sub = config.subscription || {};
         var amount = sub.monthlyPlanPrice || 0;
         var trialDays = sub.trialDays || 0;
         var freeTrialEnabled = sub.freeTrialEnabled !== false;
-        var upiId = (payInfo.data && payInfo.data.upiId) || '';
-        var qrImage = (payInfo.data && payInfo.data.qrImage) || '';
-        var holderName = (payInfo.data && payInfo.data.accountHolderName) || 'BookMyShot';
+        var razorpayKey = rpConfig.keyId || '';
+        var razorpayConfigured = rpConfig.configured;
 
-        // Check if already has pending payment
-        var pending = subPayInfo.subscription && subPayInfo.subscription.pendingPayment;
-        if (pending) {
-          showPendingStatus(pending);
-          return;
-        }
-
-        // Check if subscription is already active/trial - go to pending approval
-        var subStatus = subPayInfo.subscription && subPayInfo.subscription.status;
+        // Check if subscription already active
+        var me = await API.get('/auth/me');
+        var subStatus = me.creator ? me.creator.subscriptionStatus : '';
         if (subStatus === 'active' || subStatus === 'trial') {
           window.location.href = '/creator/pending.html';
           return;
         }
 
+        var card = document.getElementById('subCard');
         var trialEndDate = new Date();
         trialEndDate.setDate(trialEndDate.getDate() + trialDays);
 
-        var card = document.getElementById('subCard');
-
-        // CASE A: Free (amount = 0 OR free trial enabled with trial days > 0)
+        // CASE A: Free trial available
         if (amount === 0 || (freeTrialEnabled && trialDays > 0)) {
-          card.innerHTML = renderFreeTrialCard(amount, trialDays, trialEndDate, freeTrialEnabled);
+          card.innerHTML = '<div class="sub-icon"><i class="fas fa-crown"></i></div>' +
+            '<h2 class="sub-title">Creator Subscription</h2>' +
+            '<p class="sub-plan">BookMyShot Creator Plan</p>' +
+            '<div class="sub-amount">₹' + amount + '</div>' +
+            '<div class="sub-period">per month</div>' +
+            (trialDays > 0 ? '<div class="sub-trial"><i class="fas fa-gift"></i> Free Trial: ' + trialDays + ' Days</div>' : '') +
+            '<div class="sub-details">' +
+              '<div class="row"><span class="label">Plan</span><span class="value">Monthly</span></div>' +
+              '<div class="row"><span class="label">Amount</span><span class="value">₹' + amount + '/month</span></div>' +
+              (trialDays > 0 ? '<div class="row"><span class="label">Free Trial</span><span class="value">' + trialDays + ' Days</span></div>' : '') +
+              (trialDays > 0 ? '<div class="row"><span class="label">Trial Ends</span><span class="value">' + trialEndDate.toLocaleDateString('en-IN') + '</span></div>' : '') +
+              '<div class="row"><span class="label">Auto-renew</span><span class="value">After trial via Razorpay</span></div>' +
+            '</div>' +
+            '<button class="btn-free" id="startTrialBtn"><i class="fas fa-play"></i> Start Free Trial</button>';
+
+          document.getElementById('startTrialBtn').addEventListener('click', async function() {
+            this.disabled = true; this.textContent = 'Activating...';
+            try {
+              await API.post('/revenue/creator/subscribe', {});
+              window.location.href = '/creator/pending.html';
+            } catch (e) { window.location.href = '/creator/pending.html'; }
+          });
+
+        // CASE B: Payment required via Razorpay
         } else {
-          // CASE B: Payment required
-          card.innerHTML = renderPaymentCard(amount, trialDays, upiId, qrImage, holderName);
+          card.innerHTML = '<div class="sub-icon"><i class="fas fa-crown"></i></div>' +
+            '<h2 class="sub-title">Creator Subscription</h2>' +
+            '<p class="sub-plan">BookMyShot Creator Plan</p>' +
+            '<div class="sub-amount">₹' + amount + '</div>' +
+            '<div class="sub-period">per month • Auto-renews via Razorpay</div>' +
+            '<div class="sub-details">' +
+              '<div class="row"><span class="label">Plan</span><span class="value">Monthly</span></div>' +
+              '<div class="row"><span class="label">Amount</span><span class="value">₹' + amount + '/month</span></div>' +
+              '<div class="row"><span class="label">Payment</span><span class="value">Razorpay AutoPay</span></div>' +
+              '<div class="row"><span class="label">Renewal</span><span class="value">Automatic monthly</span></div>' +
+            '</div>' +
+            '<button class="btn-pay" id="payBtn"><i class="fas fa-credit-card"></i> Subscribe & Pay ₹' + amount + '</button>' +
+            '<p style="font-size:.68rem;color:var(--muted);margin-top:.75rem">Secure payment powered by Razorpay</p>';
+
+          document.getElementById('payBtn').addEventListener('click', async function() {
+            if (!razorpayConfigured) { alert('Payment gateway not configured. Contact admin.'); return; }
+            this.disabled = true; this.textContent = 'Processing...';
+            try {
+              var orderRes = await API.post('/razorpay/create-subscription-order', {});
+              var options = {
+                key: razorpayKey,
+                amount: orderRes.order.amount,
+                currency: 'INR',
+                name: 'BookMyShot',
+                description: 'Creator Monthly Subscription',
+                order_id: orderRes.order.id,
+                handler: async function(response) {
+                  try {
+                    await API.post('/razorpay/verify-payment', {
+                      razorpay_order_id: response.razorpay_order_id,
+                      razorpay_payment_id: response.razorpay_payment_id,
+                      razorpay_signature: response.razorpay_signature,
+                      type: 'subscription',
+                    });
+                    window.location.href = '/creator/pending.html';
+                  } catch (e) { alert('Payment verification failed. Contact support.'); location.reload(); }
+                },
+                prefill: { name: user.name || '', email: user.email || '' },
+                theme: { color: '#ff8c27' },
+                modal: { ondismiss: function() { document.getElementById('payBtn').disabled = false; document.getElementById('payBtn').innerHTML = '<i class="fas fa-credit-card"></i> Subscribe & Pay ₹' + amount; } },
+              };
+              var rzp = new Razorpay(options);
+              rzp.open();
+            } catch (e) {
+              alert(e.message || 'Failed to create payment order');
+              this.disabled = false; this.innerHTML = '<i class="fas fa-credit-card"></i> Subscribe & Pay ₹' + amount;
+            }
+          });
         }
       } catch (e) {
-        document.getElementById('subCard').innerHTML = '<div style="color:var(--danger);padding:2rem;text-align:center"><p>Failed to load subscription info.</p><button onclick="location.reload()" style="margin-top:1rem" class="btn-pay">Retry</button></div>';
+        document.getElementById('subCard').innerHTML = '<div class="status-card"><div class="icon">⚠️</div><h3>Error</h3><p>' + (e.message || 'Failed to load') + '</p><button onclick="location.reload()" class="btn-pay" style="margin-top:1rem">Retry</button></div>';
       }
     }
-
-    function renderFreeTrialCard(amount, trialDays, trialEndDate, freeTrialEnabled) {
-      return '<div class="sub-icon"><i class="fas fa-crown"></i></div>' +
-        '<h2 class="sub-title">Creator Subscription</h2>' +
-        '<p class="sub-plan">BookMyShot Creator Plan</p>' +
-        '<div class="sub-amount">₹' + (amount || 0) + '</div>' +
-        '<div class="sub-period">per month</div>' +
-        (freeTrialEnabled && trialDays > 0 ? '<div class="sub-trial"><i class="fas fa-gift"></i> Free Trial: ' + trialDays + ' Days</div>' : '') +
-        '<div class="sub-details">' +
-          '<div class="row"><span class="label">Plan</span><span class="value">Monthly</span></div>' +
-          '<div class="row"><span class="label">Amount</span><span class="value">₹' + (amount || 0) + '/month</span></div>' +
-          (freeTrialEnabled && trialDays > 0 ? '<div class="row"><span class="label">Free Trial</span><span class="value">' + trialDays + ' Days</span></div>' : '') +
-          (freeTrialEnabled && trialDays > 0 ? '<div class="row"><span class="label">Trial Ends</span><span class="value">' + trialEndDate.toLocaleDateString('en-IN') + '</span></div>' : '') +
-          '<div class="row"><span class="label">Status</span><span class="value" style="color:var(--success)">Free Trial Available</span></div>' +
-        '</div>' +
-        '<button class="btn-free" onclick="startFreeTrial()"><i class="fas fa-play"></i> Continue Free Trial</button>';
-    }
-
-    function renderPaymentCard(amount, trialDays, upiId, qrImage, holderName) {
-      var upiLink = upiId ? 'upi://pay?pa=' + encodeURIComponent(upiId) + '&pn=' + encodeURIComponent(holderName) + '&am=' + amount + '&cu=INR' : '';
-
-      return '<div class="sub-icon"><i class="fas fa-crown"></i></div>' +
-        '<h2 class="sub-title">Creator Subscription</h2>' +
-        '<p class="sub-plan">BookMyShot Creator Plan</p>' +
-        '<div class="sub-amount">₹' + amount + '</div>' +
-        '<div class="sub-period">per month</div>' +
-        '<div class="sub-details">' +
-          '<div class="row"><span class="label">Plan</span><span class="value">Monthly</span></div>' +
-          '<div class="row"><span class="label">Amount Due</span><span class="value" style="color:var(--gold)">₹' + amount + '</span></div>' +
-          (trialDays > 0 ? '<div class="row"><span class="label">Free Trial</span><span class="value">' + trialDays + ' Days</span></div>' : '') +
-          '<div class="row"><span class="label">Status</span><span class="value" style="color:var(--gold)">Payment Required</span></div>' +
-        '</div>' +
-        '<button class="btn-pay" onclick="showPaySection()"><i class="fas fa-credit-card"></i> Pay & Continue</button>' +
-        '<div class="pay-section" id="paySection">' +
-          (qrImage ? '<div class="pay-qr"><img src="' + qrImage + '" alt="QR"></div>' : '') +
-          '<div class="pay-upi"><span id="upiText">' + (upiId || 'Not configured') + '</span>' +
-            (upiId ? '<button onclick="copyText(\'' + upiId + '\',this)">📋 Copy</button>' : '') +
-          '</div>' +
-          (holderName ? '<div style="font-size:.72rem;color:var(--muted);margin-bottom:.75rem">Account: ' + holderName + '</div>' : '') +
-          (upiId ? '<div style="padding:.5rem;background:rgba(255,140,39,.06);border:1px solid rgba(255,140,39,.12);border-radius:8px;text-align:center;margin-bottom:.75rem"><span style="font-size:.72rem;color:var(--muted)">📱 Open your preferred UPI app and pay using QR Code or copied UPI ID.</span></div>' : '') +
-          '<div style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem;font-weight:500">After payment, upload proof below:</div>' +
-          '<div class="form-group"><label>UTR / Transaction ID *</label><input type="text" id="subUtr" placeholder="Enter UTR number"></div>' +
-          '<div class="form-group"><label>Payment Screenshot *</label><div class="upload-area" onclick="document.getElementById(\'subScreenshot\').click()"><i class="fas fa-upload"></i> <span id="subScreenLabel">Click to upload screenshot</span><input type="file" id="subScreenshot" accept="image/*" style="display:none" onchange="handleScreenUpload(event)"></div></div>' +
-          '<button class="btn-submit" onclick="submitSubPayment(' + amount + ')"><i class="fas fa-paper-plane"></i> Submit Payment Request</button>' +
-        '</div>';
-    }
-
-    function showPendingStatus(payment) {
-      var card = document.getElementById('subCard');
-      var icon = payment.status === 'approved' ? '✅' : payment.status === 'rejected' ? '❌' : '⏳';
-      var color = payment.status === 'approved' ? 'var(--success)' : payment.status === 'rejected' ? 'var(--danger)' : '#f59e0b';
-      var text = payment.status === 'approved' ? 'Payment Approved' : payment.status === 'rejected' ? 'Payment Rejected' : 'Payment Verification Pending';
-
-      card.innerHTML = '<div class="status-card">' +
-        '<div class="icon">' + icon + '</div>' +
-        '<h3>' + text + '</h3>' +
-        '<div style="font-size:.85rem;color:' + color + ';font-weight:600;margin:.5rem 0">₹' + (payment.amount || 0) + '</div>' +
-        '<p>UTR: ' + (payment.utr || '—') + '</p>' +
-        (payment.status === 'rejected' && payment.adminNote ? '<div style="margin-top:.75rem;padding:.5rem;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;font-size:.72rem;color:var(--danger)">Reason: ' + payment.adminNote + '</div>' : '') +
-        (payment.status === 'pending' ? '<p style="margin-top:.75rem;font-size:.72rem">Your payment is being verified by our team. This usually takes 24 hours.</p>' : '') +
-        (payment.status === 'rejected' ? '<button class="btn-pay" style="margin-top:1rem" onclick="location.reload()">Try Again</button>' : '') +
-        (payment.status === 'approved' ? '<button class="btn-free" style="margin-top:1rem" onclick="location.href=\'/creator/pending.html\'">Continue</button>' : '') +
-      '</div>';
-    }
-
-    window.showPaySection = function() {
-      var sec = document.getElementById('paySection');
-      if (sec) sec.classList.add('active');
-    };
-
-    window.startFreeTrial = async function() {
-      try {
-        // Activate trial via backend - sets status to "trial" with proper dates
-        await API.post('/revenue/creator/subscribe', {});
-      } catch (e) { /* proceed anyway */ }
-      window.location.href = '/creator/pending.html';
-    };
-
-    window.handleScreenUpload = function(event) {
-      var file = event.target.files[0];
-      if (!file) return;
-      if (file.size > 10 * 1024 * 1024) { alert('File too large. Max 10MB.'); return; }
-      var reader = new FileReader();
-      reader.onload = function(e) {
-        screenshotData = e.target.result;
-        document.getElementById('subScreenLabel').textContent = '✅ Uploaded (' + (file.size/1024/1024).toFixed(1) + ' MB)';
-      };
-      reader.readAsDataURL(file);
-    };
-
-    window.copyText = function(text, btn) {
-      navigator.clipboard.writeText(text).then(function() {
-        btn.textContent = '✅';
-        setTimeout(function() { btn.textContent = '📋 Copy'; }, 2000);
-      });
-    };
-
-    window.submitSubPayment = async function(amount) {
-      var utr = document.getElementById('subUtr').value.trim();
-      if (!utr) { alert('Please enter UTR / Transaction ID'); return; }
-      if (!screenshotData) { alert('Please upload payment screenshot'); return; }
-      try {
-        await API.post('/subscription-payments/subscribe', { screenshot: screenshotData, utr: utr, amount: amount });
-        showPendingStatus({ status: 'pending', amount: amount, utr: utr });
-      } catch (e) {
-        alert(e.message || 'Failed to submit payment');
-      }
-    };
 
     init();
   })();
