@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pricing — BookMyShot Creator Plans</title>
+  <meta name="description" content="BookMyShot creator subscription plans and pricing. See what's included in each plan.">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="icon" type="image/png" href="/favico.png">
+  <script src="/js/ga.js"></script>
+  <style>
+    body { font-family: 'Outfit', sans-serif; background: #0a0806; color: #f6eee7; margin: 0; line-height: 1.8; }
+    .container { max-width: 800px; margin: 0 auto; padding: 2rem 1.5rem; }
+    h1 { font-family: 'Playfair Display', serif; font-size: 2rem; color: #ff8c27; margin-bottom: 0.5rem; }
+    h2 { font-family: 'Playfair Display', serif; font-size: 1.3rem; color: #ffb366; margin-top: 2rem; margin-bottom: 0.75rem; }
+    p, li { font-size: 0.95rem; color: rgba(255,255,255,0.75); }
+    .back-link { display: inline-block; margin-bottom: 1.5rem; color: #ff8c27; text-decoration: none; font-size: 0.85rem; }
+    .back-link:hover { text-decoration: underline; }
+    a { color: #ff8c27; }
+    .plan-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,140,39,0.15); border-radius: 16px; padding: 1.5rem; margin: 1.5rem 0; }
+    .plan-card h3 { font-family: 'Playfair Display', serif; color: #ffb366; font-size: 1.2rem; margin: 0 0 0.3rem; }
+    .plan-price { font-size: 1.8rem; font-weight: 700; color: #ff8c27; margin: 0.5rem 0; }
+    .plan-price span { font-size: 0.8rem; font-weight: 400; color: rgba(255,255,255,0.4); }
+    .features { list-style: none; padding: 0; }
+    .features li { padding: 0.35rem 0; font-size: 0.88rem; color: rgba(255,255,255,0.65); }
+    .features li::before { content: '✓ '; color: #10b981; margin-right: 0.3rem; }
+    .note { background: rgba(255,140,39,0.05); border: 1px solid rgba(255,140,39,0.1); border-radius: 10px; padding: 1rem; margin-top: 2rem; font-size: 0.82rem; color: rgba(255,255,255,0.5); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="/" class="back-link">← Back to Home</a>
+    <h1>Creator Pricing</h1>
+    <p>BookMyShot offers subscription plans for creators to access the full platform dashboard and business management tools.</p>
+
+    <div class="plan-card">
+      <h3>Creator Monthly Plan</h3>
+      <div class="plan-price" id="planPrice">Loading...</div>
+      <ul class="features">
+        <li>Full Creator Dashboard Access</li>
+        <li>Portfolio Management (Photos & Videos)</li>
+        <li>Booking & Inquiry Management</li>
+        <li>Lead Management & Notifications</li>
+        <li>Payment Proof System</li>
+        <li>Public Creator Profile Page</li>
+        <li>Profile Visibility on Platform</li>
+        <li>Calendar & Availability Management</li>
+        <li>Earnings & Revenue Tracking</li>
+        <li>Package Management</li>
+      </ul>
+    </div>
+
+    <h2>Additional Services</h2>
+    <ul class="features">
+      <li>Featured Creator Placement (paid promotion)</li>
+      <li>Rank-Based Promotion (positions 1-4 in listings)</li>
+      <li>Priority Search Placement</li>
+      <li>Homepage Spotlight</li>
+    </ul>
+
+    <h2>Commission Structure</h2>
+    <p>In addition to the subscription fee, BookMyShot charges a service commission on bookings facilitated through the platform:</p>
+    <ul class="features">
+      <li>Platform-sourced bookings: up to 5% commission</li>
+      <li>Creator-sourced bookings: up to 3% commission</li>
+    </ul>
+
+    <div class="note">
+      <strong>Note:</strong> Subscription plans, pricing, and features may be updated from time to time. Current pricing is displayed during the creator registration and subscription process. For the latest information, please visit the Creator Dashboard or contact support.
+    </div>
+
+    <p style="margin-top:2rem;font-size:0.82rem;color:rgba(255,255,255,0.4)">For more details about how BookMyShot works, visit our <a href="/how-bookmyshot-works.html">How BookMyShot Works</a> page.</p>
+    <p style="margin-top:3rem;font-size:0.75rem;color:rgba(255,255,255,0.3);text-align:center">Last updated: June 2026 · BookMyShot</p>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    // Load real pricing from database
+    fetch('/api/config/public').then(r => r.json()).then(function(data) {
+      var price = data.subscription ? data.subscription.monthlyPlanPrice : 0;
+      document.getElementById('planPrice').innerHTML = '₹' + price + '<span>/month</span>';
+    }).catch(function() {
+      document.getElementById('planPrice').textContent = 'Contact for pricing';
+    });
+  </script>
+</body>
+</html>

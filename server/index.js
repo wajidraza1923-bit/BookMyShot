@@ -250,7 +250,7 @@ app.use("/api/promotions", promotionRoutes);
 app.use("/api/subscription-payments", subscriptionPaymentRoutes);
 
 // Clean URL routes for static pages (legal, info)
-const staticPages = ['about', 'contact', 'terms', 'privacy', 'refund-policy', 'booking-cancellation', 'cookie-policy', 'creator-guidelines'];
+const staticPages = ['about', 'contact', 'terms', 'privacy', 'refund-policy', 'booking-cancellation', 'cookie-policy', 'creator-guidelines', 'how-bookmyshot-works', 'pricing'];
 staticPages.forEach(page => {
   app.get(`/${page}`, (req, res) => res.sendFile(path.join(__dirname, `../public/${page}.html`)));
 });
