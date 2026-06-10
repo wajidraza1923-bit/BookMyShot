@@ -250,7 +250,6 @@ router.patch("/booking/:bookingId/amount", async (req, res, next) => {
 
     const booking = await Booking.findOne({ _id: req.params.bookingId, creator: creator._id });
     if (!booking) {
-      // Try without creator filter for debugging
       const anyBooking = await Booking.findById(req.params.bookingId);
       if (anyBooking) {
         return res.status(403).json({ success: false, message: "This booking belongs to a different creator" });
@@ -265,28 +264,34 @@ router.patch("/booking/:bookingId/amount", async (req, res, next) => {
 
     booking.amount = newAmount;
 
+    // ═══════════════════════════════════════════════════════════════
     // COMMISSION LOGIC:
-    // First time amount is set → calculate commission and LOCK it permanently
-    // After that → creator can change amount freely, commission never changes
-    if (!booking.commissionLocked) {
-      // First time setting amount — calculate and freeze commission
-      const configService = require("../services/configService");
-      const commSettings = await configService.getCommissionSettings();
+    // - First time: calculate commission on the amount set
+    // - If amount INCREASES above previous highest: recalculate on new higher amount
+    // - If amount DECREASES: commission stays at previous highest (never goes down)
+    // - Commission is always based on the HIGHEST amount ever set
+    // ═══════════════════════════════════════════════════════════════
+    const configService = require("../services/configService");
+    const commSettings = await configService.getCommissionSettings();
+    const leadSource = booking.leadSource || "bookmyshot";
+    const commissionPercent = leadSource === "creator"
+      ? (commSettings.creatorLeadCommissionPercent || 3)
+      : (commSettings.bmsLeadCommissionPercent || 5);
 
-      const leadSource = booking.leadSource || "bookmyshot";
-      const commissionPercent = leadSource === "creator"
-        ? (commSettings.creatorLeadCommissionPercent || 3)
-        : (commSettings.bmsLeadCommissionPercent || 5);
+    const previousHighest = booking.commissionLockedAmount || 0;
+
+    if (newAmount > previousHighest) {
+      // New amount is HIGHER than ever before → recalculate commission on this new amount
       const commissionAmount = Math.round((newAmount * commissionPercent) / 100);
 
       booking.commissionPercent = commissionPercent;
       booking.commissionAmount = commissionAmount;
-      booking.commissionLockedAmount = newAmount;
+      booking.commissionLockedAmount = newAmount; // Track highest
       booking.commissionLocked = true;
       booking.creatorReceivable = newAmount - commissionAmount;
       if (!booking.commissionStatus) booking.commissionStatus = "pending";
 
-      // Create commission record
+      // Update or create commission record
       const Commission = require("../models/Commission");
       let commission = await Commission.findOne({ booking: booking._id });
       if (commission) {
@@ -296,7 +301,7 @@ router.patch("/booking/:bookingId/amount", async (req, res, next) => {
         commission.commissionAmount = commissionAmount;
         commission.creatorEarning = newAmount - commissionAmount;
         await commission.save();
-      } else if (newAmount > 0) {
+      } else {
         await Commission.create({
           booking: booking._id,
           creator: creator._id,
@@ -310,8 +315,7 @@ router.patch("/booking/:bookingId/amount", async (req, res, next) => {
         });
       }
     } else {
-      // Commission already locked — only update the booking amount
-      // Commission stays frozen at the original calculated value
+      // Amount is SAME or LOWER than previous highest → commission stays unchanged
       booking.creatorReceivable = newAmount - booking.commissionAmount;
     }
 

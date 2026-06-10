@@ -290,8 +290,8 @@ router.patch("/booking-requests/:id", async (req, res, next) => {
     const { status, amount } = req.body;
     booking.status = status;
 
-    // If amount is being set and commission not yet locked, calculate and lock
-    if (amount && amount > 0 && !booking.commissionLocked) {
+    // If amount is being set, apply commission logic (highest amount wins)
+    if (amount && amount > 0) {
       booking.amount = amount;
       const configService = require("../services/configService");
       const commSettings = await configService.getCommissionSettings();
@@ -299,17 +299,22 @@ router.patch("/booking-requests/:id", async (req, res, next) => {
       const commPercent = leadSource === "creator"
         ? (commSettings.creatorLeadCommissionPercent || 3)
         : (commSettings.bmsLeadCommissionPercent || 5);
-      const commAmount = Math.round((amount * commPercent) / 100);
-      booking.commissionPercent = commPercent;
-      booking.commissionAmount = commAmount;
-      booking.commissionLockedAmount = amount;
-      booking.commissionLocked = true;
-      booking.creatorReceivable = amount - commAmount;
-      if (!booking.commissionStatus) booking.commissionStatus = "pending";
-    } else if (amount && amount > 0 && booking.commissionLocked) {
-      // Commission already locked — just update amount, commission stays same
-      booking.amount = amount;
-      booking.creatorReceivable = amount - booking.commissionAmount;
+
+      const previousHighest = booking.commissionLockedAmount || 0;
+
+      if (amount > previousHighest) {
+        // New highest amount → recalculate commission
+        const commAmount = Math.round((amount * commPercent) / 100);
+        booking.commissionPercent = commPercent;
+        booking.commissionAmount = commAmount;
+        booking.commissionLockedAmount = amount;
+        booking.commissionLocked = true;
+        booking.creatorReceivable = amount - commAmount;
+        if (!booking.commissionStatus) booking.commissionStatus = "pending";
+      } else {
+        // Same or lower → keep existing commission
+        booking.creatorReceivable = amount - (booking.commissionAmount || 0);
+      }
     }
 
     await booking.save();
@@ -562,6 +567,36 @@ router.post("/inquiries", async (req, res, next) => {
       invoiceNumber: `BMS-CRT-${Date.now()}`,
       leadSource: "creator",
     });
+
+    // Calculate commission immediately if amount > 0
+    if (booking.amount > 0) {
+      const configService = require("../services/configService");
+      const commSettings = await configService.getCommissionSettings();
+      const commPercent = commSettings.creatorLeadCommissionPercent || 3;
+      const commAmount = Math.round((booking.amount * commPercent) / 100);
+
+      booking.commissionPercent = commPercent;
+      booking.commissionAmount = commAmount;
+      booking.commissionLockedAmount = booking.amount;
+      booking.commissionLocked = true;
+      booking.creatorReceivable = booking.amount - commAmount;
+      booking.commissionStatus = "pending";
+      await booking.save();
+
+      // Create commission record
+      const Commission = require("../models/Commission");
+      await Commission.create({
+        booking: booking._id,
+        creator: creator._id,
+        user: req.user._id,
+        totalAmount: booking.amount,
+        leadSource: "creator",
+        commissionPercent: commPercent,
+        commissionAmount: commAmount,
+        creatorEarning: booking.amount - commAmount,
+        status: "pending",
+      });
+    }
 
     res.status(201).json({ success: true, inquiry, booking });
   } catch (e) {
