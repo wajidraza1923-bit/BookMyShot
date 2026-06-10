@@ -247,13 +247,17 @@ function attachPackageButtons() {
 }
 
 function attachBookingButton() {
-  const bookingButton = document.querySelector('.booking-form-card .btn-primary');
+  const bookingButton = document.querySelector('.booking-form-card .btn-primary') || document.getElementById('homepageBookBtn');
   if (bookingButton) {
     bookingButton.addEventListener('click', (e) => {
       e.preventDefault();
       createBookingFromPackage('Luxury Booking');
     });
   }
+  // Global fallback for onclick attribute
+  window.goToEnquiry = function() {
+    createBookingFromPackage('Luxury Booking');
+  };
 }
 
 // Initialize immediately since script is at bottom of body (DOM is already ready)
