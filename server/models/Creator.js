@@ -63,8 +63,10 @@ const creatorSchema = new mongoose.Schema(
     // Payment gateway fields (Razorpay ready)
     razorpaySubscriptionId: { type: String, default: "" },
     razorpayCustomerId: { type: String, default: "" },
+    razorpayPlanId: { type: String, default: "" },
     paymentMethod: { type: String, default: "" },
     paymentFailCount: { type: Number, default: 0 },
+    nextBillingDate: { type: Date },
   },
   { timestamps: true }
 );
