@@ -4759,7 +4759,7 @@
           toast('Payment recorded ✓', 'success');
           document.getElementById('paymentModal').style.display = 'none';
           document.getElementById('pmProofFile').value = '';
-          loadBookings();
+          setTimeout(function() { loadBookings(); }, 300);
         } catch (err) { toast(err.message || 'Failed', 'error'); }
       });
 
@@ -4769,12 +4769,18 @@
         var bookingId = document.getElementById('amBookingId').value;
         var amount = parseInt(document.getElementById('amAmount').value);
         if (!amount || amount <= 0) { toast('Enter a valid amount', 'error'); return; }
+        var btn = this.querySelector('button[type="submit"]');
+        btn.disabled = true; btn.textContent = 'Saving...';
         try {
-          await API.patch('/payment-records/booking/' + bookingId + '/amount', { amount: amount });
-          toast('Amount set: ₹' + amount.toLocaleString('en-IN') + ' ✓', 'success');
+          var result = await API.patch('/payment-records/booking/' + bookingId + '/amount', { amount: amount });
+          var b = result.booking || {};
+          var commInfo = b.commissionLocked ? ' | Commission: ₹' + (b.commissionAmount || 0).toLocaleString('en-IN') + ' (' + (b.commissionPercent || 0) + '%)' : '';
+          toast('Amount saved: ₹' + amount.toLocaleString('en-IN') + commInfo, 'success');
           document.getElementById('amountModal').style.display = 'none';
-          loadBookings();
-        } catch (err) { toast(err.message || 'Failed', 'error'); }
+          // Small delay to ensure DB consistency before re-fetch
+          setTimeout(function() { loadBookings(); }, 300);
+        } catch (err) { toast(err.message || 'Failed to save amount', 'error'); }
+        btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Save Amount';
       });
     })();
   </script>

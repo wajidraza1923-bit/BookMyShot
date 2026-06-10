@@ -318,7 +318,9 @@ router.patch("/booking/:bookingId/amount", async (req, res, next) => {
     await booking.save();
     await recalcPayment(booking._id);
 
-    res.json({ success: true, booking });
+    // Re-fetch to return the latest state
+    const updatedBooking = await Booking.findById(booking._id).lean();
+    res.json({ success: true, booking: updatedBooking });
   } catch (e) {
     next(e);
   }
