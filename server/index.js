@@ -229,7 +229,7 @@ app.use("/api/razorpay", razorpayRoutes);
 app.use("/api/homepage-enquiries", homepageEnquiryRoutes);
 
 // Clean URL routes for static pages (legal, info)
-const staticPages = ['about', 'contact', 'terms', 'privacy', 'refund-policy', 'booking-cancellation', 'cookie-policy', 'creator-guidelines', 'how-bookmyshot-works', 'pricing'];
+const staticPages = ['about', 'contact', 'terms', 'privacy', 'refund-policy', 'booking-cancellation', 'cookie-policy', 'creator-guidelines', 'how-bookmyshot-works', 'pricing', 'enquiry'];
 staticPages.forEach(page => {
   app.get(`/${page}`, (req, res) => res.sendFile(path.join(__dirname, `../public/${page}.html`)));
 });

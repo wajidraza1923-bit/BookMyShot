@@ -306,6 +306,7 @@
           <button class="active" data-hefilter="all">All</button>
           <button data-hefilter="new">New</button>
           <button data-hefilter="contacted">Contacted</button>
+          <button data-hefilter="forwarded">Forwarded</button>
           <button data-hefilter="closed">Closed</button>
         </div>
         <div id="heTableContent"><div class="loader"></div></div>
@@ -1136,32 +1137,43 @@
           return;
         }
 
-        var html = '<div class="table-wrap"><table><thead><tr><th>Name</th><th>Contact</th><th>Event Type</th><th>Date</th><th>Location</th><th>Status</th><th>Submitted</th><th>Actions</th></tr></thead><tbody>';
+        var html = '<div class="table-wrap"><table><thead><tr><th>Name</th><th>Contact</th><th>Event</th><th>Date</th><th>Location</th><th>Creator</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
         enquiries.forEach(function(e) {
           var name = e.name || (e.user && e.user.name) || 'Anonymous';
-          var contact = (e.email || (e.user && e.user.email) || '') + (e.phone ? '<br><span style="color:var(--text-dim);font-size:0.7rem">' + e.phone + '</span>' : '');
-          var date = e.eventDate ? new Date(e.eventDate).toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'}) : '—';
-          var created = e.createdAt ? new Date(e.createdAt).toLocaleString('en-IN', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
-          var statusClass = e.status === 'new' ? 'pending' : e.status === 'contacted' ? 'approved' : 'completed';
+          var contact = (e.email || '') + (e.phone ? '<br><span style="color:var(--text-dim);font-size:0.68rem">' + e.phone + '</span>' : '');
+          var date = e.eventDate ? new Date(e.eventDate).toLocaleDateString('en-IN', {day:'2-digit',month:'short'}) : '—';
+          var location = e.eventLocation || e.eventCity || e.venueName || '—';
+          var creatorCol = '—';
+          if (e.status === 'forwarded' && e.forwardedTo) {
+            creatorCol = '<span style="color:var(--success);font-size:0.72rem">✓ ' + (e.forwardedTo.user?.name || 'Forwarded') + '</span>';
+          } else if (e.selectedCreator) {
+            creatorCol = '<span style="color:var(--gold);font-size:0.72rem">' + (e.selectedCreator.user?.name || e.selectedCreatorName || 'Selected') + '</span>';
+          }
+          var statusClass = e.status === 'new' ? 'pending' : e.status === 'contacted' ? 'approved' : e.status === 'forwarded' ? 'active' : 'completed';
+
+          var actions = '';
+          if (e.status !== 'forwarded') {
+            actions += '<button class="btn btn-primary btn-sm" onclick="heForward(\'' + e._id + '\',\'' + (e.selectedCreator?._id || '') + '\')">➤ Forward</button> ';
+          }
+          if (e.status === 'new') actions += '<button class="btn btn-success btn-sm" onclick="heUpdateStatus(\'' + e._id + '\',\'contacted\')">✓</button> ';
+          if (e.status !== 'closed' && e.status !== 'forwarded') actions += '<button class="btn btn-outline btn-sm" onclick="heUpdateStatus(\'' + e._id + '\',\'closed\')">Close</button> ';
+          actions += '<button class="btn btn-danger btn-sm" onclick="heDelete(\'' + e._id + '\')">✗</button>';
 
           html += '<tr>' +
-            '<td style="font-weight:500;color:var(--gold-light)">' + name + '</td>' +
-            '<td style="font-size:0.75rem">' + contact + '</td>' +
-            '<td>' + (e.eventType || '—') + '</td>' +
-            '<td style="font-size:0.75rem">' + date + '</td>' +
-            '<td style="font-size:0.75rem">' + (e.eventLocation || '—') + '</td>' +
+            '<td><div style="font-weight:500;color:var(--gold-light);font-size:0.8rem">' + name + '</div>' + (e.budgetRange ? '<div style="font-size:0.65rem;color:var(--text-dim)">' + e.budgetRange + '</div>' : '') + '</td>' +
+            '<td style="font-size:0.72rem">' + contact + '</td>' +
+            '<td style="font-size:0.78rem">' + (e.eventType || '—') + '</td>' +
+            '<td style="font-size:0.72rem">' + date + '</td>' +
+            '<td style="font-size:0.72rem;max-width:100px;overflow:hidden;text-overflow:ellipsis">' + location + '</td>' +
+            '<td>' + creatorCol + '</td>' +
             '<td><span class="status-badge status-' + statusClass + '">' + e.status + '</span></td>' +
-            '<td style="font-size:0.72rem">' + created + '</td>' +
-            '<td style="display:flex;gap:0.25rem;flex-wrap:wrap">' +
-              (e.status !== 'contacted' ? '<button class="btn btn-success btn-sm" onclick="heUpdateStatus(\'' + e._id + '\',\'contacted\')">✓ Contacted</button>' : '') +
-              (e.status !== 'closed' ? '<button class="btn btn-outline btn-sm" onclick="heUpdateStatus(\'' + e._id + '\',\'closed\')">Close</button>' : '') +
-              '<button class="btn btn-danger btn-sm" onclick="heDelete(\'' + e._id + '\')">✗</button>' +
-            '</td></tr>';
+            '<td style="display:flex;gap:0.2rem;flex-wrap:wrap">' + actions + '</td>' +
+          '</tr>';
         });
         html += '</tbody></table></div>';
         container.innerHTML = html;
       } catch (err) {
-        container.innerHTML = '<div style="color:var(--danger);padding:1rem">Failed to load enquiries: ' + (err.message || '') + '</div>';
+        container.innerHTML = '<div style="color:var(--danger);padding:1rem">Failed to load: ' + (err.message || '') + '</div>';
       }
     }
 
@@ -1177,6 +1189,20 @@
         toast('Status updated', 'success');
         loadHomepageEnquiries();
       } catch (err) { toast(err.message || 'Failed', 'error'); }
+    };
+
+    window.heForward = async function(id, preselectedCreatorId) {
+      var creatorId = preselectedCreatorId;
+      if (!creatorId) {
+        creatorId = prompt('Enter Creator ID to forward to (or leave empty to cancel):');
+        if (!creatorId) return;
+      }
+      if (!confirm('Forward this enquiry to the creator? This will create a booking with 5% platform commission.')) return;
+      try {
+        var result = await API.post('/admin/homepage-enquiries/' + id + '/forward', { creatorId: creatorId });
+        toast(result.message || 'Forwarded!', 'success');
+        loadHomepageEnquiries();
+      } catch (err) { toast(err.message || 'Forward failed', 'error'); }
     };
 
     window.heDelete = async function(id) {

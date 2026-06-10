@@ -226,45 +226,14 @@ async function loadAllCreators() {
 async function createBookingFromPackage(packageName) {
   const dateInput = document.querySelector('.booking-form-card input[type="date"]');
   const locationInput = document.querySelector('.booking-form-card input[type="text"]');
-  const eventDate = dateInput?.value;
-  const eventLocation = locationInput?.value?.trim();
+  const eventDate = dateInput?.value || '';
+  const eventLocation = locationInput?.value?.trim() || '';
 
-  if (!eventDate || !eventLocation) {
-    toast('Please select a date and location', 'error');
-    return;
-  }
-
-  // Get user info if logged in (optional)
-  const user = API.getUser();
-  const token = API.getToken();
-
-  try {
-    // Submit as homepage general enquiry (NOT a creator booking)
-    const headers = { 'Content-Type': 'application/json' };
-    if (token) headers['Authorization'] = 'Bearer ' + token;
-
-    const res = await fetch(API.base + '/api/homepage-enquiries', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        eventType: packageName || 'General Enquiry',
-        eventDate,
-        eventLocation,
-        name: user ? user.name : '',
-        email: user ? user.email : '',
-        phone: user ? (user.phone || '') : '',
-        message: 'Submitted from BookMyShot homepage',
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Submission failed');
-
-    toast('Enquiry submitted! Our team will contact you soon.', 'success');
-    if (dateInput) dateInput.value = '';
-    if (locationInput) locationInput.value = '';
-  } catch (err) {
-    toast(err.message || 'Submission failed', 'error');
-  }
+  // Redirect to multi-step enquiry page with pre-filled data
+  const params = new URLSearchParams();
+  if (eventDate) params.set('date', eventDate);
+  if (eventLocation) params.set('location', eventLocation);
+  window.location.href = '/enquiry.html' + (params.toString() ? '?' + params.toString() : '');
 }
 
 function attachPackageButtons() {

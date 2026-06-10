@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book Your Event — BookMyShot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="icon" href="/favico.png">
+  <script src="/js/ga.js"></script>
+  <style>
+    :root{--bg:#0a0806;--card:#111110;--card-border:rgba(218,175,55,.1);--gold:#DAAF37;--gold-light:#F4C542;--orange:#ff8c27;--cream:#f6eee7;--text:#d4c8bc;--muted:#8a7e72;--success:#10b981;--danger:#ef4444;--radius:14px;--font-display:'Cormorant Garamond',serif;--font-body:'Outfit',sans-serif}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-height:100vh}
+    .header{display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;border-bottom:1px solid var(--card-border);background:var(--card)}
+    .logo{font-family:var(--font-display);font-size:1.5rem;color:var(--cream);font-weight:600;text-decoration:none}.logo span{color:var(--gold)}
+    .progress-bar{display:flex;align-items:center;justify-content:center;padding:1.5rem 1rem;gap:0.5rem}
+    .step-dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.1);transition:all .3s}
+    .step-dot.active{background:var(--gold);box-shadow:0 0 12px rgba(218,175,55,.4)}
+    .step-dot.done{background:var(--success)}
+    .step-line{width:40px;height:2px;background:rgba(255,255,255,0.06);transition:all .3s}
+    .step-line.done{background:var(--gold)}
+    .main{max-width:640px;margin:0 auto;padding:1.5rem}
+    .step{display:none;animation:fadeUp .4s ease}
+    .step.active{display:block}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    .step-title{font-family:var(--font-display);font-size:1.6rem;color:var(--cream);margin-bottom:.3rem;font-weight:600}
+    .step-sub{font-size:.82rem;color:var(--muted);margin-bottom:1.5rem}
+    .form-card{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);padding:1.75rem}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+    .form-grid.full{grid-template-columns:1fr}
+    .field{display:flex;flex-direction:column;gap:.3rem}
+    .field.full{grid-column:1/-1}
+    .field label{font-size:.72rem;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em}
+    .field input,.field select,.field textarea{padding:.65rem .9rem;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;color:var(--cream);font-family:inherit;font-size:.85rem;outline:none;transition:border-color .2s}
+    .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--gold);box-shadow:0 0 12px rgba(218,175,55,.08)}
+    .field textarea{min-height:80px;resize:vertical}
+    .field select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23DAAF37' stroke-width='2'%3E%3Cpolyline points='6,9 12,15 18,9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+    .btn-row{display:flex;gap:.75rem;margin-top:1.5rem}
+    .btn{padding:.7rem 1.5rem;border-radius:10px;font-size:.85rem;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .2s}
+    .btn-primary{background:linear-gradient(135deg,var(--gold),var(--gold-light));color:#111;flex:1}
+    .btn-primary:hover{box-shadow:0 6px 20px rgba(218,175,55,.3);transform:translateY(-1px)}
+    .btn-back{background:transparent;border:1px solid rgba(255,255,255,.08);color:var(--muted)}
+    .btn-back:hover{border-color:var(--gold);color:var(--cream)}
+    /* Creator cards */
+    .creators-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:1rem;margin-top:1rem}
+    .creator-card{background:var(--card);border:1px solid rgba(255,255,255,.04);border-radius:12px;overflow:hidden;cursor:pointer;transition:all .2s;position:relative}
+    .creator-card:hover{border-color:rgba(218,175,55,.25);transform:translateY(-2px)}
+    .creator-card.selected{border-color:var(--gold);box-shadow:0 0 20px rgba(218,175,55,.15)}
+    .creator-card.selected::after{content:'✓';position:absolute;top:8px;right:8px;width:22px;height:22px;background:var(--gold);color:#111;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+    .creator-thumb{width:100%;height:100px;background-size:cover;background-position:center;background-color:rgba(255,255,255,.03)}
+    .creator-info{padding:.6rem .7rem}
+    .creator-info h4{font-size:.78rem;color:var(--cream);font-weight:500;margin-bottom:.15rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .creator-info p{font-size:.65rem;color:var(--muted)}
+    .skip-link{display:block;text-align:center;margin-top:1rem;font-size:.78rem;color:var(--muted);cursor:pointer;text-decoration:underline}
+    .skip-link:hover{color:var(--gold)}
+    /* Success modal */
+    .success-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.8);backdrop-filter:blur(8px);z-index:1000;justify-content:center;align-items:center;animation:fadeIn .3s}
+    .success-overlay.active{display:flex}
+    .success-card{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);padding:2.5rem 2rem;text-align:center;max-width:420px;width:90%;animation:scaleIn .4s ease}
+    @keyframes scaleIn{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    .success-icon{width:72px;height:72px;border-radius:50%;background:rgba(16,185,129,.1);border:2px solid rgba(16,185,129,.3);display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;font-size:2rem}
+    .success-card h2{font-family:var(--font-display);color:var(--cream);font-size:1.4rem;margin-bottom:.5rem}
+    .success-card p{color:var(--muted);font-size:.85rem;line-height:1.6;margin-bottom:1.5rem}
+    @media(max-width:600px){.main{padding:1rem}.form-grid{grid-template-columns:1fr}.creators-grid{grid-template-columns:1fr 1fr}.step-title{font-size:1.3rem}}
+  </style>
+</head>
+<body>
+  <header class="header">
+    <a href="/" class="logo">BookMyShot<span>.</span></a>
+    <span style="font-size:.7rem;color:var(--muted)">Premium Booking</span>
+  </header>
+
+  <div class="progress-bar">
+    <div class="step-dot active" id="dot1"></div>
+    <div class="step-line" id="line1"></div>
+    <div class="step-dot" id="dot2"></div>
+    <div class="step-line" id="line2"></div>
+    <div class="step-dot" id="dot3"></div>
+  </div>
+
+  <main class="main">
+    <!-- STEP 1: Event Details -->
+    <div class="step active" id="step1">
+      <h2 class="step-title">Tell Us About Your Event</h2>
+      <p class="step-sub">Fill in the details so we can match you with the perfect creator.</p>
+      <div class="form-card">
+        <div class="form-grid">
+          <div class="field"><label>Full Name *</label><input type="text" id="fName" placeholder="Your full name" required></div>
+          <div class="field"><label>Phone *</label><input type="tel" id="fPhone" placeholder="+91 98765 43210" required></div>
+          <div class="field"><label>Email *</label><input type="email" id="fEmail" placeholder="you@email.com" required></div>
+          <div class="field"><label>Event Type *</label>
+            <select id="fEventType">
+              <option value="Wedding">Wedding</option>
+              <option value="Pre-Wedding">Pre-Wedding</option>
+              <option value="Engagement">Engagement</option>
+              <option value="Maternity">Maternity</option>
+              <option value="Birthday">Birthday</option>
+              <option value="Corporate">Corporate</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="field"><label>Event Date *</label><input type="date" id="fDate" required></div>
+          <div class="field"><label>Event City</label><input type="text" id="fCity" placeholder="e.g. Mumbai"></div>
+          <div class="field"><label>Venue Name</label><input type="text" id="fVenue" placeholder="e.g. Taj Palace"></div>
+          <div class="field"><label>Budget Range</label>
+            <select id="fBudget">
+              <option value="">Select budget</option>
+              <option value="Under ₹25,000">Under ₹25,000</option>
+              <option value="₹25,000 – ₹50,000">₹25,000 – ₹50,000</option>
+              <option value="₹50,000 – ₹1,00,000">₹50,000 – ₹1,00,000</option>
+              <option value="₹1,00,000 – ₹2,50,000">₹1,00,000 – ₹2,50,000</option>
+              <option value="₹2,50,000+">₹2,50,000+</option>
+            </select>
+          </div>
+          <div class="field"><label>Number of Guests</label><input type="text" id="fGuests" placeholder="e.g. 200-300"></div>
+          <div class="field"><label>Location / Area</label><input type="text" id="fLocation" placeholder="e.g. Surankote, Poonch"></div>
+          <div class="field full"><label>Special Requirements</label><textarea id="fSpecial" placeholder="Drone shots, same-day edit, etc."></textarea></div>
+          <div class="field full"><label>Additional Notes</label><textarea id="fMessage" placeholder="Any other details..."></textarea></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="btnStep1Next"><i class="fas fa-arrow-right"></i> Choose Creator</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2: Choose Creator -->
+    <div class="step" id="step2">
+      <h2 class="step-title">Choose Your Creator</h2>
+      <p class="step-sub">Select a creator for your event, or skip to let our team match you.</p>
+      <div class="form-card">
+        <div id="creatorsGrid" class="creators-grid">
+          <div style="text-align:center;padding:2rem;color:var(--muted);font-size:.82rem;grid-column:1/-1">Loading creators...</div>
+        </div>
+        <span class="skip-link" id="skipCreator">Skip — Let BookMyShot match me</span>
+        <div class="btn-row">
+          <button class="btn btn-back" id="btnStep2Back"><i class="fas fa-arrow-left"></i> Back</button>
+          <button class="btn btn-primary" id="btnStep2Next"><i class="fas fa-paper-plane"></i> Submit Enquiry</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Success Modal -->
+  <div class="success-overlay" id="successModal">
+    <div class="success-card">
+      <div class="success-icon">✓</div>
+      <h2>Enquiry Submitted Successfully</h2>
+      <p>Thank you for choosing BookMyShot. Our team and your selected creator will review your enquiry and contact you shortly.</p>
+      <button class="btn btn-primary" style="width:100%" id="btnOk">OK</button>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+  (function() {
+    'use strict';
+
+    var selectedCreatorId = null;
+    var selectedCreatorName = '';
+
+    // Pre-fill from URL params (date & location from homepage)
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('date')) document.getElementById('fDate').value = params.get('date');
+    if (params.get('location')) document.getElementById('fLocation').value = params.get('location');
+
+    // Pre-fill user info if logged in
+    var user = API.getUser();
+    if (user) {
+      if (user.name) document.getElementById('fName').value = user.name;
+      if (user.email) document.getElementById('fEmail').value = user.email;
+      if (user.phone) document.getElementById('fPhone').value = user.phone;
+    }
+
+    // STEP NAVIGATION
+    function showStep(n) {
+      document.querySelectorAll('.step').forEach(function(s) { s.classList.remove('active'); });
+      document.getElementById('step' + n).classList.add('active');
+      // Update progress dots
+      for (var i = 1; i <= 3; i++) {
+        var dot = document.getElementById('dot' + i);
+        dot.classList.toggle('active', i === n);
+        dot.classList.toggle('done', i < n);
+      }
+      for (var j = 1; j <= 2; j++) {
+        document.getElementById('line' + j).classList.toggle('done', j < n);
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // STEP 1 → STEP 2
+    document.getElementById('btnStep1Next').addEventListener('click', function() {
+      var name = document.getElementById('fName').value.trim();
+      var phone = document.getElementById('fPhone').value.trim();
+      var email = document.getElementById('fEmail').value.trim();
+      var date = document.getElementById('fDate').value;
+
+      if (!name || !phone || !email || !date) {
+        alert('Please fill in Name, Phone, Email, and Event Date.');
+        return;
+      }
+      showStep(2);
+      loadCreators();
+    });
+
+    // STEP 2 → Back
+    document.getElementById('btnStep2Back').addEventListener('click', function() { showStep(1); });
+
+    // Load creators
+    async function loadCreators() {
+      var grid = document.getElementById('creatorsGrid');
+      try {
+        var data = await API.get('/homepage-enquiries/creators');
+        var creators = data.creators || [];
+        if (!creators.length) {
+          grid.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:.82rem;grid-column:1/-1">No creators available right now.</div>';
+          return;
+        }
+        grid.innerHTML = '';
+        creators.forEach(function(c) {
+          var thumb = (c.portfolio && c.portfolio[0]) || c.avatar || 'https://images.unsplash.com/photo-1554048612-b6a482b17f70?w=300';
+          var card = document.createElement('div');
+          card.className = 'creator-card';
+          card.dataset.id = c._id;
+          card.dataset.name = c.name;
+          card.innerHTML = '<div class="creator-thumb" style="background-image:url(\'' + thumb + '\')"></div>' +
+            '<div class="creator-info"><h4>' + c.name + '</h4><p>' + (c.specialty || c.city || '') + '</p></div>';
+          card.addEventListener('click', function() {
+            document.querySelectorAll('.creator-card.selected').forEach(function(el) { el.classList.remove('selected'); });
+            card.classList.add('selected');
+            selectedCreatorId = c._id;
+            selectedCreatorName = c.name;
+          });
+          grid.appendChild(card);
+        });
+      } catch (e) {
+        grid.innerHTML = '<div style="color:var(--muted);font-size:.82rem;grid-column:1/-1">Failed to load creators.</div>';
+      }
+    }
+
+    // Skip creator selection
+    document.getElementById('skipCreator').addEventListener('click', function() {
+      selectedCreatorId = null;
+      selectedCreatorName = '';
+      document.querySelectorAll('.creator-card.selected').forEach(function(el) { el.classList.remove('selected'); });
+      submitEnquiry();
+    });
+
+    // STEP 2 → Submit
+    document.getElementById('btnStep2Next').addEventListener('click', function() { submitEnquiry(); });
+
+    async function submitEnquiry() {
+      var btn = document.getElementById('btnStep2Next');
+      btn.disabled = true;
+      btn.textContent = 'Submitting...';
+
+      var payload = {
+        name: document.getElementById('fName').value.trim(),
+        phone: document.getElementById('fPhone').value.trim(),
+        email: document.getElementById('fEmail').value.trim(),
+        eventType: document.getElementById('fEventType').value,
+        eventDate: document.getElementById('fDate').value,
+        eventCity: document.getElementById('fCity').value.trim(),
+        venueName: document.getElementById('fVenue').value.trim(),
+        budgetRange: document.getElementById('fBudget').value,
+        guestCount: document.getElementById('fGuests').value.trim(),
+        eventLocation: document.getElementById('fLocation').value.trim(),
+        specialRequirements: document.getElementById('fSpecial').value.trim(),
+        message: document.getElementById('fMessage').value.trim(),
+      };
+
+      if (selectedCreatorId) {
+        payload.selectedCreatorId = selectedCreatorId;
+        payload.selectedCreatorName = selectedCreatorName;
+      }
+
+      try {
+        var headers = { 'Content-Type': 'application/json' };
+        var token = API.getToken();
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+
+        var res = await fetch(API.base + '/api/homepage-enquiries', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify(payload),
+        });
+        var data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Submission failed');
+
+        // Show success
+        document.getElementById('successModal').classList.add('active');
+      } catch (e) {
+        alert(e.message || 'Submission failed. Please try again.');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Enquiry';
+      }
+    }
+
+    // OK button → return to homepage
+    document.getElementById('btnOk').addEventListener('click', function() {
+      window.location.href = '/';
+    });
+  })();
+  </script>
+</body>
+</html>
