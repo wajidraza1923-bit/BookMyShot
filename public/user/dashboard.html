@@ -901,20 +901,64 @@
 
       <!-- ─── HOME PANEL ─── -->
       <div class="panel active" id="panel-home">
-        <div class="panel-header"><h2>Home</h2><p>Welcome back! Here's your overview</p></div>
-        <div class="stats-grid" id="homeStats">
+        <!-- Welcome Hero -->
+        <div style="background:linear-gradient(135deg,rgba(201,169,98,0.08),rgba(0,0,0,0.3));border:1px solid rgba(201,169,98,0.12);border-radius:16px;padding:1.25rem 1.5rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:1rem">
+          <img id="homeAvatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid rgba(201,169,98,0.3)">
+          <div>
+            <h2 style="font-family:'Cormorant Garamond',serif;font-size:1.2rem;color:var(--gold-light);margin:0" id="homeGreeting">Hello!</h2>
+            <p style="font-size:0.75rem;color:rgba(255,255,255,0.4);margin:0.15rem 0 0">Welcome to BookMyShot</p>
+          </div>
+        </div>
+
+        <!-- Quick Actions Grid (Paytm-style) -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.6rem;margin-bottom:1.25rem" id="quickActions">
+          <div onclick="switchPanel('bookings')" style="display:flex;flex-direction:column;align-items:center;gap:0.35rem;padding:0.8rem 0.4rem;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:12px;cursor:pointer;transition:all 0.2s" onmouseover="this.style.borderColor='rgba(201,169,98,0.2)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.04)'">
+            <div style="width:36px;height:36px;border-radius:10px;background:rgba(201,169,98,0.1);display:flex;align-items:center;justify-content:center;font-size:0.9rem;color:var(--gold)"><i class="fas fa-calendar-check"></i></div>
+            <span style="font-size:0.65rem;color:rgba(255,255,255,0.5);text-align:center">Bookings</span>
+          </div>
+          <div onclick="switchPanel('messages')" style="display:flex;flex-direction:column;align-items:center;gap:0.35rem;padding:0.8rem 0.4rem;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:12px;cursor:pointer;transition:all 0.2s" onmouseover="this.style.borderColor='rgba(201,169,98,0.2)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.04)'">
+            <div style="width:36px;height:36px;border-radius:10px;background:rgba(59,130,246,0.1);display:flex;align-items:center;justify-content:center;font-size:0.9rem;color:#60a5fa"><i class="fas fa-comment-dots"></i></div>
+            <span style="font-size:0.65rem;color:rgba(255,255,255,0.5);text-align:center">Messages</span>
+          </div>
+          <div onclick="switchPanel('payments')" style="display:flex;flex-direction:column;align-items:center;gap:0.35rem;padding:0.8rem 0.4rem;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:12px;cursor:pointer;transition:all 0.2s" onmouseover="this.style.borderColor='rgba(201,169,98,0.2)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.04)'">
+            <div style="width:36px;height:36px;border-radius:10px;background:rgba(16,185,129,0.1);display:flex;align-items:center;justify-content:center;font-size:0.9rem;color:#34d399"><i class="fas fa-credit-card"></i></div>
+            <span style="font-size:0.65rem;color:rgba(255,255,255,0.5);text-align:center">Payments</span>
+          </div>
+          <a href="/" style="display:flex;flex-direction:column;align-items:center;gap:0.35rem;padding:0.8rem 0.4rem;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:12px;cursor:pointer;transition:all 0.2s;text-decoration:none" onmouseover="this.style.borderColor='rgba(201,169,98,0.2)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.04)'">
+            <div style="width:36px;height:36px;border-radius:10px;background:rgba(244,196,66,0.1);display:flex;align-items:center;justify-content:center;font-size:0.9rem;color:#F4C542"><i class="fas fa-camera"></i></div>
+            <span style="font-size:0.65rem;color:rgba(255,255,255,0.5);text-align:center">Find Creator</span>
+          </a>
+          <div onclick="switchPanel('favorites')" style="display:flex;flex-direction:column;align-items:center;gap:0.35rem;padding:0.8rem 0.4rem;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:12px;cursor:pointer;transition:all 0.2s" onmouseover="this.style.borderColor='rgba(201,169,98,0.2)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.04)'">
+            <div style="width:36px;height:36px;border-radius:10px;background:rgba(239,68,68,0.1);display:flex;align-items:center;justify-content:center;font-size:0.9rem;color:#f87171"><i class="fas fa-heart"></i></div>
+            <span style="font-size:0.65rem;color:rgba(255,255,255,0.5);text-align:center">Favorites</span>
+          </div>
+          <div onclick="switchPanel('profile')" style="display:flex;flex-direction:column;align-items:center;gap:0.35rem;padding:0.8rem 0.4rem;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:12px;cursor:pointer;transition:all 0.2s" onmouseover="this.style.borderColor='rgba(201,169,98,0.2)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.04)'">
+            <div style="width:36px;height:36px;border-radius:10px;background:rgba(139,92,246,0.1);display:flex;align-items:center;justify-content:center;font-size:0.9rem;color:#a78bfa"><i class="fas fa-user-edit"></i></div>
+            <span style="font-size:0.65rem;color:rgba(255,255,255,0.5);text-align:center">Profile</span>
+          </div>
+          <a href="/enquiry.html" style="display:flex;flex-direction:column;align-items:center;gap:0.35rem;padding:0.8rem 0.4rem;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:12px;cursor:pointer;transition:all 0.2s;text-decoration:none" onmouseover="this.style.borderColor='rgba(201,169,98,0.2)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.04)'">
+            <div style="width:36px;height:36px;border-radius:10px;background:rgba(201,169,98,0.15);display:flex;align-items:center;justify-content:center;font-size:0.9rem;color:var(--gold)"><i class="fas fa-paper-plane"></i></div>
+            <span style="font-size:0.65rem;color:rgba(255,255,255,0.5);text-align:center">Enquiry</span>
+          </a>
+          <div onclick="switchPanel('dashboard')" style="display:flex;flex-direction:column;align-items:center;gap:0.35rem;padding:0.8rem 0.4rem;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:12px;cursor:pointer;transition:all 0.2s" onmouseover="this.style.borderColor='rgba(201,169,98,0.2)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.04)'">
+            <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;font-size:0.9rem;color:rgba(255,255,255,0.5)"><i class="fas fa-chart-line"></i></div>
+            <span style="font-size:0.65rem;color:rgba(255,255,255,0.5);text-align:center">Analytics</span>
+          </div>
+        </div>
+
+        <!-- Stats Row -->
+        <div class="stats-grid" id="homeStats" style="grid-template-columns:repeat(2,1fr);gap:0.6rem;margin-bottom:1.25rem">
           <div class="stat-card"><div class="label">Total Bookings</div><div class="value" id="hStatBookings">0</div></div>
-          <div class="stat-card"><div class="label">Upcoming Events</div><div class="value blue" id="hStatUpcoming">0</div></div>
-          <div class="stat-card"><div class="label">Pending Payments</div><div class="value orange" id="hStatPendingPay">₹0</div></div>
+          <div class="stat-card"><div class="label">Upcoming</div><div class="value blue" id="hStatUpcoming">0</div></div>
+          <div class="stat-card"><div class="label">Pending Pay</div><div class="value orange" id="hStatPendingPay">₹0</div></div>
           <div class="stat-card"><div class="label">Total Spent</div><div class="value gold" id="hStatSpent">₹0</div></div>
         </div>
-        <div class="section-title">📅 Upcoming Events</div>
-        <div id="homeUpcomingEvents"><div class="loader"></div></div>
-        <div class="section-title">💬 Recent Messages</div>
-        <div id="homeRecentMessages"><div class="loader"></div></div>
-        <div class="section-title">❤️ Favorite Creators</div>
-        <div id="homeFavCreators"><div class="loader"></div></div>
-        <div class="section-title">📋 Latest Booking Updates</div>
+
+        <!-- Next Event Card -->
+        <div id="homeNextEvent" style="margin-bottom:1.25rem"></div>
+
+        <!-- Recent Activity -->
+        <div class="section-title" style="font-size:0.8rem;color:rgba(255,255,255,0.4);margin-bottom:0.6rem">📋 Recent Activity</div>
         <div id="homeRecentBookings"><div class="loader"></div></div>
       </div>
 
@@ -1105,6 +1149,7 @@
       const link = document.querySelector('.sidebar-nav a[data-panel="' + panelId + '"]');
       if (link) link.click();
     }
+    window.switchPanel = switchPanel;
 
     // ─── FETCH BOOKINGS (always from API) ──────────────────────────────────
     async function fetchBookings() {
@@ -1125,85 +1170,55 @@
     async function loadHome() {
       try {
         const bookings = await fetchBookings();
+        const user = API.getUser();
         const total = bookings.length;
         const upcoming = bookings.filter(b => b.status === "Creator Accepted" || b.status === "Payment Submitted" || b.status === "Payment Approved" || b.status === "Event Scheduled").length;
-        const completed = bookings.filter(b => b.status === "Completed").length;
         const spent = bookings.filter(b => b.status === "Completed").reduce((s, b) => s + (b.amount || b.budget || 0), 0);
         const pendingPay = bookings.filter(b => b.status === "Creator Accepted" || b.status === "Payment Submitted" || b.status === "Payment Approved").reduce((s, b) => s + (b.remaining || b.amount || b.budget || 0), 0);
 
+        // Welcome greeting
+        const hour = new Date().getHours();
+        const greeting = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
+        document.getElementById("homeGreeting").textContent = greeting + ", " + (user?.name?.split(" ")[0] || "there") + "!";
+        if (user?.avatar) document.getElementById("homeAvatar").src = user.avatar;
+
+        // Stats
         document.getElementById("hStatBookings").textContent = total;
         document.getElementById("hStatUpcoming").textContent = upcoming;
         document.getElementById("hStatSpent").textContent = "₹" + spent.toLocaleString();
         document.getElementById("hStatPendingPay").textContent = "₹" + pendingPay.toLocaleString();
 
-        // Upcoming Events — only "Event Scheduled" or "Creator Accepted" with future dates
-        const upcomingEvents = bookings.filter(b =>
+        // Next upcoming event card
+        const nextEvent = bookings.find(b =>
           (b.status === "Event Scheduled" || b.status === "Creator Accepted" || b.status === "Payment Approved") &&
           new Date(b.eventDate) > new Date()
         );
-        document.getElementById("homeUpcomingEvents").innerHTML = upcomingEvents.length
-          ? upcomingEvents.slice(0, 5).map(b => {
-              const creatorName = b.creator?.user?.name || "Creator";
-              const eventDate = b.scheduledDate || b.eventDate;
-              const eventLocation = b.scheduledLocation || b.eventLocation || "TBD";
-              return `<div class="booking-card">
-                <div class="top"><h4>${esc(b.eventType || "Event")}</h4><span class="status-badge status-accepted">${b.status}</span></div>
-                <div class="details">
-                  <div class="item"><div class="lbl">Creator</div><div class="val">${esc(creatorName)}</div></div>
-                  <div class="item"><div class="lbl">Date</div><div class="val">${eventDate ? new Date(eventDate).toLocaleDateString() : "TBD"}</div></div>
-                  <div class="item"><div class="lbl">Time</div><div class="val">${b.scheduledTime || "TBD"}</div></div>
-                  <div class="item"><div class="lbl">Location</div><div class="val">${esc(eventLocation)}</div></div>
-                </div>
-              </div>`;
-            }).join("")
-          : `<div class="empty-state"><div class="icon">📅</div><h3>No Upcoming Events</h3><p>Your upcoming events will appear here once a creator schedules them.</p></div>`;
-
-        // Recent Messages — from API
-        try {
-          const d = await API.get("/messages/conversations");
-          const conversations = d.conversations || [];
-          document.getElementById("homeRecentMessages").innerHTML = conversations.length
-            ? conversations.slice(0, 3).map(c => {
-                const u = c.user || c;
-                return `<div class="creator-mini" onclick="switchPanel('messages')" style="cursor:pointer">
-                  <img src="${u.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}" alt="">
-                  <div class="info">
-                    <h5>${esc(u.name || "Creator")}</h5>
-                    <p>${esc(c.lastMessage || "No messages yet")}</p>
-                  </div>
-                  ${c.unread ? `<span style="background:var(--accent-gold);color:#fff;font-size:0.6rem;padding:0.15rem 0.45rem;border-radius:50%;font-weight:600">${c.unread}</span>` : ""}
-                </div>`;
-              }).join("")
-            : `<div class="empty-state"><div class="icon">💬</div><h3>No messages</h3></div>`;
-        } catch {
-          document.getElementById("homeRecentMessages").innerHTML = `<div class="empty-state"><div class="icon">💬</div><h3>No messages</h3></div>`;
+        const nextEl = document.getElementById("homeNextEvent");
+        if (nextEvent) {
+          const creatorName = nextEvent.creator?.user?.name || "Creator";
+          const eventDate = nextEvent.scheduledDate || nextEvent.eventDate;
+          const daysUntil = Math.ceil((new Date(eventDate) - new Date()) / 86400000);
+          nextEl.innerHTML = `<div style="background:linear-gradient(135deg,rgba(59,130,246,0.06),rgba(201,169,98,0.04));border:1px solid rgba(59,130,246,0.12);border-radius:14px;padding:1rem 1.25rem">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
+              <span style="font-size:0.68rem;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em">Next Event</span>
+              <span style="font-size:0.7rem;color:#60a5fa;font-weight:500">${daysUntil > 0 ? daysUntil + ' days away' : 'Today!'}</span>
+            </div>
+            <h4 style="color:var(--gold-light);font-size:0.9rem;margin:0 0 0.4rem">${esc(nextEvent.eventType || "Event")}</h4>
+            <div style="display:flex;gap:1rem;font-size:0.75rem;color:rgba(255,255,255,0.5)">
+              <span><i class="fas fa-user" style="margin-right:0.3rem;color:var(--gold)"></i>${esc(creatorName)}</span>
+              <span><i class="fas fa-calendar" style="margin-right:0.3rem;color:#60a5fa"></i>${eventDate ? new Date(eventDate).toLocaleDateString() : "TBD"}</span>
+              <span><i class="fas fa-map-pin" style="margin-right:0.3rem;color:#f87171"></i>${esc(nextEvent.scheduledLocation || nextEvent.eventLocation || "TBD")}</span>
+            </div>
+          </div>`;
+        } else {
+          nextEl.innerHTML = '';
         }
 
-        // Favorite Creators — from API
-        try {
-          const d = await API.get("/user/favorites");
-          const favorites = d.favorites || [];
-          document.getElementById("homeFavCreators").innerHTML = favorites.length
-            ? favorites.slice(0, 3).map(f => {
-                const c = f.creator || f;
-                return `<div class="creator-mini">
-                  <img src="${c.user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}" alt="">
-                  <div class="info">
-                    <h5>${esc(c.user?.name || "Creator")}</h5>
-                    <p>${esc(c.specialty || "Photographer")} · ${esc(c.city || "")}</p>
-                  </div>
-                </div>`;
-              }).join("")
-            : `<div class="empty-state"><div class="icon">❤️</div><h3>No favorites yet</h3></div>`;
-        } catch {
-          document.getElementById("homeFavCreators").innerHTML = `<div class="empty-state"><div class="icon">❤️</div><h3>No favorites yet</h3></div>`;
-        }
-
-        // Recent Bookings
+        // Recent Bookings (latest 5)
         const recent = bookings.slice(0, 5);
         document.getElementById("homeRecentBookings").innerHTML = recent.length
           ? recent.map(b => renderBookingCard(b)).join("")
-          : `<div class="empty-state"><div class="icon">📅</div><h3>No bookings yet</h3><p>Browse creators and book your dream photographer</p><a href="/" class="btn btn-primary" style="margin-top:1rem">Browse Creators</a></div>`;
+          : `<div class="empty-state"><div class="icon">📅</div><h3>No bookings yet</h3><p>Browse creators and book your dream photographer</p><a href="/" class="btn btn-primary" style="margin-top:1rem;display:inline-block;text-decoration:none">Browse Creators</a></div>`;
       } catch (e) {
         document.getElementById("homeRecentBookings").innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><h3>Error loading data</h3></div>`;
       }
