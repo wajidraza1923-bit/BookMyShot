@@ -1127,6 +1127,7 @@
 
   </style>
   <script src="/js/ga.js"></script>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </head>
 <body>
 
@@ -3824,19 +3825,15 @@
       container.innerHTML = '<div class="loader"></div>';
 
       try {
-        var [bookingsRes, meRes, payInfoRes, subPayRes, payHistRes] = await Promise.all([
+        var [bookingsRes, meRes, rpConfigRes, configRes] = await Promise.all([
           API.get('/bookings/creator'),
           API.get('/auth/me'),
-          API.get('/payment-info'),
-          API.get('/subscription-payments/info'),
-          API.get('/subscription-payments/history'),
+          API.get('/razorpay/config'),
+          API.get('/config/public'),
         ]);
 
         var bookings = bookingsRes.bookings || [];
         var creator = meRes.creator || {};
-        var payInfo = payInfoRes.data || {};
-        var subPay = subPayRes || {};
-        var payHistory = payHistRes.payments || [];
 
         var validBookings = bookings.filter(function(b) { return b.status !== 'rejected' && b.status !== 'cancelled'; });
         var bmsLeads = validBookings.filter(function(b) { return b.leadSource === 'bookmyshot' || !b.leadSource; });
@@ -3851,9 +3848,10 @@
         var totalCommission = bmsCommission + creatorCommission;
         var totalReceivable = totalRevenue - totalCommission;
 
-        // Use backend-calculated commission values (accurate after approvals)
-        var commissionDue = (subPay.commission && subPay.commission.totalDue !== undefined) ? subPay.commission.totalDue : totalCommission;
-        var commissionPaid = (subPay.commission && subPay.commission.totalPaid) || 0;
+        // Commission values calculated from bookings (no manual payment system)
+        var commissionDue = totalCommission - (creator.commissionPaid || 0);
+        if (commissionDue < 0) commissionDue = 0;
+        var commissionPaid = creator.commissionPaid || 0;
         var subscriptionAmount = platformConfig.subscription.monthlyPlanPrice || 0;
         // Net earnings = total revenue - commission paid (creator keeps the rest until they pay commission)
         var netEarnings = totalRevenue - commissionPaid;
@@ -3952,38 +3950,6 @@
           '<button class="btn btn-outline btn-sm" onclick="window.showFeeInfo()" style="font-size:0.72rem"><i class="fas fa-info-circle"></i> How Fees Work</button>' +
         '</div>';
 
-        // Payment History Section
-        if (payHistory.length > 0) {
-          html += '<div class="card-panel" style="margin-bottom:1rem">' +
-            '<h3 style="font-family:Playfair Display,serif;color:var(--gold-light);margin:0 0 0.75rem;font-size:0.95rem"><i class="fas fa-history" style="color:var(--gold);margin-right:0.4rem"></i>Recent Payments</h3>' +
-            '<div style="overflow-x:auto"><table style="width:100%;font-size:0.75rem;border-collapse:collapse">' +
-            '<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.06)">' +
-              '<th style="text-align:left;padding:0.4rem;color:rgba(255,255,255,0.4);font-weight:500">Date</th>' +
-              '<th style="text-align:left;padding:0.4rem;color:rgba(255,255,255,0.4);font-weight:500">Type</th>' +
-              '<th style="text-align:right;padding:0.4rem;color:rgba(255,255,255,0.4);font-weight:500">Amount</th>' +
-              '<th style="text-align:center;padding:0.4rem;color:rgba(255,255,255,0.4);font-weight:500">Status</th>' +
-              '<th style="text-align:left;padding:0.4rem;color:rgba(255,255,255,0.4);font-weight:500">UTR</th>' +
-            '</tr></thead><tbody>';
-          payHistory.slice(0, 12).forEach(function(p) {
-            var date = p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'2-digit'}) : '—';
-            var typeLabel = p.type === 'subscription' ? '<span style="color:var(--gold)">Subscription</span>' : '<span style="color:#3b82f6">Commission</span>';
-            var statusColor = p.status === 'approved' ? 'var(--success)' : p.status === 'rejected' ? 'var(--danger)' : '#f59e0b';
-            var statusLabel = p.status === 'approved' ? '✅ Approved' : p.status === 'rejected' ? '❌ Rejected' : '⏳ Pending';
-            html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.03)">' +
-              '<td style="padding:0.4rem;color:var(--text)">' + date + '</td>' +
-              '<td style="padding:0.4rem">' + typeLabel + '</td>' +
-              '<td style="padding:0.4rem;text-align:right;color:var(--gold);font-weight:500">₹' + (p.amount || 0).toLocaleString('en-IN') + '</td>' +
-              '<td style="padding:0.4rem;text-align:center;color:' + statusColor + '">' + statusLabel + '</td>' +
-              '<td style="padding:0.4rem;color:rgba(255,255,255,0.4)">' + (p.utr || '—') + '</td>' +
-            '</tr>';
-          });
-          html += '</tbody></table></div>';
-          if (payHistory.length > 12) {
-            html += '<div style="text-align:center;margin-top:0.5rem;font-size:0.72rem;color:rgba(255,255,255,0.3)">Showing latest 12 of ' + payHistory.length + ' payments</div>';
-          }
-          html += '</div>';
-        }
-
         // Booking Revenue Breakdown
         var bookingsWithAmount = validBookings.filter(function(b) { return b.amount > 0; });
         if (bookingsWithAmount.length > 0) {
@@ -4021,11 +3987,14 @@
       // type: 'subscription' or 'commission'
       // overrideAmount: optional — allows partial payment amount
       try {
-        // Fetch payment info (QR, UPI) and subscription/commission info in parallel
-        var [payInfo, subInfo] = await Promise.all([
-          API.get('/payment-info'),
-          API.get('/subscription-payments/info'),
+        // Fetch Razorpay config and subscription info
+        var [rpConfig, subInfo] = await Promise.all([
+          API.get('/razorpay/config'),
+          API.get('/config/public'),
         ]);
+
+        var razorpayKey = rpConfig.keyId || '';
+        var razorpayConfigured = rpConfig.configured;
 
         var upiId = (payInfo.data && payInfo.data.upiId) || '';
         var qrImage = (payInfo.data && payInfo.data.qrImage) || '';
@@ -4182,51 +4151,38 @@
       }
     };
 
-    window.submitPaymentRequest = async function() {
-      if (!paymentModalData) return;
-      var utr = document.getElementById('payUtrInput').value.trim();
-      if (!utr) { toast('Please enter UTR / Transaction ID', 'error'); return; }
-      if (!payScreenshotDataUrl) { toast('Please upload payment screenshot', 'error'); return; }
-
+    window.renewSubscription = async function() {
       try {
-        var endpoint = paymentModalData.type === 'subscription' ? '/subscription-payments/subscribe' : '/subscription-payments/commission';
-        var body = {
-          screenshot: payScreenshotDataUrl,
-          utr: utr,
-          amount: paymentModalData.amount,
+        var rpConfig = await API.get('/razorpay/config');
+        if (!rpConfig.configured) { toast('Payment gateway not configured', 'error'); return; }
+        var orderRes = await API.post('/razorpay/create-subscription-order', {});
+        var options = {
+          key: rpConfig.keyId,
+          amount: orderRes.order.amount,
+          currency: 'INR',
+          name: 'BookMyShot',
+          description: 'Creator Monthly Subscription',
+          order_id: orderRes.order.id,
+          handler: async function(response) {
+            try {
+              await API.post('/razorpay/verify-payment', { razorpay_order_id: response.razorpay_order_id, razorpay_payment_id: response.razorpay_payment_id, razorpay_signature: response.razorpay_signature, type: 'subscription' });
+              toast('Subscription activated! ✅', 'success');
+              loadRevenue();
+            } catch (e) { toast('Verification failed', 'error'); }
+          },
+          prefill: { name: (currentUser || {}).name || '' },
+          theme: { color: '#ff8c27' },
         };
-        await API.post(endpoint, body);
-        toast('Payment submitted! Awaiting admin approval.', 'success');
-        closePaymentModal();
-        payScreenshotDataUrl = null;
-        loadRevenue();
-      } catch (e) {
-        toast(e.message || 'Failed to submit payment', 'error');
-      }
-    };
-
-    window.renewSubscription = function() {
-      openPaymentModal('subscription');
+        new Razorpay(options).open();
+      } catch (e) { toast(e.message || 'Payment failed', 'error'); }
     };
 
     window.payCommission = function() {
-      var commDue = window._currentCommissionDue || 0;
-      console.log('[PayCommission] Commission Due:', commDue);
-      if (commDue > 0) {
-        openPaymentModal('commission', commDue);
-      } else {
-        toast('No commission dues pending.', 'info');
-      }
+      toast('Commission payments are handled automatically via Razorpay AutoPay.', 'info');
     };
 
     window.payDues = function() {
-      var totalDue = window._currentTotalDue || 0;
-      console.log('[PayDues] Commission Due:', window._currentCommissionDue, 'Subscription Due:', window._currentSubscriptionDue, 'Total Due:', totalDue);
-      if (totalDue > 0) {
-        openPaymentModal('commission', totalDue);
-      } else {
-        toast('No dues pending at this time.', 'info');
-      }
+      window.renewSubscription();
     };
 
     window.showFeeInfo = function() {
@@ -4392,79 +4348,52 @@
     window.applyPromotion = async function(planType) {
       // Open promotion payment modal instead of submitting directly
       try {
-        var [plansRes, payInfoRes] = await Promise.all([
+        var [plansRes, rpConfigRes] = await Promise.all([
           API.get('/promotions/plans'),
-          API.get('/payment-info'),
+          API.get('/razorpay/config'),
         ]);
         var plans = plansRes.plans || [];
         var plan = plans.find(function(p) { return p.id === planType; });
         if (!plan) { toast('Plan not found', 'error'); return; }
-        var payInfo = payInfoRes.data || {};
-        var upiId = payInfo.upiId || '';
-        var qrImage = payInfo.qrImage || '';
-        var holderName = payInfo.accountHolderName || 'BookMyShot';
+        var razorpayKey = rpConfigRes.keyId || '';
+        var razorpayConfigured = rpConfigRes.configured;
 
-        var modalHtml = '<div id="promoPayModal" style="position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);padding:1rem">' +
-          '<div style="background:#141210;border:1px solid rgba(255,140,39,0.2);border-radius:16px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto;padding:1.5rem">' +
-            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">' +
-              '<h3 style="margin:0;font-family:Playfair Display,serif;color:var(--gold-light);font-size:1rem">🏆 ' + plan.name + '</h3>' +
-              '<button onclick="document.getElementById(\'promoPayModal\').remove()" style="background:none;border:none;color:rgba(255,255,255,0.5);font-size:1.3rem;cursor:pointer">&times;</button>' +
-            '</div>' +
-            '<div style="text-align:center;padding:1rem;background:rgba(255,140,39,0.06);border-radius:12px;border:1px solid rgba(255,140,39,0.15);margin-bottom:1rem">' +
-              '<div style="font-size:0.75rem;color:rgba(255,255,255,0.4);margin-bottom:0.3rem">Amount</div>' +
-              '<div style="font-size:1.8rem;font-weight:700;color:#ff8c27">₹' + plan.price.toLocaleString('en-IN') + '</div>' +
-              '<div style="font-size:0.7rem;color:rgba(255,255,255,0.3);margin-top:0.2rem">' + plan.name + ' (30 days)</div>' +
-            '</div>' +
-            (qrImage ? '<div style="text-align:center;margin-bottom:1rem"><img src="' + qrImage + '" style="width:160px;height:160px;border-radius:12px;border:1px solid rgba(255,255,255,0.1)" alt="QR Code"></div>' : '') +
-            '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:0.6rem;margin-bottom:1rem">' +
-              '<div style="font-size:0.68rem;color:rgba(255,255,255,0.4);margin-bottom:0.2rem">UPI ID</div>' +
-              '<div style="display:flex;align-items:center;gap:0.5rem">' +
-                '<span style="font-size:0.82rem;color:#f6eee7;flex:1;word-break:break-all">' + (upiId || 'Not configured') + '</span>' +
-                (upiId ? '<button onclick="navigator.clipboard.writeText(\'' + upiId + '\');this.textContent=\'✅\';setTimeout(()=>{this.textContent=\'📋\'},2000)" style="background:rgba(255,140,39,0.1);border:1px solid rgba(255,140,39,0.25);color:#ff8c27;padding:0.25rem 0.5rem;border-radius:6px;font-size:0.68rem;cursor:pointer">📋</button>' : '') +
-              '</div>' +
-              (holderName ? '<div style="font-size:0.65rem;color:rgba(255,255,255,0.3);margin-top:0.2rem">Account: ' + holderName + '</div>' : '') +
-            '</div>' +
-            (upiId ? '<div style="margin-bottom:1rem;padding:0.5rem;background:rgba(255,140,39,0.06);border:1px solid rgba(255,140,39,0.12);border-radius:8px;text-align:center;font-size:0.72rem;color:rgba(255,255,255,0.5)">📱 Open your UPI app and pay using QR Code or copied UPI ID.</div>' : '') +
-            '<div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:1rem">' +
-              '<div style="font-size:0.78rem;color:rgba(255,255,255,0.5);margin-bottom:0.6rem;font-weight:500">After payment, upload proof:</div>' +
-              '<div style="margin-bottom:0.6rem"><label style="font-size:0.7rem;color:rgba(255,255,255,0.4);display:block;margin-bottom:0.2rem">UTR / Transaction ID *</label><input type="text" id="promoUtrInput" placeholder="Enter UTR number" style="width:100%;padding:0.55rem;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#f6eee7;font-size:0.82rem"></div>' +
-              '<div style="margin-bottom:0.6rem"><label style="font-size:0.7rem;color:rgba(255,255,255,0.4);display:block;margin-bottom:0.2rem">Payment Screenshot *</label><div id="promoScreenArea" onclick="document.getElementById(\'promoScreenInput\').click()" style="border:1px dashed rgba(255,140,39,0.3);border-radius:8px;padding:0.8rem;text-align:center;cursor:pointer"><span style="font-size:0.72rem;color:rgba(255,255,255,0.4)" id="promoScreenLabel">📤 Click to upload screenshot</span><input type="file" id="promoScreenInput" accept=".jpg,.jpeg,.png,.webp" style="display:none" onchange="handlePromoScreen(event)"></div></div>' +
-              '<button onclick="submitPromoPayment(\'' + planType + '\')" style="width:100%;padding:0.65rem;background:linear-gradient(135deg,#e85a14,#ff9b2e);color:#100803;border:none;border-radius:8px;font-size:0.85rem;font-weight:600;cursor:pointer">Submit Payment Request</button>' +
-            '</div>' +
-          '</div>' +
-        '</div>';
-        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        if (!razorpayConfigured) { toast('Payment gateway not configured. Contact admin.', 'error'); return; }
+
+        // Use Razorpay Checkout for promotion payment
+        try {
+          var orderRes = await API.post('/razorpay/create-promotion-order', { planType: planType, amount: plan.price });
+          var options = {
+            key: razorpayKey,
+            amount: orderRes.order.amount,
+            currency: 'INR',
+            name: 'BookMyShot',
+            description: plan.name + ' (30 days)',
+            order_id: orderRes.order.id,
+            handler: async function(response) {
+              try {
+                await API.post('/razorpay/verify-payment', {
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                  type: 'promotion',
+                  planType: planType,
+                  amount: plan.price,
+                });
+                toast('Promotion activated! 🏆', 'success');
+                loadPromotions();
+              } catch (err) { toast('Payment verification failed', 'error'); }
+            },
+            prefill: { name: (API.getUser() || {}).name || '' },
+            theme: { color: '#ff8c27' },
+          };
+          var rzp = new Razorpay(options);
+          rzp.open();
+        } catch (err) {
+          toast(err.message || 'Failed to create payment', 'error');
+        }
       } catch (e) {
-        toast(e.message || 'Failed to load payment info', 'error');
-      }
-    };
-
-    var promoScreenData = null;
-
-    window.handlePromoScreen = function(event) {
-      var file = event.target.files[0];
-      if (!file) return;
-      if (file.size > 10 * 1024 * 1024) { toast('Max 10MB', 'error'); return; }
-      var reader = new FileReader();
-      reader.onload = function(e) {
-        promoScreenData = e.target.result;
-        document.getElementById('promoScreenLabel').innerHTML = '<span style="color:var(--success)">✅ Uploaded (' + (file.size/1024/1024).toFixed(1) + ' MB)</span>';
-      };
-      reader.readAsDataURL(file);
-    };
-
-    window.submitPromoPayment = async function(planType) {
-      var utr = document.getElementById('promoUtrInput').value.trim();
-      if (!utr) { toast('Please enter UTR / Transaction ID', 'error'); return; }
-      if (!promoScreenData) { toast('Please upload payment screenshot', 'error'); return; }
-      try {
-        await API.post('/promotions/apply', { planType: planType, screenshot: promoScreenData, utr: utr });
-        toast('Promotion request submitted! Awaiting admin approval.', 'success');
-        document.getElementById('promoPayModal').remove();
-        promoScreenData = null;
-        loadPromotions();
-      } catch (e) {
-        toast(e.message || 'Failed to submit request', 'error');
+        toast(e.message || 'Failed to load promotion info', 'error');
       }
     };
 
