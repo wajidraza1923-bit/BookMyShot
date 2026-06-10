@@ -40,6 +40,7 @@ const bookingEventRoutes = require("./routes/bookingevents");
 const revenueRoutes = require("./routes/revenue");
 const promotionRoutes = require("./routes/promotionRequests");
 const subscriptionPaymentRoutes = require("./routes/subscriptionPayments");
+const razorpayRoutes = require("./routes/razorpay");
 
 const app = express();
 
@@ -248,6 +249,7 @@ app.use("/api/booking-events", bookingEventRoutes);
 app.use("/api/revenue", revenueRoutes);
 app.use("/api/promotions", promotionRoutes);
 app.use("/api/subscription-payments", subscriptionPaymentRoutes);
+app.use("/api/razorpay", razorpayRoutes);
 
 // Clean URL routes for static pages (legal, info)
 const staticPages = ['about', 'contact', 'terms', 'privacy', 'refund-policy', 'booking-cancellation', 'cookie-policy', 'creator-guidelines', 'how-bookmyshot-works', 'pricing'];
