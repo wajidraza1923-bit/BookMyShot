@@ -186,6 +186,7 @@
         <a href="#" data-panel="notifications"><span class="icon">🔔</span> Notifications</a>
         <a href="#" data-panel="calendar"><span class="icon">📆</span> Calendar</a>
         <a href="#" data-panel="contacts"><span class="icon">📞</span> Contacts</a>
+        <a href="#" data-panel="homepage-enquiries"><span class="icon">📝</span> Enquiries</a>
         <a href="#" data-panel="homepage"><span class="icon">🏠</span> Homepage CMS</a>
         <a href="#" data-panel="social-links"><span class="icon">📱</span> Social Links</a>
         <a href="#" data-panel="promotion-requests"><span class="icon">🏆</span> Promotion Requests</a>
@@ -290,6 +291,24 @@
       <div class="panel" id="panel-contacts">
         <div class="panel-header"><h2>Contact Messages</h2><p>User contact form submissions</p></div>
         <div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Message</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="contactsTable"><tr><td colspan="6"><div class="loader"></div></td></tr></tbody></table></div>
+      </div>
+
+      <!-- Homepage Enquiries -->
+      <div class="panel" id="panel-homepage-enquiries">
+        <div class="panel-header"><h2>Homepage Enquiries</h2><p>General enquiries submitted from the BookMyShot homepage (not assigned to any creator)</p></div>
+        <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-bottom:1rem">
+          <div class="stat-card"><div class="label">New</div><div class="value gold" id="heStatNew">0</div></div>
+          <div class="stat-card"><div class="label">Contacted</div><div class="value success" id="heStatContacted">0</div></div>
+          <div class="stat-card"><div class="label">Closed</div><div class="value" id="heStatClosed">0</div></div>
+          <div class="stat-card"><div class="label">Total</div><div class="value" id="heStatTotal">0</div></div>
+        </div>
+        <div class="tabs" id="heFilterTabs" style="margin-bottom:1rem">
+          <button class="active" data-hefilter="all">All</button>
+          <button data-hefilter="new">New</button>
+          <button data-hefilter="contacted">Contacted</button>
+          <button data-hefilter="closed">Closed</button>
+        </div>
+        <div id="heTableContent"><div class="loader"></div></div>
       </div>
 
       <!-- Homepage CMS -->
@@ -749,6 +768,7 @@
           else if (p === "payments") loadAllPayments();
           else if (p === "commissions") loadCommissions();
           else if (p === "contacts") loadContacts();
+          else if (p === "homepage-enquiries") loadHomepageEnquiries('all');
           else if (p === "homepage") loadHomepageCMS();
           else if (p === "social-links") loadSocialLinks();
           else if (p === "payment-settings") loadPaymentSettings();
@@ -1084,6 +1104,88 @@
 
     window.markContactRead = async (id) => {
       try { await API.patch(`/admin/contacts/${id}`, { status: "read" }); toast("Marked read", "success"); loadContacts(); } catch { }
+    };
+
+    // ─── HOMEPAGE ENQUIRIES ─────────────────────────────────────────
+
+    var heCurrentFilter = 'all';
+
+    async function loadHomepageEnquiries(filter) {
+      heCurrentFilter = filter || heCurrentFilter || 'all';
+      var container = document.getElementById('heTableContent');
+      container.innerHTML = '<div class="loader"></div>';
+
+      document.querySelectorAll('#heFilterTabs button').forEach(function(btn) {
+        btn.classList.toggle('active', btn.dataset.hefilter === heCurrentFilter);
+      });
+
+      try {
+        var url = '/admin/homepage-enquiries';
+        if (heCurrentFilter !== 'all') url += '?status=' + heCurrentFilter;
+        var data = await API.get(url);
+        var enquiries = data.enquiries || [];
+        var stats = data.stats || {};
+
+        document.getElementById('heStatNew').textContent = stats.new || 0;
+        document.getElementById('heStatContacted').textContent = stats.contacted || 0;
+        document.getElementById('heStatClosed').textContent = stats.closed || 0;
+        document.getElementById('heStatTotal').textContent = stats.total || 0;
+
+        if (!enquiries.length) {
+          container.innerHTML = '<div class="empty-state"><div class="icon">📝</div><h3>No enquiries</h3><p>No homepage enquiries match this filter.</p></div>';
+          return;
+        }
+
+        var html = '<div class="table-wrap"><table><thead><tr><th>Name</th><th>Contact</th><th>Event Type</th><th>Date</th><th>Location</th><th>Status</th><th>Submitted</th><th>Actions</th></tr></thead><tbody>';
+        enquiries.forEach(function(e) {
+          var name = e.name || (e.user && e.user.name) || 'Anonymous';
+          var contact = (e.email || (e.user && e.user.email) || '') + (e.phone ? '<br><span style="color:var(--text-dim);font-size:0.7rem">' + e.phone + '</span>' : '');
+          var date = e.eventDate ? new Date(e.eventDate).toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'}) : '—';
+          var created = e.createdAt ? new Date(e.createdAt).toLocaleString('en-IN', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+          var statusClass = e.status === 'new' ? 'pending' : e.status === 'contacted' ? 'approved' : 'completed';
+
+          html += '<tr>' +
+            '<td style="font-weight:500;color:var(--gold-light)">' + name + '</td>' +
+            '<td style="font-size:0.75rem">' + contact + '</td>' +
+            '<td>' + (e.eventType || '—') + '</td>' +
+            '<td style="font-size:0.75rem">' + date + '</td>' +
+            '<td style="font-size:0.75rem">' + (e.eventLocation || '—') + '</td>' +
+            '<td><span class="status-badge status-' + statusClass + '">' + e.status + '</span></td>' +
+            '<td style="font-size:0.72rem">' + created + '</td>' +
+            '<td style="display:flex;gap:0.25rem;flex-wrap:wrap">' +
+              (e.status !== 'contacted' ? '<button class="btn btn-success btn-sm" onclick="heUpdateStatus(\'' + e._id + '\',\'contacted\')">✓ Contacted</button>' : '') +
+              (e.status !== 'closed' ? '<button class="btn btn-outline btn-sm" onclick="heUpdateStatus(\'' + e._id + '\',\'closed\')">Close</button>' : '') +
+              '<button class="btn btn-danger btn-sm" onclick="heDelete(\'' + e._id + '\')">✗</button>' +
+            '</td></tr>';
+        });
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
+      } catch (err) {
+        container.innerHTML = '<div style="color:var(--danger);padding:1rem">Failed to load enquiries: ' + (err.message || '') + '</div>';
+      }
+    }
+
+    document.getElementById('heFilterTabs')?.addEventListener('click', function(ev) {
+      var btn = ev.target.closest('button');
+      if (!btn || !btn.dataset.hefilter) return;
+      loadHomepageEnquiries(btn.dataset.hefilter);
+    });
+
+    window.heUpdateStatus = async function(id, status) {
+      try {
+        await API.patch('/admin/homepage-enquiries/' + id, { status: status });
+        toast('Status updated', 'success');
+        loadHomepageEnquiries();
+      } catch (err) { toast(err.message || 'Failed', 'error'); }
+    };
+
+    window.heDelete = async function(id) {
+      if (!confirm('Delete this enquiry?')) return;
+      try {
+        await API.delete('/admin/homepage-enquiries/' + id);
+        toast('Deleted', 'success');
+        loadHomepageEnquiries();
+      } catch (err) { toast(err.message || 'Failed', 'error'); }
     };
 
     // Homepage CMS

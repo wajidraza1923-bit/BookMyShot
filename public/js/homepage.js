@@ -234,27 +234,36 @@ async function createBookingFromPackage(packageName) {
     return;
   }
 
+  // Get user info if logged in (optional)
   const user = API.getUser();
-  if (!user || !API.getToken()) {
-    window.location.href = '/login.html';
-    return;
-  }
+  const token = API.getToken();
 
   try {
-    await API.post('/bookings', {
-      eventType: packageName,
-      eventDate,
-      eventLocation,
-      clientName: user.name,
-      clientEmail: user.email,
-      clientPhone: user.phone || '',
-      budget: 0,
-      message: 'Homepage concierge booking request',
+    // Submit as homepage general enquiry (NOT a creator booking)
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+
+    const res = await fetch(API.base + '/api/homepage-enquiries', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        eventType: packageName || 'General Enquiry',
+        eventDate,
+        eventLocation,
+        name: user ? user.name : '',
+        email: user ? user.email : '',
+        phone: user ? (user.phone || '') : '',
+        message: 'Submitted from BookMyShot homepage',
+      }),
     });
-    toast('Booking request submitted successfully', 'success');
-    window.location.href = '/user/dashboard.html';
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Submission failed');
+
+    toast('Enquiry submitted! Our team will contact you soon.', 'success');
+    if (dateInput) dateInput.value = '';
+    if (locationInput) locationInput.value = '';
   } catch (err) {
-    toast(err.message || 'Booking failed', 'error');
+    toast(err.message || 'Submission failed', 'error');
   }
 }
 

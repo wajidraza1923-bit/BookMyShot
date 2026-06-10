@@ -22,6 +22,8 @@ const adminAnnouncementsRoutes = require("./routes/admin/announcements");
 const adminDashboardRoutes = require("./routes/admin/dashboard");
 const adminSocialLinksRoutes = require("./routes/admin/socialLinks");
 const adminPaymentHistoryRoutes = require("./routes/admin/paymentHistory");
+const adminHomepageEnquiriesRoutes = require("./routes/admin/homepageEnquiries");
+const homepageEnquiryRoutes = require("./routes/homepageEnquiries");
 const creatorRoutes = require("./routes/creator");
 const creatorsRoutes = require("./routes/creators");
 const userRoutes = require("./routes/user");
@@ -122,6 +124,7 @@ app.use("/api/admin/announcements", protect, authorize("admin"), adminAnnounceme
 app.use("/api/admin/dashboard-overview", protect, authorize("admin"), adminDashboardRoutes);
 app.use("/api/admin/social-links", protect, authorize("admin"), adminSocialLinksRoutes);
 app.use("/api/admin/payment-history", protect, authorize("admin"), adminPaymentHistoryRoutes);
+app.use("/api/admin/homepage-enquiries", protect, authorize("admin"), adminHomepageEnquiriesRoutes);
 
 // Admin: general-purpose image upload to Cloudinary
 const { upload: adminUpload } = require("./middleware/upload");
@@ -223,6 +226,7 @@ app.use("/api/booking-events", bookingEventRoutes);
 app.use("/api/revenue", revenueRoutes);
 app.use("/api/promotions", promotionRoutes);
 app.use("/api/razorpay", razorpayRoutes);
+app.use("/api/homepage-enquiries", homepageEnquiryRoutes);
 
 // Clean URL routes for static pages (legal, info)
 const staticPages = ['about', 'contact', 'terms', 'privacy', 'refund-policy', 'booking-cancellation', 'cookie-policy', 'creator-guidelines', 'how-bookmyshot-works', 'pricing'];
