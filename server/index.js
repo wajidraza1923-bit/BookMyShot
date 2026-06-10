@@ -21,6 +21,7 @@ const adminRevenueCenterRoutes = require("./routes/admin/revenueCenter");
 const adminAnnouncementsRoutes = require("./routes/admin/announcements");
 const adminDashboardRoutes = require("./routes/admin/dashboard");
 const adminSocialLinksRoutes = require("./routes/admin/socialLinks");
+const adminPaymentHistoryRoutes = require("./routes/admin/paymentHistory");
 const creatorRoutes = require("./routes/creator");
 const creatorsRoutes = require("./routes/creators");
 const userRoutes = require("./routes/user");
@@ -120,6 +121,7 @@ app.use("/api/admin/revenue-center", protect, authorize("admin"), adminRevenueCe
 app.use("/api/admin/announcements", protect, authorize("admin"), adminAnnouncementsRoutes);
 app.use("/api/admin/dashboard-overview", protect, authorize("admin"), adminDashboardRoutes);
 app.use("/api/admin/social-links", protect, authorize("admin"), adminSocialLinksRoutes);
+app.use("/api/admin/payment-history", protect, authorize("admin"), adminPaymentHistoryRoutes);
 
 // Admin: general-purpose image upload to Cloudinary
 const { upload: adminUpload } = require("./middleware/upload");

@@ -198,8 +198,8 @@
         <a href="#" data-panel="announcements"><span class="icon">📢</span> Announcements</a>
         <a href="#" data-panel="finance-control"><span class="icon">🏦</span> Finance</a>
         <a href="#" data-panel="creator-accounts"><span class="icon">👤</span> Creator Accounts</a>
-        <a href="#" data-panel="payment-settings"><span class="icon">🏧</span> Payment Settings</a>
-        <a href="#" data-panel="payment-requests"><span class="icon">📋</span> Payment Requests</a>
+        <a href="#" data-panel="payment-settings"><span class="icon">🏧</span> Razorpay Settings</a>
+        <a href="#" data-panel="payment-requests"><span class="icon">📋</span> Payment History</a>
         <a href="#" data-panel="audit"><span class="icon">📋</span> Audit Logs</a>
       </nav>
       <div class="sidebar-footer">
@@ -329,45 +329,45 @@
 
       <!-- Payment Settings Panel -->
       <div class="panel" id="panel-payment-settings">
-        <div class="panel-header"><h2>Payment Settings</h2><p>Configure UPI details and QR code for creator payments</p></div>
+        <div class="panel-header"><h2>Razorpay & Subscription Settings</h2><p>Manage payment gateway and subscription configuration</p></div>
         <div class="card">
-          <form id="paymentSettingsForm" style="display:grid;gap:1rem">
-            <div class="form-group">
-              <label>UPI ID</label>
-              <input type="text" id="psUpiId" placeholder="yourname@upi" style="padding:0.6rem 0.8rem;background:rgba(255,255,255,0.04);border:1px solid var(--border-light);border-radius:10px;color:var(--text);font-size:0.85rem;width:100%">
+          <div class="stats-grid" style="grid-template-columns:1fr 1fr;margin-bottom:1rem">
+            <div class="stat-card"><div class="label">Razorpay Status</div><div class="value success" id="rpStatus">Checking...</div></div>
+            <div class="stat-card"><div class="label">Monthly Price</div><div class="value gold" id="rpPrice">—</div></div>
+            <div class="stat-card"><div class="label">Trial Days</div><div class="value" id="rpTrial">—</div></div>
+            <div class="stat-card"><div class="label">Active Subscriptions</div><div class="value success" id="rpActiveSubs">—</div></div>
+          </div>
+          <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:1rem">
+            <h4 style="color:var(--gold-light);margin-bottom:0.5rem">Configuration</h4>
+            <div style="font-size:0.78rem;color:var(--text-muted)">
+              <div style="display:flex;justify-content:space-between;padding:0.3rem 0;border-bottom:1px solid rgba(255,255,255,0.03)"><span>Razorpay Key ID</span><span style="color:var(--text)" id="rpKeyDisplay">—</span></div>
+              <div style="display:flex;justify-content:space-between;padding:0.3rem 0;border-bottom:1px solid rgba(255,255,255,0.03)"><span>Webhook URL</span><span style="color:var(--text);font-size:0.7rem">/api/razorpay/webhook</span></div>
+              <div style="display:flex;justify-content:space-between;padding:0.3rem 0"><span>AutoPay</span><span style="color:var(--success)">Enabled</span></div>
             </div>
-            <div class="form-group">
-              <label>Account Holder Name</label>
-              <input type="text" id="psHolderName" placeholder="BookMyShot / Your Name" style="padding:0.6rem 0.8rem;background:rgba(255,255,255,0.04);border:1px solid var(--border-light);border-radius:10px;color:var(--text);font-size:0.85rem;width:100%">
-            </div>
-            <div class="form-group">
-              <label>QR Code Image</label>
-              <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
-                <div id="psQrPreview" style="width:120px;height:120px;border-radius:10px;border:1px dashed rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;overflow:hidden;background:rgba(255,255,255,0.02)">
-                  <span style="font-size:0.7rem;color:rgba(255,255,255,0.3)">No QR</span>
-                </div>
-                <div>
-                  <label class="btn btn-outline btn-sm" style="cursor:pointer;display:inline-block">📤 Upload QR<input type="file" id="psQrInput" accept="image/*" style="display:none"></label>
-                  <p style="font-size:0.68rem;color:rgba(255,255,255,0.3);margin-top:0.3rem">JPG, PNG, WEBP — max 5MB</p>
-                </div>
-              </div>
-            </div>
-            <div id="psErrors" style="color:var(--danger);font-size:0.8rem"></div>
-            <button type="submit" class="btn btn-primary">Save Payment Settings</button>
-          </form>
+          </div>
+          <p style="font-size:0.75rem;color:var(--text-dim)">Subscription price and trial days are managed in Subscription Settings. Razorpay credentials are configured via environment variables on the server.</p>
         </div>
       </div>
 
-      <!-- Payment Requests Panel -->
+      <!-- Payment History Panel -->
       <div class="panel" id="panel-payment-requests">
-        <div class="panel-header"><h2>Payment Requests</h2><p>Review and approve creator subscription & commission payments</p></div>
-        <div style="margin-bottom:1rem;display:flex;gap:0.5rem;flex-wrap:wrap">
-          <button class="btn btn-sm" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--text);font-size:0.78rem" onclick="loadPaymentRequests('all')">All</button>
-          <button class="btn btn-sm" style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);color:#f59e0b;font-size:0.78rem" onclick="loadPaymentRequests('pending')">Pending</button>
-          <button class="btn btn-sm" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);color:var(--success);font-size:0.78rem" onclick="loadPaymentRequests('approved')">Approved</button>
-          <button class="btn btn-sm" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:var(--danger);font-size:0.78rem" onclick="loadPaymentRequests('rejected')">Rejected</button>
+        <div class="panel-header"><h2>Payment History</h2><p>All Razorpay subscription and promotion payments</p></div>
+        <div class="stats-grid" id="phStats" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">
+          <div class="stat-card"><div class="label">Total Revenue</div><div class="value gold" id="phTotalRevenue">₹0</div></div>
+          <div class="stat-card"><div class="label">Monthly Revenue</div><div class="value gold" id="phMonthlyRevenue">₹0</div></div>
+          <div class="stat-card"><div class="label">Active Subscriptions</div><div class="value success" id="phActiveSubs">0</div></div>
+          <div class="stat-card"><div class="label">Failed Payments</div><div class="value danger" id="phFailedPayments">0</div></div>
+          <div class="stat-card"><div class="label">Expired Subscriptions</div><div class="value" id="phExpiredSubs">0</div></div>
         </div>
-        <div id="paymentRequestsContent"><div class="loader"></div></div>
+        <div class="tabs" id="phFilterTabs" style="margin-bottom:1rem">
+          <button class="active" data-phfilter="all">All</button>
+          <button data-phfilter="today">Today</button>
+          <button data-phfilter="7d">Last 7 Days</button>
+          <button data-phfilter="30d">Last 30 Days</button>
+          <button data-phfilter="paid">Successful</button>
+          <button data-phfilter="cancelled">Failed</button>
+        </div>
+        <div id="phTableContent"><div class="loader"></div></div>
       </div>
 
       <!-- Promotion Requests Panel -->
@@ -630,9 +630,9 @@
               <input type="date" id="fhDateTo" style="padding:0.5rem 0.7rem;background:rgba(255,255,255,0.04);border:1px solid var(--border-light);border-radius:10px;color:var(--text);font-size:0.8rem;color-scheme:dark">
               <input type="text" id="fhCreator" placeholder="Creator" style="padding:0.5rem 0.7rem;background:rgba(255,255,255,0.04);border:1px solid var(--border-light);border-radius:10px;color:var(--text);font-size:0.8rem;width:120px">
               <select id="fhStatus" style="padding:0.5rem 0.7rem;background:rgba(255,255,255,0.04);border:1px solid var(--border-light);border-radius:10px;color:var(--text);font-size:0.8rem"><option value="">All</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select>
-              <button class="btn btn-primary btn-sm" onclick="loadPaymentHistory()">Filter</button>
+              <button class="btn btn-primary btn-sm" onclick="loadFinancePaymentHistory()">Filter</button>
             </div>
-            <div id="paymentHistoryContent"><div class="loader"></div></div>
+            <div id="financePaymentHistoryContent"><div class="loader"></div></div>
           </div>
         </div>
       </div>
@@ -752,7 +752,7 @@
           else if (p === "homepage") loadHomepageCMS();
           else if (p === "social-links") loadSocialLinks();
           else if (p === "payment-settings") loadPaymentSettings();
-          else if (p === "payment-requests") loadPaymentRequests('pending');
+          else if (p === "payment-requests") loadPaymentRequests('all');
           else if (p === "promotion-requests") loadPromotionRequests();
           else if (p === "revenue") loadRevenuePanel();
           else if (p === "subscriptions") loadSubscriptionsPanel();
@@ -1148,123 +1148,111 @@
       }
     });
 
-    // ─── PAYMENT SETTINGS ───────────────────────────────────────────
-
-    var psQrDataUrl = null;
+    // ─── RAZORPAY SETTINGS (formerly Payment Settings) ──────────────
 
     async function loadPaymentSettings() {
       try {
-        const data = await API.get("/admin/payment-settings");
-        const s = data.data || {};
-        document.getElementById("psUpiId").value = s.upiId || '';
-        document.getElementById("psHolderName").value = s.accountHolderName || '';
-        if (s.qrImage) {
-          document.getElementById("psQrPreview").innerHTML = '<img src="' + s.qrImage + '" style="width:100%;height:100%;object-fit:contain">';
-        }
-      } catch { }
+        const [rpData, configData, creatorsData] = await Promise.all([
+          API.get("/razorpay/config"),
+          API.get("/config/public"),
+          API.get("/admin/creators").catch(() => ({ creators: [] })),
+        ]);
+
+        // Razorpay status
+        const configured = rpData.configured;
+        document.getElementById("rpStatus").textContent = configured ? "Connected" : "Not Configured";
+        document.getElementById("rpStatus").className = "value " + (configured ? "success" : "danger");
+
+        // Key display (masked)
+        const keyId = rpData.keyId || "";
+        document.getElementById("rpKeyDisplay").textContent = keyId ? keyId.substring(0, 8) + "..." + keyId.slice(-4) : "Not Set";
+
+        // Subscription settings from config
+        const sub = configData.subscription || {};
+        document.getElementById("rpPrice").textContent = "₹" + (sub.monthlyPlanPrice || 0);
+        document.getElementById("rpTrial").textContent = (sub.trialDays || 0) + " days";
+
+        // Active subscribers count
+        const creators = creatorsData.creators || [];
+        const activeSubs = creators.filter(c => c.subscriptionStatus === "active").length;
+        document.getElementById("rpActiveSubs").textContent = activeSubs;
+      } catch (err) {
+        console.error("loadPaymentSettings error:", err);
+      }
     }
 
-    document.getElementById("psQrInput").addEventListener("change", function(e) {
-      var file = e.target.files[0];
-      if (!file) return;
-      if (file.size > 5 * 1024 * 1024) { toast("QR image must be under 5MB", "error"); return; }
-      var reader = new FileReader();
-      reader.onload = function(ev) {
-        psQrDataUrl = ev.target.result;
-        document.getElementById("psQrPreview").innerHTML = '<img src="' + psQrDataUrl + '" style="width:100%;height:100%;object-fit:contain">';
-      };
-      reader.readAsDataURL(file);
-    });
+    // ─── PAYMENT HISTORY (Razorpay Payments) ─────────────────────────
 
-    document.getElementById("paymentSettingsForm").addEventListener("submit", async function(e) {
-      e.preventDefault();
-      document.getElementById("psErrors").textContent = '';
-      try {
-        // Save UPI ID and holder name
-        await API.put("/admin/payment-settings", {
-          upiId: document.getElementById("psUpiId").value.trim(),
-          accountHolderName: document.getElementById("psHolderName").value.trim(),
-        });
-        // Upload QR if new one selected
-        if (psQrDataUrl) {
-          await API.post("/admin/payment-settings/upload-qr", { qrImage: psQrDataUrl });
-          psQrDataUrl = null;
-        }
-        toast("Payment settings saved", "success");
-      } catch (err) {
-        document.getElementById("psErrors").textContent = err.message || 'Failed to save';
-      }
-    });
+    var phCurrentFilter = 'all';
 
-    // ─── PAYMENT REQUESTS ───────────────────────────────────────────
-
-    async function loadPaymentRequests(statusFilter) {
-      var container = document.getElementById('paymentRequestsContent');
+    async function loadPaymentRequests(filter) {
+      // This is now the main Payment History loader
+      phCurrentFilter = filter || phCurrentFilter || 'all';
+      var container = document.getElementById('phTableContent');
       container.innerHTML = '<div class="loader"></div>';
+
+      // Update active tab
+      document.querySelectorAll('#phFilterTabs button').forEach(function(btn) {
+        btn.classList.toggle('active', btn.dataset.phfilter === phCurrentFilter);
+      });
+
       try {
-        var url = '/subscription-payments/admin/requests';
-        if (statusFilter && statusFilter !== 'all') url += '?status=' + statusFilter;
-        var data = await API.get(url);
+        var params = new URLSearchParams();
+        if (phCurrentFilter === 'today' || phCurrentFilter === '7d' || phCurrentFilter === '30d') {
+          params.set('period', phCurrentFilter);
+        } else if (phCurrentFilter === 'paid' || phCurrentFilter === 'cancelled') {
+          params.set('status', phCurrentFilter);
+        }
+
+        var data = await API.get('/admin/payment-history?' + params.toString());
         var payments = data.payments || [];
+        var stats = data.stats || {};
+
+        // Update stats
+        document.getElementById('phTotalRevenue').textContent = '₹' + (stats.totalRevenue || 0).toLocaleString('en-IN');
+        document.getElementById('phMonthlyRevenue').textContent = '₹' + (stats.monthlyRevenue || 0).toLocaleString('en-IN');
+        document.getElementById('phActiveSubs').textContent = stats.activeSubscriptions || 0;
+        document.getElementById('phFailedPayments').textContent = stats.failedPayments || 0;
+        document.getElementById('phExpiredSubs').textContent = stats.expiredSubscriptions || 0;
 
         if (!payments.length) {
-          container.innerHTML = '<div style="text-align:center;padding:2rem;color:rgba(255,255,255,0.4)"><p>No payment requests found.</p></div>';
+          container.innerHTML = '<div class="empty-state"><div class="icon">💳</div><h3>No payments found</h3><p>No payment records match the selected filter.</p></div>';
           return;
         }
 
-        var html = '<div class="table-wrap"><table><thead><tr><th>Creator</th><th>Type</th><th>Amount</th><th>UTR</th><th>Screenshot</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+        var html = '<div class="table-wrap"><table><thead><tr><th>Creator</th><th>Plan</th><th>Amount</th><th>Payment ID</th><th>Subscription ID</th><th>Date</th><th>Status</th><th>Next Billing</th></tr></thead><tbody>';
         payments.forEach(function(p) {
-          var creatorName = (p.creator && p.creator.user && p.creator.user.name) || 'Unknown';
-          var creatorEmail = (p.creator && p.creator.user && p.creator.user.email) || '';
-          var typeLabel = p.type === 'subscription' ? '<span style="color:var(--gold)">Subscription</span>' : '<span style="color:var(--info,#3b82f6)">Commission</span>';
-          var statusBadge = p.status === 'approved' ? '<span class="status-badge status-approved">Approved</span>' :
-                            p.status === 'rejected' ? '<span class="status-badge status-rejected">Rejected</span>' :
-                            '<span class="status-badge status-pending">Pending</span>';
-          var date = p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'}) : '—';
-          var screenshotHtml = p.screenshot ? '<a href="' + p.screenshot + '" target="_blank" style="color:var(--gold);font-size:0.72rem">View 📷</a>' : '<span style="color:rgba(255,255,255,0.3);font-size:0.72rem">None</span>';
-          var actions = '';
-          if (p.status === 'pending') {
-            actions = '<button class="btn btn-success btn-sm" onclick="approvePaymentReq(\'' + p._id + '\')">✓</button> <button class="btn btn-danger btn-sm" onclick="rejectPaymentReq(\'' + p._id + '\')">✗</button>';
-          }
+          var statusClass = p.status === 'paid' ? 'active' : p.status === 'cancelled' ? 'rejected' : 'pending';
+          var statusLabel = p.status === 'paid' ? 'Success' : p.status === 'cancelled' ? 'Failed' : 'Pending';
+          var date = p.paymentDate ? new Date(p.paymentDate).toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
+          var nextBilling = p.nextBillingDate ? new Date(p.nextBillingDate).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }) : '—';
+          var payId = p.razorpayPaymentId || p.invoiceNumber || '—';
+          var subId = p.razorpaySubscriptionId || '—';
+
           html += '<tr>' +
-            '<td><div style="font-size:0.8rem;font-weight:500">' + creatorName + '</div><div style="font-size:0.68rem;color:rgba(255,255,255,0.3)">' + creatorEmail + '</div></td>' +
-            '<td>' + typeLabel + '</td>' +
+            '<td><div style="font-size:0.8rem;font-weight:500;color:var(--gold-light)">' + (p.creatorName || 'Unknown') + '</div><div style="font-size:0.68rem;color:var(--text-dim)">' + (p.creatorEmail || '') + '</div><div style="font-size:0.62rem;color:rgba(255,255,255,0.2)">' + (p.creatorId || '') + '</div></td>' +
+            '<td style="font-size:0.78rem">' + (p.planName || '—') + '</td>' +
             '<td style="font-weight:600;color:var(--gold)">₹' + (p.amount || 0).toLocaleString('en-IN') + '</td>' +
-            '<td style="font-size:0.75rem">' + (p.utr || '—') + '</td>' +
-            '<td>' + screenshotHtml + '</td>' +
+            '<td style="font-size:0.7rem;max-width:120px;overflow:hidden;text-overflow:ellipsis" title="' + payId + '">' + payId + '</td>' +
+            '<td style="font-size:0.7rem;max-width:120px;overflow:hidden;text-overflow:ellipsis" title="' + subId + '">' + subId + '</td>' +
             '<td style="font-size:0.72rem">' + date + '</td>' +
-            '<td>' + statusBadge + '</td>' +
-            '<td style="display:flex;gap:0.3rem">' + actions + '</td>' +
+            '<td><span class="status-badge status-' + statusClass + '">' + statusLabel + '</span></td>' +
+            '<td style="font-size:0.72rem">' + nextBilling + '</td>' +
           '</tr>';
         });
         html += '</tbody></table></div>';
         container.innerHTML = html;
       } catch (err) {
-        container.innerHTML = '<div style="color:var(--danger);padding:1rem">Failed to load: ' + (err.message || '') + '</div>';
+        container.innerHTML = '<div style="color:var(--danger);padding:1rem">Failed to load payment history: ' + (err.message || '') + '</div>';
       }
     }
 
-    window.approvePaymentReq = async function(id) {
-      if (!confirm('Approve this payment?')) return;
-      try {
-        await API.patch('/subscription-payments/admin/' + id + '/approve', {});
-        toast('Payment approved!', 'success');
-        loadPaymentRequests('pending');
-      } catch (err) {
-        toast(err.message || 'Failed to approve', 'error');
-      }
-    };
-
-    window.rejectPaymentReq = async function(id) {
-      var reason = prompt('Rejection reason (optional):');
-      try {
-        await API.patch('/subscription-payments/admin/' + id + '/reject', { reason: reason || '' });
-        toast('Payment rejected', 'success');
-        loadPaymentRequests('pending');
-      } catch (err) {
-        toast(err.message || 'Failed to reject', 'error');
-      }
-    };
+    // Payment History filter tabs
+    document.getElementById('phFilterTabs')?.addEventListener('click', function(e) {
+      var btn = e.target.closest('button');
+      if (!btn || !btn.dataset.phfilter) return;
+      loadPaymentRequests(btn.dataset.phfilter);
+    });
 
     // Modal helpers
     window.closeModal = (id) => { document.getElementById(id).classList.remove("active"); };
@@ -1964,8 +1952,8 @@
       catch (err) { document.getElementById("refErrors").textContent = err.data?.message || err.message; }
     });
 
-    async function loadPaymentHistory() {
-      const el = document.getElementById("paymentHistoryContent");
+    async function loadFinancePaymentHistory() {
+      const el = document.getElementById("financePaymentHistoryContent");
       const params = new URLSearchParams();
       const from = document.getElementById("fhDateFrom")?.value;
       const to = document.getElementById("fhDateTo")?.value;
