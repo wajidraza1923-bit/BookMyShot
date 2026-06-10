@@ -21,6 +21,48 @@ async function recalcPayment(bookingId) {
   } else if (totalPaid > 0) {
     booking.paymentStatus = "partial";
   }
+
+  // AUTO-LOCK COMMISSION: If creator never edited amount (commissionLocked=false)
+  // and more than 50% of the budget/amount has been paid → lock commission on current amount
+  if (!booking.commissionLocked) {
+    const dealAmount = booking.amount || booking.budget || 0;
+    if (dealAmount > 0 && totalPaid > (dealAmount * 0.5)) {
+      const configService = require("../services/configService");
+      const commSettings = await configService.getCommissionSettings();
+      const leadSource = booking.leadSource || "bookmyshot";
+      const commPercent = leadSource === "creator"
+        ? (commSettings.creatorLeadCommissionPercent || 3)
+        : (commSettings.bmsLeadCommissionPercent || 5);
+      const commAmount = Math.round((dealAmount * commPercent) / 100);
+
+      booking.commissionPercent = commPercent;
+      booking.commissionAmount = commAmount;
+      booking.commissionLockedAmount = dealAmount;
+      booking.commissionLocked = true;
+      booking.creatorReceivable = dealAmount - commAmount;
+      if (!booking.commissionStatus) booking.commissionStatus = "pending";
+
+      // Create commission record
+      const Commission = require("../models/Commission");
+      let commission = await Commission.findOne({ booking: booking._id });
+      if (!commission && dealAmount > 0) {
+        const creator = await Creator.findById(booking.creator);
+        await Commission.create({
+          booking: booking._id,
+          creator: booking.creator,
+          user: booking.user,
+          totalAmount: dealAmount,
+          leadSource,
+          commissionPercent: commPercent,
+          commissionAmount: commAmount,
+          creatorEarning: dealAmount - commAmount,
+          status: "pending",
+        });
+      }
+      console.log(`[Commission] Auto-locked on booking ${bookingId}: ₹${commAmount} (${commPercent}% of ₹${dealAmount}) — triggered by 50%+ payment`);
+    }
+  }
+
   await booking.save();
   return booking;
 }
