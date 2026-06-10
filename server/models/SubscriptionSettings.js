@@ -5,9 +5,15 @@ const subscriptionSettingsSchema = new mongoose.Schema(
     monthlyPlanPrice: { type: Number, default: 299 },
     yearlyPlanPrice: { type: Number, default: 2999 },
     trialDays: { type: Number, default: 30 },
+    trialAmount: { type: Number, default: 1 },
     freeTrialEnabled: { type: Boolean, default: true },
     autoRenewDefault: { type: Boolean, default: true },
     gracePeriodDays: { type: Number, default: 7 },
+    // Future pricing
+    futureMonthlyPrice: { type: Number, default: 0 },
+    priceChangeMode: { type: String, enum: ["new_only", "all_creators", ""], default: "" },
+    priceChangeEffectiveDate: { type: Date },
+    // Promotion pricing
     featuredPortfolioPrice: { type: Number, default: 999 },
     searchBoostPrice: { type: Number, default: 499 },
     homepageFeaturedPrice: { type: Number, default: 1499 },

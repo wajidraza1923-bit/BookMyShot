@@ -494,28 +494,56 @@
 
       <!-- Subscription Settings Panel -->
       <div class="panel" id="panel-subscription-settings">
-        <div class="panel-header"><h2>Subscription Settings</h2><p>Configure subscription pricing and plan details</p></div>
-        <div class="card">
+        <div class="panel-header"><h2>Subscription Settings</h2><p>Configure subscription pricing, trial, and manage creator notifications</p></div>
+        <!-- Trial & Pricing Card -->
+        <div class="card" style="margin-bottom:1rem">
+          <h4 style="color:var(--gold-light);font-family:var(--font-display);margin-bottom:1rem">💰 Trial & Pricing</h4>
           <form id="subscriptionSettingsForm">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.85rem">
+              <div class="form-group"><label>Trial Amount (₹)</label><input type="number" id="ssTrialAmount" min="0" step="1" placeholder="1"></div>
+              <div class="form-group"><label>Trial Days</label><input type="number" id="ssTrialDays" min="0" placeholder="60"></div>
               <div class="form-group"><label>Monthly Plan Price (₹)</label><input type="number" id="ssMonthlyPrice" min="0" step="1"></div>
+              <div class="form-group"><label>Future Monthly Price (₹)</label><input type="number" id="ssFuturePrice" min="0" step="1" placeholder="0 = no change planned"></div>
               <div class="form-group"><label>Yearly Plan Price (₹)</label><input type="number" id="ssYearlyPrice" min="0" step="1"></div>
-              <div class="form-group"><label>Trial Days</label><input type="number" id="ssTrialDays" min="0"></div>
               <div class="form-group"><label>Grace Period Days</label><input type="number" id="ssGracePeriod" min="0"></div>
-              <div class="form-group"><label>Featured Portfolio Price (₹)</label><input type="number" id="ssFeaturedPrice" min="0"></div>
-              <div class="form-group"><label>Search Boost Price (₹)</label><input type="number" id="ssBoostPrice" min="0"></div>
-              <div class="form-group"><label>Homepage Featured Price (₹)</label><input type="number" id="ssHomepagePrice" min="0"></div>
-              <div class="form-group"><label>Rank #1 Price (₹)</label><input type="number" id="ssRank1Price" min="0"></div>
-              <div class="form-group"><label>Rank #2 Price (₹)</label><input type="number" id="ssRank2Price" min="0"></div>
-              <div class="form-group"><label>Rank #3 Price (₹)</label><input type="number" id="ssRank3Price" min="0"></div>
-              <div class="form-group"><label>Rank #4 Price (₹)</label><input type="number" id="ssRank4Price" min="0"></div>
+              <div class="form-group"><label>Price Change Mode</label>
+                <select id="ssPriceChangeMode">
+                  <option value="">No future price change</option>
+                  <option value="new_only">Apply to new creators only</option>
+                  <option value="all_creators">Apply to all creators at renewal</option>
+                </select>
+              </div>
               <div class="form-group" style="display:flex;align-items:center;gap:0.75rem;padding-top:1.2rem">
                 <label style="margin:0;cursor:pointer;display:flex;align-items:center;gap:0.5rem"><input type="checkbox" id="ssAutoRenew" style="width:auto"> Auto Renew Default</label>
               </div>
             </div>
+            <div style="border-top:1px solid var(--border-light);margin:1rem 0;padding-top:1rem">
+              <h4 style="color:var(--text-muted);font-size:0.8rem;margin-bottom:0.75rem">PROMOTION PRICING</h4>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.85rem">
+                <div class="form-group"><label>Featured Portfolio Price (₹)</label><input type="number" id="ssFeaturedPrice" min="0"></div>
+                <div class="form-group"><label>Search Boost Price (₹)</label><input type="number" id="ssBoostPrice" min="0"></div>
+                <div class="form-group"><label>Homepage Featured Price (₹)</label><input type="number" id="ssHomepagePrice" min="0"></div>
+                <div class="form-group"><label>Rank #1 Price (₹)</label><input type="number" id="ssRank1Price" min="0"></div>
+                <div class="form-group"><label>Rank #2 Price (₹)</label><input type="number" id="ssRank2Price" min="0"></div>
+                <div class="form-group"><label>Rank #3 Price (₹)</label><input type="number" id="ssRank3Price" min="0"></div>
+                <div class="form-group"><label>Rank #4 Price (₹)</label><input type="number" id="ssRank4Price" min="0"></div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:0.75rem;margin-top:0.5rem">
+              <label style="margin:0;cursor:pointer;display:flex;align-items:center;gap:0.5rem;font-size:0.78rem;color:var(--text-dim)"><input type="checkbox" id="ssNotifyOnSave" style="width:auto"> Notify all creators if price changed</label>
+            </div>
             <div id="ssErrors" style="color:var(--danger);font-size:0.8rem;margin-top:0.5rem"></div>
             <button type="submit" class="btn btn-primary" style="margin-top:1rem">Save Subscription Settings</button>
           </form>
+        </div>
+        <!-- Bulk Email Card -->
+        <div class="card">
+          <h4 style="color:var(--gold-light);font-family:var(--font-display);margin-bottom:1rem">📢 Notify All Creators</h4>
+          <p style="font-size:0.78rem;color:var(--text-dim);margin-bottom:1rem">Send subscription-related announcements to all approved creators via email and in-app notification.</p>
+          <div class="form-group"><label>Subject *</label><input type="text" id="ssBulkSubject" placeholder="e.g. Subscription Price Update"></div>
+          <div class="form-group"><label>Message *</label><textarea id="ssBulkMessage" rows="4" placeholder="Your message to all creators..."></textarea></div>
+          <div id="ssBulkResult" style="font-size:0.78rem;margin-top:0.5rem"></div>
+          <button class="btn btn-primary" style="margin-top:0.75rem" id="ssBulkSendBtn" onclick="ssSendBulkEmail()">📢 Send To All Creators</button>
         </div>
       </div>
 
@@ -1763,10 +1791,13 @@
       try {
         const data = await API.get("/admin/subscription-settings");
         const s = data.data || data;
+        document.getElementById("ssTrialAmount").value = s.trialAmount ?? 1;
+        document.getElementById("ssTrialDays").value = s.trialDays ?? 60;
         document.getElementById("ssMonthlyPrice").value = s.monthlyPlanPrice ?? 299;
+        document.getElementById("ssFuturePrice").value = s.futureMonthlyPrice || 0;
         document.getElementById("ssYearlyPrice").value = s.yearlyPlanPrice ?? 2999;
-        document.getElementById("ssTrialDays").value = s.trialDays ?? 30;
         document.getElementById("ssGracePeriod").value = s.gracePeriodDays ?? 7;
+        document.getElementById("ssPriceChangeMode").value = s.priceChangeMode || "";
         document.getElementById("ssFeaturedPrice").value = s.featuredPortfolioPrice ?? 999;
         document.getElementById("ssBoostPrice").value = s.searchBoostPrice ?? 499;
         document.getElementById("ssHomepagePrice").value = s.homepageFeaturedPrice ?? 1499;
@@ -1782,10 +1813,13 @@
       e.preventDefault();
       document.getElementById("ssErrors").textContent = '';
       const body = {
-        monthlyPlanPrice: Number(document.getElementById("ssMonthlyPrice").value),
-        yearlyPlanPrice: Number(document.getElementById("ssYearlyPrice").value),
+        trialAmount: Number(document.getElementById("ssTrialAmount").value) || 1,
         trialDays: Number(document.getElementById("ssTrialDays").value),
+        monthlyPlanPrice: Number(document.getElementById("ssMonthlyPrice").value),
+        futureMonthlyPrice: Number(document.getElementById("ssFuturePrice").value) || 0,
+        yearlyPlanPrice: Number(document.getElementById("ssYearlyPrice").value),
         gracePeriodDays: Number(document.getElementById("ssGracePeriod").value),
+        priceChangeMode: document.getElementById("ssPriceChangeMode").value,
         featuredPortfolioPrice: Number(document.getElementById("ssFeaturedPrice").value),
         searchBoostPrice: Number(document.getElementById("ssBoostPrice").value),
         homepageFeaturedPrice: Number(document.getElementById("ssHomepagePrice").value),
@@ -1794,15 +1828,36 @@
         rank3Price: Number(document.getElementById("ssRank3Price").value),
         rank4Price: Number(document.getElementById("ssRank4Price").value),
         autoRenewDefault: document.getElementById("ssAutoRenew").checked,
+        _notifyCreators: document.getElementById("ssNotifyOnSave").checked,
       };
       try {
         await API.put("/admin/subscription-settings", body);
         toast("Subscription settings saved", "success");
+        document.getElementById("ssNotifyOnSave").checked = false;
       } catch (err) {
         const msg = err.data?.errors?.map(e => e.message).join(', ') || err.message;
         document.getElementById("ssErrors").textContent = msg;
       }
     });
+
+    window.ssSendBulkEmail = async function() {
+      var subject = document.getElementById("ssBulkSubject").value.trim();
+      var message = document.getElementById("ssBulkMessage").value.trim();
+      var resultEl = document.getElementById("ssBulkResult");
+      if (!subject || !message) { resultEl.innerHTML = '<span style="color:var(--danger)">Subject and message required.</span>'; return; }
+      var btn = document.getElementById("ssBulkSendBtn");
+      btn.disabled = true; btn.textContent = "Sending...";
+      resultEl.innerHTML = '';
+      try {
+        var data = await API.post("/admin/subscription-settings/bulk-email", { subject: subject, message: message });
+        resultEl.innerHTML = '<span style="color:var(--success)">✅ Sent to ' + (data.sent || 0) + ' creators. Failed: ' + (data.failed || 0) + '</span>';
+        document.getElementById("ssBulkSubject").value = '';
+        document.getElementById("ssBulkMessage").value = '';
+      } catch (err) {
+        resultEl.innerHTML = '<span style="color:var(--danger)">Failed: ' + (err.message || '') + '</span>';
+      }
+      btn.disabled = false; btn.textContent = "📢 Send To All Creators";
+    };
 
     // ─── COMMISSION SETTINGS ────────────────────────────────────────
 
