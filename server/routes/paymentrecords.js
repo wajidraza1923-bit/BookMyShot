@@ -210,58 +210,60 @@ router.patch("/booking/:bookingId/amount", async (req, res, next) => {
     if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
 
     const newAmount = req.body.amount || booking.amount;
-
-    // COMMISSION LOCK: If commission was already calculated, only allow amount to increase
-    // This prevents creators from reducing booking amount to lower their commission
-    if (booking.commissionAmount && booking.commissionAmount > 0 && newAmount < booking.amount) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Cannot reduce booking amount after commission has been calculated. Commission is locked at ₹" + booking.commissionAmount 
-      });
-    }
-
     booking.amount = newAmount;
 
-    // Auto-calculate commission from database settings
-    const configService = require("../services/configService");
-    const commSettings = await configService.getCommissionSettings();
+    // COMMISSION LOGIC:
+    // First time amount is set → calculate commission and LOCK it permanently
+    // After that → creator can change amount freely, commission never changes
+    if (!booking.commissionLocked) {
+      // First time setting amount — calculate and freeze commission
+      const configService = require("../services/configService");
+      const commSettings = await configService.getCommissionSettings();
 
-    const leadSource = booking.leadSource || "bookmyshot";
-    const commissionPercent = leadSource === "creator"
-      ? (commSettings.creatorLeadCommissionPercent || 3)
-      : (commSettings.bmsLeadCommissionPercent || 5);
-    const commissionAmount = Math.round((booking.amount * commissionPercent) / 100);
-    booking.commissionPercent = commissionPercent;
-    booking.commissionAmount = commissionAmount;
-    booking.creatorReceivable = booking.amount - commissionAmount;
-    if (!booking.commissionStatus) booking.commissionStatus = "pending";
+      const leadSource = booking.leadSource || "bookmyshot";
+      const commissionPercent = leadSource === "creator"
+        ? (commSettings.creatorLeadCommissionPercent || 3)
+        : (commSettings.bmsLeadCommissionPercent || 5);
+      const commissionAmount = Math.round((newAmount * commissionPercent) / 100);
+
+      booking.commissionPercent = commissionPercent;
+      booking.commissionAmount = commissionAmount;
+      booking.commissionLockedAmount = newAmount;
+      booking.commissionLocked = true;
+      booking.creatorReceivable = newAmount - commissionAmount;
+      if (!booking.commissionStatus) booking.commissionStatus = "pending";
+
+      // Create commission record
+      const Commission = require("../models/Commission");
+      let commission = await Commission.findOne({ booking: booking._id });
+      if (commission) {
+        commission.totalAmount = newAmount;
+        commission.leadSource = leadSource;
+        commission.commissionPercent = commissionPercent;
+        commission.commissionAmount = commissionAmount;
+        commission.creatorEarning = newAmount - commissionAmount;
+        await commission.save();
+      } else if (newAmount > 0) {
+        await Commission.create({
+          booking: booking._id,
+          creator: creator._id,
+          user: booking.user,
+          totalAmount: newAmount,
+          leadSource,
+          commissionPercent,
+          commissionAmount,
+          creatorEarning: newAmount - commissionAmount,
+          status: "pending",
+        });
+      }
+    } else {
+      // Commission already locked — only update the booking amount
+      // Commission stays frozen at the original calculated value
+      booking.creatorReceivable = newAmount - booking.commissionAmount;
+    }
 
     await booking.save();
     await recalcPayment(booking._id);
-
-    // Create/update commission record
-    const Commission = require("../models/Commission");
-    let commission = await Commission.findOne({ booking: booking._id });
-    if (commission) {
-      commission.totalAmount = booking.amount;
-      commission.leadSource = leadSource;
-      commission.commissionPercent = commissionPercent;
-      commission.commissionAmount = commissionAmount;
-      commission.creatorEarning = booking.creatorReceivable;
-      await commission.save();
-    } else if (booking.amount > 0) {
-      commission = await Commission.create({
-        booking: booking._id,
-        creator: creator._id,
-        user: booking.user,
-        totalAmount: booking.amount,
-        leadSource,
-        commissionPercent,
-        commissionAmount,
-        creatorEarning: booking.creatorReceivable,
-        status: "pending",
-      });
-    }
 
     res.json({ success: true, booking });
   } catch (e) {

@@ -54,6 +54,8 @@ const bookingSchema = new mongoose.Schema(
     commissionAmount: { type: Number, default: 0 },
     creatorReceivable: { type: Number, default: 0 },
     commissionStatus: { type: String, enum: ["pending", "paid", "waived", ""], default: "" },
+    commissionLocked: { type: Boolean, default: false },
+    commissionLockedAmount: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

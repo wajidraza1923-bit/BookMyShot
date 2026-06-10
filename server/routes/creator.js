@@ -289,7 +289,29 @@ router.patch("/booking-requests/:id", async (req, res, next) => {
 
     const { status, amount } = req.body;
     booking.status = status;
-    if (amount) booking.amount = amount;
+
+    // If amount is being set and commission not yet locked, calculate and lock
+    if (amount && amount > 0 && !booking.commissionLocked) {
+      booking.amount = amount;
+      const configService = require("../services/configService");
+      const commSettings = await configService.getCommissionSettings();
+      const leadSource = booking.leadSource || "bookmyshot";
+      const commPercent = leadSource === "creator"
+        ? (commSettings.creatorLeadCommissionPercent || 3)
+        : (commSettings.bmsLeadCommissionPercent || 5);
+      const commAmount = Math.round((amount * commPercent) / 100);
+      booking.commissionPercent = commPercent;
+      booking.commissionAmount = commAmount;
+      booking.commissionLockedAmount = amount;
+      booking.commissionLocked = true;
+      booking.creatorReceivable = amount - commAmount;
+      if (!booking.commissionStatus) booking.commissionStatus = "pending";
+    } else if (amount && amount > 0 && booking.commissionLocked) {
+      // Commission already locked — just update amount, commission stays same
+      booking.amount = amount;
+      booking.creatorReceivable = amount - booking.commissionAmount;
+    }
+
     await booking.save();
 
     // Create notification for user

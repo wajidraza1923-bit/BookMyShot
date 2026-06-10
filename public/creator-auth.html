@@ -488,11 +488,17 @@
         if (data.requiresVerification) {
           localStorage.setItem('bms_verify_email', data.user.email);
           localStorage.setItem('bms_register_role', 'creator');
+          btn.textContent = '✓ Verify Email...';
+          btn.style.background = 'rgba(16,185,129,0.2)';
+          btn.style.color = '#10b981';
           toast('Please verify your email first', 'info');
-          setTimeout(function() { window.location.href = '/verify-email.html?email=' + encodeURIComponent(data.user.email); }, 1000);
+          setTimeout(function() { window.location.href = '/verify-email.html?email=' + encodeURIComponent(data.user.email); }, 1500);
         } else {
-          toast('Application submitted! Awaiting approval.', 'success');
-          setTimeout(function() { window.location.href = '/creator/subscription.html'; }, 1000);
+          btn.textContent = '✓ Application Submitted!';
+          btn.style.background = 'rgba(16,185,129,0.2)';
+          btn.style.color = '#10b981';
+          toast('Application submitted! Redirecting...', 'success');
+          setTimeout(function() { window.location.href = '/creator/subscription.html'; }, 1500);
         }
       } catch (err) {
         toast(err.message || 'Registration failed', 'error');
