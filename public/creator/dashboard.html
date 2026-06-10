@@ -4713,11 +4713,14 @@
     history.replaceState({ panel: 'dashboard' }, '', '#dashboard');
 
     // ═══ PAYMENT & AMOUNT MODAL HANDLERS ═══
-    (function initPaymentModals() {
+    // NOTE: These elements are defined after this script block in the HTML,
+    // so we defer initialization until DOM is fully ready
+    setTimeout(function initPaymentModals() {
       // Style radio buttons on selection
-      document.querySelectorAll('#paymentModalForm input[name="pmType"]').forEach(function(radio) {
+      var radios = document.querySelectorAll('#paymentModalForm input[name="pmType"]');
+      radios.forEach(function(radio) {
         radio.addEventListener('change', function() {
-          document.querySelectorAll('#paymentModalForm input[name="pmType"]').forEach(function(r) {
+          radios.forEach(function(r) {
             r.closest('label').style.borderColor = 'rgba(201,169,98,0.15)';
             r.closest('label').style.background = 'rgba(255,255,255,0.03)';
           });
@@ -4729,7 +4732,8 @@
       if (defaultRadio) { defaultRadio.closest('label').style.borderColor = 'var(--gold)'; defaultRadio.closest('label').style.background = 'rgba(201,169,98,0.08)'; }
 
       // Payment form submit
-      document.getElementById('paymentModalForm').addEventListener('submit', async function(e) {
+      var payForm = document.getElementById('paymentModalForm');
+      if (payForm) payForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         var bookingId = document.getElementById('pmBookingId').value;
         var amount = parseInt(document.getElementById('pmAmount').value);
@@ -4739,7 +4743,6 @@
         if (!amount || amount <= 0) { toast('Enter a valid amount', 'error'); return; }
 
         var proofUrl = '';
-        // Upload proof photo to Cloudinary if provided
         if (proofFile) {
           if (proofFile.size > 5 * 1024 * 1024) { toast('Proof image must be under 5MB', 'error'); return; }
           try {
@@ -4748,10 +4751,7 @@
             formData.append('folder', 'bookmyshot/payment-proofs');
             var uploadRes = await API.upload('/creator/upload', formData);
             proofUrl = uploadRes.url || '';
-          } catch (ue) {
-            console.error('Proof upload failed:', ue.message);
-            // Continue without proof
-          }
+          } catch (ue) { console.error('Proof upload failed:', ue.message); }
         }
 
         try {
@@ -4764,7 +4764,8 @@
       });
 
       // Amount form submit
-      document.getElementById('amountModalForm').addEventListener('submit', async function(e) {
+      var amtForm = document.getElementById('amountModalForm');
+      if (amtForm) amtForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         var bookingId = document.getElementById('amBookingId').value;
         var amount = parseInt(document.getElementById('amAmount').value);
@@ -4777,12 +4778,11 @@
           var commInfo = b.commissionLocked ? ' | Commission: ₹' + (b.commissionAmount || 0).toLocaleString('en-IN') + ' (' + (b.commissionPercent || 0) + '%)' : '';
           toast('Amount saved: ₹' + amount.toLocaleString('en-IN') + commInfo, 'success');
           document.getElementById('amountModal').style.display = 'none';
-          // Small delay to ensure DB consistency before re-fetch
           setTimeout(function() { loadBookings(); }, 300);
         } catch (err) { toast(err.message || 'Failed to save amount', 'error'); }
         btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Save Amount';
       });
-    })();
+    }, 0);
   </script>
 
   <!-- ═══ RECORD PAYMENT MODAL ═══ -->
