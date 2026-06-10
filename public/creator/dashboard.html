@@ -2472,25 +2472,18 @@
 
     window.creatorAddPayment = async function(bookingId) {
       if (checkExpiredBlock('Adding payments')) return;
-      var amount = prompt('Enter payment amount (₹):');
-      if (!amount || isNaN(amount)) return;
-      var type = prompt('Payment type (advance / partial / final / other):') || 'other';
-      var notes = prompt('Notes (optional):') || '';
-      try {
-        await API.post('/payment-records/creator', { bookingId: bookingId, amount: parseInt(amount), paymentType: type, notes: notes });
-        toast('Payment record added', 'success');
-        loadBookings();
-      } catch (e) { toast(e.message || 'Failed to add record', 'error'); }
+      document.getElementById('pmBookingId').value = bookingId;
+      document.getElementById('pmAmount').value = '';
+      document.getElementById('pmNotes').value = '';
+      var defaultRadio = document.querySelector('#paymentModalForm input[name="pmType"][value="advance"]');
+      if (defaultRadio) defaultRadio.checked = true;
+      document.getElementById('paymentModal').style.display = 'flex';
     };
 
     window.setBookingAmount = async function(bookingId, currentAmount) {
-      var newAmount = prompt('Set total project amount (₹):', currentAmount);
-      if (!newAmount || isNaN(newAmount)) return;
-      try {
-        await API.patch('/payment-records/booking/' + bookingId + '/amount', { amount: parseInt(newAmount) });
-        toast('Amount updated to ₹' + parseInt(newAmount).toLocaleString('en-IN'), 'success');
-        loadBookings();
-      } catch (e) { toast(e.message || 'Failed to update amount', 'error'); }
+      document.getElementById('amBookingId').value = bookingId;
+      document.getElementById('amAmount').value = currentAmount || '';
+      document.getElementById('amountModal').style.display = 'flex';
     };
 
     window.markFullyPaid = async function(bookingId) {
@@ -4662,6 +4655,113 @@
 
     // Initialize history state
     history.replaceState({ panel: 'dashboard' }, '', '#dashboard');
+  </script>
+
+  <!-- ═══ RECORD PAYMENT MODAL ═══ -->
+  <div class="modal-overlay" id="paymentModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="document.getElementById('paymentModal').style.display='none'">&times;</button>
+      <h2><i class="fas fa-money-bill-wave" style="color:var(--gold)"></i> Record Payment</h2>
+      <form id="paymentModalForm">
+        <input type="hidden" id="pmBookingId">
+        <div class="form-group">
+          <label>Payment Type *</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.5rem;margin-top:0.3rem">
+            <label style="display:flex;align-items:center;gap:0.4rem;background:rgba(255,255,255,0.03);border:1px solid rgba(201,169,98,0.15);border-radius:10px;padding:0.6rem 0.75rem;cursor:pointer;font-size:0.8rem;transition:all 0.2s" id="pmTypeAdvance">
+              <input type="radio" name="pmType" value="advance" style="accent-color:var(--gold)" checked> Advance
+            </label>
+            <label style="display:flex;align-items:center;gap:0.4rem;background:rgba(255,255,255,0.03);border:1px solid rgba(201,169,98,0.15);border-radius:10px;padding:0.6rem 0.75rem;cursor:pointer;font-size:0.8rem;transition:all 0.2s" id="pmTypePartial">
+              <input type="radio" name="pmType" value="partial" style="accent-color:var(--gold)"> Partial
+            </label>
+            <label style="display:flex;align-items:center;gap:0.4rem;background:rgba(255,255,255,0.03);border:1px solid rgba(201,169,98,0.15);border-radius:10px;padding:0.6rem 0.75rem;cursor:pointer;font-size:0.8rem;transition:all 0.2s" id="pmTypeFinal">
+              <input type="radio" name="pmType" value="final" style="accent-color:var(--gold)"> Final
+            </label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Amount (₹) *</label>
+          <input type="number" id="pmAmount" class="form-input" placeholder="Enter amount" min="1" required style="font-size:1.1rem;font-weight:600;color:var(--gold)">
+        </div>
+        <div class="form-group">
+          <label>Notes (optional)</label>
+          <input type="text" id="pmNotes" class="form-input" placeholder="e.g. Cash payment, UPI transfer">
+        </div>
+        <div style="display:flex;gap:0.75rem;margin-top:1.2rem">
+          <button type="submit" class="btn btn-primary" style="flex:1"><i class="fas fa-check"></i> Record Payment</button>
+          <button type="button" class="btn btn-outline" onclick="document.getElementById('paymentModal').style.display='none'">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ═══ SET AMOUNT MODAL ═══ -->
+  <div class="modal-overlay" id="amountModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="document.getElementById('amountModal').style.display='none'">&times;</button>
+      <h2><i class="fas fa-rupee-sign" style="color:var(--gold)"></i> Set Project Amount</h2>
+      <form id="amountModalForm">
+        <input type="hidden" id="amBookingId">
+        <div class="form-group">
+          <label>Total Project Amount (₹) *</label>
+          <input type="number" id="amAmount" class="form-input" placeholder="Enter total deal amount" min="1" required style="font-size:1.2rem;font-weight:700;color:var(--gold)">
+        </div>
+        <p style="font-size:0.72rem;color:rgba(255,255,255,0.4);margin-top:0.5rem"><i class="fas fa-info-circle"></i> Platform commission will be calculated on the first amount you set. After that, changes won't affect commission.</p>
+        <div style="display:flex;gap:0.75rem;margin-top:1.2rem">
+          <button type="submit" class="btn btn-primary" style="flex:1"><i class="fas fa-check"></i> Save Amount</button>
+          <button type="button" class="btn btn-outline" onclick="document.getElementById('amountModal').style.display='none'">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+  // ═══ PAYMENT MODAL HANDLERS ═══
+  (function() {
+    // Style radio buttons on selection
+    document.querySelectorAll('#paymentModalForm input[name="pmType"]').forEach(function(radio) {
+      radio.addEventListener('change', function() {
+        document.querySelectorAll('#paymentModalForm input[name="pmType"]').forEach(function(r) {
+          r.closest('label').style.borderColor = 'rgba(201,169,98,0.15)';
+          r.closest('label').style.background = 'rgba(255,255,255,0.03)';
+        });
+        this.closest('label').style.borderColor = 'var(--gold)';
+        this.closest('label').style.background = 'rgba(201,169,98,0.08)';
+      });
+    });
+    // Default highlight
+    var defaultRadio = document.querySelector('#paymentModalForm input[name="pmType"]:checked');
+    if (defaultRadio) { defaultRadio.closest('label').style.borderColor = 'var(--gold)'; defaultRadio.closest('label').style.background = 'rgba(201,169,98,0.08)'; }
+
+    // Payment form submit
+    document.getElementById('paymentModalForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      var bookingId = document.getElementById('pmBookingId').value;
+      var amount = parseInt(document.getElementById('pmAmount').value);
+      var type = document.querySelector('#paymentModalForm input[name="pmType"]:checked').value;
+      var notes = document.getElementById('pmNotes').value.trim();
+      if (!amount || amount <= 0) { toast('Enter a valid amount', 'error'); return; }
+      try {
+        await API.post('/payment-records/creator', { bookingId: bookingId, amount: amount, paymentType: type, notes: notes });
+        toast('Payment recorded ✓', 'success');
+        document.getElementById('paymentModal').style.display = 'none';
+        loadBookings();
+      } catch (err) { toast(err.message || 'Failed', 'error'); }
+    });
+
+    // Amount form submit
+    document.getElementById('amountModalForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      var bookingId = document.getElementById('amBookingId').value;
+      var amount = parseInt(document.getElementById('amAmount').value);
+      if (!amount || amount <= 0) { toast('Enter a valid amount', 'error'); return; }
+      try {
+        await API.patch('/payment-records/booking/' + bookingId + '/amount', { amount: amount });
+        toast('Amount set: ₹' + amount.toLocaleString('en-IN') + ' ✓', 'success');
+        document.getElementById('amountModal').style.display = 'none';
+        loadBookings();
+      } catch (err) { toast(err.message || 'Failed', 'error'); }
+    });
+  })();
   </script>
 
 </body>
