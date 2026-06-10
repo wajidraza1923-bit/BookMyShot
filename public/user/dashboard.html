@@ -80,18 +80,18 @@
     .sidebar-nav {
       flex: 1;
       overflow-y: auto;
-      padding: 0.5rem 0;
+      padding: 0.3rem 0;
     }
 
     .sidebar-nav a {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
-      padding: 0.5rem 1.25rem;
+      gap: 0.6rem;
+      padding: 0.35rem 1rem;
       cursor: pointer;
       transition: var(--transition);
       color: rgba(255,255,255,0.55);
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       font-weight: 400;
       text-decoration: none;
     }
@@ -108,29 +108,9 @@
       border-left: 3px solid var(--gold);
     }
 
-    .sidebar-nav a .icon { width: 24px; text-align: center; font-size: 0.85rem; flex-shrink: 0; }
-
-    .sidebar-footer {
-      padding: 0.75rem 0;
-      border-top: 1px solid rgba(255,255,255,0.04);
-      flex-shrink: 0;
-    }
-
-    .sidebar-footer a {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      padding: 0.5rem 1.25rem;
-      color: rgba(255,255,255,0.5);
-      font-size: 0.82rem;
-      text-decoration: none;
-      transition: var(--transition);
-    }
-
-    .sidebar-footer a:hover { background: rgba(255,255,255,0.03); color: var(--text); }
-    .sidebar-footer a:last-child { color: #ef4444; }
-    .sidebar-footer a:last-child:hover { background: rgba(239,68,68,0.08); color: #f87171; }
-    .sidebar-footer a .icon { width: 24px; text-align: center; font-size: 0.85rem; flex-shrink: 0; }
+    .sidebar-nav a .icon { width: 20px; text-align: center; font-size: 0.8rem; flex-shrink: 0; }
+    .sidebar-nav a:last-child { color: #ef4444; }
+    .sidebar-nav a:last-child:hover { background: rgba(239,68,68,0.08); color: #f87171; }
 
     /* ─── Main Content ─── */
     .main-content {
@@ -863,8 +843,7 @@
     @media (max-width: 768px) {
       .sidebar { transform: translateX(-100%); z-index: 999; transition: transform 0.3s ease; }
       .sidebar.open { transform: translateX(0); }
-      .sidebar-nav a { padding: 0.5rem 1.1rem; font-size: 0.82rem; }
-      .sidebar-footer a { padding: 0.5rem 1.1rem; font-size: 0.82rem; }
+      .sidebar-nav a { padding: 0.35rem 1rem; font-size: 0.78rem; }
       .sidebar-logo { padding: 0.8rem 1rem; font-size: 1.3rem; }
       .main-content { margin-left: 0; }
       .menu-toggle { display: block; }
@@ -898,11 +877,9 @@
         <a href="#" data-panel="favorites"><span class="icon"><i class="fa-solid fa-heart"></i></span> Favorites</a>
         <a href="#" data-panel="messages"><span class="icon"><i class="fa-solid fa-comment-dots"></i></span> Messages</a>
         <a href="#" data-panel="profile"><span class="icon"><i class="fa-solid fa-user"></i></span> My Profile</a>
-      </nav>
-      <div class="sidebar-footer">
         <a href="/" target="_blank"><span class="icon"><i class="fa-solid fa-globe"></i></span> View Site</a>
         <a href="#" id="logoutBtn"><span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span> Logout</a>
-      </div>
+      </nav>
     </aside>
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
