@@ -1059,8 +1059,9 @@
       if (user.avatar) document.getElementById("headerAvatar").src = user.avatar;
 
       // Sidebar navigation
-      document.querySelectorAll(".sidebar-nav a").forEach(a => {
+      document.querySelectorAll(".sidebar-nav a[data-panel]").forEach(a => {
         a.addEventListener("click", e => {
+          if (!a.dataset.panel) return; // skip View Site / Logout
           e.preventDefault();
           document.querySelectorAll(".sidebar-nav a").forEach(x => x.classList.remove("active"));
           a.classList.add("active");
@@ -1071,6 +1072,9 @@
           document.getElementById("sidebar").classList.remove("open");
           document.getElementById("sidebarOverlay").classList.remove("active");
           document.body.style.overflow = "";
+
+          // Push to browser history so back button works
+          history.pushState({ panel: a.dataset.panel }, "", "#" + a.dataset.panel);
 
           switch (a.dataset.panel) {
             case "home": loadHome(); break;
@@ -1083,6 +1087,35 @@
           }
         });
       });
+
+      // Browser back/forward button support
+      window.addEventListener("popstate", function(e) {
+        if (e.state && e.state.panel) {
+          var panelId = e.state.panel;
+          document.querySelectorAll(".sidebar-nav a").forEach(x => x.classList.remove("active"));
+          var link = document.querySelector('.sidebar-nav a[data-panel="' + panelId + '"]');
+          if (link) link.classList.add("active");
+          document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+          var panel = document.getElementById("panel-" + panelId);
+          if (panel) panel.classList.add("active");
+          document.getElementById("pageTitle").textContent = link ? link.textContent.trim() : panelId;
+          switch (panelId) {
+            case "home": loadHome(); break;
+            case "dashboard": loadDashboard(); break;
+            case "bookings": loadBookings(); break;
+            case "payments": loadPayments(); break;
+            case "favorites": loadFavorites(); break;
+            case "messages": loadConversations(); break;
+            case "profile": loadProfile(); break;
+          }
+        } else {
+          // No state — user is going back to before they opened the dashboard
+          // Let the browser navigate naturally (back to previous page)
+        }
+      });
+
+      // Initialize history state for the initial panel
+      history.replaceState({ panel: "home" }, "", "#home");
 
       document.getElementById("menuToggle").addEventListener("click", () => {
         var sidebar = document.getElementById("sidebar");
