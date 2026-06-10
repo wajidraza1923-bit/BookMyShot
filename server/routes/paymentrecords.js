@@ -249,9 +249,20 @@ router.patch("/booking/:bookingId/amount", async (req, res, next) => {
     if (!creator) return res.status(403).json({ success: false, message: "Creator not found" });
 
     const booking = await Booking.findOne({ _id: req.params.bookingId, creator: creator._id });
-    if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
+    if (!booking) {
+      // Try without creator filter for debugging
+      const anyBooking = await Booking.findById(req.params.bookingId);
+      if (anyBooking) {
+        return res.status(403).json({ success: false, message: "This booking belongs to a different creator" });
+      }
+      return res.status(404).json({ success: false, message: "Booking not found" });
+    }
 
-    const newAmount = req.body.amount || booking.amount;
+    const newAmount = Number(req.body.amount);
+    if (!newAmount || newAmount <= 0) {
+      return res.status(400).json({ success: false, message: "Invalid amount" });
+    }
+
     booking.amount = newAmount;
 
     // COMMISSION LOGIC:

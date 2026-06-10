@@ -1524,6 +1524,45 @@
       setTimeout(function() { el.remove(); }, 3000);
     }
 
+    // BookMyShot styled confirm dialog (replaces browser confirm)
+    function bmsConfirm(message, onYes) {
+      var overlay = document.createElement('div');
+      overlay.className = 'modal-overlay';
+      overlay.style.display = 'flex';
+      overlay.innerHTML = '<div class="modal-content" style="max-width:380px;text-align:center;padding:2rem">' +
+        '<div style="width:48px;height:48px;border-radius:50%;background:rgba(218,175,55,0.1);border:1px solid rgba(218,175,55,0.2);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-size:1.2rem;color:var(--gold)">?</div>' +
+        '<p style="color:var(--text);font-size:0.9rem;margin-bottom:1.5rem;line-height:1.5">' + message + '</p>' +
+        '<div style="display:flex;gap:0.75rem">' +
+          '<button class="btn btn-outline" style="flex:1" id="_bmsNo">Cancel</button>' +
+          '<button class="btn btn-primary" style="flex:1" id="_bmsYes">Confirm</button>' +
+        '</div></div>';
+      document.body.appendChild(overlay);
+      overlay.querySelector('#_bmsNo').onclick = function() { overlay.remove(); };
+      overlay.querySelector('#_bmsYes').onclick = function() { overlay.remove(); onYes(); };
+      overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+    }
+
+    // BookMyShot styled prompt dialog (replaces browser prompt)
+    function bmsPrompt(label, placeholder, onSubmit, defaultVal) {
+      var overlay = document.createElement('div');
+      overlay.className = 'modal-overlay';
+      overlay.style.display = 'flex';
+      overlay.innerHTML = '<div class="modal-content" style="max-width:400px;padding:2rem">' +
+        '<h2 style="font-size:1.1rem;color:var(--gold-light);margin-bottom:1rem">' + label + '</h2>' +
+        '<input type="text" class="form-input" id="_bmsInput" placeholder="' + (placeholder || '') + '" value="' + (defaultVal || '') + '" style="margin-bottom:1rem">' +
+        '<div style="display:flex;gap:0.75rem">' +
+          '<button class="btn btn-outline" style="flex:1" id="_bmsCancel">Cancel</button>' +
+          '<button class="btn btn-primary" style="flex:1" id="_bmsOk">OK</button>' +
+        '</div></div>';
+      document.body.appendChild(overlay);
+      var input = overlay.querySelector('#_bmsInput');
+      input.focus();
+      overlay.querySelector('#_bmsCancel').onclick = function() { overlay.remove(); };
+      overlay.querySelector('#_bmsOk').onclick = function() { var v = input.value.trim(); overlay.remove(); if (v) onSubmit(v); };
+      input.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); var v = input.value.trim(); overlay.remove(); if (v) onSubmit(v); } });
+      overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+    }
+
     // ─── Init ───────────────────────────────────────────────────────────────
 
     var isSubscriptionExpired = false;
@@ -2487,12 +2526,13 @@
     };
 
     window.markFullyPaid = async function(bookingId) {
-      if (!confirm('Mark this booking as fully paid?')) return;
-      try {
-        await API.patch('/payment-records/booking/' + bookingId + '/mark-paid', {});
-        toast('Booking marked as fully paid!', 'success');
-        loadBookings();
-      } catch (e) { toast(e.message || 'Failed to mark paid', 'error'); }
+      bmsConfirm('Mark this booking as fully paid?', async function() {
+        try {
+          await API.patch('/payment-records/booking/' + bookingId + '/mark-paid', {});
+          toast('Booking marked as fully paid!', 'success');
+          loadBookings();
+        } catch (e) { toast(e.message || 'Failed to mark paid', 'error'); }
+      });
     };
 
     window.approvePaymentRecord = async function(recordId, bookingId) {
@@ -4189,7 +4229,23 @@
     };
 
     window.showFeeInfo = function() {
-      alert('BookMyShot Fee Structure:\n\n• BookMyShot Leads (platform sourced): ' + platformConfig.commission.bmsLeadPercent + '% commission\n• Creator Leads (self-sourced): ' + platformConfig.commission.creatorLeadPercent + '% commission\n• Monthly Subscription: ₹' + platformConfig.subscription.monthlyPlanPrice + '/month\n\nAll fees are calculated automatically from booking amounts.');
+      var overlay = document.createElement('div');
+      overlay.className = 'modal-overlay';
+      overlay.style.display = 'flex';
+      overlay.innerHTML = '<div class="modal-content" style="max-width:420px;padding:2rem">' +
+        '<button class="modal-close" style="position:absolute;top:1rem;right:1rem;background:none;border:none;color:rgba(255,255,255,0.4);font-size:1.5rem;cursor:pointer">&times;</button>' +
+        '<h2 style="font-size:1.1rem;color:var(--gold-light);margin-bottom:1rem"><i class="fas fa-info-circle"></i> BookMyShot Fee Structure</h2>' +
+        '<div style="background:rgba(218,175,55,0.04);border:1px solid rgba(218,175,55,0.12);border-radius:10px;padding:1rem;margin-bottom:1rem">' +
+          '<div style="display:flex;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:0.82rem"><span style="color:var(--text-muted)">BookMyShot Leads</span><span style="color:var(--gold);font-weight:600">' + platformConfig.commission.bmsLeadPercent + '% commission</span></div>' +
+          '<div style="display:flex;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:0.82rem"><span style="color:var(--text-muted)">Creator Leads (self-sourced)</span><span style="color:var(--gold);font-weight:600">' + platformConfig.commission.creatorLeadPercent + '% commission</span></div>' +
+          '<div style="display:flex;justify-content:space-between;padding:0.4rem 0;font-size:0.82rem"><span style="color:var(--text-muted)">Monthly Subscription</span><span style="color:var(--gold);font-weight:600">₹' + platformConfig.subscription.monthlyPlanPrice + '/month</span></div>' +
+        '</div>' +
+        '<p style="font-size:0.75rem;color:var(--text-muted);line-height:1.6">Commission is calculated on the first amount you set for each booking. After that, changes to the amount won\'t affect the commission.</p>' +
+        '<button class="btn btn-primary" style="width:100%;margin-top:1rem" onclick="this.closest(\'.modal-overlay\').remove()">Got it</button>' +
+      '</div>';
+      document.body.appendChild(overlay);
+      overlay.querySelector('.modal-close').onclick = function() { overlay.remove(); };
+      overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
     };
 
     // ─── Promotions ────────────────────────────────────────────────────────
