@@ -4,6 +4,7 @@ const Creator = require("../models/Creator");
 const configService = require("../services/configService");
 const auditService = require("../services/auditService");
 const { protect, authorize } = require("../middleware/auth");
+const emailService = require("../services/emailService");
 
 const router = express.Router();
 
@@ -19,7 +20,7 @@ router.get("/rank-status", async (req, res, next) => {
       promo.status = "expired";
       await promo.save();
       // Remove rank from creator
-      const creator = await Creator.findById(promo.creator);
+      const creator = await Creator.findById(promo.creator).populate("user", "name email");
       if (creator) {
         if (promo.planType === "homepage_featured") {
           creator.featured = false;
@@ -28,6 +29,16 @@ router.get("/rank-status", async (req, res, next) => {
           if (creator.rank === rankNum) creator.rank = 0;
         }
         await creator.save();
+        // Send promotion expired email
+        if (creator.user?.email) {
+          emailService.sendPromotionExpired({
+            email: creator.user.email,
+            name: creator.user.name,
+            planType: promo.planType,
+            creatorId: creator._id,
+            userId: creator.user._id,
+          }).catch(e => console.error("[Email] promo expired:", e.message));
+        }
       }
     }
 
@@ -130,8 +141,20 @@ router.get("/featured-status", async (req, res, next) => {
     for (const promo of expired) {
       promo.status = "expired";
       await promo.save();
-      const creator = await Creator.findById(promo.creator);
-      if (creator) { creator.featured = false; await creator.save(); }
+      const creator = await Creator.findById(promo.creator).populate("user", "name email");
+      if (creator) {
+        creator.featured = false;
+        await creator.save();
+        if (creator.user?.email) {
+          emailService.sendPromotionExpired({
+            email: creator.user.email,
+            name: creator.user.name,
+            planType: promo.planType,
+            creatorId: creator._id,
+            userId: creator.user._id,
+          }).catch(e => console.error("[Email] featured expired:", e.message));
+        }
+      }
     }
 
     // Get active featured holders
