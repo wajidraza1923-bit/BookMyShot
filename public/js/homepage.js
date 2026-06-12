@@ -285,23 +285,34 @@ if (scrollTopBtn) {
 
 // Attach navigation handlers to all sidebar links/buttons that go to other pages
 function attachSidebarNavigation() {
-  var sidebar = document.getElementById('mobileSidebar');
-  if (!sidebar) return;
-  
-  // Find all buttons/links with onclick containing window.location
-  var navElements = sidebar.querySelectorAll('[onclick*="window.location"]');
-  navElements.forEach(function(el) {
-    el.addEventListener('click', function(e) {
+  // How It Works and FAQ buttons - explicit ID-based handlers
+  var howBtn = document.getElementById('navHowItWorks');
+  if (howBtn) {
+    howBtn.addEventListener('click', function(e) {
+      e.preventDefault();
       e.stopPropagation();
-      var code = el.getAttribute('onclick');
-      if (code) {
-        var match = code.match(/window\.location\.href\s*=\s*'([^']+)'/);
-        if (match && match[1]) {
-          window.location.href = match[1];
-        }
-      }
+      window.location.href = '/how-bookmyshot-works';
     });
-  });
+    howBtn.addEventListener('touchend', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      window.location.href = '/how-bookmyshot-works';
+    });
+  }
+  
+  var faqBtn = document.getElementById('navFAQ');
+  if (faqBtn) {
+    faqBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      window.location.href = '/how-bookmyshot-works#faq';
+    });
+    faqBtn.addEventListener('touchend', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      window.location.href = '/how-bookmyshot-works#faq';
+    });
+  }
 }
 
 // Removed storage event listener - was causing infinite reload loop
