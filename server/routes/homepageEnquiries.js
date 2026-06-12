@@ -1,6 +1,7 @@
 const express = require("express");
 const HomepageEnquiry = require("../models/HomepageEnquiry");
 const Creator = require("../models/Creator");
+const Notification = require("../models/Notification");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
@@ -61,6 +62,20 @@ router.post("/", optionalAuth, async (req, res, next) => {
     }
 
     const enquiry = await HomepageEnquiry.create(enquiryData);
+
+    // Notify all admins about new enquiry
+    try {
+      const admins = await User.find({ role: "admin" }).select("_id");
+      for (const admin of admins) {
+        await Notification.create({
+          user: admin._id,
+          type: "inquiry",
+          title: "📝 New Homepage Enquiry",
+          message: `${enquiryData.name || "Someone"} submitted an enquiry for ${enquiryData.eventType || "an event"}`,
+          link: "/admin/dashboard.html#homepage-enquiries",
+        });
+      }
+    } catch (notifErr) { /* don't fail request if notification fails */ }
 
     res.status(201).json({
       success: true,

@@ -30,7 +30,9 @@
       --font-display: 'Playfair Display', serif;
       --font-body: 'Outfit', system-ui, sans-serif;
     }
-    * { margin:0; padding:0; box-sizing:border-box; }
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    *:focus { outline:none; }
+    *::selection { background:rgba(218,175,55,0.3); color:#fff; }
     body { background:var(--bg); color:var(--text); font-family:var(--font-body); overflow-x:hidden; }
     ::-webkit-scrollbar { width:6px; }
     ::-webkit-scrollbar-track { background:transparent; }
@@ -821,6 +823,11 @@
         // Close mobile sidebar
         document.getElementById("sidebar").classList.remove("open");
       });
+    });
+
+    // Mobile menu toggle
+    document.getElementById("menuToggle").addEventListener("click", function() {
+      document.getElementById("sidebar").classList.toggle("open");
     });
 
     document.getElementById("logoutBtn").addEventListener("click", e => { e.preventDefault(); API.clearAuth(); window.location.href = "/"; });
