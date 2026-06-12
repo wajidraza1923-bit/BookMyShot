@@ -273,6 +273,7 @@ function attachBookingButton() {
   try { animateCounters(); } catch(e) {}
   try { handleScroll(); } catch(e) {}
   try { attachDashboardNavigation(); } catch(e) {}
+  try { attachSidebarNavigation(); } catch(e) {}
 })();
 
 window.addEventListener('scroll', handleScroll, { passive: true });
@@ -280,6 +281,27 @@ if (menuToggle) menuToggle.addEventListener('click', toggleSidebar);
 if (sidebarClose) sidebarClose.addEventListener('click', closeSidebar);
 if (scrollTopBtn) {
   scrollTopBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+}
+
+// Attach navigation handlers to all sidebar links/buttons that go to other pages
+function attachSidebarNavigation() {
+  var sidebar = document.getElementById('mobileSidebar');
+  if (!sidebar) return;
+  
+  // Find all buttons/links with onclick containing window.location
+  var navElements = sidebar.querySelectorAll('[onclick*="window.location"]');
+  navElements.forEach(function(el) {
+    el.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var code = el.getAttribute('onclick');
+      if (code) {
+        var match = code.match(/window\.location\.href\s*=\s*'([^']+)'/);
+        if (match && match[1]) {
+          window.location.href = match[1];
+        }
+      }
+    });
+  });
 }
 
 // Removed storage event listener - was causing infinite reload loop
