@@ -219,7 +219,7 @@
         }
         grid.innerHTML = '';
         creators.forEach(function(c) {
-          var thumb = (c.portfolio && c.portfolio[0]) || c.avatar || 'https://images.unsplash.com/photo-1554048612-b6a482b17f70?w=300';
+          var thumb = c.avatar || (c.portfolio && c.portfolio[0]) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300';
           var card = document.createElement('div');
           card.className = 'creator-card';
           card.dataset.id = c._id;

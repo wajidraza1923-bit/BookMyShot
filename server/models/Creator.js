@@ -10,6 +10,7 @@ const packageSchema = new mongoose.Schema({
 const creatorSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, unique: true },
+    creatorId: { type: String, unique: true, sparse: true },
     status: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
     specialty: { type: String, default: "" },
     bio: { type: String, default: "" },
@@ -87,6 +88,15 @@ creatorSchema.set("toJSON", {
     }
     return ret;
   },
+});
+
+// Auto-generate creatorId on save if not set
+creatorSchema.pre("save", async function (next) {
+  if (!this.creatorId) {
+    const count = await mongoose.model("Creator").countDocuments();
+    this.creatorId = "BMS-" + String(count + 1).padStart(4, "0");
+  }
+  next();
 });
 
 module.exports = mongoose.model("Creator", creatorSchema);

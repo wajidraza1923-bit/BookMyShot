@@ -212,7 +212,7 @@
     <div class="main-content">
       <header class="header">
         <div style="display:flex;align-items:center;gap:0.75rem">
-          <button class="btn btn-outline btn-sm" id="menuToggle" style="display:none"><i class="fas fa-bars"></i></button>
+          <button class="btn btn-outline btn-sm" id="menuToggle" style="display:none;cursor:pointer"><i class="fas fa-bars"></i></button>
           <span style="color:var(--gold-light);font-size:0.95rem;font-family:var(--font-display)" id="pageTitle">Dashboard</span>
         </div>
         <div class="header-right">
@@ -1220,17 +1220,48 @@
     };
 
     window.heForward = async function(id, preselectedCreatorId) {
-      var creatorId = preselectedCreatorId;
-      if (!creatorId) {
-        creatorId = prompt('Enter Creator ID to forward to (or leave empty to cancel):');
-        if (!creatorId) return;
-      }
-      if (!confirm('Forward this enquiry to the creator? This will create a booking with 5% platform commission.')) return;
+      // Show creator selection modal instead of prompt
       try {
-        var result = await API.post('/admin/homepage-enquiries/' + id + '/forward', { creatorId: creatorId });
-        toast(result.message || 'Forwarded!', 'success');
-        loadHomepageEnquiries();
-      } catch (err) { toast(err.message || 'Forward failed', 'error'); }
+        var creatorsData = await API.get('/admin/creators');
+        var creators = (creatorsData.creators || []).filter(function(c) { return c.status === 'approved'; });
+        var overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.style.display = 'flex';
+        var listHtml = creators.map(function(c) {
+          var name = c.user?.name || 'Creator';
+          var avatar = c.user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=60';
+          var cid = c.creatorId || c._id.substring(0,8);
+          var category = c.specialty || c.category || '';
+          var isPreselected = preselectedCreatorId && c._id === preselectedCreatorId;
+          return '<div onclick="document.getElementById(\'_fwdSelected\').value=\'' + c._id + '\';document.querySelectorAll(\'._fwd-item\').forEach(function(x){x.style.borderColor=\'rgba(255,255,255,0.04)\'});this.style.borderColor=\'var(--gold)\'" class="_fwd-item" style="display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0.7rem;border:1px solid ' + (isPreselected ? 'var(--gold)' : 'rgba(255,255,255,0.04)') + ';border-radius:10px;cursor:pointer;transition:all 0.2s">' +
+            '<img src="' + avatar + '" style="width:32px;height:32px;border-radius:50%;object-fit:cover">' +
+            '<div style="flex:1;min-width:0"><div style="font-size:0.78rem;color:var(--gold-light);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + name + '</div><div style="font-size:0.62rem;color:var(--text-dim)">' + cid + ' · ' + category + '</div></div>' +
+          '</div>';
+        }).join('');
+        overlay.innerHTML = '<div class="modal" style="max-width:420px;max-height:80vh;overflow-y:auto">' +
+          '<h3 style="margin-bottom:0.75rem">➤ Forward to Creator</h3>' +
+          '<input type="text" id="_fwdSearch" placeholder="Search creator..." style="width:100%;padding:0.5rem 0.8rem;background:rgba(255,255,255,0.04);border:1px solid var(--border-light);border-radius:10px;color:var(--text);font-size:0.82rem;margin-bottom:0.75rem" oninput="var v=this.value.toLowerCase();document.querySelectorAll(\'._fwd-item\').forEach(function(el){el.style.display=el.textContent.toLowerCase().includes(v)?\'flex\':\'none\'})">' +
+          '<input type="hidden" id="_fwdSelected" value="' + (preselectedCreatorId || '') + '">' +
+          '<div style="display:flex;flex-direction:column;gap:0.4rem;max-height:50vh;overflow-y:auto">' + listHtml + '</div>' +
+          '<div class="modal-actions" style="margin-top:1rem;display:flex;gap:0.75rem">' +
+            '<button class="btn btn-outline" onclick="this.closest(\'.modal-overlay\').remove()">Cancel</button>' +
+            '<button class="btn btn-primary" id="_fwdConfirm">Forward</button>' +
+          '</div>' +
+        '</div>';
+        document.body.appendChild(overlay);
+        overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+        document.getElementById('_fwdConfirm').addEventListener('click', async function() {
+          var selectedId = document.getElementById('_fwdSelected').value;
+          if (!selectedId) { toast('Select a creator first', 'error'); return; }
+          this.disabled = true; this.textContent = 'Forwarding...';
+          try {
+            var result = await API.post('/admin/homepage-enquiries/' + id + '/forward', { creatorId: selectedId });
+            toast(result.message || 'Forwarded!', 'success');
+            overlay.remove();
+            loadHomepageEnquiries();
+          } catch (err) { toast(err.message || 'Forward failed', 'error'); this.disabled = false; this.textContent = 'Forward'; }
+        });
+      } catch (err) { toast('Failed to load creators: ' + (err.message || ''), 'error'); }
     };
 
     window.heDelete = async function(id) {
