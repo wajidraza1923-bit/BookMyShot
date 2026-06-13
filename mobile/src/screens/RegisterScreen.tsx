@@ -15,9 +15,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, radius } from '../theme';
 import Input from '../components/Input';
 import Button from '../components/Button';
-import { authAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 export default function RegisterScreen({ navigation }: any) {
+  const { register: authRegister } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -41,17 +42,12 @@ export default function RegisterScreen({ navigation }: any) {
     if (!validate()) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setLoading(true);
-    try {
-      const res = await authAPI.register(name.trim(), email.trim().toLowerCase(), password, role);
-      const { token, user } = res.data;
-      await AsyncStorage.setItem('bms_token', token);
-      await AsyncStorage.setItem('bms_user', JSON.stringify(user));
-      navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
-    } catch (e: any) {
-      Alert.alert('Registration Failed', e.response?.data?.message || 'Something went wrong');
-    } finally {
-      setLoading(false);
+    const result = await authRegister(name.trim(), email.trim().toLowerCase(), password, role);
+    setLoading(false);
+    if (!result.success) {
+      Alert.alert('Registration Failed', result.message || 'Something went wrong');
     }
+    // If success, AuthContext updates → RootNavigator auto-routes by role
   };
 
   return (

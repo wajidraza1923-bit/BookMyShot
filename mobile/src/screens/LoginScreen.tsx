@@ -9,14 +9,14 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { colors, spacing, typography, radius } from '../theme';
 import Input from '../components/Input';
 import Button from '../components/Button';
-import { authAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 export default function LoginScreen({ navigation }: any) {
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -37,18 +37,12 @@ export default function LoginScreen({ navigation }: any) {
     if (!validate()) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setLoading(true);
-    try {
-      const res = await authAPI.login(email.trim().toLowerCase(), password);
-      const { token, user } = res.data;
-      await AsyncStorage.setItem('bms_token', token);
-      await AsyncStorage.setItem('bms_user', JSON.stringify(user));
-      navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
-    } catch (e: any) {
-      const msg = e.response?.data?.message || 'Login failed. Check your credentials.';
-      Alert.alert('Login Failed', msg);
-    } finally {
-      setLoading(false);
+    const result = await login(email.trim().toLowerCase(), password);
+    setLoading(false);
+    if (!result.success) {
+      Alert.alert('Login Failed', result.message || 'Check your credentials.');
     }
+    // If success, AuthContext updates → RootNavigator auto-routes by role
   };
 
   return (
