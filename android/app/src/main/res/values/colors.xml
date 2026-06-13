@@ -1,17 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- BookMyShot Brand Colors -->
+    <!-- BookMyShot Luxury Brand Colors -->
     <color name="colorPrimary">#D4AF37</color>
-    <color name="colorPrimaryDark">#0a0806</color>
-    <color name="colorAccent">#FF8C42</color>
+    <color name="colorPrimaryDark">#0A0A0A</color>
+    <color name="colorAccent">#D4AF37</color>
     <color name="gold">#D4AF37</color>
-    <color name="gold_dark">#B8960C</color>
+    <color name="gold_dark">#8B7025</color>
     <color name="gold_light">#E8D5A3</color>
-    <color name="app_background">#0a0806</color>
-    <color name="card_background">#141210</color>
+    <color name="app_background">#0A0A0A</color>
+    <color name="card_background">#141414</color>
     <color name="text_primary">#F5F5F5</color>
-    <color name="text_muted">#A0A0A0</color>
+    <color name="text_muted">#808080</color>
     <color name="success">#10B981</color>
     <color name="danger">#EF4444</color>
-    <color name="splash_background">#0a0806</color>
+    <color name="splash_background">#0A0A0A</color>
+    <color name="loading_overlay">#F00A0A0A</color>
 </resources>

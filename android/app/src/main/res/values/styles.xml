@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- Base application theme — Dark Premium -->
+    <!-- Base application theme — Dark Luxury -->
     <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
@@ -13,6 +13,7 @@
         <item name="android:windowLightNavigationBar">false</item>
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
+        <item name="android:windowAnimationStyle">@style/AppWindowAnimation</item>
     </style>
 
     <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.NoActionBar">
@@ -23,15 +24,23 @@
         <item name="android:navigationBarColor">@color/app_background</item>
     </style>
 
-    <!-- Splash screen theme — shows branded splash on launch -->
+    <!-- Splash screen — luxury dark with animated gold icon -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/splash_background</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_camera</item>
-        <item name="windowSplashScreenAnimationDuration">2500</item>
+        <item name="windowSplashScreenAnimationDuration">2000</item>
         <item name="postSplashScreenTheme">@style/AppTheme</item>
-        <item name="android:statusBarColor">@color/app_background</item>
-        <item name="android:navigationBarColor">@color/app_background</item>
+        <item name="android:statusBarColor">@color/splash_background</item>
+        <item name="android:navigationBarColor">@color/splash_background</item>
         <item name="android:windowLightStatusBar">false</item>
+    </style>
+
+    <!-- Smooth window animations -->
+    <style name="AppWindowAnimation" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@android:anim/fade_in</item>
+        <item name="android:activityOpenExitAnimation">@android:anim/fade_out</item>
+        <item name="android:activityCloseEnterAnimation">@android:anim/fade_in</item>
+        <item name="android:activityCloseExitAnimation">@android:anim/fade_out</item>
     </style>
 
 </resources>

@@ -4,22 +4,36 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Safe zone is 66dp centered in 108dp viewport -->
-    <!-- Gold ring -->
+
+    <!-- Safe zone: 66dp centered in 108dp (21dp padding each side) -->
+
+    <!-- Outer gold ring -->
     <path
         android:fillColor="#00000000"
         android:strokeColor="#D4AF37"
         android:strokeWidth="2.5"
-        android:pathData="M54,54m-24,0a24,24 0,1 1,48 0a24,24 0,1 1,-48 0" />
-    <!-- Camera body -->
+        android:pathData="M54,54m-26,0a26,26 0,1 1,52 0a26,26 0,1 1,-52 0" />
+
+    <!-- Inner subtle ring -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#8B7025"
+        android:strokeWidth="0.8"
+        android:pathData="M54,54m-21,0a21,21 0,1 1,42 0a21,21 0,1 1,-42 0" />
+
+    <!-- Camera lens (donut shape) -->
     <path
         android:fillColor="#D4AF37"
-        android:pathData="M54,46.8c-3.6,0 -6.4,2.8 -6.4,6.4s2.8,6.4 6.4,6.4s6.4,-2.8 6.4,-6.4S57.6,46.8 54,46.8z" />
-    <path
-        android:fillColor="#D4AF37"
-        android:pathData="M66,40h-4.8l-2.8,-3H49.6l-2.8,3H42c-1.7,0 -3,1.3 -3,3v18c0,1.7 1.3,3 3,3h24c1.7,0 3,-1.3 3,-3V43C69,41.3 67.7,40 66,40zM54,59c-3.9,0 -7,-3.1 -7,-7s3.1,-7 7,-7s7,3.1 7,7S57.9,59 54,59z" />
-    <!-- BookMyShot text below (subtle) -->
+        android:pathData="M54,40c-7.7,0 -14,6.3 -14,14s6.3,14 14,14s14,-6.3 14,-14S61.7,40 54,40zM54,63c-5,0 -9,-4 -9,-9s4,-9 9,-9s9,4 9,9S59,63 54,63z" />
+
+    <!-- Center aperture dot -->
     <path
         android:fillColor="#E8D5A3"
-        android:pathData="M39,68h1.2v3.2h2.4V68h1.2v7.6h-1.2v-3.2h-2.4v3.2H39V68z" />
+        android:pathData="M54,54m-3.5,0a3.5,3.5 0,1 1,7 0a3.5,3.5 0,1 1,-7 0" />
+
+    <!-- Aperture blades (subtle) -->
+    <path
+        android:fillColor="#B8960C"
+        android:pathData="M54,47l2,3h-4zM54,61l-2,-3h4zM47,54l3,-2v4zM61,54l-3,2v-4z" />
+
 </vector>
