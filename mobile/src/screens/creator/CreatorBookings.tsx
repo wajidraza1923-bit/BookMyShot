@@ -152,7 +152,7 @@ export default function CreatorBookings({ navigation }: any) {
           }
           ListEmptyComponent={<View style={styles.empty}><Ionicons name="calendar-outline" size={40} color={colors.textMuted} /><Text style={styles.emptyText}>No bookings found</Text></View>}
           renderItem={({ item }) => (
-            <TouchableOpacity style={styles.card} activeOpacity={0.85} onPress={() => navigation.navigate('BookingDetail', { booking: item })}>
+            <TouchableOpacity style={styles.card} activeOpacity={0.85} onPress={() => navigation.navigate('BookingDetail', { bookingId: item._id })}>
               {/* Client Info */}
               <View style={styles.cardTop}>
                 <View style={styles.cardInfo}>
