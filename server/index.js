@@ -260,6 +260,22 @@ app.post("/api/creator/upload", protect, authorize("creator"), adminUpload.singl
 // Internally bypasses admin users and /api/auth paths.
 app.use(maintenanceMode);
 
+// Health check endpoint (for monitoring and debugging)
+app.get("/api/health", (req, res) => {
+  res.json({
+    success: true,
+    status: "running",
+    uptime: Math.floor(process.uptime()),
+    env: {
+      JWT_SECRET: !!process.env.JWT_SECRET ? "configured" : "MISSING",
+      MONGODB_URI: !!process.env.MONGODB_URI ? "configured" : "MISSING",
+      NODE_ENV: process.env.NODE_ENV || "not set",
+      PORT: process.env.PORT || 5000,
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // Public platform config endpoint (no auth required) — serves pricing/commission info to frontend
 app.get("/api/config/public", async (req, res) => {
   try {
