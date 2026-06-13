@@ -56,4 +56,20 @@ router.delete("/:id", async (req, res, next) => {
   }
 });
 
+// Register push notification token (Android/iOS app)
+router.post("/push-token", async (req, res, next) => {
+  try {
+    const { token, platform } = req.body;
+    if (!token) return res.status(400).json({ success: false, message: "Token required" });
+
+    const User = require("../models/User");
+    await User.findByIdAndUpdate(req.user._id, {
+      $set: { pushToken: token, pushPlatform: platform || "android" },
+    });
+    res.json({ success: true });
+  } catch (e) {
+    next(e);
+  }
+});
+
 module.exports = router;

@@ -167,7 +167,7 @@ process.on("uncaughtException", (err) => {
 startServer();
 
 // Static files
-app.use(express.static(path.join(__dirname, "../public")));
+app.use(express.static(path.join(__dirname, "../public"), { dotfiles: 'allow' }));
 
 // API routes
 app.use("/api/auth", authRoutes);

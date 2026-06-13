@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Offline — BookMyShot</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Outfit', system-ui, sans-serif;
+      background: #0a0806;
+      color: #f5f5f5;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+    }
+    .offline-card {
+      max-width: 360px;
+      width: 100%;
+    }
+    .offline-icon {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: rgba(212,175,55,0.08);
+      border: 2px solid rgba(212,175,55,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+      font-size: 2rem;
+    }
+    h1 {
+      font-size: 1.4rem;
+      color: #e8d5a3;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+    p {
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.4);
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+    }
+    .retry-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.7rem 1.5rem;
+      background: linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05));
+      border: 1px solid rgba(212,175,55,0.3);
+      color: #D4AF37;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .retry-btn:hover, .retry-btn:active {
+      background: rgba(212,175,55,0.2);
+      transform: scale(0.98);
+    }
+    .status {
+      margin-top: 1.5rem;
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.2);
+    }
+    .status.online {
+      color: #10b981;
+    }
+  </style>
+</head>
+<body>
+  <div class="offline-card">
+    <div class="offline-icon">📡</div>
+    <h1>You're Offline</h1>
+    <p>Check your internet connection and try again. Your data is safe — nothing is lost.</p>
+    <button class="retry-btn" onclick="checkConnection()">
+      <span>↻</span> Try Again
+    </button>
+    <div class="status" id="status">Waiting for connection...</div>
+  </div>
+  <script>
+    function checkConnection() {
+      var statusEl = document.getElementById('status');
+      statusEl.textContent = 'Checking connection...';
+      statusEl.className = 'status';
+
+      fetch('https://bookmyshot.in/api/config/public', { method: 'HEAD', cache: 'no-store' })
+        .then(function() {
+          statusEl.textContent = 'Connected! Redirecting...';
+          statusEl.className = 'status online';
+          setTimeout(function() { window.location.reload(); }, 500);
+        })
+        .catch(function() {
+          statusEl.textContent = 'Still offline. Please check your connection.';
+          statusEl.className = 'status';
+        });
+    }
+
+    // Auto-retry when connection comes back
+    window.addEventListener('online', function() {
+      checkConnection();
+    });
+
+    // Check periodically
+    setInterval(function() {
+      if (navigator.onLine) checkConnection();
+    }, 5000);
+  </script>
+</body>
+</html>

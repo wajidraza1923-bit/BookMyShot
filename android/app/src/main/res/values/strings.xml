@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">BookMyShot</string>
+    <string name="title_activity_main">BookMyShot</string>
+    <string name="package_name">in.bookmyshot.app</string>
+    <string name="custom_url_scheme">in.bookmyshot.app</string>
+    <string name="notification_channel_name">BookMyShot Notifications</string>
+    <string name="notification_channel_desc">Booking updates, payments, and promotions</string>
+</resources>

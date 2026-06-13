@@ -2,3 +2,17 @@ node_modules/
 .env
 public/uploads/*
 !public/uploads/.gitkeep
+
+# Android build artifacts
+android/app/build/
+android/build/
+android/capacitor-cordova-android-plugins/build/
+android/.gradle/
+*.keystore
+*.jks
+android/app/google-services.json
+android/local.properties
+
+# IDE
+.idea/
+*.iml

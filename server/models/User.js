@@ -23,6 +23,8 @@ const userSchema = new mongoose.Schema(
     favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: "Creator" }],
     accountDeleteRequested: { type: Boolean, default: false },
     accountDeletedAt: { type: Date },
+    pushToken: { type: String, default: "" },
+    pushPlatform: { type: String, enum: ["android", "ios", "web", ""], default: "" },
   },
   { timestamps: true }
 );
