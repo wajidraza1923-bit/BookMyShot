@@ -1935,21 +1935,48 @@
       const el = document.getElementById("featuredCreatorsPanel");
       try {
         const data = await API.get("/admin/featured-portfolios");
-        const creators = data.data || data.creators || [];
-        if (!creators.length) { el.innerHTML = '<div class="empty-state"><div class="icon">⭐</div><h3>No creators found</h3></div>'; return; }
-        let html = '<div class="table-wrap"><table><thead><tr><th>Creator</th><th>Featured</th><th>Start</th><th>End</th><th>Payment</th><th>Actions</th></tr></thead><tbody>';
+        const creators = data.data || [];
+        const stats = data.stats || {};
+
+        // Stats cards
+        let html = '<div class="stats-grid" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:1rem">' +
+          '<div class="stat-card"><div class="label">Active Featured</div><div class="value success">' + (stats.active || 0) + '</div></div>' +
+          '<div class="stat-card"><div class="label">Expired</div><div class="value">' + (stats.expired || 0) + '</div></div>' +
+          '<div class="stat-card"><div class="label">Total</div><div class="value gold">' + (stats.total || 0) + '</div></div>' +
+        '</div>';
+
+        if (!creators.length) { el.innerHTML = html + '<div class="empty-state"><div class="icon">⭐</div><h3>No featured profiles</h3><p>Feature a creator from Creator Accounts panel.</p></div>'; return; }
+
+        html += '<div class="table-wrap"><table><thead><tr><th>Creator</th><th>ID</th><th>Status</th><th>Since</th><th>Expiry</th><th>Days Left</th><th>Actions</th></tr></thead><tbody>';
+        const now = new Date();
         creators.forEach(c => {
-          const name = c.user?.name || c.name || '—';
-          const featured = c.featured ? '<span class="status-badge status-active">Yes</span>' : '<span class="status-badge status-pending">No</span>';
-          const start = c.featuredStartDate ? new Date(c.featuredStartDate).toLocaleDateString('en-IN') : '—';
-          const end = c.featuredEndDate ? new Date(c.featuredEndDate).toLocaleDateString('en-IN') : '—';
-          const payment = c.featuredPaymentStatus || 'none';
-          const payBadge = `<span class="status-badge status-${payment === 'paid' ? 'approved' : payment === 'rejected' ? 'rejected' : 'pending'}">${payment}</span>`;
+          const name = c.user?.name || '—';
+          const cid = c.creatorId || c._id.substring(0,8);
+          const isActive = c.featured;
+          const statusBadge = isActive ? '<span class="status-badge status-active">Active</span>' : '<span class="status-badge status-expired">Expired</span>';
+          const start = c.featuredStartDate ? new Date(c.featuredStartDate).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+          const end = c.featuredEndDate ? new Date(c.featuredEndDate).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+          const daysLeft = c.featuredEndDate && isActive ? Math.max(0, Math.ceil((new Date(c.featuredEndDate) - now) / 86400000)) : 0;
+          const daysColor = daysLeft <= 3 ? 'var(--danger)' : daysLeft <= 7 ? 'var(--warning)' : 'var(--success)';
+
           let actions = '';
-          if (!c.featured) actions += `<button class="btn btn-success btn-sm" onclick="featureCreator('${c._id}')">Feature</button> `;
-          else actions += `<button class="btn btn-danger btn-sm" onclick="unfeatureCreator('${c._id}')">Remove</button> `;
-          if (payment === 'pending') actions += `<button class="btn btn-success btn-sm" onclick="approveFeaturePayment('${c._id}')">Approve</button> <button class="btn btn-danger btn-sm" onclick="rejectFeaturePayment('${c._id}')">Reject</button>`;
-          html += `<tr><td><strong style="color:var(--gold-light)">${name}</strong></td><td>${featured}</td><td>${start}</td><td>${end}</td><td>${payBadge}</td><td style="display:flex;gap:0.3rem;flex-wrap:wrap">${actions}</td></tr>`;
+          if (isActive) {
+            actions += '<button class="btn btn-outline btn-sm" onclick="extendFeatured(\'' + c._id + '\')">+ Extend</button> ';
+            actions += '<button class="btn btn-danger btn-sm" onclick="expireFeatured(\'' + c._id + '\')">Expire</button> ';
+          } else {
+            actions += '<button class="btn btn-success btn-sm" onclick="featureCreator(\'' + c._id + '\')">Renew</button> ';
+          }
+          actions += '<button class="btn btn-outline btn-sm" style="color:var(--danger);border-color:rgba(239,68,68,0.2)" onclick="removeFeatured(\'' + c._id + '\')">Remove</button>';
+
+          html += '<tr>' +
+            '<td><strong style="color:var(--gold-light)">' + name + '</strong><br><span style="font-size:0.65rem;color:var(--text-dim)">' + (c.specialty || c.category || '') + '</span></td>' +
+            '<td style="font-size:0.72rem;color:var(--text-dim)">' + cid + '</td>' +
+            '<td>' + statusBadge + '</td>' +
+            '<td style="font-size:0.72rem">' + start + '</td>' +
+            '<td style="font-size:0.72rem">' + end + '</td>' +
+            '<td style="font-weight:600;color:' + daysColor + '">' + (isActive ? daysLeft + 'd' : '—') + '</td>' +
+            '<td style="display:flex;gap:0.2rem;flex-wrap:wrap">' + actions + '</td>' +
+          '</tr>';
         });
         html += '</tbody></table></div>';
         el.innerHTML = html;
@@ -1957,23 +1984,25 @@
     }
 
     window.featureCreator = async function(id) {
-      const endDate = prompt("Featured expiry date (YYYY-MM-DD):", new Date(Date.now() + 30*86400000).toISOString().split('T')[0]);
-      if (!endDate) return;
-      try { await API.post("/admin/featured-portfolios/" + id, { endDate }); toast("Creator featured", "success"); loadFeaturedCreators(); }
+      var days = prompt("Feature for how many days?", "30");
+      if (!days || isNaN(days)) return;
+      try { await API.post("/admin/featured-portfolios/" + id, { days: parseInt(days) }); toast("Creator featured for " + days + " days", "success"); loadFeaturedCreators(); }
       catch (e) { toast(e.message, "error"); }
     };
-    window.unfeatureCreator = async function(id) {
-      try { await API.delete("/admin/featured-portfolios/" + id); toast("Removed from featured", "success"); loadFeaturedCreators(); }
+    window.extendFeatured = async function(id) {
+      var days = prompt("Extend by how many days?", "30");
+      if (!days || isNaN(days)) return;
+      try { await API.patch("/admin/featured-portfolios/" + id + "/extend", { days: parseInt(days) }); toast("Extended by " + days + " days", "success"); loadFeaturedCreators(); }
       catch (e) { toast(e.message, "error"); }
     };
-    window.approveFeaturePayment = async function(id) {
-      try { await API.patch("/admin/featured-portfolios/" + id + "/payment", { action: "approve" }); toast("Payment approved", "success"); loadFeaturedCreators(); }
+    window.expireFeatured = async function(id) {
+      if (!confirm("Expire this featured profile now?")) return;
+      try { await API.patch("/admin/featured-portfolios/" + id + "/expire", {}); toast("Featured expired", "success"); loadFeaturedCreators(); }
       catch (e) { toast(e.message, "error"); }
     };
-    window.rejectFeaturePayment = async function(id) {
-      const reason = prompt("Rejection reason:");
-      if (!reason) return;
-      try { await API.patch("/admin/featured-portfolios/" + id + "/payment", { action: "reject", reason }); toast("Payment rejected", "success"); loadFeaturedCreators(); }
+    window.removeFeatured = async function(id) {
+      if (!confirm("Remove featured history completely?")) return;
+      try { await API.delete("/admin/featured-portfolios/" + id); toast("Featured removed", "success"); loadFeaturedCreators(); }
       catch (e) { toast(e.message, "error"); }
     };
 
