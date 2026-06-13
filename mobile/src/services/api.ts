@@ -68,6 +68,31 @@ export const userAPI = {
   removeFavorite: (creatorId: string) => api.delete(`/user/favorites/${creatorId}`),
 };
 
+// Creator
+export const creatorAPI = {
+  getDashboard: () => api.get('/creator/dashboard'),
+  getBookings: () => api.get('/bookings/creator'),
+  getBookingRequests: () => api.get('/creator/booking-requests'),
+  getLeads: () => api.get('/creator/leads'),
+  getAnalytics: () => api.get('/creator/analytics'),
+  getProfile: () => api.get('/auth/me'),
+  updateProfile: (data: any) => api.put('/creators/profile', data),
+};
+
+// Messages
+export const messagesAPI = {
+  getConversations: () => api.get('/messages'),
+  getMessages: (userId: string) => api.get(`/messages/${userId}`),
+  sendMessage: (userId: string, content: string) => api.post(`/messages/${userId}`, { content }),
+};
+
+// Bookings (shared)
+export const bookingsAPI = {
+  getUserBookings: () => api.get('/user/bookings'),
+  getCreatorBookings: () => api.get('/bookings/creator'),
+  updateStatus: (id: string, status: string, amount?: number) => api.patch(`/bookings/${id}/status`, { status, amount }),
+};
+
 // Notifications
 export const notificationsAPI = {
   getAll: () => api.get('/notifications'),

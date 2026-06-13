@@ -1,20 +1,46 @@
-import React from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, radius } from '../theme';
+import { useAuth } from '../context/AuthContext';
+import { messagesAPI } from '../services/api';
 
-const mockConversations = [
-  { id: '1', name: 'Arjun Kapoor Studios', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100', lastMessage: 'Sure, I can do the pre-wedding shoot on 15th July!', time: '2m ago', unread: 2, online: true },
-  { id: '2', name: 'Priya Sharma Films', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100', lastMessage: 'I\'ve sent you the final edited reel 🎬', time: '1h ago', unread: 0, online: true },
-  { id: '3', name: 'Studio Luxe', avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=100', lastMessage: 'The booking is confirmed. See you!', time: '3h ago', unread: 1, online: false },
-  { id: '4', name: 'Riya Makeover Studio', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100', lastMessage: 'Can you share the venue details?', time: 'Yesterday', unread: 0, online: false },
-  { id: '5', name: 'Vikram Photography', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100', lastMessage: 'Photos from the Haldi ceremony are ready!', time: '2d ago', unread: 0, online: false },
-];
+export default function MessagesScreen({ navigation }: any) {
+  const { isAuthenticated } = useAuth();
+  const [conversations, setConversations] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-export default function MessagesScreen() {
+  const loadConversations = useCallback(async () => {
+    if (!isAuthenticated) { setLoading(false); return; }
+    try {
+      const res = await messagesAPI.getConversations();
+      const data = res.data?.conversations || res.data?.data || res.data || [];
+      setConversations(Array.isArray(data) ? data : []);
+    } catch {
+      setConversations([]);
+    } finally { setLoading(false); }
+  }, [isAuthenticated]);
+
+  useEffect(() => { loadConversations(); }, [loadConversations]);
+  const onRefresh = async () => { setRefreshing(true); await loadConversations(); setRefreshing(false); };
+
+  if (!isAuthenticated) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}><Text style={styles.title}>Messages</Text></View>
+        <View style={styles.emptyAuth}>
+          <View style={styles.emptyIcon}><Ionicons name="chatbubble-outline" size={36} color={colors.textMuted} /></View>
+          <Text style={styles.emptyTitle}>Sign in to view messages</Text>
+          <Text style={styles.emptySubtitle}>Chat with creators about your bookings</Text>
+          <TouchableOpacity style={styles.signInBtn} onPress={() => navigation.navigate('Login')}><Text style={styles.signInText}>Sign In</Text></TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Messages</Text>
         <TouchableOpacity style={styles.newBtn}>
@@ -22,37 +48,61 @@ export default function MessagesScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Conversations */}
-      <FlatList
-        data={mockConversations}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}
-        renderItem={({ item }) => (
-          <TouchableOpacity style={styles.chatItem} activeOpacity={0.7}>
-            <View style={styles.avatarContainer}>
-              <Image source={{ uri: item.avatar }} style={styles.avatar} />
-              {item.online && <View style={styles.onlineDot} />}
-            </View>
-            <View style={styles.chatInfo}>
-              <View style={styles.chatTop}>
-                <Text style={[styles.chatName, item.unread > 0 && styles.chatNameBold]} numberOfLines={1}>{item.name}</Text>
-                <Text style={[styles.chatTime, item.unread > 0 && { color: colors.primary }]}>{item.time}</Text>
-              </View>
-              <View style={styles.chatBottom}>
-                <Text style={[styles.chatMsg, item.unread > 0 && styles.chatMsgBold]} numberOfLines={1}>{item.lastMessage}</Text>
-                {item.unread > 0 && (
-                  <View style={styles.unreadBadge}>
-                    <Text style={styles.unreadText}>{item.unread}</Text>
+      {loading ? (
+        <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: spacing['4xl'] }} />
+      ) : conversations.length > 0 ? (
+        <FlatList
+          data={conversations}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} progressBackgroundColor={colors.surface} />}
+          renderItem={({ item }) => {
+            const otherUser = item.otherUser || item.user || {};
+            const name = otherUser.name || 'User';
+            const avatar = otherUser.avatar;
+            const lastMsg = item.lastMessage?.content || item.lastMessage || '';
+            const time = item.lastMessage?.createdAt ? getTimeAgo(item.lastMessage.createdAt) : '';
+            const unread = item.unreadCount || 0;
+
+            return (
+              <TouchableOpacity style={styles.chatItem} activeOpacity={0.7}>
+                <Image source={{ uri: avatar || 'https://via.placeholder.com/50' }} style={styles.avatar} />
+                <View style={styles.chatInfo}>
+                  <View style={styles.chatTop}>
+                    <Text style={[styles.chatName, unread > 0 && styles.chatNameBold]} numberOfLines={1}>{name}</Text>
+                    <Text style={[styles.chatTime, unread > 0 && { color: colors.primary }]}>{time}</Text>
                   </View>
-                )}
-              </View>
-            </View>
-          </TouchableOpacity>
-        )}
-        keyExtractor={i => i.id}
-      />
+                  <View style={styles.chatBottom}>
+                    <Text style={[styles.chatMsg, unread > 0 && styles.chatMsgBold]} numberOfLines={1}>{lastMsg}</Text>
+                    {unread > 0 && <View style={styles.unreadBadge}><Text style={styles.unreadText}>{unread}</Text></View>}
+                  </View>
+                </View>
+              </TouchableOpacity>
+            );
+          }}
+          keyExtractor={(item, index) => item._id || String(index)}
+        />
+      ) : (
+        <View style={styles.emptyState}>
+          <View style={styles.emptyIcon}><Ionicons name="chatbubbles-outline" size={40} color={colors.textMuted} /></View>
+          <Text style={styles.emptyTitle}>No messages yet</Text>
+          <Text style={styles.emptySubtitle}>Start a conversation by booking a creator</Text>
+        </View>
+      )}
     </View>
   );
+}
+
+function getTimeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Now';
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d`;
+  return new Date(dateStr).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
 }
 
 const styles = StyleSheet.create({
@@ -61,9 +111,7 @@ const styles = StyleSheet.create({
   title: { ...typography.displaySm, color: colors.text },
   newBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primaryMuted, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.borderGold },
   chatItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.xl, paddingVertical: spacing.md + 2, borderBottomWidth: 1, borderBottomColor: colors.border },
-  avatarContainer: { position: 'relative' },
-  avatar: { width: 52, height: 52, borderRadius: 26, borderWidth: 1.5, borderColor: colors.border },
-  onlineDot: { position: 'absolute', bottom: 2, right: 2, width: 12, height: 12, borderRadius: 6, backgroundColor: colors.success, borderWidth: 2, borderColor: colors.background },
+  avatar: { width: 50, height: 50, borderRadius: 25, borderWidth: 1, borderColor: colors.border },
   chatInfo: { flex: 1, marginLeft: spacing.md },
   chatTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
   chatName: { ...typography.headlineSm, color: colors.text, flex: 1, marginRight: spacing.sm },
@@ -74,4 +122,11 @@ const styles = StyleSheet.create({
   chatMsgBold: { color: colors.textSecondary, fontWeight: '500' },
   unreadBadge: { minWidth: 20, height: 20, borderRadius: 10, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5 },
   unreadText: { fontSize: 10, fontWeight: '800', color: colors.textInverse },
+  emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: spacing['6xl'] },
+  emptyAuth: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing['3xl'] },
+  emptyIcon: { width: 72, height: 72, borderRadius: 36, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border, marginBottom: spacing.xl },
+  emptyTitle: { ...typography.headlineMd, color: colors.text },
+  emptySubtitle: { ...typography.bodyMd, color: colors.textMuted, marginTop: spacing.xs, textAlign: 'center' },
+  signInBtn: { marginTop: spacing.xl, backgroundColor: colors.primary, paddingHorizontal: spacing['3xl'], paddingVertical: spacing.md, borderRadius: radius.md },
+  signInText: { ...typography.labelLg, color: colors.textInverse, fontWeight: '600' },
 });
