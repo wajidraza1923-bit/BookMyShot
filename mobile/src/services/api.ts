@@ -15,14 +15,23 @@ api.interceptors.request.use(async (config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  // Debug logging
+  console.log(`[API] ${config.method?.toUpperCase()} ${config.url}`, config.data ? JSON.stringify(config.data).substring(0, 100) : '');
   return config;
 });
 
 // Handle 401s globally
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log(`[API] ✓ ${response.status} ${response.config.url}`);
+    return response;
+  },
   async (error) => {
-    if (error.response?.status === 401) {
+    const status = error.response?.status;
+    const url = error.config?.url;
+    console.log(`[API] ✗ ${status || 'NETWORK'} ${url}`, error.response?.data?.message || error.message);
+
+    if (status === 401 && url !== '/auth/login') {
       await AsyncStorage.removeItem('bms_token');
       await AsyncStorage.removeItem('bms_user');
     }

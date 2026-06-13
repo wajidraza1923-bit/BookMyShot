@@ -6,11 +6,14 @@ type UserRole = 'user' | 'creator' | 'admin' | null;
 
 interface User {
   _id: string;
+  id?: string;
   name: string;
   email: string;
   role: UserRole;
   avatar?: string;
   phone?: string;
+  emailVerified?: boolean;
+  creatorStatus?: string;
 }
 
 interface AuthState {
@@ -41,38 +44,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Restore session on app launch
   useEffect(() => {
     restoreSession();
   }, []);
 
   const restoreSession = async () => {
+    console.log('[Auth] Restoring session...');
     try {
       const storedToken = await AsyncStorage.getItem('bms_token');
       const storedUser = await AsyncStorage.getItem('bms_user');
+      console.log('[Auth] Stored token exists:', !!storedToken);
+      console.log('[Auth] Stored user exists:', !!storedUser);
+
       if (storedToken && storedUser) {
         const parsedUser = JSON.parse(storedUser);
         setToken(storedToken);
-        setUser(parsedUser);
+        setUser(normalizeUser(parsedUser));
+
         // Validate token is still valid
         try {
           const res = await authAPI.me();
           const freshUser = res.data?.user;
           if (freshUser) {
-            setUser(freshUser);
-            await AsyncStorage.setItem('bms_user', JSON.stringify(freshUser));
+            const normalized = normalizeUser(freshUser);
+            setUser(normalized);
+            await AsyncStorage.setItem('bms_user', JSON.stringify(normalized));
+            console.log('[Auth] Session valid, user:', normalized.name, 'role:', normalized.role);
           }
-        } catch {
-          // Token expired — clear session
+        } catch (e: any) {
+          console.log('[Auth] Token validation failed:', e.response?.status, '- clearing session');
           await clearSession();
         }
       }
-    } catch {
+    } catch (e) {
+      console.log('[Auth] Restore error:', e);
       await clearSession();
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Normalize user object (backend sends 'id', we use '_id')
+  const normalizeUser = (u: any): User => ({
+    _id: u._id || u.id || '',
+    name: u.name || '',
+    email: u.email || '',
+    role: u.role || 'user',
+    avatar: u.avatar || '',
+    phone: u.phone || '',
+    emailVerified: u.emailVerified,
+    creatorStatus: u.creatorStatus,
+  });
 
   const clearSession = async () => {
     setUser(null);
@@ -84,34 +106,103 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const login = async (email: string, password: string) => {
+    console.log('[Auth] ═══ LOGIN ATTEMPT ═══');
+    console.log('[Auth] URL:', 'POST /api/auth/login');
+    console.log('[Auth] Payload:', JSON.stringify({ email, password: '***' }));
+
     try {
       const res = await authAPI.login(email, password);
-      const { token: newToken, user: newUser } = res.data;
-      await AsyncStorage.setItem('bms_token', newToken);
-      await AsyncStorage.setItem('bms_user', JSON.stringify(newUser));
-      setToken(newToken);
-      setUser(newUser);
+      console.log('[Auth] Response status:', res.status);
+      console.log('[Auth] Response data:', JSON.stringify(res.data));
+
+      const data = res.data;
+
+      // Backend may return success but with a message (e.g., creator pending approval)
+      if (!data.token) {
+        console.log('[Auth] No token in response — account may need verification/approval');
+        return { success: false, message: data.message || 'Account requires verification' };
+      }
+
+      const normalizedUser = normalizeUser(data.user);
+      console.log('[Auth] Token received:', data.token.substring(0, 20) + '...');
+      console.log('[Auth] User:', normalizedUser.name, '| Role:', normalizedUser.role, '| ID:', normalizedUser._id);
+
+      // Save to storage
+      await AsyncStorage.setItem('bms_token', data.token);
+      await AsyncStorage.setItem('bms_user', JSON.stringify(normalizedUser));
+      console.log('[Auth] Saved to AsyncStorage ✓');
+
+      setToken(data.token);
+      setUser(normalizedUser);
+      console.log('[Auth] State updated ✓');
+      console.log('[Auth] ═══ LOGIN SUCCESS ═══');
+
       return { success: true };
     } catch (e: any) {
-      return { success: false, message: e.response?.data?.message || 'Login failed' };
+      const status = e.response?.status;
+      const errorData = e.response?.data;
+      const message = errorData?.message || e.message || 'Login failed';
+
+      console.log('[Auth] ═══ LOGIN FAILED ═══');
+      console.log('[Auth] Status:', status);
+      console.log('[Auth] Error data:', JSON.stringify(errorData));
+      console.log('[Auth] Message:', message);
+
+      // Handle specific cases
+      if (status === 403 && errorData?.requiresVerification) {
+        return { success: false, message: 'Please verify your email first. Check your inbox.' };
+      }
+
+      if (status === 401) {
+        return { success: false, message: 'Invalid email or password' };
+      }
+
+      if (status === 429) {
+        return { success: false, message: 'Too many login attempts. Try again in 15 minutes.' };
+      }
+
+      if (!e.response) {
+        return { success: false, message: 'Network error. Check your internet connection.' };
+      }
+
+      return { success: false, message };
     }
   };
 
   const register = async (name: string, email: string, password: string, role: string) => {
+    console.log('[Auth] ═══ REGISTER ATTEMPT ═══');
+    console.log('[Auth] Payload:', JSON.stringify({ name, email, role, password: '***' }));
+
     try {
       const res = await authAPI.register(name, email, password, role);
-      const { token: newToken, user: newUser } = res.data;
-      await AsyncStorage.setItem('bms_token', newToken);
-      await AsyncStorage.setItem('bms_user', JSON.stringify(newUser));
-      setToken(newToken);
-      setUser(newUser);
+      console.log('[Auth] Register response:', JSON.stringify(res.data));
+
+      const data = res.data;
+
+      // Registration may not return a token if email verification is required
+      if (!data.token) {
+        return {
+          success: false,
+          message: data.message || 'Please verify your email to continue.',
+        };
+      }
+
+      const normalizedUser = normalizeUser(data.user);
+      await AsyncStorage.setItem('bms_token', data.token);
+      await AsyncStorage.setItem('bms_user', JSON.stringify(normalizedUser));
+      setToken(data.token);
+      setUser(normalizedUser);
+      console.log('[Auth] ═══ REGISTER SUCCESS ═══');
       return { success: true };
     } catch (e: any) {
-      return { success: false, message: e.response?.data?.message || 'Registration failed' };
+      const message = e.response?.data?.message || e.message || 'Registration failed';
+      console.log('[Auth] Register failed:', message);
+      return { success: false, message };
     }
   };
 
   const logout = async () => {
+    console.log('[Auth] Logging out...');
     await clearSession();
   };
 
@@ -120,8 +211,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await authAPI.me();
       const freshUser = res.data?.user;
       if (freshUser) {
-        setUser(freshUser);
-        await AsyncStorage.setItem('bms_user', JSON.stringify(freshUser));
+        const normalized = normalizeUser(freshUser);
+        setUser(normalized);
+        await AsyncStorage.setItem('bms_user', JSON.stringify(normalized));
       }
     } catch {}
   };
