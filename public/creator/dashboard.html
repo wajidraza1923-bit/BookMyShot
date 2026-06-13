@@ -4222,8 +4222,40 @@
       } catch (e) { toast(e.message || 'Subscription creation failed', 'error'); }
     };
 
-    window.payCommission = function() {
-      toast('Please pay pending commissions manually. Contact admin for payment details.', 'info');
+    window.payCommission = async function() {
+      var amount = window._currentCommissionDue || 0;
+      if (amount <= 0) { toast('No commission dues!', 'success'); return; }
+      try {
+        var rpConfig = await API.get('/razorpay/config');
+        if (!rpConfig.configured) { toast('Payment gateway not configured', 'error'); return; }
+        var orderRes = await API.post('/razorpay/create-commission-order', { amount: amount });
+        var options = {
+          key: rpConfig.keyId,
+          amount: orderRes.order.amount,
+          currency: 'INR',
+          name: 'BookMyShot',
+          description: 'Commission Payment — ₹' + amount,
+          order_id: orderRes.order.id,
+          handler: async function(response) {
+            try {
+              await API.post('/razorpay/verify-commission-payment', {
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                amount: amount,
+              });
+              toast('Commission paid successfully! ✅', 'success');
+              loadRevenue();
+            } catch (e) { toast('Verification failed. Contact support.', 'error'); }
+          },
+          prefill: { name: (currentUser || {}).name || '' },
+          theme: { color: '#DAAF37' },
+          modal: { ondismiss: function() { toast('Payment cancelled', 'info'); } },
+        };
+        var rzp = new Razorpay(options);
+        rzp.on('payment.failed', function(resp) { toast('Payment failed: ' + (resp.error.description || ''), 'error'); });
+        rzp.open();
+      } catch (e) { toast(e.message || 'Payment failed', 'error'); }
     };
 
     window.payDues = function() {

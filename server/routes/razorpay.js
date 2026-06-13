@@ -279,6 +279,115 @@ router.post("/create-promotion-order", protect, authorize("creator"), async (req
 });
 
 // ═══════════════════════════════════════════════════════════════
+// CREATOR: Create order for commission payment (one-time)
+// ═══════════════════════════════════════════════════════════════
+router.post("/create-commission-order", protect, authorize("creator"), async (req, res, next) => {
+  try {
+    if (!razorpayService.isConfigured()) {
+      return res.status(503).json({ success: false, message: "Payment gateway not configured" });
+    }
+
+    const { amount } = req.body;
+    if (!amount || amount <= 0) return res.status(400).json({ success: false, message: "Amount required" });
+
+    const creator = await Creator.findOne({ user: req.user._id });
+    if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
+
+    const order = await razorpayService.createOrder(amount, "INR", `comm_${Date.now()}`, {
+      creatorId: creator._id.toString(),
+      userId: req.user._id.toString(),
+      type: "commission",
+    });
+
+    res.json({ success: true, order, amount, keyId: process.env.RAZORPAY_KEY_ID });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// VERIFY: Verify commission payment
+// ═══════════════════════════════════════════════════════════════
+router.post("/verify-commission-payment", protect, async (req, res, next) => {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, amount } = req.body;
+
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return res.status(400).json({ success: false, message: "Missing payment verification data" });
+    }
+
+    const isValid = razorpayService.verifyPaymentSignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
+    if (!isValid) {
+      return res.status(400).json({ success: false, message: "Payment verification failed" });
+    }
+
+    const creator = await Creator.findOne({ user: req.user._id });
+    if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
+
+    const paidAmount = Number(amount) || 0;
+
+    // Update creator.commissionPaid
+    await Creator.updateOne({ _id: creator._id }, { $inc: { commissionPaid: paidAmount } });
+
+    // Mark pending commissions as paid (oldest first)
+    const Commission = require("../models/Commission");
+    let remaining = paidAmount;
+    const pendingComms = await Commission.find({ creator: creator._id, status: { $in: ["pending", "overdue"] } }).sort({ createdAt: 1 });
+    for (const comm of pendingComms) {
+      if (remaining <= 0) break;
+      if (remaining >= comm.commissionAmount) {
+        comm.status = "paid";
+        comm.paidAt = new Date();
+        comm.notes = `Razorpay: ${razorpay_payment_id}`;
+        remaining -= comm.commissionAmount;
+      }
+      await comm.save();
+    }
+
+    // If creator was suspended due to unpaid commission, reactivate
+    if (creator.subscriptionStatus === "suspended") {
+      await Creator.updateOne({ _id: creator._id }, { $set: { subscriptionStatus: "active" } });
+    }
+
+    // Create invoice record
+    await Invoice.create({
+      creator: creator._id,
+      invoiceNumber: "BMS-COMM-" + Date.now(),
+      type: "commission",
+      description: "Commission Payment (Razorpay)",
+      amount: paidAmount,
+      status: "paid",
+      paidAt: new Date(),
+      notes: razorpay_payment_id,
+    });
+
+    // Notification
+    await Notification.create({
+      user: req.user._id,
+      type: "payment",
+      title: "✅ Commission Paid",
+      message: `Your commission payment of ₹${paidAmount} has been received. Thank you!`,
+    });
+
+    // Email
+    emailService.sendPaymentReceipt({
+      email: req.user.email,
+      name: req.user.name,
+      amount: paidAmount,
+      paymentId: razorpay_payment_id,
+      description: "Commission Payment",
+      date: new Date(),
+      creatorId: creator._id,
+      userId: req.user._id,
+    }).catch(e => console.error("[Email] commission receipt:", e.message));
+
+    res.json({ success: true, message: "Commission payment verified", paymentId: razorpay_payment_id, amountPaid: paidAmount });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
 // VERIFY: Verify one-time payment (promotions only)
 // ═══════════════════════════════════════════════════════════════
 router.post("/verify-payment", protect, async (req, res, next) => {
