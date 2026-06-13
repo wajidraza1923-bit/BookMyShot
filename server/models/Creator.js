@@ -10,7 +10,7 @@ const packageSchema = new mongoose.Schema({
 const creatorSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, unique: true },
-    creatorId: { type: String, unique: true, sparse: true },
+    creatorId: { type: String, unique: true, sparse: true, default: null },
     status: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
     specialty: { type: String, default: "" },
     bio: { type: String, default: "" },
@@ -90,11 +90,22 @@ creatorSchema.set("toJSON", {
   },
 });
 
-// Auto-generate creatorId on save if not set
+// Auto-generate creatorId on save if not set (only for NEW documents)
 creatorSchema.pre("save", async function (next) {
-  if (!this.creatorId) {
-    const count = await mongoose.model("Creator").countDocuments();
-    this.creatorId = "BMS-" + String(count + 1).padStart(4, "0");
+  if (this.isNew && !this.creatorId) {
+    // Find the highest existing creatorId number to avoid duplicates
+    const lastCreator = await mongoose.model("Creator")
+      .findOne({ creatorId: { $exists: true, $ne: "" } })
+      .sort({ creatorId: -1 })
+      .select("creatorId")
+      .lean();
+    
+    let nextNum = 1;
+    if (lastCreator && lastCreator.creatorId) {
+      const match = lastCreator.creatorId.match(/BMS-(\d+)/);
+      if (match) nextNum = parseInt(match[1], 10) + 1;
+    }
+    this.creatorId = "BMS-" + String(nextNum).padStart(4, "0");
   }
   next();
 });

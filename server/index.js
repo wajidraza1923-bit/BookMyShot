@@ -78,6 +78,23 @@ const startServer = async () => {
       console.log(`[STARTUP] Admin account exists: ${existingAdmin.email}`);
     }
 
+    // Backfill creatorId for existing creators that don't have one
+    const Creator = require("./models/Creator");
+    const creatorsWithoutId = await Creator.find({ $or: [{ creatorId: null }, { creatorId: "" }, { creatorId: { $exists: false } }] }).sort({ createdAt: 1 });
+    if (creatorsWithoutId.length > 0) {
+      const lastWithId = await Creator.findOne({ creatorId: { $exists: true, $ne: null, $ne: "" } }).sort({ creatorId: -1 }).lean();
+      let nextNum = 1;
+      if (lastWithId && lastWithId.creatorId) {
+        const match = lastWithId.creatorId.match(/BMS-(\d+)/);
+        if (match) nextNum = parseInt(match[1], 10) + 1;
+      }
+      for (const c of creatorsWithoutId) {
+        await Creator.updateOne({ _id: c._id }, { $set: { creatorId: "BMS-" + String(nextNum).padStart(4, "0") } });
+        nextNum++;
+      }
+      console.log(`[STARTUP] Assigned creatorId to ${creatorsWithoutId.length} creators`);
+    }
+
     server = app.listen(PORT, () => console.log(`BookMyShot server running on port ${PORT}`));
     server.on("error", (err) => {
       console.error("Server failed to start:", err.message);
