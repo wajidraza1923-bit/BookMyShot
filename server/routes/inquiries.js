@@ -16,7 +16,7 @@ async function optionalAuth(req, res, next) {
       token = req.headers.authorization.split(" ")[1];
     }
     if (token) {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || "REDACTED_JWT_DEV_SECRET");
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
       req.user = await User.findById(decoded.id).select("-password");
     }
   } catch (e) {

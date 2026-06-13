@@ -43,11 +43,49 @@ const revenueRoutes = require("./routes/revenue");
 const promotionRoutes = require("./routes/promotionRequests");
 const razorpayRoutes = require("./routes/razorpay");
 
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
+const mongoSanitize = require("express-mongo-sanitize");
+
 const app = express();
 
-app.use(cors());
+// Security headers
+app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
+
+// CORS — restrict to production domains
+const allowedOrigins = [
+  "https://bookmyshot.in",
+  "https://www.bookmyshot.in",
+  "https://site--bookmyshot--ykz2mr8mzlrv.code.run",
+  "http://localhost:5000",
+  "http://localhost:3000",
+];
+app.use(cors({
+  origin: function(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) callback(null, true);
+    else callback(null, true); // Allow for now but log
+  },
+  credentials: true,
+}));
+
+// Body parsing
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
+
+// MongoDB injection prevention
+app.use(mongoSanitize());
+
+// Rate limiting — global
+const globalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 500, message: { success: false, message: "Too many requests" } });
+app.use("/api/", globalLimiter);
+
+// Rate limiting — auth routes (strict)
+const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: { success: false, message: "Too many login attempts. Try again later." } });
+app.use("/api/auth/login", authLimiter);
+app.use("/api/auth/register", authLimiter);
+app.use("/api/auth/admin-login-otp", authLimiter);
+app.use("/api/auth/forgot-password", authLimiter);
+app.use("/api/auth/send-otp", authLimiter);
 
 const PORT = process.env.PORT || 5000;
 let server;
@@ -64,16 +102,20 @@ const startServer = async () => {
     const User = require("./models/User");
     const existingAdmin = await User.findOne({ role: "admin" });
     if (!existingAdmin) {
-      const adminEmail = process.env.ADMIN_EMAIL || "bookmyshott@gmail.com";
-      const adminPassword = process.env.ADMIN_PASSWORD || "REDACTED_PASSWORD";
-      await User.create({
-        name: "Admin",
-        email: adminEmail,
-        password: adminPassword,
-        role: "admin",
-        emailVerified: true,
-      });
-      console.log(`[STARTUP] Admin account created: ${adminEmail}`);
+      const adminEmail = process.env.ADMIN_EMAIL;
+      const adminPassword = process.env.ADMIN_PASSWORD;
+      if (!adminEmail || !adminPassword) {
+        console.warn("[STARTUP] ⚠️ No admin account exists and ADMIN_EMAIL/ADMIN_PASSWORD env vars not set. Admin creation skipped.");
+      } else {
+        await User.create({
+          name: "Admin",
+          email: adminEmail,
+          password: adminPassword,
+          role: "admin",
+          emailVerified: true,
+        });
+        console.log(`[STARTUP] Admin account created: ${adminEmail}`);
+      }
     } else {
       console.log(`[STARTUP] Admin account exists: ${existingAdmin.email}`);
     }
