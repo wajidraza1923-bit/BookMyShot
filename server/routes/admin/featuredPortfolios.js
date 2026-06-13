@@ -10,7 +10,7 @@ router.get("/", async (req, res, next) => {
   try {
     const now = new Date();
 
-    // Auto-expire featured creators past their end date
+    // Auto-expire featured creators past their end date (uses updateMany - no hooks)
     await Creator.updateMany(
       { featured: true, featuredEndDate: { $lte: now } },
       { $set: { featured: false } }
@@ -27,7 +27,6 @@ router.get("/", async (req, res, next) => {
       .sort({ featured: -1, featuredStartDate: -1 })
       .lean();
 
-    // Stats
     const active = creators.filter(c => c.featured).length;
     const expired = creators.filter(c => !c.featured && c.featuredStartDate).length;
 
@@ -37,7 +36,7 @@ router.get("/", async (req, res, next) => {
   }
 });
 
-// POST /:creatorId - Feature a creator
+// POST /:creatorId - Feature a creator (uses findByIdAndUpdate - no hooks)
 router.post("/:creatorId", async (req, res, next) => {
   try {
     const { endDate, days } = req.body;
@@ -49,30 +48,33 @@ router.post("/:creatorId", async (req, res, next) => {
       featuredEnd = new Date();
       featuredEnd.setDate(featuredEnd.getDate() + parseInt(days));
     } else {
-      // Default 30 days
       featuredEnd = new Date();
       featuredEnd.setDate(featuredEnd.getDate() + 30);
     }
 
-    const creator = await Creator.findById(req.params.creatorId);
+    const creator = await Creator.findByIdAndUpdate(
+      req.params.creatorId,
+      {
+        $set: {
+          featured: true,
+          featuredStartDate: new Date(),
+          featuredEndDate: featuredEnd,
+          featuredPaymentStatus: "paid",
+        },
+      },
+      { new: true }
+    ).populate("user", "name email");
+
     if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
 
-    const previousValues = { featured: creator.featured, featuredStartDate: creator.featuredStartDate, featuredEndDate: creator.featuredEndDate };
-
-    creator.featured = true;
-    creator.featuredStartDate = new Date();
-    creator.featuredEndDate = featuredEnd;
-    creator.featuredPaymentStatus = "paid";
-    await creator.save();
-
     await Notification.create({
-      user: creator.user,
+      user: creator.user._id,
       type: "promotion",
       title: "⭐ You are now Featured!",
       message: `Your profile has been featured until ${featuredEnd.toLocaleDateString("en-IN")}.`,
     });
 
-    await auditService.logAction({ adminId: req.user._id, adminName: req.user.name || "", action: "feature_creator", target: "creator", targetId: creator._id.toString(), previousValues, newValues: { featured: true, featuredEndDate: featuredEnd }, ip: req.ip });
+    await auditService.logAction({ adminId: req.user._id, adminName: req.user.name || "", action: "feature_creator", target: "creator", targetId: creator._id.toString(), previousValues: {}, newValues: { featured: true, featuredEndDate: featuredEnd }, ip: req.ip });
 
     res.json({ success: true, data: creator });
   } catch (err) {
@@ -80,32 +82,34 @@ router.post("/:creatorId", async (req, res, next) => {
   }
 });
 
-// PATCH /:creatorId/extend - Extend featured period
+// PATCH /:creatorId/extend - Extend featured period (uses findByIdAndUpdate - no hooks)
 router.patch("/:creatorId/extend", async (req, res, next) => {
   try {
     const { days } = req.body;
     if (!days || days <= 0) return res.status(400).json({ success: false, message: "days required (positive number)" });
 
-    const creator = await Creator.findById(req.params.creatorId);
-    if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
+    const existing = await Creator.findById(req.params.creatorId).lean();
+    if (!existing) return res.status(404).json({ success: false, message: "Creator not found" });
 
-    const currentEnd = creator.featuredEndDate ? new Date(creator.featuredEndDate) : new Date();
+    const currentEnd = existing.featuredEndDate ? new Date(existing.featuredEndDate) : new Date();
     const baseDate = currentEnd > new Date() ? currentEnd : new Date();
     const newEnd = new Date(baseDate);
     newEnd.setDate(newEnd.getDate() + parseInt(days));
 
-    creator.featured = true;
-    creator.featuredEndDate = newEnd;
-    await creator.save();
+    const creator = await Creator.findByIdAndUpdate(
+      req.params.creatorId,
+      { $set: { featured: true, featuredEndDate: newEnd } },
+      { new: true }
+    );
 
     await Notification.create({
-      user: creator.user,
+      user: existing.user,
       type: "promotion",
       title: "⭐ Featured Extended!",
-      message: `Your featured period has been extended by ${days} days (until ${newEnd.toLocaleDateString("en-IN")}).`,
+      message: `Your featured period has been extended by ${days} days.`,
     });
 
-    await auditService.logAction({ adminId: req.user._id, adminName: req.user.name || "", action: "extend_featured", target: "creator", targetId: creator._id.toString(), previousValues: { featuredEndDate: currentEnd }, newValues: { featuredEndDate: newEnd, days }, ip: req.ip });
+    await auditService.logAction({ adminId: req.user._id, adminName: req.user.name || "", action: "extend_featured", target: "creator", targetId: req.params.creatorId, previousValues: { featuredEndDate: currentEnd }, newValues: { featuredEndDate: newEnd }, ip: req.ip });
 
     res.json({ success: true, data: creator, newEndDate: newEnd });
   } catch (err) {
@@ -113,21 +117,16 @@ router.patch("/:creatorId/extend", async (req, res, next) => {
   }
 });
 
-// PATCH /:creatorId/expire - Force expire now
+// PATCH /:creatorId/expire - Force expire now (uses findByIdAndUpdate - no hooks)
 router.patch("/:creatorId/expire", async (req, res, next) => {
   try {
-    console.log("[Featured] Expire request for:", req.params.creatorId);
-    const creator = await Creator.findById(req.params.creatorId);
+    const creator = await Creator.findByIdAndUpdate(
+      req.params.creatorId,
+      { $set: { featured: false, featuredEndDate: new Date() } },
+      { new: true }
+    );
+
     if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
-
-    creator.featured = false;
-    creator.featuredEndDate = new Date();
-    await creator.save();
-    console.log("[Featured] Expired successfully:", creator._id);
-
-    creator.featured = false;
-    creator.featuredEndDate = new Date();
-    await creator.save();
 
     await Notification.create({
       user: creator.user,
@@ -136,7 +135,7 @@ router.patch("/:creatorId/expire", async (req, res, next) => {
       message: "Your featured profile placement has ended.",
     });
 
-    await auditService.logAction({ adminId: req.user._id, adminName: req.user.name || "", action: "expire_featured", target: "creator", targetId: creator._id.toString(), previousValues: { featured: true }, newValues: { featured: false }, ip: req.ip });
+    await auditService.logAction({ adminId: req.user._id, adminName: req.user.name || "", action: "expire_featured", target: "creator", targetId: req.params.creatorId, previousValues: { featured: true }, newValues: { featured: false }, ip: req.ip });
 
     res.json({ success: true, message: "Featured expired" });
   } catch (err) {
@@ -144,21 +143,21 @@ router.patch("/:creatorId/expire", async (req, res, next) => {
   }
 });
 
-// DELETE /:creatorId - Remove from featured completely
+// DELETE /:creatorId - Remove from featured completely (uses findByIdAndUpdate - no hooks)
 router.delete("/:creatorId", async (req, res, next) => {
   try {
-    console.log("[Featured] Remove request for:", req.params.creatorId);
-    const creator = await Creator.findById(req.params.creatorId);
+    const creator = await Creator.findByIdAndUpdate(
+      req.params.creatorId,
+      {
+        $set: { featured: false, featuredPaymentStatus: "none" },
+        $unset: { featuredStartDate: "", featuredEndDate: "" },
+      },
+      { new: true }
+    );
+
     if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
 
-    creator.featured = false;
-    creator.featuredStartDate = undefined;
-    creator.featuredEndDate = undefined;
-    creator.featuredPaymentStatus = "none";
-    await creator.save();
-    console.log("[Featured] Removed successfully:", creator._id);
-
-    await auditService.logAction({ adminId: req.user._id, adminName: req.user.name || "", action: "remove_featured", target: "creator", targetId: creator._id.toString(), previousValues: { featured: true }, newValues: { featured: false }, ip: req.ip });
+    await auditService.logAction({ adminId: req.user._id, adminName: req.user.name || "", action: "remove_featured", target: "creator", targetId: req.params.creatorId, previousValues: { featured: true }, newValues: { featured: false }, ip: req.ip });
 
     res.json({ success: true, message: "Featured removed" });
   } catch (err) {
