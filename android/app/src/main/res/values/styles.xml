@@ -23,9 +23,12 @@
         <item name="android:navigationBarColor">@color/app_background</item>
     </style>
 
-    <!-- Splash screen theme — immersive dark with gold branding -->
+    <!-- Splash screen theme — shows branded splash on launch -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
-        <item name="android:background">@drawable/splash</item>
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_camera</item>
+        <item name="windowSplashScreenAnimationDuration">2500</item>
+        <item name="postSplashScreenTheme">@style/AppTheme</item>
         <item name="android:statusBarColor">@color/app_background</item>
         <item name="android:navigationBarColor">@color/app_background</item>
         <item name="android:windowLightStatusBar">false</item>

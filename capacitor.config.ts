@@ -7,7 +7,6 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://bookmyshot.in',
     cleartext: false,
-    androidScheme: 'https',
   },
   plugins: {
     SplashScreen: {
@@ -36,15 +35,10 @@ const config: CapacitorConfig = {
   android: {
     allowMixedContent: false,
     captureInput: true,
-    webContentsDebuggingEnabled: false,
+    webContentsDebuggingEnabled: true,
     backgroundColor: '#0a0806',
-    overrideUserAgent: 'BookMyShot/1.0.0 Android',
     appendUserAgent: 'BookMyShot-App',
     initialFocus: true,
-    buildOptions: {
-      keystorePath: '../bookmyshot-release.keystore',
-      keystoreAlias: 'bookmyshot',
-    },
   },
 };
 
