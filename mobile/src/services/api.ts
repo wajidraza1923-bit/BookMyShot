@@ -10,17 +10,29 @@ console.log('[API] Platform:', Platform.OS, Platform.Version);
 
 const api = axios.create({
   baseURL: API_BASE,
-  timeout: 30000, // 30s timeout for mobile networks
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
-  // Important for React Native - don't transform request
-  transformRequest: [(data, headers) => {
+  transformRequest: [(data) => {
     if (data && typeof data === 'object') {
       return JSON.stringify(data);
     }
     return data;
+  }],
+  // Override default JSON parsing to handle non-JSON responses safely
+  transformResponse: [(data) => {
+    if (!data) return data;
+    try {
+      return JSON.parse(data);
+    } catch (e) {
+      // Server returned non-JSON (likely HTML error page)
+      console.log('[API] ⚠ Non-JSON response received:');
+      console.log('[API] ⚠ Raw (first 200 chars):', String(data).substring(0, 200));
+      // Return as an error object instead of crashing
+      return { success: false, message: 'Server returned invalid response', _raw: String(data).substring(0, 500) };
+    }
   }],
 });
 

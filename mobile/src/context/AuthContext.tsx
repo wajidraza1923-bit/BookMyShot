@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authAPI } from '../services/api';
 
+const API_BASE = 'https://site--bookmyshot--ykz2mr8mzlrv.code.run/api';
+
 type UserRole = 'user' | 'creator' | 'admin' | null;
 
 interface User {
@@ -112,15 +114,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     console.log('[Auth] ═══ LOGIN ATTEMPT ═══');
-    console.log('[Auth] URL:', 'POST /api/auth/login');
+    console.log('[Auth] URL: POST', `${API_BASE}/auth/login`);
     console.log('[Auth] Payload:', JSON.stringify({ email, password: '***' }));
 
     try {
       const res = await authAPI.login(email, password);
       console.log('[Auth] Response status:', res.status);
-      console.log('[Auth] Response data:', JSON.stringify(res.data));
+      console.log('[Auth] Response headers content-type:', res.headers?.['content-type']);
+      console.log('[Auth] Response data type:', typeof res.data);
+      console.log('[Auth] Response data:', JSON.stringify(res.data)?.substring(0, 300));
 
       const data = res.data;
+
+      // Check if we got a non-JSON error response
+      if (data._raw) {
+        console.log('[Auth] ⚠ Server returned non-JSON:', data._raw.substring(0, 200));
+        return { success: false, message: 'Server error. Please try again.' };
+      }
 
       // Backend may return success but with a message (e.g., creator pending approval)
       if (!data.token) {
