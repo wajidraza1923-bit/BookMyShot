@@ -1,7 +1,7 @@
 {
   "rewrites": [
     { "source": "/how-bookmyshot-works", "destination": "/how-bookmyshot-works.html" },
-    { "source": "/faq", "destination": "/how-bookmyshot-works.html" },
+    { "source": "/faq", "destination": "/faq.html" },
     { "source": "/how-it-works", "destination": "/how-bookmyshot-works.html" },
     { "source": "/about", "destination": "/about.html" },
     { "source": "/contact", "destination": "/contact.html" },

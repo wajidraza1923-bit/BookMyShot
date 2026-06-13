@@ -253,13 +253,12 @@ app.use("/api/razorpay", razorpayRoutes);
 app.use("/api/homepage-enquiries", homepageEnquiryRoutes);
 
 // Clean URL routes for static pages (legal, info)
-const staticPages = ['about', 'contact', 'terms', 'privacy', 'refund-policy', 'booking-cancellation', 'cookie-policy', 'creator-guidelines', 'how-bookmyshot-works', 'pricing', 'enquiry'];
+const staticPages = ['about', 'contact', 'terms', 'privacy', 'refund-policy', 'booking-cancellation', 'cookie-policy', 'creator-guidelines', 'how-bookmyshot-works', 'pricing', 'enquiry', 'faq'];
 staticPages.forEach(page => {
   app.get(`/${page}`, (req, res) => res.sendFile(path.join(__dirname, `../public/${page}.html`)));
 });
 
-// FAQ and How It Works aliases
-app.get('/faq', (req, res) => res.redirect('/how-bookmyshot-works#faq'));
+// Aliases
 app.get('/how-it-works', (req, res) => res.redirect('/how-bookmyshot-works'));
 
 // SPA-style fallbacks for dashboards

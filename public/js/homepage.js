@@ -305,12 +305,12 @@ function attachSidebarNavigation() {
     faqBtn.addEventListener('click', function(e) {
       e.preventDefault();
       e.stopPropagation();
-      window.location.href = '/how-bookmyshot-works#faq';
+      window.location.href = '/faq';
     });
     faqBtn.addEventListener('touchend', function(e) {
       e.preventDefault();
       e.stopPropagation();
-      window.location.href = '/how-bookmyshot-works#faq';
+      window.location.href = '/faq';
     });
   }
 }
