@@ -11,6 +11,7 @@ import BookingsScreen from '../screens/BookingsScreen';
 import MessagesScreen from '../screens/MessagesScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import CreatorProfileScreen from '../screens/CreatorProfileScreen';
+import ChatDetailScreen from '../screens/ChatDetailScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -45,6 +46,7 @@ export default function CustomerNavigator() {
       <Stack.Screen name="CustomerTabs" component={CustomerTabs} />
       <Stack.Screen name="CreatorProfile" component={CreatorProfileScreen} options={{ animation: 'slide_from_bottom' }} />
       <Stack.Screen name="Search" component={SearchScreen} />
+      <Stack.Screen name="ChatDetail" component={ChatDetailScreen} />
     </Stack.Navigator>
   );
 }
