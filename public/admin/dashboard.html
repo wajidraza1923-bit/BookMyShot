@@ -1935,52 +1935,48 @@
       const el = document.getElementById("featuredCreatorsPanel");
       try {
         const data = await API.get("/admin/featured-portfolios");
-        const creators = data.data || [];
+        const items = data.data || [];
         const stats = data.stats || {};
 
-        // Stats cards
-        let html = '<div class="stats-grid" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:1rem">' +
+        var html = '<div class="stats-grid" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:1rem">' +
           '<div class="stat-card"><div class="label">Active Featured</div><div class="value success">' + (stats.active || 0) + '</div></div>' +
           '<div class="stat-card"><div class="label">Expired</div><div class="value">' + (stats.expired || 0) + '</div></div>' +
-          '<div class="stat-card"><div class="label">Total</div><div class="value gold">' + (stats.total || 0) + '</div></div>' +
+          '<div class="stat-card"><div class="label">Total Records</div><div class="value gold">' + (stats.total || 0) + '</div></div>' +
         '</div>';
 
-        if (!creators.length) { el.innerHTML = html + '<div class="empty-state"><div class="icon">⭐</div><h3>No featured profiles</h3><p>Feature a creator from Creator Accounts panel.</p></div>'; return; }
+        if (!items.length) { el.innerHTML = html + '<div class="empty-state"><div class="icon"><i class="fa-solid fa-star"></i></div><h3>No featured profiles</h3><p>Feature creators from Creator Accounts or let them purchase via Promotions.</p></div>'; return; }
 
-        html += '<div class="table-wrap"><table><thead><tr><th>Creator</th><th>ID</th><th>Status</th><th>Since</th><th>Expiry</th><th>Days Left</th><th>Actions</th></tr></thead><tbody>';
-        const now = new Date();
-        creators.forEach(c => {
-          const name = c.user?.name || '—';
-          const cid = c.creatorId || c._id.substring(0,8);
-          const isActive = c.featured;
-          const statusBadge = isActive ? '<span class="status-badge status-active">Active</span>' : '<span class="status-badge status-expired">Expired</span>';
-          const start = c.featuredStartDate ? new Date(c.featuredStartDate).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '—';
-          const end = c.featuredEndDate ? new Date(c.featuredEndDate).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '—';
-          const daysLeft = c.featuredEndDate && isActive ? Math.max(0, Math.ceil((new Date(c.featuredEndDate) - now) / 86400000)) : 0;
-          const daysColor = daysLeft <= 3 ? 'var(--danger)' : daysLeft <= 7 ? 'var(--warning)' : 'var(--success)';
+        html += '<div class="table-wrap"><table><thead><tr><th>Creator</th><th>Position</th><th>Status</th><th>Activated</th><th>Expires</th><th>Days Left</th><th>Extensions</th><th>Actions</th></tr></thead><tbody>';
+        items.forEach(function(p) {
+          var statusBadge = p.status === 'approved' ? '<span class="status-badge status-active">Active</span>' : '<span class="status-badge status-expired">Expired</span>';
+          var start = p.startDate ? new Date(p.startDate).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+          var end = p.expiryDate ? new Date(p.expiryDate).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+          var daysColor = p.daysRemaining <= 3 ? 'var(--danger)' : p.daysRemaining <= 7 ? 'var(--warning)' : 'var(--success)';
+          var planLabel = (p.planType || '').replace('_',' #').replace('homepage ','Homepage ');
 
-          let actions = '';
-          if (isActive) {
-            actions += '<button class="btn btn-outline btn-sm" onclick="extendFeatured(\'' + c._id + '\')">+ Extend</button> ';
-            actions += '<button class="btn btn-danger btn-sm" onclick="expireFeatured(\'' + c._id + '\')">Expire</button> ';
+          var actions = '';
+          if (p.status === 'approved') {
+            actions += '<button class="btn btn-outline btn-sm" onclick="extendFeatured(\'' + p._id + '\')">+ Extend</button> ';
+            actions += '<button class="btn btn-danger btn-sm" onclick="expireFeatured(\'' + p._id + '\')">Expire</button> ';
           } else {
-            actions += '<button class="btn btn-success btn-sm" onclick="featureCreator(\'' + c._id + '\')">Renew</button> ';
+            actions += '<button class="btn btn-success btn-sm" onclick="extendFeatured(\'' + p._id + '\')">Renew</button> ';
           }
-          actions += '<button class="btn btn-outline btn-sm" style="color:var(--danger);border-color:rgba(239,68,68,0.2)" onclick="removeFeatured(\'' + c._id + '\')">Remove</button>';
+          actions += '<button class="btn btn-outline btn-sm" style="color:var(--danger);border-color:rgba(239,68,68,.2)" onclick="removeFeatured(\'' + p._id + '\')"><i class="fas fa-trash"></i></button>';
 
           html += '<tr>' +
-            '<td><strong style="color:var(--gold-light)">' + name + '</strong><br><span style="font-size:0.65rem;color:var(--text-dim)">' + (c.specialty || c.category || '') + '</span></td>' +
-            '<td style="font-size:0.72rem;color:var(--text-dim)">' + cid + '</td>' +
+            '<td><strong style="color:var(--gold-light)">' + p.creatorName + '</strong><br><span style="font-size:0.62rem;color:var(--text-dim)">' + (p.creatorId || '') + '</span></td>' +
+            '<td style="font-size:0.78rem;color:var(--gold)">' + planLabel + '</td>' +
             '<td>' + statusBadge + '</td>' +
             '<td style="font-size:0.72rem">' + start + '</td>' +
             '<td style="font-size:0.72rem">' + end + '</td>' +
-            '<td style="font-weight:600;color:' + daysColor + '">' + (isActive ? daysLeft + 'd' : '—') + '</td>' +
+            '<td style="font-weight:600;color:' + daysColor + '">' + (p.status === 'approved' ? p.daysRemaining + 'd' : '—') + '</td>' +
+            '<td style="font-size:0.72rem;text-align:center">' + (p.extensionCount || 0) + '</td>' +
             '<td style="display:flex;gap:0.2rem;flex-wrap:wrap">' + actions + '</td>' +
           '</tr>';
         });
         html += '</tbody></table></div>';
         el.innerHTML = html;
-      } catch { el.innerHTML = '<p style="color:var(--text-muted)">Failed to load featured creators.</p>'; }
+      } catch (e) { el.innerHTML = '<p style="color:var(--danger)">Failed to load: ' + (e.message || '') + '</p>'; }
     }
 
     window.featureCreator = async function(id) {
@@ -1992,22 +1988,25 @@
     window.extendFeatured = async function(id) {
       var days = prompt("Extend by how many days?", "30");
       if (!days || isNaN(days)) return;
-      try { await API.patch("/admin/featured-portfolios/" + id + "/extend", { days: parseInt(days) }); toast("Extended by " + days + " days", "success"); loadFeaturedCreators(); }
-      catch (e) { toast(e.message, "error"); }
+      try {
+        var res = await API.patch("/admin/featured-portfolios/" + id + "/extend", { days: parseInt(days) });
+        toast(res.message || "Extended!", "success");
+        loadFeaturedCreators();
+      } catch (e) { toast(e.message || "Extend failed", "error"); console.error("Extend error:", e); }
     };
     window.expireFeatured = async function(id) {
       if (!confirm("Expire this featured profile now?")) return;
       try {
         var res = await API.patch("/admin/featured-portfolios/" + id + "/expire", {});
-        toast(res.message || "Featured expired", "success");
+        toast(res.message || "Expired", "success");
         loadFeaturedCreators();
       } catch (e) { toast(e.message || "Expire failed", "error"); console.error("Expire error:", e); }
     };
     window.removeFeatured = async function(id) {
-      if (!confirm("Remove featured history completely?")) return;
+      if (!confirm("Delete this featured record permanently?")) return;
       try {
         var res = await API.delete("/admin/featured-portfolios/" + id);
-        toast(res.message || "Featured removed", "success");
+        toast(res.message || "Removed", "success");
         loadFeaturedCreators();
       } catch (e) { toast(e.message || "Remove failed", "error"); console.error("Remove error:", e); }
     };

@@ -1,5 +1,15 @@
 const mongoose = require("mongoose");
 
+const extensionSchema = new mongoose.Schema({
+  daysAdded: { type: Number, required: true },
+  previousExpiry: { type: Date },
+  newExpiry: { type: Date },
+  method: { type: String, enum: ["payment", "admin"], default: "payment" },
+  amount: { type: Number, default: 0 },
+  adminId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  timestamp: { type: Date, default: Date.now },
+});
+
 const promotionRequestSchema = new mongoose.Schema(
   {
     creator: { type: mongoose.Schema.Types.ObjectId, ref: "Creator", required: true },
@@ -21,6 +31,10 @@ const promotionRequestSchema = new mongoose.Schema(
     requestDate: { type: Date, default: Date.now },
     startDate: { type: Date },
     expiryDate: { type: Date },
+    lastExtendedDate: { type: Date },
+    lastPaymentDate: { type: Date },
+    totalDaysPurchased: { type: Number, default: 30 },
+    extensionHistory: [extensionSchema],
     adminNote: { type: String, default: "" },
   },
   { timestamps: true }
