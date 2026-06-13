@@ -85,7 +85,7 @@ export default function CreatorHome({ navigation }: any) {
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.actionsGrid}>
           {quickActions.map((a, i) => (
-            <TouchableOpacity key={i} style={styles.actionCard} activeOpacity={0.7}>
+            <TouchableOpacity key={i} style={styles.actionCard} activeOpacity={0.7} onPress={() => navigation.navigate(a.screen)}>
               <View style={styles.actionIcon}>
                 <Ionicons name={a.icon as any} size={20} color={colors.primary} />
               </View>

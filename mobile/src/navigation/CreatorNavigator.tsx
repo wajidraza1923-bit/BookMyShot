@@ -5,6 +5,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme';
 
 import CreatorHome from '../screens/creator/CreatorHome';
+import CreatorBookings from '../screens/creator/CreatorBookings';
+import CreatorLeads from '../screens/creator/CreatorLeads';
+import CreatorWallet from '../screens/creator/CreatorWallet';
 import BookingsScreen from '../screens/BookingsScreen';
 import MessagesScreen from '../screens/MessagesScreen';
 import ProfileScreen from '../screens/ProfileScreen';
@@ -39,6 +42,14 @@ export default function CreatorNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', contentStyle: { backgroundColor: colors.background } }}>
       <Stack.Screen name="CreatorTabs" component={CreatorTabs} />
+      <Stack.Screen name="CreatorBookings" component={CreatorBookings} />
+      <Stack.Screen name="CreatorLeads" component={CreatorLeads} />
+      <Stack.Screen name="CreatorPortfolio" component={ProfileScreen} />
+      <Stack.Screen name="CreatorPackages" component={ProfileScreen} />
+      <Stack.Screen name="CreatorWallet" component={CreatorWallet} />
+      <Stack.Screen name="CreatorReviews" component={ProfileScreen} />
+      <Stack.Screen name="CreatorAvailability" component={ProfileScreen} />
+      <Stack.Screen name="CreatorSettings" component={ProfileScreen} />
     </Stack.Navigator>
   );
 }
