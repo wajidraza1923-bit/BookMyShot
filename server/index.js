@@ -258,6 +258,10 @@ staticPages.forEach(page => {
   app.get(`/${page}`, (req, res) => res.sendFile(path.join(__dirname, `../public/${page}.html`)));
 });
 
+// FAQ and How It Works aliases
+app.get('/faq', (req, res) => res.redirect('/how-bookmyshot-works#faq'));
+app.get('/how-it-works', (req, res) => res.redirect('/how-bookmyshot-works'));
+
 // SPA-style fallbacks for dashboards
 // Serve exact dashboard HTML files first to avoid SPA catch-alls overriding static assets
 app.get("/creator/dashboard.html", (req, res) =>
