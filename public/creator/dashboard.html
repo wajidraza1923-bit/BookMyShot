@@ -4235,7 +4235,15 @@
     };
 
     window.payCommission = async function() {
-      var amount = window._currentCommissionDue || 0;
+      // Always fetch fresh commission data from API (single source of truth)
+      var amount = 0;
+      try {
+        var dashData = await API.get('/creator/dashboard');
+        amount = dashData.commissionDue || 0;
+      } catch (e) {
+        // Fallback to cached value if API fails
+        amount = window._currentCommissionDue || 0;
+      }
       if (amount <= 0) { toast('No commission dues!', 'success'); return; }
       try {
         var rpConfig = await API.get('/razorpay/config');
@@ -4257,7 +4265,9 @@
                 amount: amount,
               });
               toast('Commission paid successfully! ✅', 'success');
-              loadRevenue();
+              // Refresh whichever page is active
+              try { loadDashboard(); } catch(e) {}
+              try { loadRevenue(); } catch(e) {}
             } catch (e) { toast('Verification failed. Contact support.', 'error'); }
           },
           prefill: { name: (currentUser || {}).name || '' },
