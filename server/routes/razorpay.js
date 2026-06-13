@@ -72,6 +72,7 @@ router.post("/create-subscription", protect, authorize("creator"), async (req, r
     // Step 3: Save subscription ID on creator
     creator.razorpaySubscriptionId = subscription.id;
     creator.razorpayPlanId = planId;
+    creator.subscriptionPlanPrice = amount; // Lock the price this creator subscribed at
     if (effectiveTrialDays > 0) {
       creator.subscriptionStatus = "trial";
       creator.subscriptionStartDate = new Date();

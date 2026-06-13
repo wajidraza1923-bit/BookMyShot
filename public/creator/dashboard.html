@@ -3900,6 +3900,9 @@
         if (commissionDue < 0) commissionDue = 0;
         var commissionPaid = creator.commissionPaid || 0;
         var subscriptionAmount = platformConfig.subscription.monthlyPlanPrice || 0;
+        var creatorPlanPrice = creator.subscriptionPlanPrice || subscriptionAmount;
+        var renewalPrice = subscriptionAmount;
+        var priceChanged = creatorPlanPrice > 0 && creatorPlanPrice !== renewalPrice;
         // Net earnings = total revenue - commission paid (creator keeps the rest until they pay commission)
         var netEarnings = totalRevenue - commissionPaid;
 
@@ -3949,8 +3952,9 @@
               '</div>' +
             '</div>' +
             '<div style="text-align:center">' +
-              '<div style="font-size:1.4rem;font-weight:700;color:var(--gold-light)">₹' + platformConfig.subscription.monthlyPlanPrice + '</div>' +
+              '<div style="font-size:1.4rem;font-weight:700;color:var(--gold-light)">₹' + (subStatus === 'active' || subStatus === 'trial' ? creatorPlanPrice : renewalPrice) + '</div>' +
               '<div style="font-size:0.65rem;color:rgba(255,255,255,0.3)">per month</div>' +
+              (priceChanged && (subStatus === 'active' || subStatus === 'trial') ? '<div style="font-size:0.6rem;color:#f59e0b;margin-top:0.2rem">Renewal: ₹' + renewalPrice + '/mo</div>' : '') +
             '</div>' +
           '</div>' +
           (subStatus === 'expired' || subStatus === 'overdue' || subStatus === 'suspended' || !subStatus ? '<button class="btn btn-primary btn-sm" style="margin-top:0.75rem;width:100%" onclick="window.renewSubscription()"><i class="fas fa-credit-card"></i> Pay Subscription ₹' + subscriptionAmount + '</button>' : '<button class="btn btn-outline btn-sm" style="margin-top:0.75rem;width:100%" onclick="window.renewSubscription()"><i class="fas fa-credit-card"></i> Pay Subscription ₹' + subscriptionAmount + '</button>') +

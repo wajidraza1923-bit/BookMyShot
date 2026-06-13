@@ -52,6 +52,7 @@ const creatorSchema = new mongoose.Schema(
     // Subscription fields
     subscriptionPlan: { type: String, enum: ["basic"], default: "basic" },
     subscriptionAmount: { type: Number, default: 0 },
+    subscriptionPlanPrice: { type: Number, default: 0 },
     subscriptionStartDate: { type: Date },
     subscriptionEndDate: { type: Date },
     subscriptionStatus: {

@@ -99,6 +99,7 @@ router.get("/dashboard", async (req, res, next) => {
       favorites,
       subscriptionStatus: creator.subscriptionStatus || "trial",
       subscriptionExpiry: creator.subscriptionEndDate,
+      subscriptionPlanPrice: creator.subscriptionPlanPrice || 0,
       upcomingBookings: upcomingEvents.slice(0, 3).map(b => ({
         _id: b._id,
         clientName: b.clientName,
