@@ -48,10 +48,11 @@
     .sidebar-nav a { display:flex; align-items:center; gap:0.75rem; padding:0.7rem 1.5rem; color:rgba(255,255,255,0.5); text-decoration:none; font-size:0.85rem; transition:all 0.2s; border-left:3px solid transparent; }
     .sidebar-nav a:hover { background:rgba(218,175,55,0.04); color:rgba(255,255,255,0.8); }
     .sidebar-nav a.active { color:var(--gold-light); background:rgba(218,175,55,0.06); border-left-color:var(--gold); }
-    .sidebar-nav a .icon { font-size:1rem; width:22px; text-align:center; }
+    .sidebar-nav a .icon { font-size:0.85rem; width:24px; text-align:center; color:var(--gold); opacity:0.7; }
     .sidebar-nav a .badge { margin-left:auto; background:var(--gold); color:#111; font-size:0.65rem; padding:0.15rem 0.5rem; border-radius:50px; font-weight:700; }
-    .sidebar-footer { padding:1rem 1.5rem; border-top:1px solid rgba(255,255,255,0.04); display:flex; flex-direction:column; gap:0.5rem; }
-    .sidebar-footer a { color:rgba(255,255,255,0.4); text-decoration:none; font-size:0.82rem; display:flex; align-items:center; gap:0.5rem; transition:color 0.2s; }
+    .sidebar-footer { padding:0.75rem 1.5rem; border-top:1px solid rgba(255,255,255,0.04); display:flex; flex-direction:column; gap:0.25rem; }
+    .sidebar-footer a { color:rgba(255,255,255,0.4); text-decoration:none; font-size:0.82rem; display:flex; align-items:center; gap:0.75rem; padding:0.5rem 0; transition:color 0.2s; }
+    .sidebar-footer a .icon { font-size:0.85rem; width:24px; text-align:center; color:var(--gold); opacity:0.6; }
     .sidebar-footer a:hover { color:var(--gold-light); }
 
     /* ─── Main ─── */
@@ -176,38 +177,38 @@
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-logo">Book<span>MyShot</span> <span style="font-size:0.6rem;color:var(--gold);display:block;font-family:var(--font-body);margin-top:0.15rem">Super Admin</span></div>
       <nav class="sidebar-nav">
-        <a href="#" class="active" data-panel="dashboard"><span class="icon">📊</span> Dashboard</a>
-        <a href="#" data-panel="creators"><span class="icon">📸</span> Creators</a>
-        <a href="#" data-panel="users"><span class="icon">👥</span> Users</a>
-        <a href="#" data-panel="bookings"><span class="icon">📅</span> Bookings</a>
-        <a href="#" data-panel="inquiries"><span class="icon">📩</span> Inquiries</a>
-        <a href="#" data-panel="payments"><span class="icon">💰</span> Payments</a>
-        <a href="#" data-panel="commissions"><span class="icon">📈</span> Commissions</a>
-        <a href="#" data-panel="revenue"><span class="icon">💎</span> Revenue</a>
-        <a href="#" data-panel="subscriptions"><span class="icon">👑</span> Subscriptions</a>
-        <a href="#" data-panel="notifications"><span class="icon">🔔</span> Notifications</a>
-        <a href="#" data-panel="calendar"><span class="icon">📆</span> Calendar</a>
-        <a href="#" data-panel="contacts"><span class="icon">📞</span> Contacts</a>
-        <a href="#" data-panel="homepage-enquiries"><span class="icon">📝</span> Enquiries</a>
-        <a href="#" data-panel="homepage"><span class="icon">🏠</span> Homepage CMS</a>
-        <a href="#" data-panel="social-links"><span class="icon">📱</span> Social Links</a>
-        <a href="#" data-panel="promotion-requests"><span class="icon">🏆</span> Promotion Requests</a>
-        <a href="#" style="margin-top:0.75rem;padding-top:0.7rem;border-top:1px solid rgba(255,255,255,0.04)" data-panel="platform-settings"><span class="icon">⚙️</span> Platform Settings</a>
-        <a href="#" data-panel="subscription-settings"><span class="icon">💳</span> Subscription Settings</a>
-        <a href="#" data-panel="commission-settings"><span class="icon">📊</span> Commission Settings</a>
-        <a href="#" data-panel="featured-creators"><span class="icon">⭐</span> Featured Creators</a>
-        <a href="#" data-panel="search-boosts"><span class="icon">🚀</span> Search Boosts</a>
-        <a href="#" data-panel="revenue-center"><span class="icon">💰</span> Revenue Center</a>
-        <a href="#" data-panel="announcements"><span class="icon">📢</span> Announcements</a>
-        <a href="#" data-panel="finance-control"><span class="icon">🏦</span> Finance</a>
-        <a href="#" data-panel="creator-accounts"><span class="icon">👤</span> Creator Accounts</a>
-        <a href="#" data-panel="payment-settings"><span class="icon">🏧</span> Razorpay Settings</a>
-        <a href="#" data-panel="payment-requests"><span class="icon">📋</span> Payment History</a>
-        <a href="#" data-panel="audit"><span class="icon">📋</span> Audit Logs</a>
+        <a href="#" class="active" data-panel="dashboard"><span class="icon"><i class="fa-solid fa-chart-line"></i></span> Dashboard</a>
+        <a href="#" data-panel="creators"><span class="icon"><i class="fa-solid fa-camera"></i></span> Creators</a>
+        <a href="#" data-panel="users"><span class="icon"><i class="fa-solid fa-users"></i></span> Users</a>
+        <a href="#" data-panel="bookings"><span class="icon"><i class="fa-solid fa-calendar-check"></i></span> Bookings</a>
+        <a href="#" data-panel="inquiries"><span class="icon"><i class="fa-solid fa-envelope-open-text"></i></span> Inquiries</a>
+        <a href="#" data-panel="payments"><span class="icon"><i class="fa-solid fa-indian-rupee-sign"></i></span> Payments</a>
+        <a href="#" data-panel="commissions"><span class="icon"><i class="fa-solid fa-chart-pie"></i></span> Commissions</a>
+        <a href="#" data-panel="revenue"><span class="icon"><i class="fa-solid fa-gem"></i></span> Revenue</a>
+        <a href="#" data-panel="subscriptions"><span class="icon"><i class="fa-solid fa-crown"></i></span> Subscriptions</a>
+        <a href="#" data-panel="notifications"><span class="icon"><i class="fa-solid fa-bell"></i></span> Notifications</a>
+        <a href="#" data-panel="calendar"><span class="icon"><i class="fa-solid fa-calendar-days"></i></span> Calendar</a>
+        <a href="#" data-panel="contacts"><span class="icon"><i class="fa-solid fa-phone"></i></span> Contacts</a>
+        <a href="#" data-panel="homepage-enquiries"><span class="icon"><i class="fa-solid fa-clipboard-list"></i></span> Enquiries</a>
+        <a href="#" data-panel="homepage"><span class="icon"><i class="fa-solid fa-house"></i></span> Homepage CMS</a>
+        <a href="#" data-panel="social-links"><span class="icon"><i class="fa-solid fa-share-nodes"></i></span> Social Links</a>
+        <a href="#" data-panel="promotion-requests"><span class="icon"><i class="fa-solid fa-trophy"></i></span> Promotion Requests</a>
+        <a href="#" style="margin-top:0.75rem;padding-top:0.7rem;border-top:1px solid rgba(255,255,255,0.04)" data-panel="platform-settings"><span class="icon"><i class="fa-solid fa-gear"></i></span> Platform Settings</a>
+        <a href="#" data-panel="subscription-settings"><span class="icon"><i class="fa-solid fa-credit-card"></i></span> Subscription Settings</a>
+        <a href="#" data-panel="commission-settings"><span class="icon"><i class="fa-solid fa-percent"></i></span> Commission Settings</a>
+        <a href="#" data-panel="featured-creators"><span class="icon"><i class="fa-solid fa-star"></i></span> Featured Creators</a>
+        <a href="#" data-panel="search-boosts"><span class="icon"><i class="fa-solid fa-rocket"></i></span> Search Boosts</a>
+        <a href="#" data-panel="revenue-center"><span class="icon"><i class="fa-solid fa-wallet"></i></span> Revenue Center</a>
+        <a href="#" data-panel="announcements"><span class="icon"><i class="fa-solid fa-bullhorn"></i></span> Announcements</a>
+        <a href="#" data-panel="finance-control"><span class="icon"><i class="fa-solid fa-building-columns"></i></span> Finance</a>
+        <a href="#" data-panel="creator-accounts"><span class="icon"><i class="fa-solid fa-user-gear"></i></span> Creator Accounts</a>
+        <a href="#" data-panel="payment-settings"><span class="icon"><i class="fa-solid fa-money-check-dollar"></i></span> Razorpay Settings</a>
+        <a href="#" data-panel="payment-requests"><span class="icon"><i class="fa-solid fa-receipt"></i></span> Payment History</a>
+        <a href="#" data-panel="audit"><span class="icon"><i class="fa-solid fa-shield-halved"></i></span> Audit Logs</a>
       </nav>
       <div class="sidebar-footer">
-        <a href="/" target="_blank">🌐 View Site</a>
-        <a href="#" id="logoutBtn">🚪 Logout</a>
+        <a href="/" target="_blank"><span class="icon"><i class="fa-solid fa-globe"></i></span> View Site</a>
+        <a href="#" id="logoutBtn"><span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span> Logout</a>
       </div>
     </aside>
 
