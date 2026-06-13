@@ -51,6 +51,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const restoreSession = async () => {
     console.log('[Auth] Restoring session...');
     try {
+      // Test API connectivity first
+      const { testApiConnection } = require('../services/api');
+      const connTest = await testApiConnection();
+      console.log('[Auth] API connectivity:', connTest.ok ? 'OK' : 'FAILED -', connTest.message);
+
       const storedToken = await AsyncStorage.getItem('bms_token');
       const storedUser = await AsyncStorage.getItem('bms_user');
       console.log('[Auth] Stored token exists:', !!storedToken);
@@ -162,7 +167,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (!e.response) {
-        return { success: false, message: 'Network error. Check your internet connection.' };
+        // No response at all — network level failure
+        console.log('[Auth] No response object — pure network failure');
+        console.log('[Auth] Error code:', (e as any).code);
+        console.log('[Auth] Error message:', e.message);
+        return {
+          success: false,
+          message: `Cannot reach server. Please check:\n• Internet connection is active\n• Try again in a few seconds\n\nTechnical: ${e.message}`,
+        };
       }
 
       return { success: false, message };
