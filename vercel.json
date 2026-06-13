@@ -1,0 +1,30 @@
+{
+  "rewrites": [
+    { "source": "/how-bookmyshot-works", "destination": "/how-bookmyshot-works.html" },
+    { "source": "/faq", "destination": "/how-bookmyshot-works.html" },
+    { "source": "/how-it-works", "destination": "/how-bookmyshot-works.html" },
+    { "source": "/about", "destination": "/about.html" },
+    { "source": "/contact", "destination": "/contact.html" },
+    { "source": "/terms", "destination": "/terms.html" },
+    { "source": "/privacy", "destination": "/privacy.html" },
+    { "source": "/refund-policy", "destination": "/refund-policy.html" },
+    { "source": "/booking-cancellation", "destination": "/booking-cancellation.html" },
+    { "source": "/cookie-policy", "destination": "/cookie-policy.html" },
+    { "source": "/creator-guidelines", "destination": "/creator-guidelines.html" },
+    { "source": "/pricing", "destination": "/pricing.html" },
+    { "source": "/enquiry", "destination": "/enquiry.html" },
+    { "source": "/api/(.*)", "destination": "https://site--bookmyshot--ykz2mr8mzlrv.code.run/api/$1" },
+    { "source": "/creator/:path*", "destination": "/creator/index.html" },
+    { "source": "/admin/:path*", "destination": "/admin/index.html" },
+    { "source": "/user/:path*", "destination": "/user/dashboard.html" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" }
+      ]
+    }
+  ]
+}
