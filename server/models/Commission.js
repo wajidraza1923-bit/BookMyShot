@@ -12,10 +12,13 @@ const commissionSchema = new mongoose.Schema(
     creatorEarning: { type: Number, required: true },
     status: {
       type: String,
-      enum: ["pending", "paid", "cancelled"],
+      enum: ["pending", "paid", "overdue", "cancelled"],
       default: "pending",
     },
+    dueDate: { type: Date },
     paidAt: { type: Date },
+    lastReminderSent: { type: Date },
+    reminderCount: { type: Number, default: 0 },
     notes: { type: String, default: "" },
   },
   { timestamps: true }
@@ -23,5 +26,16 @@ const commissionSchema = new mongoose.Schema(
 
 commissionSchema.index({ creator: 1, status: 1 });
 commissionSchema.index({ booking: 1 });
+commissionSchema.index({ dueDate: 1, status: 1 });
+
+// Auto-set due date 30 days from creation
+commissionSchema.pre("save", function (next) {
+  if (this.isNew && !this.dueDate) {
+    const due = new Date(this.createdAt || Date.now());
+    due.setDate(due.getDate() + 30);
+    this.dueDate = due;
+  }
+  next();
+});
 
 module.exports = mongoose.model("Commission", commissionSchema);
