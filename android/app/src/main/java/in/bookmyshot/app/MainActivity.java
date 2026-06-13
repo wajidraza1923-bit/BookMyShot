@@ -5,13 +5,11 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.KeyEvent;
-import android.view.View;
 import android.view.WindowManager;
 import android.webkit.WebView;
 import android.widget.Toast;
 
 import androidx.core.view.WindowCompat;
-import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.getcapacitor.BridgeActivity;
 
@@ -22,7 +20,7 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // Set status bar to dark (matches app theme)
+        // Set status bar and nav bar to dark (matches app theme)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             getWindow().setStatusBarColor(android.graphics.Color.parseColor("#0a0806"));
             getWindow().setNavigationBarColor(android.graphics.Color.parseColor("#0a0806"));
@@ -33,35 +31,23 @@ public class MainActivity extends BridgeActivity {
             WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         }
 
-        // Keep screen on during payment flows
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
         super.onCreate(savedInstanceState);
-
-        // Handle deep link if app was opened via URL
-        handleDeepLink(getIntent());
     }
 
     @Override
     public void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
-        handleDeepLink(intent);
-    }
 
-    private void handleDeepLink(Intent intent) {
-        if (intent == null) return;
-        String action = intent.getAction();
-        Uri data = intent.getData();
-
-        if (Intent.ACTION_VIEW.equals(action) && data != null) {
-            String url = data.toString();
-            // Convert deep link to web URL if needed
-            if (url.startsWith("bookmyshot://")) {
-                url = url.replace("bookmyshot://", "https://bookmyshot.in/");
-            }
-            // Navigate the WebView to the deep link URL
-            if (bridge != null && bridge.getWebView() != null) {
-                bridge.getWebView().loadUrl(url);
+        // Handle bookmyshot:// deep links from push notifications
+        if (intent != null && Intent.ACTION_VIEW.equals(intent.getAction())) {
+            Uri data = intent.getData();
+            if (data != null && "bookmyshot".equals(data.getScheme())) {
+                String path = data.getHost() != null ? data.getHost() : "";
+                if (data.getPath() != null) path += data.getPath();
+                String url = "https://bookmyshot.in/" + path;
+                if (bridge != null && bridge.getWebView() != null) {
+                    bridge.getWebView().loadUrl(url);
+                }
             }
         }
     }
@@ -72,7 +58,6 @@ public class MainActivity extends BridgeActivity {
             WebView webView = bridge != null ? bridge.getWebView() : null;
 
             if (webView != null && webView.canGoBack()) {
-                // If WebView has history, go back
                 webView.goBack();
                 return true;
             } else {
@@ -93,7 +78,5 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onResume() {
         super.onResume();
-        // Remove keep screen on flag when resuming normally
-        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 }

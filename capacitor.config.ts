@@ -7,6 +7,7 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://bookmyshot.in',
     cleartext: false,
+    androidScheme: 'https',
   },
   plugins: {
     SplashScreen: {
