@@ -19,16 +19,19 @@ router.get("/rank-status", async (req, res, next) => {
     for (const promo of expired) {
       promo.status = "expired";
       await promo.save();
-      // Remove rank from creator
+      // Remove rank from creator (use updateOne to avoid pre-save hook)
       const creator = await Creator.findById(promo.creator).populate("user", "name email");
       if (creator) {
+        const updateFields = {};
         if (promo.planType === "homepage_featured") {
-          creator.featured = false;
+          updateFields.featured = false;
         } else if (promo.planType.startsWith("rank_")) {
           const rankNum = parseInt(promo.planType.split("_")[1], 10);
-          if (creator.rank === rankNum) creator.rank = 0;
+          if (creator.rank === rankNum) updateFields.rank = 0;
         }
-        await creator.save();
+        if (Object.keys(updateFields).length > 0) {
+          await Creator.updateOne({ _id: creator._id }, { $set: updateFields });
+        }
         // Send promotion expired email
         if (creator.user?.email) {
           emailService.sendPromotionExpired({
@@ -143,8 +146,7 @@ router.get("/featured-status", async (req, res, next) => {
       await promo.save();
       const creator = await Creator.findById(promo.creator).populate("user", "name email");
       if (creator) {
-        creator.featured = false;
-        await creator.save();
+        await Creator.updateOne({ _id: creator._id }, { $set: { featured: false } });
         if (creator.user?.email) {
           emailService.sendPromotionExpired({
             email: creator.user.email,
@@ -340,18 +342,19 @@ router.patch("/admin/:id/approve", protect, authorize("admin"), async (req, res,
     promo.expiryDate = expiry;
     await promo.save();
 
-    // Apply promotion to creator
+    // Apply promotion to creator (use updateOne to avoid pre-save hook)
     const creator = await Creator.findById(promo.creator);
     if (creator) {
+      const updateFields = {};
       if (promo.planType === "homepage_featured" || promo.planType.startsWith("featured_")) {
-        creator.featured = true;
-        creator.featuredStartDate = now;
-        creator.featuredEndDate = expiry;
+        updateFields.featured = true;
+        updateFields.featuredStartDate = now;
+        updateFields.featuredEndDate = expiry;
+        updateFields.featuredPaymentStatus = "paid";
       } else if (promo.planType.startsWith("rank_")) {
-        const rankNum = parseInt(promo.planType.split("_")[1], 10);
-        creator.rank = rankNum;
+        updateFields.rank = parseInt(promo.planType.split("_")[1], 10);
       }
-      await creator.save();
+      await Creator.updateOne({ _id: creator._id }, { $set: updateFields });
     }
 
     await auditService.logAction({
@@ -412,16 +415,19 @@ router.patch("/admin/:id/expire", protect, authorize("admin"), async (req, res, 
     promo.expiryDate = new Date();
     await promo.save();
 
-    // Remove rank from creator
+    // Remove rank from creator (use updateOne to avoid pre-save hook)
     const creator = await Creator.findById(promo.creator);
     if (creator) {
+      const updateFields = {};
       if (promo.planType === "homepage_featured") {
-        creator.featured = false;
+        updateFields.featured = false;
       } else if (promo.planType.startsWith("rank_")) {
         const rankNum = parseInt(promo.planType.split("_")[1], 10);
-        if (creator.rank === rankNum) creator.rank = 0;
+        if (creator.rank === rankNum) updateFields.rank = 0;
       }
-      await creator.save();
+      if (Object.keys(updateFields).length > 0) {
+        await Creator.updateOne({ _id: creator._id }, { $set: updateFields });
+      }
     }
 
     await auditService.logAction({
@@ -456,16 +462,13 @@ router.patch("/admin/:id/extend", protect, authorize("admin"), async (req, res, 
     if (promo.status === "expired") promo.status = "approved";
     await promo.save();
 
-    // Re-apply rank if it was expired
+    // Re-apply rank if it was expired (use updateOne to avoid pre-save hook)
     const creator = await Creator.findById(promo.creator);
     if (creator && promo.planType.startsWith("rank_")) {
       const rankNum = parseInt(promo.planType.split("_")[1], 10);
-      creator.rank = rankNum;
-      await creator.save();
+      await Creator.updateOne({ _id: creator._id }, { $set: { rank: rankNum } });
     } else if (creator && promo.planType === "homepage_featured") {
-      creator.featured = true;
-      creator.featuredEndDate = currentExpiry;
-      await creator.save();
+      await Creator.updateOne({ _id: creator._id }, { $set: { featured: true, featuredEndDate: currentExpiry } });
     }
 
     await auditService.logAction({

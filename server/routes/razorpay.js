@@ -316,14 +316,16 @@ router.post("/verify-payment", protect, async (req, res, next) => {
         expiryDate: expiry,
       });
 
+      // Use findByIdAndUpdate to avoid pre-save hook (E11000 fix)
       if (planType.startsWith("featured_") || planType === "homepage_featured") {
-        creator.featured = true;
-        creator.featuredStartDate = now;
-        creator.featuredEndDate = expiry;
+        await Creator.findByIdAndUpdate(creator._id, {
+          $set: { featured: true, featuredStartDate: now, featuredEndDate: expiry, featuredPaymentStatus: "paid" }
+        });
       } else if (planType.startsWith("rank_")) {
-        creator.rank = parseInt(planType.split("_")[1], 10);
+        await Creator.findByIdAndUpdate(creator._id, {
+          $set: { rank: parseInt(planType.split("_")[1], 10) }
+        });
       }
-      await creator.save();
 
       await Notification.create({
         user: req.user._id,
