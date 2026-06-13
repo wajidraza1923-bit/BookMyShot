@@ -536,4 +536,30 @@ router.put("/change-password", protect, async (req, res, next) => {
   }
 });
 
+// ═══════════════════════════════════════════════════════════════
+// ACCOUNT DELETION
+// ═══════════════════════════════════════════════════════════════
+
+// DELETE: Soft-delete user account (marks for deletion, actual deletion after 30 days)
+router.delete("/account", protect, async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    // Soft delete: mark account as deleted but preserve data for 30 days
+    user.accountDeletedAt = new Date();
+    user.accountDeleteRequested = true;
+    await user.save();
+
+    // If creator, mark as suspended
+    if (user.role === "creator") {
+      await Creator.updateOne({ user: user._id }, { $set: { subscriptionStatus: "suspended", status: "rejected" } });
+    }
+
+    res.json({ success: true, message: "Account marked for deletion. Your data will be permanently removed after 30 days. Contact support to cancel." });
+  } catch (e) {
+    next(e);
+  }
+});
+
 module.exports = router;

@@ -21,6 +21,8 @@ const userSchema = new mongoose.Schema(
     otpAttempts: { type: Number, default: 0 },
     otpLastSent: Date,
     favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: "Creator" }],
+    accountDeleteRequested: { type: Boolean, default: false },
+    accountDeletedAt: { type: Date },
   },
   { timestamps: true }
 );

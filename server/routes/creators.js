@@ -15,7 +15,7 @@ const router = express.Router();
 router.get("/", async (req, res, next) => {
   try {
     const { city, category, budget, search, featured } = req.query;
-    const filter = { status: "approved" };
+    const filter = { status: "approved", subscriptionStatus: { $in: ["active", "trial"] } };
     if (city) filter.city = new RegExp(city, "i");
     if (category) filter.category = category;
     if (featured === "true") filter.featured = true;
