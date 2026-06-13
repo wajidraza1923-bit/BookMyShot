@@ -1997,13 +1997,19 @@
     };
     window.expireFeatured = async function(id) {
       if (!confirm("Expire this featured profile now?")) return;
-      try { await API.patch("/admin/featured-portfolios/" + id + "/expire", {}); toast("Featured expired", "success"); loadFeaturedCreators(); }
-      catch (e) { toast(e.message, "error"); }
+      try {
+        var res = await API.patch("/admin/featured-portfolios/" + id + "/expire", {});
+        toast(res.message || "Featured expired", "success");
+        loadFeaturedCreators();
+      } catch (e) { toast(e.message || "Expire failed", "error"); console.error("Expire error:", e); }
     };
     window.removeFeatured = async function(id) {
       if (!confirm("Remove featured history completely?")) return;
-      try { await API.delete("/admin/featured-portfolios/" + id); toast("Featured removed", "success"); loadFeaturedCreators(); }
-      catch (e) { toast(e.message, "error"); }
+      try {
+        var res = await API.delete("/admin/featured-portfolios/" + id);
+        toast(res.message || "Featured removed", "success");
+        loadFeaturedCreators();
+      } catch (e) { toast(e.message || "Remove failed", "error"); console.error("Remove error:", e); }
     };
 
     // ─── SEARCH BOOSTS ──────────────────────────────────────────────

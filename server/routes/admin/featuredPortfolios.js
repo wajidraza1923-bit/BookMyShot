@@ -116,8 +116,14 @@ router.patch("/:creatorId/extend", async (req, res, next) => {
 // PATCH /:creatorId/expire - Force expire now
 router.patch("/:creatorId/expire", async (req, res, next) => {
   try {
+    console.log("[Featured] Expire request for:", req.params.creatorId);
     const creator = await Creator.findById(req.params.creatorId);
     if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
+
+    creator.featured = false;
+    creator.featuredEndDate = new Date();
+    await creator.save();
+    console.log("[Featured] Expired successfully:", creator._id);
 
     creator.featured = false;
     creator.featuredEndDate = new Date();
@@ -141,6 +147,7 @@ router.patch("/:creatorId/expire", async (req, res, next) => {
 // DELETE /:creatorId - Remove from featured completely
 router.delete("/:creatorId", async (req, res, next) => {
   try {
+    console.log("[Featured] Remove request for:", req.params.creatorId);
     const creator = await Creator.findById(req.params.creatorId);
     if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
 
@@ -149,6 +156,7 @@ router.delete("/:creatorId", async (req, res, next) => {
     creator.featuredEndDate = undefined;
     creator.featuredPaymentStatus = "none";
     await creator.save();
+    console.log("[Featured] Removed successfully:", creator._id);
 
     await auditService.logAction({ adminId: req.user._id, adminName: req.user.name || "", action: "remove_featured", target: "creator", targetId: creator._id.toString(), previousValues: { featured: true }, newValues: { featured: false }, ip: req.ip });
 
