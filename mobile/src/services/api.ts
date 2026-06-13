@@ -101,9 +101,15 @@ export async function testApiConnection(): Promise<{ ok: boolean; message: strin
       method: 'GET',
       headers: { 'Accept': 'application/json' },
     });
-    const data = await response.json();
-    console.log('[API] Connection test:', response.status, data.success ? 'SUCCESS' : 'FAILED');
-    return { ok: response.ok, message: `Status ${response.status}` };
+    const text = await response.text();
+    try {
+      const data = JSON.parse(text);
+      console.log('[API] Connection test:', response.status, data.success ? 'SUCCESS' : 'FAILED');
+      return { ok: response.ok && data.success, message: `Status ${response.status}` };
+    } catch {
+      console.log('[API] Connection test: non-JSON response:', text.substring(0, 100));
+      return { ok: false, message: 'Server returned non-JSON response' };
+    }
   } catch (e: any) {
     console.log('[API] Connection test FAILED:', e.message);
     return { ok: false, message: e.message };
