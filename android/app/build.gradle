@@ -17,8 +17,6 @@ android {
 
     signingConfigs {
         release {
-            // Set these via environment variables or local.properties
-            // DO NOT hardcode keystore passwords
             if (project.hasProperty('BOOKMYSHOT_KEYSTORE_FILE')) {
                 storeFile file(project.property('BOOKMYSHOT_KEYSTORE_FILE'))
                 storePassword project.property('BOOKMYSHOT_KEYSTORE_PASSWORD')
@@ -42,21 +40,6 @@ android {
                 signingConfig signingConfigs.release
             }
         }
-    }
-
-    // Generate unique version code from version name
-    applicationVariants.all { variant ->
-        variant.outputs.all {
-            def appName = "BookMyShot"
-            def versionName = variant.versionName
-            def buildType = variant.buildType.name
-            outputFileName = "${appName}-v${versionName}-${buildType}.${variant.outputs[0].outputFile.extension}"
-        }
-    }
-
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
     }
 }
 
