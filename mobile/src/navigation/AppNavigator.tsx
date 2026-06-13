@@ -2,12 +2,15 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography } from '../theme';
+import { colors } from '../theme';
 
 import HomeScreen from '../screens/HomeScreen';
 import SearchScreen from '../screens/SearchScreen';
 import BookingsScreen from '../screens/BookingsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import LoginScreen from '../screens/LoginScreen';
+import RegisterScreen from '../screens/RegisterScreen';
+import CreatorProfileScreen from '../screens/CreatorProfileScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -21,9 +24,10 @@ function HomeTabs() {
           backgroundColor: '#0F0F0F',
           borderTopColor: 'rgba(255,255,255,0.06)',
           borderTopWidth: 1,
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 6,
+          height: 64,
+          paddingBottom: 10,
+          paddingTop: 8,
+          elevation: 0,
         },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
@@ -32,7 +36,7 @@ function HomeTabs() {
           fontWeight: '500',
           letterSpacing: 0.3,
         },
-        tabBarIcon: ({ focused, color, size }) => {
+        tabBarIcon: ({ focused, color }) => {
           let iconName: string = 'home';
           if (route.name === 'Home') iconName = focused ? 'home' : 'home-outline';
           else if (route.name === 'Discover') iconName = focused ? 'compass' : 'compass-outline';
@@ -61,6 +65,13 @@ export default function AppNavigator() {
     >
       <Stack.Screen name="Main" component={HomeTabs} />
       <Stack.Screen name="Search" component={SearchScreen} />
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen
+        name="CreatorProfile"
+        component={CreatorProfileScreen}
+        options={{ animation: 'slide_from_bottom' }}
+      />
     </Stack.Navigator>
   );
 }
