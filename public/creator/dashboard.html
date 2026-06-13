@@ -1129,7 +1129,7 @@
 
   </style>
   <script src="/js/ga.js"></script>
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
 </head>
 <body>
 
@@ -1607,6 +1607,16 @@
         loadDashboard();
         loadNotifications();
       } catch (e) {
+        // Show error state with retry button instead of leaving skeletons forever
+        var dashEl = document.getElementById('dashContent');
+        if (dashEl) {
+          dashEl.innerHTML = '<div style="text-align:center;padding:2.5rem 1rem">' +
+            '<div style="width:56px;height:56px;border-radius:50%;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-size:1.4rem">⚠️</div>' +
+            '<h3 style="color:var(--cream);font-size:0.95rem;margin-bottom:0.4rem">Failed to Load Dashboard</h3>' +
+            '<p style="font-size:0.78rem;color:rgba(255,255,255,0.4);margin-bottom:1.25rem;max-width:280px;margin-left:auto;margin-right:auto">' + (e.message || 'Network error. Check your connection and try again.') + '</p>' +
+            '<button onclick="window.location.reload()" style="padding:0.5rem 1.5rem;background:linear-gradient(135deg,rgba(212,175,55,0.15),rgba(212,175,55,0.05));border:1px solid rgba(212,175,55,0.3);color:var(--gold);border-radius:10px;font-size:0.8rem;font-weight:500;cursor:pointer"><i class="fas fa-redo" style="margin-right:0.4rem"></i>Retry</button>' +
+          '</div>';
+        }
         toast(e.message || 'Failed to load profile', 'error');
       }
     }

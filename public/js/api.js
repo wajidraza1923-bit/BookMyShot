@@ -29,10 +29,14 @@ const API = {
     if (token) headers.Authorization = `Bearer ${token}`;
 
     const maxAttempts = options.retries || 2;
+    const timeoutMs = options.timeout || 15000;
     let attempt = 0;
     while (attempt < maxAttempts) {
       try {
-        const res = await fetch(`${this.base}/api${url}`, { ...options, headers });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+        const res = await fetch(`${this.base}/api${url}`, { ...options, headers, signal: controller.signal });
+        clearTimeout(timeoutId);
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
@@ -44,10 +48,16 @@ const API = {
         return data;
       } catch (error) {
         attempt += 1;
-        if (attempt >= maxAttempts || !/failed|network|timeout/i.test(error.message || "")) {
+        if (attempt >= maxAttempts || (error.status && error.status < 500)) {
           throw error;
         }
-        await new Promise((resolve) => setTimeout(resolve, 300));
+        // Retry on network errors, timeouts, and 5xx
+        const errText = (error.message || "") + " " + (error.name || "");
+        if (/abort|network|timeout|failed|fetch/i.test(errText)) {
+          await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
+        } else {
+          throw error;
+        }
       }
     }
   },
@@ -60,11 +70,15 @@ const API = {
 
   async upload(url, formData) {
     const token = this.getToken();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
     const res = await fetch(`${this.base}/api${url}`, {
       method: "POST",
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || "Upload failed");
     return data;
