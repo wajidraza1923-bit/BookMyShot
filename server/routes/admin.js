@@ -618,6 +618,90 @@ router.post("/subscription-alerts", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// POST: Trigger promotion/featured expiry reminders (admin or cron job)
+router.post("/promotion-alerts", async (req, res, next) => {
+  try {
+    const emailService = require("../services/emailService");
+    const PromotionRequest = require("../models/PromotionRequest");
+    const now = new Date();
+    let sent = 0;
+
+    const activePromos = await PromotionRequest.find({ status: "approved" })
+      .populate({ path: "creator", populate: { path: "user", select: "name email" } });
+
+    for (const promo of activePromos) {
+      if (!promo.expiryDate || !promo.creator?.user?.email) continue;
+      const daysLeft = Math.ceil((new Date(promo.expiryDate) - now) / 86400000);
+
+      if (daysLeft <= 0) {
+        // Expired — expire it and send notification
+        promo.status = "expired";
+        await promo.save();
+        await Creator.updateOne({ _id: promo.creator._id }, { $set: { featured: false } });
+
+        await emailService.sendPromotionExpired({
+          email: promo.creator.user.email,
+          name: promo.creator.user.name,
+          planType: promo.planType,
+          creatorId: promo.creator._id,
+          userId: promo.creator.user._id,
+        }).catch(() => {});
+
+        await Notification.create({
+          user: promo.creator.user._id,
+          type: "promotion",
+          title: "📋 Promotion Expired",
+          message: `Your ${promo.planType} promotion has expired. Renew to maintain visibility.`,
+        });
+        sent++;
+
+      } else if ([7, 3, 1].includes(daysLeft)) {
+        // Reminder — check if we already sent today
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const existing = await Notification.findOne({
+          user: promo.creator.user._id,
+          type: "promotion",
+          title: { $regex: "expires in " + daysLeft },
+          createdAt: { $gte: today },
+        });
+
+        if (!existing) {
+          await emailService.sendEmail({
+            to: promo.creator.user.email,
+            subject: `⏰ Your ${promo.planType} expires in ${daysLeft} day${daysLeft > 1 ? 's' : ''} — BookMyShot`,
+            html: `<div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:2rem;background:#111;color:#f6eee7;border-radius:12px">
+              <h2 style="color:${daysLeft <= 1 ? '#ef4444' : '#DAAF37'};margin:0 0 1rem">⏰ Promotion Expiring Soon</h2>
+              <p style="color:#b9aa98">Hi ${promo.creator.user.name},</p>
+              <p style="color:#d4c8bc">Your <strong style="color:#DAAF37">${promo.planType}</strong> promotion expires in <strong>${daysLeft} day${daysLeft > 1 ? 's' : ''}</strong>.</p>
+              <table style="width:100%;margin:1rem 0;font-size:0.85rem;border-collapse:collapse">
+                <tr><td style="padding:0.4rem 0;color:#8a7e72">Promotion</td><td style="color:#f6eee7;text-align:right">${promo.planType}</td></tr>
+                <tr><td style="padding:0.4rem 0;color:#8a7e72">Expires</td><td style="color:#ef4444;text-align:right;font-weight:600">${new Date(promo.expiryDate).toLocaleDateString("en-IN")}</td></tr>
+                <tr><td style="padding:0.4rem 0;color:#8a7e72">Days Left</td><td style="color:${daysLeft <= 1 ? '#ef4444' : '#f59e0b'};text-align:right;font-weight:600">${daysLeft}</td></tr>
+              </table>
+              <p style="color:#8a7e72;font-size:0.8rem">Renew from your Creator Dashboard to maintain visibility.</p>
+            </div>`,
+            type: "other",
+            userId: promo.creator.user._id,
+            creatorId: promo.creator._id,
+            meta: { action: "promotion_expiry_reminder", daysLeft, planType: promo.planType },
+          }).catch(() => {});
+
+          await Notification.create({
+            user: promo.creator.user._id,
+            type: "promotion",
+            title: `⏰ Promotion expires in ${daysLeft} day${daysLeft > 1 ? 's' : ''}`,
+            message: `Your ${promo.planType} promotion expires on ${new Date(promo.expiryDate).toLocaleDateString("en-IN")}. Renew to stay visible.`,
+          });
+          sent++;
+        }
+      }
+    }
+
+    await logAction(req.user._id, "promotion_alerts", "system", "", `Sent ${sent} promotion alerts`, req.ip);
+    res.json({ success: true, sent });
+  } catch (e) { next(e); }
+});
+
 // POST: Send broadcast to all users or creators
 router.post("/broadcast", async (req, res, next) => {
   try {
