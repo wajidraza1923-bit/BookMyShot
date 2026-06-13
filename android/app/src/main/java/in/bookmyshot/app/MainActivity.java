@@ -43,7 +43,7 @@ public class MainActivity extends BridgeActivity {
     }
 
     @Override
-    protected void onNewIntent(Intent intent) {
+    public void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         handleDeepLink(intent);
     }
@@ -91,7 +91,7 @@ public class MainActivity extends BridgeActivity {
     }
 
     @Override
-    protected void onResume() {
+    public void onResume() {
         super.onResume();
         // Remove keep screen on flag when resuming normally
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
