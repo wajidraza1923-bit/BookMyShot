@@ -10,6 +10,8 @@ import CreatorLeads from '../screens/creator/CreatorLeads';
 import CreatorWallet from '../screens/creator/CreatorWallet';
 import CreatorProfile from '../screens/creator/CreatorProfile';
 import CreatorNotifications from '../screens/creator/CreatorNotifications';
+import CreatorCalendar from '../screens/creator/CreatorCalendar';
+import CreatorAvailability from '../screens/creator/CreatorAvailability';
 import BookingsScreen from '../screens/BookingsScreen';
 import MessagesScreen from '../screens/MessagesScreen';
 import ProfileScreen from '../screens/ProfileScreen';
@@ -50,9 +52,10 @@ export default function CreatorNavigator() {
       <Stack.Screen name="CreatorPackages" component={CreatorProfile} />
       <Stack.Screen name="CreatorWallet" component={CreatorWallet} />
       <Stack.Screen name="CreatorReviews" component={CreatorNotifications} />
-      <Stack.Screen name="CreatorAvailability" component={CreatorProfile} />
+      <Stack.Screen name="CreatorAvailability" component={CreatorAvailability} />
       <Stack.Screen name="CreatorSettings" component={CreatorProfile} />
       <Stack.Screen name="CreatorNotifications" component={CreatorNotifications} />
+      <Stack.Screen name="CreatorCalendar" component={CreatorCalendar} />
     </Stack.Navigator>
   );
 }
