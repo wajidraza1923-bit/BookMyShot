@@ -702,6 +702,145 @@ router.post("/promotion-alerts", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// POST: Trigger commission reminders and auto-suspend overdue creators
+router.post("/commission-alerts", async (req, res, next) => {
+  try {
+    const emailService = require("../services/emailService");
+    const Commission = require("../models/Commission");
+    const now = new Date();
+    let sent = 0;
+    let suspended = 0;
+
+    const pendingCommissions = await Commission.find({ status: { $in: ["pending", "overdue"] } })
+      .populate({ path: "creator", populate: { path: "user", select: "name email" } })
+      .populate("booking", "clientName eventType");
+
+    for (const comm of pendingCommissions) {
+      if (!comm.dueDate || !comm.creator?.user?.email) continue;
+      const daysUntilDue = Math.ceil((new Date(comm.dueDate) - now) / 86400000);
+
+      // Auto-suspend if overdue (past due date)
+      if (daysUntilDue < 0) {
+        // Mark as overdue
+        if (comm.status !== "overdue") {
+          comm.status = "overdue";
+          await comm.save();
+        }
+
+        // Suspend creator if overdue more than 0 days (immediate after due date)
+        const creator = comm.creator;
+        if (creator.subscriptionStatus !== "suspended") {
+          await Creator.updateOne({ _id: creator._id }, { $set: { subscriptionStatus: "suspended" } });
+
+          await emailService.sendEmail({
+            to: creator.user.email,
+            subject: "🚫 Account Suspended — Unpaid Commission",
+            html: `<div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:2rem;background:#111;color:#f6eee7;border-radius:12px">
+              <h2 style="color:#ef4444;margin:0 0 1rem">🚫 Account Suspended</h2>
+              <p style="color:#b9aa98">Hello ${creator.user.name},</p>
+              <p style="color:#d4c8bc">Your account has been temporarily suspended because the commission payment was not completed within the required period.</p>
+              <table style="width:100%;margin:1rem 0;font-size:0.85rem;border-collapse:collapse">
+                <tr><td style="padding:0.4rem 0;color:#8a7e72">Outstanding Amount</td><td style="color:#ef4444;text-align:right;font-weight:700">₹${comm.commissionAmount}</td></tr>
+                <tr><td style="padding:0.4rem 0;color:#8a7e72">Booking</td><td style="color:#f6eee7;text-align:right">${comm.booking?.clientName || '—'} (${comm.booking?.eventType || '—'})</td></tr>
+                <tr><td style="padding:0.4rem 0;color:#8a7e72">Due Date</td><td style="color:#ef4444;text-align:right">${new Date(comm.dueDate).toLocaleDateString("en-IN")}</td></tr>
+                <tr><td style="padding:0.4rem 0;color:#8a7e72">Suspended On</td><td style="color:#f6eee7;text-align:right">${now.toLocaleDateString("en-IN")}</td></tr>
+              </table>
+              <p style="color:#d4c8bc;font-size:0.85rem">Please complete payment to reactivate your account. All your data (listings, leads, bookings) is safe.</p>
+            </div>`,
+            type: "other",
+            userId: creator.user._id,
+            creatorId: creator._id,
+            meta: { action: "commission_suspension", amount: comm.commissionAmount },
+          }).catch(() => {});
+
+          await Notification.create({ user: creator.user._id, type: "payment", title: "🚫 Account Suspended", message: `Unpaid commission of ₹${comm.commissionAmount}. Pay to reactivate.` });
+          suspended++;
+        }
+        continue;
+      }
+
+      // Send reminders at 7, 5, 3, 1 days before due
+      if ([7, 5, 3, 1].includes(daysUntilDue)) {
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const alreadySent = await Notification.findOne({
+          user: comm.creator.user._id,
+          type: "payment",
+          title: { $regex: "Commission due in " + daysUntilDue },
+          createdAt: { $gte: today },
+        });
+
+        if (!alreadySent) {
+          await emailService.sendEmail({
+            to: comm.creator.user.email,
+            subject: `⏰ Commission due in ${daysUntilDue} day${daysUntilDue > 1 ? 's' : ''} — ₹${comm.commissionAmount}`,
+            html: `<div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:2rem;background:#111;color:#f6eee7;border-radius:12px">
+              <h2 style="color:${daysUntilDue <= 1 ? '#ef4444' : '#f59e0b'};margin:0 0 1rem">⏰ Commission Payment Due</h2>
+              <p style="color:#b9aa98">Hi ${comm.creator.user.name},</p>
+              <p style="color:#d4c8bc">Your commission payment of <strong style="color:#DAAF37">₹${comm.commissionAmount}</strong> is due in <strong>${daysUntilDue} day${daysUntilDue > 1 ? 's' : ''}</strong>.</p>
+              <table style="width:100%;margin:1rem 0;font-size:0.85rem;border-collapse:collapse">
+                <tr><td style="padding:0.4rem 0;color:#8a7e72">Amount</td><td style="color:#DAAF37;text-align:right;font-weight:600">₹${comm.commissionAmount}</td></tr>
+                <tr><td style="padding:0.4rem 0;color:#8a7e72">Booking</td><td style="color:#f6eee7;text-align:right">${comm.booking?.clientName || '—'}</td></tr>
+                <tr><td style="padding:0.4rem 0;color:#8a7e72">Due Date</td><td style="color:#ef4444;text-align:right">${new Date(comm.dueDate).toLocaleDateString("en-IN")}</td></tr>
+              </table>
+              <p style="color:#8a7e72;font-size:0.8rem">Failure to pay before the due date will result in account suspension.</p>
+            </div>`,
+            type: "other",
+            userId: comm.creator.user._id,
+            creatorId: comm.creator._id,
+            meta: { action: "commission_reminder", daysUntilDue, amount: comm.commissionAmount },
+          }).catch(() => {});
+
+          await Notification.create({ user: comm.creator.user._id, type: "payment", title: `⏰ Commission due in ${daysUntilDue} day${daysUntilDue > 1 ? 's' : ''}`, message: `₹${comm.commissionAmount} commission payment due on ${new Date(comm.dueDate).toLocaleDateString("en-IN")}.` });
+          comm.lastReminderSent = now;
+          comm.reminderCount = (comm.reminderCount || 0) + 1;
+          await comm.save();
+          sent++;
+        }
+      }
+    }
+
+    await logAction(req.user._id, "commission_alerts", "system", "", `Sent ${sent} reminders, suspended ${suspended} creators`, req.ip);
+    res.json({ success: true, sent, suspended });
+  } catch (e) { next(e); }
+});
+
+// POST: Reactivate a suspended creator (admin only)
+router.post("/creators/:id/reactivate", async (req, res, next) => {
+  try {
+    const emailService = require("../services/emailService");
+    const creator = await Creator.findById(req.params.id).populate("user", "name email");
+    if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
+
+    if (creator.subscriptionStatus !== "suspended") {
+      return res.status(400).json({ success: false, message: "Creator is not suspended" });
+    }
+
+    await Creator.updateOne({ _id: creator._id }, { $set: { subscriptionStatus: "active" } });
+
+    if (creator.user?.email) {
+      await emailService.sendEmail({
+        to: creator.user.email,
+        subject: "✅ Account Reactivated — BookMyShot",
+        html: `<div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:2rem;background:#111;color:#f6eee7;border-radius:12px">
+          <h2 style="color:#10b981;margin:0 0 1rem">✅ Account Reactivated</h2>
+          <p style="color:#b9aa98">Hello ${creator.user.name},</p>
+          <p style="color:#d4c8bc">Your BookMyShot creator account has been reactivated by our team. All your data (listings, leads, bookings, promotions) remains intact.</p>
+          <p style="color:#d4c8bc">You can now access all features from your Creator Dashboard.</p>
+        </div>`,
+        type: "other",
+        userId: creator.user._id,
+        creatorId: creator._id,
+        meta: { action: "account_reactivated" },
+      }).catch(() => {});
+    }
+
+    await Notification.create({ user: creator.user._id, type: "info", title: "✅ Account Reactivated", message: "Your account has been reactivated. All features are restored." });
+    await logAction(req.user._id, "reactivate_creator", "creator", creator._id.toString(), "Account reactivated from suspended", req.ip);
+
+    res.json({ success: true, message: "Creator reactivated" });
+  } catch (e) { next(e); }
+});
+
 // POST: Send broadcast to all users or creators
 router.post("/broadcast", async (req, res, next) => {
   try {
