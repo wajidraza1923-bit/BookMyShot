@@ -16,11 +16,13 @@ const protect = async (req, res, next) => {
     return res.status(401).json({ success: false, message: "Not authorized" });
   }
 
+  if (!process.env.JWT_SECRET) {
+    console.error("[AUTH] CRITICAL: JWT_SECRET is not set!");
+    return res.status(500).json({ success: false, message: "Server configuration error" });
+  }
+
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (!process.env.JWT_SECRET) {
-      return res.status(500).json({ success: false, message: "Server configuration error" });
-    }
     req.user = await User.findById(decoded.id).select("-password");
     if (!req.user) {
       return res.status(401).json({ success: false, message: "User not found" });

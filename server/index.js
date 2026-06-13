@@ -1,4 +1,21 @@
 require("dotenv").config();
+
+// ═══ STARTUP VALIDATION ═══
+// Check required environment variables immediately
+const REQUIRED_ENV = ['JWT_SECRET', 'MONGODB_URI'];
+const missing = REQUIRED_ENV.filter(key => !process.env[key]);
+if (missing.length > 0) {
+  console.error('═══════════════════════════════════════════════════════');
+  console.error('FATAL: Missing required environment variables:');
+  missing.forEach(key => console.error(`  ✗ ${key}`));
+  console.error('');
+  console.error('For local development: Create a .env file with these values.');
+  console.error('For production: Set them in your hosting platform (Northflank).');
+  console.error('See .env.example for reference.');
+  console.error('═══════════════════════════════════════════════════════');
+  process.exit(1);
+}
+
 const express = require("express");
 const path = require("path");
 const cors = require("cors");
