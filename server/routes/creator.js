@@ -115,6 +115,10 @@ router.get("/dashboard", async (req, res, next) => {
         status: i.status,
         createdAt: i.createdAt,
       })),
+      // Commission data
+      commissionPaid: creator.commissionPaid || 0,
+      commissionTotal: paidBookings.reduce((s, b) => s + (b.commissionAmount || 0), 0),
+      commissionDue: Math.max(0, paidBookings.reduce((s, b) => s + (b.commissionAmount || 0), 0) - (creator.commissionPaid || 0)),
     });
   } catch (e) {
     next(e);
