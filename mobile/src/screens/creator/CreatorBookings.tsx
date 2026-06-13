@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, Image } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, Image, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, radius } from '../../theme';
 import api from '../../services/api';
@@ -27,6 +27,15 @@ export default function CreatorBookings({ navigation }: any) {
     if (tab === 'done') return b.status === 'Completed';
     return false;
   });
+
+  const updateBooking = async (id: string, status: string) => {
+    try {
+      await api.patch(`/bookings/${id}/status`, { status });
+      await load(); // Refresh list
+    } catch (e: any) {
+      Alert.alert('Error', e.response?.data?.message || 'Failed to update');
+    }
+  };
 
   const getColor = (s: string) => {
     if (s === 'Completed') return colors.success;
@@ -74,6 +83,12 @@ export default function CreatorBookings({ navigation }: any) {
                 <Text style={styles.cardAmount}>₹{(item.amount || 0).toLocaleString('en-IN')}</Text>
                 {item.eventLocation && <Text style={styles.cardLocation}><Ionicons name="location-outline" size={11} color={colors.textMuted} /> {item.eventLocation}</Text>}
               </View>
+              {item.status === 'Booking Created' && (
+                <View style={styles.actionRow}>
+                  <TouchableOpacity style={styles.rejectBtn} onPress={() => updateBooking(item._id, 'rejected')}><Text style={styles.rejectText}>Reject</Text></TouchableOpacity>
+                  <TouchableOpacity style={styles.acceptBtn} onPress={() => updateBooking(item._id, 'Creator Accepted')}><Text style={styles.acceptText}>Accept</Text></TouchableOpacity>
+                </View>
+              )}
             </View>
           )}
         />
@@ -103,6 +118,11 @@ const styles = StyleSheet.create({
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.md, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border },
   cardAmount: { ...typography.headlineSm, color: colors.primary },
   cardLocation: { ...typography.caption, color: colors.textMuted },
+  actionRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
+  rejectBtn: { flex: 1, paddingVertical: spacing.sm + 2, alignItems: 'center', borderRadius: radius.sm, backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.2)' },
+  rejectText: { ...typography.labelMd, color: colors.error, fontWeight: '600' },
+  acceptBtn: { flex: 1, paddingVertical: spacing.sm + 2, alignItems: 'center', borderRadius: radius.sm, backgroundColor: colors.primary },
+  acceptText: { ...typography.labelMd, color: colors.textInverse, fontWeight: '600' },
   empty: { alignItems: 'center', paddingTop: spacing['4xl'] },
   emptyText: { ...typography.bodyMd, color: colors.textMuted, marginTop: spacing.md },
 });
