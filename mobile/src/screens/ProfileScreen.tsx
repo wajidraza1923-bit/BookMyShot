@@ -13,8 +13,12 @@ export default function ProfileScreen({ navigation }: any) {
   }, []);
 
   const loadUser = async () => {
-    const stored = await AsyncStorage.getItem('bms_user');
-    if (stored) setUser(JSON.parse(stored));
+    try {
+      const stored = await AsyncStorage.getItem('bms_user');
+      if (stored) setUser(JSON.parse(stored));
+    } catch (e) {
+      // Silently handle - user stays null (guest mode)
+    }
   };
 
   const handleLogout = async () => {
@@ -95,6 +99,28 @@ export default function ProfileScreen({ navigation }: any) {
             </TouchableOpacity>
           </>
         )}
+      </View>
+
+      {/* Stats Row */}
+      {user && (
+        <View style={styles.statsRow}>
+          <View style={styles.statItem}><Text style={styles.statValue}>3</Text><Text style={styles.statLabel}>Bookings</Text></View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}><Text style={styles.statValue}>8</Text><Text style={styles.statLabel}>Saved</Text></View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}><Text style={styles.statValue}>2</Text><Text style={styles.statLabel}>Reviews</Text></View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}><Text style={styles.statValue}>150</Text><Text style={styles.statLabel}>Points</Text></View>
+        </View>
+      )}
+
+      {/* Referral Banner */}
+      <View style={styles.referralBanner}>
+        <View style={styles.referralContent}>
+          <Text style={styles.referralTitle}>Refer & Earn ₹2000</Text>
+          <Text style={styles.referralSubtitle}>Share BookMyShot with friends</Text>
+        </View>
+        <TouchableOpacity style={styles.referralBtn}><Text style={styles.referralBtnText}>Invite</Text></TouchableOpacity>
       </View>
 
       {/* Menu Sections */}
@@ -185,6 +211,17 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
   },
   signInText: { ...typography.labelLg, color: colors.textInverse, fontWeight: '600' },
+  statsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', marginHorizontal: spacing.xl, backgroundColor: colors.surface, borderRadius: radius.lg, paddingVertical: spacing.lg, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.lg },
+  statItem: { alignItems: 'center' },
+  statValue: { ...typography.headlineLg, color: colors.text },
+  statLabel: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
+  statDivider: { width: 1, height: 28, backgroundColor: colors.border },
+  referralBanner: { flexDirection: 'row', alignItems: 'center', marginHorizontal: spacing.xl, backgroundColor: colors.primaryMuted, borderWidth: 1, borderColor: colors.borderGold, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.sm },
+  referralContent: { flex: 1 },
+  referralTitle: { ...typography.headlineSm, color: colors.primary },
+  referralSubtitle: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
+  referralBtn: { backgroundColor: colors.primary, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.sm },
+  referralBtnText: { ...typography.labelMd, color: colors.textInverse, fontWeight: '600' },
   section: { marginTop: spacing.xl, paddingHorizontal: spacing.xl },
   sectionTitle: {
     ...typography.labelMd,
