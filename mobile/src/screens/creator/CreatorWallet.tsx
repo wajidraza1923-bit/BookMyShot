@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, radius } from '../../theme';
 import api from '../../services/api';
+import { getRazorpayConfig, createCommissionOrder, openRazorpayOrder, verifyCommissionPayment, isNativeRazorpayAvailable, getCreatorEarnings } from '../../services/payment';
 
 export default function CreatorWallet({ navigation }: any) {
   const [data, setData] = useState<any>({ totalEarnings: 0, monthlyEarnings: 0, commissionDue: 0, commissionPaid: 0, pendingPayments: 0, subscriptionStatus: '', subscriptionPlanPrice: 0 });
@@ -18,6 +19,33 @@ export default function CreatorWallet({ navigation }: any) {
 
   useEffect(() => { load(); }, []);
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
+
+  // ═══ PAY COMMISSION (same as website - Razorpay Checkout) ═══
+  const handlePayCommission = async () => {
+    if (!data.commissionDue || data.commissionDue <= 0) { Alert.alert('No Dues', 'No commission due'); return; }
+    try {
+      const rpConfig = await getRazorpayConfig();
+      if (!rpConfig.configured) { Alert.alert('Unavailable', 'Payment gateway not configured.'); return; }
+
+      // Create order on backend (same as website POST /razorpay/create-commission-order)
+      const order = await createCommissionOrder(data.commissionDue);
+      if (!order.id) { Alert.alert('Error', 'Failed to create payment order'); return; }
+
+      if (isNativeRazorpayAvailable()) {
+        try {
+          const meRes = await api.get('/auth/me');
+          const result = await openRazorpayOrder(rpConfig.keyId, order.id, data.commissionDue, 'Commission Payment', meRes.data?.user?.name || '');
+          const verified = await verifyCommissionPayment(result.razorpay_order_id, result.razorpay_payment_id, result.razorpay_signature, data.commissionDue);
+          if (verified) { Alert.alert('Success! ✅', 'Commission paid successfully!'); await load(); }
+          else Alert.alert('Verification Failed', 'Contact support if charged.');
+        } catch (e: any) {
+          if (e.code !== 'PAYMENT_CANCELLED') Alert.alert('Failed', e.description || e.message || 'Payment failed');
+        }
+      } else {
+        Alert.alert('Development Mode', `Commission: ₹${data.commissionDue}\nOrder ID: ${order.id}\n\nNative Razorpay requires production APK. Use website to pay commission during development.`);
+      }
+    } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
+  };
 
   if (loading) return <View style={styles.container}><ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 80 }} /></View>;
 
@@ -54,7 +82,7 @@ export default function CreatorWallet({ navigation }: any) {
             </View>
           </View>
           {data.commissionDue > 0 && (
-            <TouchableOpacity style={styles.payBtn}><Text style={styles.payBtnText}>Pay Commission ₹{data.commissionDue.toLocaleString('en-IN')}</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.payBtn} onPress={handlePayCommission}><Text style={styles.payBtnText}>Pay Commission ₹{data.commissionDue.toLocaleString('en-IN')}</Text></TouchableOpacity>
           )}
         </View>
 

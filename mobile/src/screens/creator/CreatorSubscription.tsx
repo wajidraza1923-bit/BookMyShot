@@ -26,32 +26,73 @@ export default function CreatorSubscription({ navigation }: any) {
 
   const handleSubscribe = async () => {
     try {
-      // Check Razorpay config
-      const rpConfig = await api.get('/razorpay/config');
-      if (!rpConfig.data?.configured) {
+      const { getRazorpayConfig, createSubscription, openRazorpaySubscription, verifySubscription, isNativeRazorpayAvailable } = require('../../services/payment');
+
+      const rpConfig = await getRazorpayConfig();
+      if (!rpConfig.configured) {
         Alert.alert('Unavailable', 'Payment gateway not configured. Contact admin.');
         return;
       }
 
-      // Create subscription on backend (same as website)
-      const subRes = await api.post('/razorpay/create-subscription', {});
+      // Create subscription on backend (same as website POST /razorpay/create-subscription)
+      const subRes = await createSubscription();
 
-      if (subRes.data?.status === 'active' || subRes.data?.message === 'Subscription already active') {
+      if (subRes.status === 'active' || subRes.message === 'Subscription already active') {
         Alert.alert('Active', 'Your subscription is already active!');
         await load();
         return;
       }
 
-      // Open payment in WebView (Razorpay Checkout)
-      if (subRes.data?.subscriptionId) {
-        navigation.navigate('PaymentWebView', {
-          subscriptionId: subRes.data.subscriptionId,
-          keyId: rpConfig.data.keyId,
-          type: 'subscription',
-        });
+      if (!subRes.subscriptionId) {
+        Alert.alert('Error', 'Failed to create subscription. Try again.');
+        return;
+      }
+
+      // Check if native Razorpay SDK is available (production APK only)
+      if (isNativeRazorpayAvailable()) {
+        try {
+          const meRes = await api.get('/auth/me');
+          const user = meRes.data?.user;
+
+          // Open native Razorpay checkout (same as website Razorpay popup)
+          const paymentResult = await openRazorpaySubscription(
+            rpConfig.keyId,
+            subRes.subscriptionId,
+            user?.name || '',
+            user?.email || ''
+          );
+
+          // Verify on backend (same as website POST /razorpay/verify-subscription)
+          const verified = await verifySubscription(
+            paymentResult.razorpay_subscription_id,
+            paymentResult.razorpay_payment_id,
+            paymentResult.razorpay_signature
+          );
+
+          if (verified) {
+            Alert.alert('Success! 🎉', 'Subscription activated successfully!');
+            await load();
+          } else {
+            Alert.alert('Verification Failed', 'Payment made but verification failed. Contact support if charged.');
+          }
+        } catch (e: any) {
+          // Razorpay checkout was dismissed or payment failed
+          if (e.code === 'PAYMENT_CANCELLED') {
+            Alert.alert('Cancelled', 'Payment was cancelled.');
+          } else {
+            Alert.alert('Payment Failed', e.description || e.message || 'Please try again.');
+          }
+        }
+      } else {
+        // Development mode: show subscription ID for testing
+        Alert.alert(
+          'Development Mode',
+          `Razorpay native SDK not available (Expo Go).\n\nSubscription ID: ${subRes.subscriptionId}\n\nIn production APK, the Razorpay checkout will open automatically.\n\nTo test: Use the website subscription page.`,
+          [{ text: 'OK' }]
+        );
       }
     } catch (e: any) {
-      Alert.alert('Error', e.response?.data?.message || 'Failed to create subscription');
+      Alert.alert('Error', e.response?.data?.message || e.message || 'Failed to create subscription');
     }
   };
 
