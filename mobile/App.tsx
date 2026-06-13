@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { StatusBar, View, Text, StyleSheet, Animated } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import * as SplashScreen from 'expo-splash-screen';
@@ -8,52 +8,89 @@ import AppNavigator from './src/navigation/AppNavigator';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 import { colors, typography, spacing } from './src/theme';
 
-// Prevent auto-hide of splash
-SplashScreen.preventAutoHideAsync();
+// Prevent auto-hide — we control when to hide it
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function App() {
   const [appReady, setAppReady] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showBrandSplash, setShowBrandSplash] = useState(true);
-  const fadeAnim = new Animated.Value(1);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
+    console.log('[App] Component mounted, starting prepareApp...');
     prepareApp();
   }, []);
 
   const prepareApp = async () => {
+    console.log('[App] prepareApp started');
     try {
-      // Check if user has completed onboarding
       const onboarded = await AsyncStorage.getItem('bms_onboarded');
+      console.log('[App] AsyncStorage read, onboarded:', onboarded);
       if (!onboarded) {
         setShowOnboarding(true);
       }
-
-      // Preload any assets here in the future
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Brand splash duration
     } catch (e) {
-      // Continue anyway
-    } finally {
-      setAppReady(true);
-      await SplashScreen.hideAsync();
-
-      // Fade out brand splash
-      setTimeout(() => {
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 500,
-          useNativeDriver: true,
-        }).start(() => setShowBrandSplash(false));
-      }, 300);
+      console.log('[App] AsyncStorage error (continuing):', e);
+      // First launch or storage error — show onboarding
+      setShowOnboarding(true);
     }
+
+    // Show brand splash for 1.5s
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    console.log('[App] Splash timer done, setting appReady=true');
+
+    setAppReady(true);
+
+    // Hide the native Expo splash screen
+    try {
+      await SplashScreen.hideAsync();
+      console.log('[App] Native splash hidden');
+    } catch (e) {
+      console.log('[App] SplashScreen.hideAsync error (non-fatal):', e);
+    }
+
+    // Fade out our custom brand splash overlay
+    setTimeout(() => {
+      console.log('[App] Starting fade-out animation');
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }).start(() => {
+        console.log('[App] Fade-out complete, removing brand splash');
+        setShowBrandSplash(false);
+      });
+    }, 200);
   };
 
   const completeOnboarding = async () => {
-    await AsyncStorage.setItem('bms_onboarded', 'true');
+    console.log('[App] Onboarding complete');
+    try {
+      await AsyncStorage.setItem('bms_onboarded', 'true');
+    } catch (e) {
+      console.log('[App] Failed to save onboarding state:', e);
+    }
     setShowOnboarding(false);
   };
 
-  if (!appReady) return null;
+  // While loading, show our brand splash (not null — that causes blank screen)
+  if (!appReady) {
+    return (
+      <View style={styles.root}>
+        <StatusBar barStyle="light-content" backgroundColor={colors.background} />
+        <View style={styles.brandSplash}>
+          <View style={styles.splashContent}>
+            <View style={styles.splashIcon}>
+              <Text style={styles.splashEmoji}>📸</Text>
+            </View>
+            <Text style={styles.splashBrand}>BOOKMYSHOT</Text>
+            <Text style={styles.splashTagline}>Premium Wedding Creators</Text>
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.root}>
@@ -85,7 +122,7 @@ export default function App() {
         </NavigationContainer>
       )}
 
-      {/* Brand Splash Overlay */}
+      {/* Animated brand splash overlay (fades out after load) */}
       {showBrandSplash && (
         <Animated.View style={[styles.brandSplash, { opacity: fadeAnim }]}>
           <View style={styles.splashContent}>
