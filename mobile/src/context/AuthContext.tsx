@@ -113,81 +113,85 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const login = async (email: string, password: string) => {
-    console.log('[Auth] ═══ LOGIN ATTEMPT ═══');
-    console.log('[Auth] URL: POST', `${API_BASE}/auth/login`);
-    console.log('[Auth] Payload:', JSON.stringify({ email, password: '***' }));
+    const LOGIN_URL = `${API_BASE}/auth/login`;
+    console.log('═══════════════════════════════════════');
+    console.log('LOGIN URL =', LOGIN_URL);
+    console.log('PAYLOAD =', JSON.stringify({ email, password: '***' }));
+    console.log('═══════════════════════════════════════');
 
     try {
-      const res = await authAPI.login(email, password);
-      console.log('[Auth] Response status:', res.status);
-      console.log('[Auth] Response headers content-type:', res.headers?.['content-type']);
-      console.log('[Auth] Response data type:', typeof res.data);
-      console.log('[Auth] Response data:', JSON.stringify(res.data)?.substring(0, 300));
+      // Use raw fetch — bypasses axios entirely for debugging
+      const response = await fetch(LOGIN_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-      const data = res.data;
+      console.log('STATUS =', response.status);
+      console.log('CONTENT-TYPE =', response.headers.get('content-type'));
 
-      // Check if we got a non-JSON error response
-      if (data._raw) {
-        console.log('[Auth] ⚠ Server returned non-JSON:', data._raw.substring(0, 200));
-        return { success: false, message: 'Server error. Please try again.' };
+      const rawText = await response.text();
+      console.log('RAW RESPONSE =', rawText.substring(0, 500));
+
+      // Try to parse JSON
+      let data: any;
+      try {
+        data = JSON.parse(rawText);
+        console.log('JSON PARSED OK');
+      } catch (parseErr) {
+        console.log('INVALID JSON RESPONSE');
+        console.log('FIRST 300 CHARS:', rawText.substring(0, 300));
+        return { success: false, message: 'Server returned invalid response. Status: ' + response.status };
       }
 
-      // Backend may return success but with a message (e.g., creator pending approval)
+      // Check for HTTP errors
+      if (!response.ok) {
+        console.log('HTTP ERROR:', response.status, data.message);
+        if (response.status === 403 && data.requiresVerification) {
+          return { success: false, message: 'Please verify your email first.' };
+        }
+        if (response.status === 401) {
+          return { success: false, message: 'Invalid email or password' };
+        }
+        if (response.status === 429) {
+          return { success: false, message: 'Too many attempts. Try again in 15 minutes.' };
+        }
+        return { success: false, message: data.message || `Error ${response.status}` };
+      }
+
+      // Success — check for token
       if (!data.token) {
-        console.log('[Auth] No token in response — account may need verification/approval');
+        console.log('NO TOKEN IN RESPONSE:', JSON.stringify(data).substring(0, 200));
         return { success: false, message: data.message || 'Account requires verification' };
       }
 
       const normalizedUser = normalizeUser(data.user);
-      console.log('[Auth] Token received:', data.token.substring(0, 20) + '...');
-      console.log('[Auth] User:', normalizedUser.name, '| Role:', normalizedUser.role, '| ID:', normalizedUser._id);
+      console.log('TOKEN =', data.token.substring(0, 25) + '...');
+      console.log('USER =', normalizedUser.name, '| ROLE =', normalizedUser.role);
 
       // Save to storage
       await AsyncStorage.setItem('bms_token', data.token);
       await AsyncStorage.setItem('bms_user', JSON.stringify(normalizedUser));
-      console.log('[Auth] Saved to AsyncStorage ✓');
+      console.log('SAVED TO STORAGE OK');
 
       setToken(data.token);
       setUser(normalizedUser);
-      console.log('[Auth] State updated ✓');
-      console.log('[Auth] ═══ LOGIN SUCCESS ═══');
+      console.log('═══ LOGIN SUCCESS ═══');
 
       return { success: true };
     } catch (e: any) {
-      const status = e.response?.status;
-      const errorData = e.response?.data;
-      const message = errorData?.message || e.message || 'Login failed';
+      console.log('═══ LOGIN EXCEPTION ═══');
+      console.log('ERROR TYPE:', e.constructor.name);
+      console.log('ERROR MESSAGE:', e.message);
+      console.log('ERROR STACK:', e.stack?.substring(0, 300));
 
-      console.log('[Auth] ═══ LOGIN FAILED ═══');
-      console.log('[Auth] Status:', status);
-      console.log('[Auth] Error data:', JSON.stringify(errorData));
-      console.log('[Auth] Message:', message);
-
-      // Handle specific cases
-      if (status === 403 && errorData?.requiresVerification) {
-        return { success: false, message: 'Please verify your email first. Check your inbox.' };
-      }
-
-      if (status === 401) {
-        return { success: false, message: 'Invalid email or password' };
-      }
-
-      if (status === 429) {
-        return { success: false, message: 'Too many login attempts. Try again in 15 minutes.' };
-      }
-
-      if (!e.response) {
-        // No response at all — network level failure
-        console.log('[Auth] No response object — pure network failure');
-        console.log('[Auth] Error code:', (e as any).code);
-        console.log('[Auth] Error message:', e.message);
-        return {
-          success: false,
-          message: `Cannot reach server. Please check:\n• Internet connection is active\n• Try again in a few seconds\n\nTechnical: ${e.message}`,
-        };
-      }
-
-      return { success: false, message };
+      return {
+        success: false,
+        message: `Cannot reach server: ${e.message}`,
+      };
     }
   };
 
