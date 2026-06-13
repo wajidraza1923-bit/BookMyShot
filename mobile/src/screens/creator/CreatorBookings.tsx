@@ -14,6 +14,7 @@ export default function CreatorBookings({ navigation }: any) {
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [amountInput, setAmountInput] = useState('');
   const [showAmountModal, setShowAmountModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -26,12 +27,20 @@ export default function CreatorBookings({ navigation }: any) {
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
   const filtered = bookings.filter(b => {
-    if (tab === 'all') return true;
-    if (tab === 'pending') return b.status === 'Booking Created';
-    if (tab === 'active') return ['Creator Accepted', 'Payment Submitted', 'Payment Approved', 'Event Scheduled'].includes(b.status);
-    if (tab === 'done') return b.status === 'Completed' || b.status === 'completed';
-    if (tab === 'rejected') return b.status === 'rejected' || b.status === 'cancelled';
-    return true;
+    // Tab filter
+    let tabMatch = true;
+    if (tab === 'pending') tabMatch = b.status === 'Booking Created';
+    else if (tab === 'active') tabMatch = ['Creator Accepted', 'Payment Submitted', 'Payment Approved', 'Event Scheduled'].includes(b.status);
+    else if (tab === 'done') tabMatch = b.status === 'Completed' || b.status === 'completed';
+    else if (tab === 'rejected') tabMatch = b.status === 'rejected' || b.status === 'cancelled';
+    // Search filter
+    if (!tabMatch) return false;
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (b.clientName || '').toLowerCase().includes(q) ||
+      (b.clientPhone || '').includes(q) ||
+      (b.eventType || '').toLowerCase().includes(q) ||
+      (b.eventLocation || '').toLowerCase().includes(q);
   });
 
   // Accept booking: requires amount input (same as website)
@@ -134,9 +143,16 @@ export default function CreatorBookings({ navigation }: any) {
           contentContainerStyle={{ padding: spacing.xl, paddingBottom: 100 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />}
           keyExtractor={item => item._id}
-          ListEmptyComponent={<View style={styles.empty}><Ionicons name="calendar-outline" size={40} color={colors.textMuted} /><Text style={styles.emptyText}>No bookings in this tab</Text></View>}
+          ListHeaderComponent={
+            <View style={styles.searchWrap}>
+              <Ionicons name="search" size={16} color={colors.textMuted} />
+              <TextInput style={styles.searchInput} placeholder="Search by name, phone, city..." placeholderTextColor={colors.textMuted} value={searchQuery} onChangeText={setSearchQuery} selectionColor={colors.primary} />
+              {searchQuery ? <TouchableOpacity onPress={() => setSearchQuery('')}><Ionicons name="close-circle" size={16} color={colors.textMuted} /></TouchableOpacity> : null}
+            </View>
+          }
+          ListEmptyComponent={<View style={styles.empty}><Ionicons name="calendar-outline" size={40} color={colors.textMuted} /><Text style={styles.emptyText}>No bookings found</Text></View>}
           renderItem={({ item }) => (
-            <View style={styles.card}>
+            <TouchableOpacity style={styles.card} activeOpacity={0.85} onPress={() => navigation.navigate('BookingDetail', { booking: item })}>
               {/* Client Info */}
               <View style={styles.cardTop}>
                 <View style={styles.cardInfo}>
@@ -189,7 +205,7 @@ export default function CreatorBookings({ navigation }: any) {
 
               {/* Actions */}
               {getActions(item)}
-            </View>
+            </TouchableOpacity>
           )}
         />
       )}
@@ -260,6 +276,8 @@ const styles = StyleSheet.create({
   completeText: { ...typography.labelMd, color: colors.success, fontWeight: '600' },
   empty: { alignItems: 'center', paddingTop: spacing['4xl'] },
   emptyText: { ...typography.bodyMd, color: colors.textMuted, marginTop: spacing.md },
+  searchWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, height: 40, gap: spacing.sm, marginBottom: spacing.lg },
+  searchInput: { flex: 1, ...typography.bodySm, color: colors.text, height: '100%' },
   // Modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: spacing.xl },
   modalContent: { backgroundColor: colors.surface, borderRadius: radius.xl, padding: spacing.xl, borderWidth: 1, borderColor: colors.border },

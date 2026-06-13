@@ -6,6 +6,7 @@ import { colors } from '../theme';
 
 import CreatorHome from '../screens/creator/CreatorHome';
 import CreatorBookings from '../screens/creator/CreatorBookings';
+import BookingDetail from '../screens/creator/BookingDetail';
 import CreatorLeads from '../screens/creator/CreatorLeads';
 import CreatorWallet from '../screens/creator/CreatorWallet';
 import CreatorProfile from '../screens/creator/CreatorProfile';
@@ -51,6 +52,7 @@ export default function CreatorNavigator() {
     <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', contentStyle: { backgroundColor: colors.background } }}>
       <Stack.Screen name="CreatorTabs" component={CreatorTabs} />
       <Stack.Screen name="CreatorBookings" component={CreatorBookings} />
+      <Stack.Screen name="BookingDetail" component={BookingDetail} />
       <Stack.Screen name="CreatorLeads" component={CreatorLeads} />
       <Stack.Screen name="CreatorPortfolio" component={CreatorPortfolio} />
       <Stack.Screen name="CreatorPackages" component={CreatorPackages} />
