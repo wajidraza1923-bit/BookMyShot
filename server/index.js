@@ -137,7 +137,12 @@ const startServer = async () => {
       console.log(`[STARTUP] Assigned creatorId to ${creatorsWithoutId.length} creators`);
     }
 
-    server = app.listen(PORT, () => console.log(`BookMyShot server running on port ${PORT}`));
+    server = app.listen(PORT, () => {
+      console.log(`BookMyShot server running on port ${PORT}`);
+      // Start automated cron jobs
+      const { initScheduler } = require("./services/scheduler");
+      initScheduler();
+    });
     server.on("error", (err) => {
       console.error("Server failed to start:", err.message);
       process.exit(1);
