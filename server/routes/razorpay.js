@@ -50,20 +50,20 @@ router.post("/create-subscription", protect, authorize("creator"), async (req, r
       });
     }
 
-    // Step 1: Get or create a Razorpay Plan
-    let planId = process.env.RAZORPAY_PLAN_ID || creator.razorpayPlanId;
-    if (!planId) {
-      console.log("[Razorpay] Creating new monthly plan: ₹" + amount);
-      const plan = await razorpayService.createPlan("BookMyShot Creator Monthly", amount, "monthly", 1);
-      planId = plan.id;
-      console.log("[Razorpay] Plan created:", planId);
-      // Store plan ID on creator for future reference
-      creator.razorpayPlanId = planId;
-    }
+    // Step 1: Always create a fresh Razorpay Plan with LATEST admin-configured price
+    // This ensures renewals after expiry always use the current price
+    const isRenewal = creator.subscriptionStatus === "expired" || creator.subscriptionStatus === "suspended" || creator.subscriptionStatus === "overdue";
+    const applyTrial = !isRenewal && !creator.subscriptionStartDate; // Trial only for first-time subscribers
 
-    // Step 2: Create Razorpay Subscription with trial
-    console.log("[Razorpay] Creating subscription. Plan:", planId, "Trial:", trialDays, "days");
-    const subscription = await razorpayService.createSubscription(planId, 60, trialDays, {
+    console.log("[Razorpay] Creating new monthly plan: ₹" + amount + (isRenewal ? " (RENEWAL)" : " (NEW)"));
+    const plan = await razorpayService.createPlan("BookMyShot Creator Monthly ₹" + amount, amount, "monthly", 1);
+    const planId = plan.id;
+    console.log("[Razorpay] Plan created:", planId);
+
+    // Step 2: Create Razorpay Subscription
+    const effectiveTrialDays = applyTrial ? trialDays : 0;
+    console.log("[Razorpay] Creating subscription. Plan:", planId, "Trial:", effectiveTrialDays, "days");
+    const subscription = await razorpayService.createSubscription(planId, 60, effectiveTrialDays, {
       creatorId: creator._id.toString(),
       userId: req.user._id.toString(),
       creatorEmail: req.user.email || "",
@@ -71,11 +71,12 @@ router.post("/create-subscription", protect, authorize("creator"), async (req, r
 
     // Step 3: Save subscription ID on creator
     creator.razorpaySubscriptionId = subscription.id;
-    if (trialDays > 0) {
+    creator.razorpayPlanId = planId;
+    if (effectiveTrialDays > 0) {
       creator.subscriptionStatus = "trial";
       creator.subscriptionStartDate = new Date();
       const trialEnd = new Date();
-      trialEnd.setDate(trialEnd.getDate() + trialDays);
+      trialEnd.setDate(trialEnd.getDate() + effectiveTrialDays);
       creator.subscriptionEndDate = trialEnd;
       creator.nextBillingDate = trialEnd;
     }
