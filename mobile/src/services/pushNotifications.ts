@@ -15,24 +15,46 @@ let Device: any = null;
 let Constants: any = null;
 let isNotificationAvailable = false;
 
-try {
-  Notifications = require('expo-notifications');
-  Device = require('expo-device');
-  Constants = require('expo-constants');
-  
-  // Test if native module actually works
-  if (Notifications && typeof Notifications.setNotificationHandler === 'function') {
-    Notifications.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: true,
-      }),
-    });
-    isNotificationAvailable = true;
+// Only attempt to load on physical devices with dev builds
+// expo-notifications native module is REMOVED from Expo Go SDK 53+
+// The require() itself can crash if native module is missing
+const canLoadNotifications = (() => {
+  try {
+    // Check if we're in Expo Go by looking at the execution environment
+    const ExpoConstants = require('expo-constants');
+    const executionEnv = ExpoConstants?.default?.executionEnvironment || ExpoConstants?.executionEnvironment;
+    // 'storeClient' = Expo Go, 'standalone' = prod, 'bare' = dev build
+    if (executionEnv === 'storeClient') {
+      console.log('[Push] Expo Go detected — notifications disabled');
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
   }
-} catch (e: any) {
-  console.log('[Push] expo-notifications not available:', e.message || 'Expo Go detected');
+})();
+
+if (canLoadNotifications) {
+  try {
+    Notifications = require('expo-notifications');
+    Device = require('expo-device');
+    Constants = require('expo-constants');
+    
+    if (Notifications && typeof Notifications.setNotificationHandler === 'function') {
+      Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowAlert: true,
+          shouldPlaySound: true,
+          shouldSetBadge: true,
+        }),
+      });
+      isNotificationAvailable = true;
+    }
+  } catch (e: any) {
+    console.log('[Push] expo-notifications load failed:', e.message);
+  }
+} else {
+  console.log('[Push] Skipping notification module load (Expo Go)');
 }
 
 /**
