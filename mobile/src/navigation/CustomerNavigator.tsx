@@ -12,6 +12,7 @@ import MessagesScreen from '../screens/MessagesScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import CreatorProfileScreen from '../screens/CreatorProfileScreen';
 import ChatDetailScreen from '../screens/ChatDetailScreen';
+import SavedCreatorsScreen from '../screens/SavedCreatorsScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -47,6 +48,7 @@ export default function CustomerNavigator() {
       <Stack.Screen name="CreatorProfile" component={CreatorProfileScreen} options={{ animation: 'slide_from_bottom' }} />
       <Stack.Screen name="Search" component={SearchScreen} />
       <Stack.Screen name="ChatDetail" component={ChatDetailScreen} />
+      <Stack.Screen name="SavedCreators" component={SavedCreatorsScreen} />
     </Stack.Navigator>
   );
 }
