@@ -1,7 +1,6 @@
 import React from 'react';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../theme';
 
@@ -9,8 +8,6 @@ import CustomerNavigator from './CustomerNavigator';
 import CreatorNavigator from './CreatorNavigator';
 import AdminNavigator from './AdminNavigator';
 import GuestNavigator from './GuestNavigator';
-
-const Stack = createNativeStackNavigator();
 
 const navTheme = {
   dark: true,

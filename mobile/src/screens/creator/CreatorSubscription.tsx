@@ -162,7 +162,7 @@ export default function CreatorSubscription({ navigation }: any) {
         {/* Warning Banners */}
         {isOverdue && (
           <View style={s.warningBanner}>
-            <Ionicons name="alert-triangle" size={16} color={colors.error} />
+            <Ionicons name="warning-outline" size={16} color={colors.error} />
             <Text style={s.warningText}>Your account is overdue. Booking creation is disabled until payment is made.</Text>
           </View>
         )}
