@@ -67,7 +67,7 @@ export default function AdminSubscriptions({ navigation }: any) {
       setHasChanges(false);
       if (sub.updatedAt) setLastUpdatedRaw(sub.updatedAt);
 
-      const allCreators = creatorsRes.data?.creators || [];
+      const allCreators = creatorsRes.data?.data?.creators || creatorsRes.data?.creators || [];
       setCreators(allCreators.filter((c: any) => c.subscriptionStatus).sort((a: any, b: any) => {
         const order: Record<string, number> = { active: 0, trial: 1, overdue: 2, expired: 3, suspended: 4, pending_payment: 5 };
         return (order[a.subscriptionStatus] || 9) - (order[b.subscriptionStatus] || 9);

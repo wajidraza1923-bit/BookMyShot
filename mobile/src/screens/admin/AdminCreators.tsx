@@ -13,14 +13,28 @@ export default function AdminCreators({ navigation }: any) {
   const load = useCallback(async () => {
     try {
       const res = await api.get('/admin/creator-accounts');
-      setCreators(res.data?.creators || res.data?.data || []);
-    } catch {} finally { setLoading(false); }
+      // Backend returns: { success, data: { creators: [...], total, page, limit } }
+      const responseData = res.data?.data;
+      const creatorsList = Array.isArray(responseData?.creators)
+        ? responseData.creators
+        : Array.isArray(responseData)
+          ? responseData
+          : Array.isArray(res.data?.creators)
+            ? res.data.creators
+            : [];
+      setCreators(creatorsList);
+    } catch (e: any) {
+      console.log('[AdminCreators] Load error:', e.response?.status, e.message);
+      Alert.alert('Error', 'Failed to load creators: ' + (e.response?.data?.message || e.message));
+      setCreators([]);
+    } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { load(); }, []);
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
-  const filtered = creators.filter(c => {
+  const safeCreators = Array.isArray(creators) ? creators : [];
+  const filtered = safeCreators.filter(c => {
     if (tab === 'all') return true;
     if (tab === 'pending') return c.status === 'pending';
     if (tab === 'approved') return c.status === 'approved';
@@ -44,7 +58,7 @@ export default function AdminCreators({ navigation }: any) {
       <View style={s.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}><Ionicons name="arrow-back" size={20} color={colors.text} /></TouchableOpacity>
         <Text style={s.title}>Creators</Text>
-        <Text style={s.count}>{creators.length}</Text>
+        <Text style={s.count}>{safeCreators.length}</Text>
       </View>
 
       <View style={s.tabs}>
