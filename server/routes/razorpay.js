@@ -764,6 +764,68 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
         break;
       }
 
+      case "subscription.paused": {
+        // Subscription paused (rare — custom pause implementations only)
+        const subId = payload.subscription?.entity?.id;
+        const creator = await Creator.findOne({ razorpaySubscriptionId: subId }).populate("user");
+        if (creator) {
+          creator.autoRenew = false;
+          await creator.save();
+          console.log("[Razorpay] Subscription paused for creator:", creator._id);
+
+          await Notification.create({
+            user: creator.user._id || creator.user,
+            type: "subscription",
+            title: "⏸️ Subscription Paused",
+            message: "Your subscription AutoPay has been paused. You'll need to resume or renew manually before expiry.",
+          });
+        }
+        break;
+      }
+
+      case "token.confirmed":
+      case "mandate.revoked": {
+        // UPI/bank mandate revoked — AutoPay is no longer authorized
+        // This means the bank/UPI app cancelled the recurring mandate
+        const tokenEntity = payload.token?.entity || payload.payment?.entity || {};
+        const customerId = tokenEntity.customer_id || "";
+        console.log("[Razorpay] Mandate/token revoked. Customer:", customerId);
+
+        // Find creator by Razorpay customer ID or subscription association
+        let creator = null;
+        if (customerId) {
+          creator = await Creator.findOne({ razorpayCustomerId: customerId }).populate("user");
+        }
+        if (!creator && tokenEntity.subscription_id) {
+          creator = await Creator.findOne({ razorpaySubscriptionId: tokenEntity.subscription_id }).populate("user");
+        }
+
+        if (creator) {
+          creator.autoRenew = false;
+          await creator.save();
+          console.log("[Razorpay] Mandate revoked — AutoPay OFF for creator:", creator._id);
+
+          await Notification.create({
+            user: creator.user._id || creator.user,
+            type: "subscription",
+            title: "🔴 AutoPay Mandate Revoked",
+            message: "Your bank/UPI has revoked the AutoPay mandate. Subscription will not renew automatically. Please set up AutoPay again or pay manually before expiry.",
+          });
+
+          if (creator.user?.email) {
+            emailService.sendSubscriptionExpiryReminder({
+              email: creator.user.email,
+              name: creator.user.name,
+              daysLeft: creator.subscriptionEndDate ? Math.max(0, Math.ceil((creator.subscriptionEndDate - new Date()) / 86400000)) : 0,
+              endDate: creator.subscriptionEndDate,
+              creatorId: creator._id,
+              userId: creator.user._id,
+            }).catch(e => console.error("[Email] mandate revoked reminder:", e.message));
+          }
+        }
+        break;
+      }
+
       default:
         console.log("[Razorpay Webhook] Unhandled event:", eventType);
     }
