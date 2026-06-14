@@ -7,6 +7,7 @@ import { colors } from '../theme';
 
 import CustomerNavigator from './CustomerNavigator';
 import CreatorNavigator from './CreatorNavigator';
+import AdminNavigator from './AdminNavigator';
 import AuthNavigator from './AuthNavigator';
 
 const Stack = createNativeStackNavigator();
@@ -44,7 +45,7 @@ export default function RootNavigator() {
     if (!isAuthenticated) return <AuthNavigator />;
     switch (role) {
       case 'creator': return <CreatorNavigator />;
-      case 'admin': return <CreatorNavigator />; // Admin uses extended creator nav for now
+      case 'admin': return <AdminNavigator />;
       default: return <CustomerNavigator />;
     }
   };
