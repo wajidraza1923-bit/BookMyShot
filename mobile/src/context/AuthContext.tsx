@@ -79,6 +79,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(normalized);
             await AsyncStorage.setItem('bms_user', JSON.stringify(normalized));
             console.log('[Auth] Session valid, user:', normalized.name, 'role:', normalized.role);
+            // Register push token after successful auth
+            registerPush();
           }
         } catch (e: any) {
           console.log('[Auth] Token validation failed:', e.response?.status, '- clearing session');
@@ -90,6 +92,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await clearSession();
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const registerPush = async () => {
+    try {
+      const { registerForPushNotifications } = require('../services/pushNotifications');
+      await registerForPushNotifications();
+    } catch (e) {
+      console.log('[Auth] Push registration skipped:', e);
     }
   };
 
