@@ -958,4 +958,64 @@ router.get("/revenue", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// ─── SUBSCRIPTION ANALYTICS (for admin mobile dashboard) ─────────────────────
+router.get("/subscription-analytics", async (req, res, next) => {
+  try {
+    const now = new Date();
+    const day7 = new Date(now.getTime() + 7 * 86400000);
+    const day3 = new Date(now.getTime() + 3 * 86400000);
+    const day1 = new Date(now.getTime() + 1 * 86400000);
+
+    const [active, trial, expired, overdue, suspended, pendingPayment] = await Promise.all([
+      Creator.countDocuments({ subscriptionStatus: "active" }),
+      Creator.countDocuments({ subscriptionStatus: "trial" }),
+      Creator.countDocuments({ subscriptionStatus: "expired" }),
+      Creator.countDocuments({ subscriptionStatus: "overdue" }),
+      Creator.countDocuments({ subscriptionStatus: "suspended" }),
+      Creator.countDocuments({ subscriptionStatus: "pending_payment" }),
+    ]);
+
+    // Expiring within timeframes (active or trial only)
+    const expiringIn7 = await Creator.countDocuments({ subscriptionStatus: { $in: ["active", "trial"] }, subscriptionEndDate: { $lte: day7, $gt: now } });
+    const expiringIn3 = await Creator.countDocuments({ subscriptionStatus: { $in: ["active", "trial"] }, subscriptionEndDate: { $lte: day3, $gt: now } });
+    const expiringToday = await Creator.countDocuments({ subscriptionStatus: { $in: ["active", "trial"] }, subscriptionEndDate: { $lte: day1, $gt: now } });
+
+    // Push token stats
+    const usersWithPush = await User.countDocuments({ pushToken: { $exists: true, $ne: "" } });
+    const creatorsUserIds = await Creator.find({}).distinct("user");
+    const creatorsWithPush = await User.countDocuments({ _id: { $in: creatorsUserIds }, pushToken: { $exists: true, $ne: "" } });
+    const totalUsers = await User.countDocuments({ role: "user" });
+    const totalCreators = await Creator.countDocuments();
+
+    // Last notification sent
+    const lastNotif = await Notification.findOne().sort("-createdAt").select("createdAt title type");
+
+    // Subscription reminders sent today
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const remindersSentToday = await Notification.countDocuments({ type: "subscription", createdAt: { $gte: todayStart } });
+
+    // Monthly revenue estimate
+    const configService = require("../services/configService");
+    const subSettings = await configService.getSubscriptionSettings();
+    const monthlyPrice = subSettings.monthlyPlanPrice || 0;
+    const monthlyRevenue = active * monthlyPrice;
+
+    // Renewal rate (active / (active + expired + overdue))
+    const totalEver = active + trial + expired + overdue + suspended;
+    const renewalRate = totalEver > 0 ? Math.round((active / totalEver) * 100) : 0;
+
+    res.json({
+      success: true,
+      data: {
+        counts: { active, trial, expired, overdue, suspended, pendingPayment },
+        expiring: { in7Days: expiringIn7, in3Days: expiringIn3, today: expiringToday },
+        push: { usersWithPush, creatorsWithPush, totalUsers, totalCreators },
+        notifications: { lastSent: lastNotif ? lastNotif.createdAt : null, lastTitle: lastNotif ? lastNotif.title : null, remindersSentToday },
+        revenue: { monthlyEstimate: monthlyRevenue, pricePerMonth: monthlyPrice, renewalRate },
+        updatedAt: new Date().toISOString(),
+      },
+    });
+  } catch (e) { next(e); }
+});
+
 module.exports = router;

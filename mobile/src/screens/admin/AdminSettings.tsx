@@ -5,16 +5,19 @@ import { colors, spacing, typography, radius } from '../../theme';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 
-// Format UTC date to local: "14 Jun 2026, 2:01 PM"
+// Format UTC date to IST: "14 Jun 2026, 2:01 PM"
 function formatDateTime(isoString: string): string {
   const date = new Date(isoString);
   if (isNaN(date.getTime())) return 'Unknown';
-  const day = date.getDate();
+  // Convert to IST (UTC+5:30)
+  const istOffset = 5.5 * 60 * 60 * 1000;
+  const ist = new Date(date.getTime() + istOffset);
+  const day = ist.getUTCDate();
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const month = months[date.getMonth()];
-  const year = date.getFullYear();
-  let hours = date.getHours();
-  const minutes = date.getMinutes();
+  const month = months[ist.getUTCMonth()];
+  const year = ist.getUTCFullYear();
+  let hours = ist.getUTCHours();
+  const minutes = ist.getUTCMinutes();
   const ampm = hours >= 12 ? 'PM' : 'AM';
   hours = hours % 12;
   if (hours === 0) hours = 12;

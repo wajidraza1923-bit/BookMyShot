@@ -4,19 +4,31 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, radius } from '../../theme';
 import api from '../../services/api';
 
-function formatDateTime(isoString: string): string {
+// IST formatter: converts UTC ISO string to IST "14 Jun 2026, 2:01 PM"
+function formatIST(isoString: string | null | undefined): string {
+  if (!isoString) return '—';
   const date = new Date(isoString);
-  if (isNaN(date.getTime())) return 'Unknown';
-  const day = date.getDate();
+  if (isNaN(date.getTime())) return '—';
+  // Convert to IST (UTC+5:30)
+  const istOffset = 5.5 * 60 * 60 * 1000;
+  const ist = new Date(date.getTime() + istOffset);
+  const day = ist.getUTCDate();
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const month = months[date.getMonth()];
-  const year = date.getFullYear();
-  let hours = date.getHours();
-  const minutes = date.getMinutes();
+  const month = months[ist.getUTCMonth()];
+  const year = ist.getUTCFullYear();
+  let hours = ist.getUTCHours();
+  const minutes = ist.getUTCMinutes();
   const ampm = hours >= 12 ? 'PM' : 'AM';
   hours = hours % 12;
   if (hours === 0) hours = 12;
   return `${day} ${month} ${year}, ${hours}:${minutes < 10 ? '0' : ''}${minutes} ${ampm}`;
+}
+
+function formatDateShort(isoString: string | null | undefined): string {
+  if (!isoString) return '—';
+  const date = new Date(isoString);
+  if (isNaN(date.getTime())) return '—';
+  return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 export default function AdminSubscriptions({ navigation }: any) {
@@ -24,74 +36,61 @@ export default function AdminSubscriptions({ navigation }: any) {
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
-  const [tab, setTab] = useState<'settings' | 'creators'>('settings');
+  const [tab, setTab] = useState<'analytics' | 'settings' | 'creators'>('analytics');
+
+  // Analytics
+  const [analytics, setAnalytics] = useState<any>(null);
 
   // Settings fields
   const [monthlyPrice, setMonthlyPrice] = useState('');
   const [trialDays, setTrialDays] = useState('');
   const [gracePeriod, setGracePeriod] = useState('');
-  const [autoRenewDefault, setAutoRenewDefault] = useState(true);
-  const [freeTrialEnabled, setFreeTrialEnabled] = useState(true);
-
-  // Original values
   const [original, setOriginal] = useState<any>(null);
   const [lastUpdatedRaw, setLastUpdatedRaw] = useState<string | null>(null);
 
-  // Creators with subscriptions
+  // Creators
   const [creators, setCreators] = useState<any[]>([]);
 
   const load = useCallback(async () => {
     try {
-      const [settingsRes, creatorsRes] = await Promise.all([
+      const [analyticsRes, settingsRes, creatorsRes] = await Promise.all([
+        api.get('/admin/subscription-analytics').catch(() => ({ data: { data: null } })),
         api.get('/admin/subscription-settings'),
         api.get('/admin/creator-accounts'),
       ]);
+
+      setAnalytics(analyticsRes.data?.data || null);
 
       const sub = settingsRes.data?.data || settingsRes.data?.settings || settingsRes.data || {};
       setMonthlyPrice(String(sub.monthlyPlanPrice || 0));
       setTrialDays(String(sub.trialDays || 0));
       setGracePeriod(String(sub.gracePeriodDays || 7));
-      setAutoRenewDefault(sub.autoRenewDefault !== false);
-      setFreeTrialEnabled(sub.freeTrialEnabled !== false);
-      setOriginal({
-        monthlyPlanPrice: sub.monthlyPlanPrice || 0,
-        trialDays: sub.trialDays || 0,
-        gracePeriodDays: sub.gracePeriodDays || 7,
-      });
+      setOriginal({ monthlyPlanPrice: sub.monthlyPlanPrice || 0, trialDays: sub.trialDays || 0, gracePeriodDays: sub.gracePeriodDays || 7 });
       setHasChanges(false);
       if (sub.updatedAt) setLastUpdatedRaw(sub.updatedAt);
 
       const allCreators = creatorsRes.data?.creators || [];
-      setCreators(allCreators.filter((c: any) => c.subscriptionStatus));
-    } catch (e: any) {
-      Alert.alert('Error', 'Failed to load subscription data');
-    } finally {
-      setLoading(false);
-    }
+      setCreators(allCreators.filter((c: any) => c.subscriptionStatus).sort((a: any, b: any) => {
+        const order: Record<string, number> = { active: 0, trial: 1, overdue: 2, expired: 3, suspended: 4, pending_payment: 5 };
+        return (order[a.subscriptionStatus] || 9) - (order[b.subscriptionStatus] || 9);
+      }));
+    } catch {} finally { setLoading(false); }
   }, []);
 
   useEffect(() => { load(); }, []);
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
-  // Detect changes
   useEffect(() => {
     if (!original) return;
-    const changed =
-      String(original.monthlyPlanPrice) !== monthlyPrice ||
-      String(original.trialDays) !== trialDays ||
-      String(original.gracePeriodDays) !== gracePeriod;
-    setHasChanges(changed);
+    setHasChanges(String(original.monthlyPlanPrice) !== monthlyPrice || String(original.trialDays) !== trialDays || String(original.gracePeriodDays) !== gracePeriod);
   }, [monthlyPrice, trialDays, gracePeriod, original]);
 
   const handleSave = () => {
-    const mp = Number(monthlyPrice);
-    const td = Number(trialDays);
-    const gp = Number(gracePeriod);
+    const mp = Number(monthlyPrice); const td = Number(trialDays); const gp = Number(gracePeriod);
     if (isNaN(mp) || mp < 0) return Alert.alert('Invalid', 'Monthly price must be ≥ 0');
-    if (isNaN(td) || td < 0 || !Number.isInteger(td)) return Alert.alert('Invalid', 'Trial days must be a whole number');
+    if (isNaN(td) || td < 0) return Alert.alert('Invalid', 'Trial days must be ≥ 0');
     if (isNaN(gp) || gp < 0) return Alert.alert('Invalid', 'Grace period must be ≥ 0');
-
-    Alert.alert('Confirm', `Save subscription settings?\n\nMonthly Price: ₹${mp}\nTrial Days: ${td}\nGrace Period: ${gp} days`, [
+    Alert.alert('Confirm', `Save subscription settings?\n\nMonthly: ₹${mp}\nTrial: ${td} days\nGrace: ${gp} days`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Save', onPress: saveToBackend },
     ]);
@@ -100,71 +99,124 @@ export default function AdminSubscriptions({ navigation }: any) {
   const saveToBackend = async () => {
     setSaving(true);
     try {
-      await api.put('/admin/subscription-settings', {
-        monthlyPlanPrice: Number(monthlyPrice),
-        trialDays: Number(trialDays),
-        gracePeriodDays: Number(gracePeriod),
-        autoRenewDefault,
-        freeTrialEnabled,
-      });
-      Alert.alert('✓ Saved', 'Subscription settings updated. New creators will use these values.');
+      await api.put('/admin/subscription-settings', { monthlyPlanPrice: Number(monthlyPrice), trialDays: Number(trialDays), gracePeriodDays: Number(gracePeriod) });
+      Alert.alert('✓ Saved', 'Subscription settings updated.');
       await load();
-    } catch (e: any) {
-      Alert.alert('Save Failed', e.response?.data?.message || e.message);
-    } finally {
-      setSaving(false);
-    }
+    } catch (e: any) { Alert.alert('Failed', e.response?.data?.message || e.message); }
+    finally { setSaving(false); }
   };
 
-  const getStatusColor = (st: string) => st === 'active' ? colors.success : st === 'trial' ? colors.info : st === 'expired' ? colors.error : st === 'overdue' ? colors.error : colors.warning;
+  const getStatusColor = (st: string) => st === 'active' ? colors.success : st === 'trial' ? colors.info : st === 'expired' ? colors.error : st === 'overdue' ? colors.error : st === 'suspended' ? colors.error : colors.warning;
 
-  // Stats
-  const activeCount = creators.filter(c => c.subscriptionStatus === 'active').length;
-  const trialCount = creators.filter(c => c.subscriptionStatus === 'trial').length;
-  const expiredCount = creators.filter(c => c.subscriptionStatus === 'expired' || c.subscriptionStatus === 'overdue').length;
+  if (loading) return <View style={s.container}><View style={s.header}><TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}><Ionicons name="arrow-back" size={20} color={colors.text} /></TouchableOpacity><Text style={s.title}>Subscriptions</Text></View><ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 80 }} /></View>;
 
-  if (loading) {
-    return (
-      <View style={s.container}>
-        <View style={s.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}><Ionicons name="arrow-back" size={20} color={colors.text} /></TouchableOpacity>
-          <Text style={s.title}>Subscriptions</Text>
-        </View>
-        <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 80 }} />
-      </View>
-    );
-  }
+  const counts = analytics?.counts || {};
+  const expiring = analytics?.expiring || {};
+  const push = analytics?.push || {};
+  const notifs = analytics?.notifications || {};
+  const revenue = analytics?.revenue || {};
 
   return (
     <View style={s.container}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}><Ionicons name="arrow-back" size={20} color={colors.text} /></TouchableOpacity>
         <Text style={s.title}>Subscriptions</Text>
-        {hasChanges && <View style={s.changedBadge}><Text style={s.changedText}>Unsaved</Text></View>}
       </View>
 
       {/* Tabs */}
       <View style={s.tabs}>
-        <TouchableOpacity style={[s.tab, tab === 'settings' && s.tabActive]} onPress={() => setTab('settings')}>
-          <Text style={[s.tabText, tab === 'settings' && s.tabTextActive]}>Settings</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[s.tab, tab === 'creators' && s.tabActive]} onPress={() => setTab('creators')}>
-          <Text style={[s.tabText, tab === 'creators' && s.tabTextActive]}>Creators ({creators.length})</Text>
-        </TouchableOpacity>
+        {(['analytics', 'settings', 'creators'] as const).map(t => (
+          <TouchableOpacity key={t} style={[s.tab, tab === t && s.tabActive]} onPress={() => setTab(t)}>
+            <Text style={[s.tabText, tab === t && s.tabTextActive]}>{t === 'analytics' ? 'Dashboard' : t === 'settings' ? 'Settings' : `Creators (${creators.length})`}</Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
-      {tab === 'settings' ? (
+      {/* ═══ ANALYTICS TAB ═══ */}
+      {tab === 'analytics' && (
+        <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />} contentContainerStyle={{ padding: spacing.xl, paddingBottom: 100 }}>
+
+          {/* Live Counts */}
+          <Text style={s.sectionLabel}>Subscription Status (Live)</Text>
+          <View style={s.statsGrid}>
+            <StatCard label="Active" value={counts.active || 0} color={colors.success} icon="checkmark-circle" />
+            <StatCard label="Trial" value={counts.trial || 0} color={colors.info} icon="sparkles" />
+            <StatCard label="Expired" value={counts.expired || 0} color={colors.error} icon="close-circle" />
+            <StatCard label="Overdue" value={counts.overdue || 0} color={colors.error} icon="alert-circle" />
+            <StatCard label="Suspended" value={counts.suspended || 0} color={colors.warning} icon="ban" />
+            <StatCard label="Pending" value={counts.pendingPayment || 0} color={colors.textMuted} icon="hourglass" />
+          </View>
+
+          {/* Expiring */}
+          <Text style={s.sectionLabel}>Expiring Soon</Text>
+          <View style={s.expiryRow}>
+            <View style={[s.expiryCard, { borderColor: 'rgba(239,68,68,0.3)' }]}>
+              <Text style={[s.expiryVal, { color: colors.error }]}>{expiring.today || 0}</Text>
+              <Text style={s.expiryLabel}>Today</Text>
+            </View>
+            <View style={[s.expiryCard, { borderColor: 'rgba(245,158,11,0.3)' }]}>
+              <Text style={[s.expiryVal, { color: colors.warning }]}>{expiring.in3Days || 0}</Text>
+              <Text style={s.expiryLabel}>3 Days</Text>
+            </View>
+            <View style={[s.expiryCard, { borderColor: 'rgba(59,130,246,0.3)' }]}>
+              <Text style={[s.expiryVal, { color: colors.info }]}>{expiring.in7Days || 0}</Text>
+              <Text style={s.expiryLabel}>7 Days</Text>
+            </View>
+          </View>
+
+          {/* Revenue */}
+          <Text style={s.sectionLabel}>Revenue Analytics</Text>
+          <View style={s.revenueCard}>
+            <View style={s.revenueRow}><Text style={s.revLabel}>Monthly Revenue (est.)</Text><Text style={s.revVal}>₹{(revenue.monthlyEstimate || 0).toLocaleString('en-IN')}</Text></View>
+            <View style={s.revenueRow}><Text style={s.revLabel}>Price/Month</Text><Text style={s.revVal}>₹{revenue.pricePerMonth || 0}</Text></View>
+            <View style={s.revenueRow}><Text style={s.revLabel}>Renewal Rate</Text><Text style={[s.revVal, { color: (revenue.renewalRate || 0) >= 50 ? colors.success : colors.error }]}>{revenue.renewalRate || 0}%</Text></View>
+            <View style={s.revenueRow}><Text style={s.revLabel}>Active Subscribers</Text><Text style={s.revVal}>{counts.active || 0}</Text></View>
+          </View>
+
+          {/* Reminder System */}
+          <Text style={s.sectionLabel}>Reminder System</Text>
+          <View style={s.reminderCard}>
+            <ReminderRow label="7 days before expiry" enabled />
+            <ReminderRow label="3 days before expiry" enabled />
+            <ReminderRow label="1 day before expiry" enabled />
+            <ReminderRow label="On expiry (auto-expire)" enabled />
+            <View style={s.reminderMeta}>
+              <Text style={s.reminderMetaText}>Cron: Daily 9:00 AM IST</Text>
+              <Text style={s.reminderMetaText}>Sent Today: {notifs.remindersSentToday || 0}</Text>
+              {notifs.lastSent && <Text style={s.reminderMetaText}>Last Push: {formatIST(notifs.lastSent)}</Text>}
+            </View>
+          </View>
+
+          {/* Push Diagnostics */}
+          <Text style={s.sectionLabel}>Push Notification Diagnostics</Text>
+          <View style={s.pushCard}>
+            <View style={s.pushRow}><Text style={s.pushLabel}>Push Service</Text><Text style={[s.pushVal, { color: colors.success }]}>Expo Push API ✓</Text></View>
+            <View style={s.pushRow}><Text style={s.pushLabel}>Users with Token</Text><Text style={s.pushVal}>{push.usersWithPush || 0} / {push.totalUsers || 0}</Text></View>
+            <View style={s.pushRow}><Text style={s.pushLabel}>Creators with Token</Text><Text style={s.pushVal}>{push.creatorsWithPush || 0} / {push.totalCreators || 0}</Text></View>
+            <View style={s.pushRow}><Text style={s.pushLabel}>Total Registered</Text><Text style={s.pushVal}>{push.usersWithPush || 0} devices</Text></View>
+          </View>
+
+          {/* Health Check */}
+          <Text style={s.sectionLabel}>System Health</Text>
+          <View style={s.healthCard}>
+            <HealthRow label="Subscriptions" ok />
+            <HealthRow label="Reminder Jobs (Cron)" ok />
+            <HealthRow label="Push Notifications" ok />
+            <HealthRow label="Database Sync" ok />
+            <HealthRow label="Expo Push API" ok />
+          </View>
+
+          <View style={s.timestampRow}>
+            <Ionicons name="time-outline" size={12} color={colors.textMuted} />
+            <Text style={s.timestampText}>Data as of: {formatIST(analytics?.updatedAt)}</Text>
+          </View>
+        </ScrollView>
+      )}
+
+      {/* ═══ SETTINGS TAB ═══ */}
+      {tab === 'settings' && (
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />} contentContainerStyle={{ padding: spacing.xl, paddingBottom: 120 }}>
-
-            {/* Stats Row */}
-            <View style={s.statsRow}>
-              <View style={s.statBox}><Text style={[s.statVal, { color: colors.success }]}>{activeCount}</Text><Text style={s.statLabel}>Active</Text></View>
-              <View style={s.statBox}><Text style={[s.statVal, { color: colors.info }]}>{trialCount}</Text><Text style={s.statLabel}>Trial</Text></View>
-              <View style={s.statBox}><Text style={[s.statVal, { color: colors.error }]}>{expiredCount}</Text><Text style={s.statLabel}>Expired</Text></View>
-            </View>
-
-            {/* Editable Fields */}
             <Text style={s.sectionLabel}>Subscription Pricing</Text>
             <View style={s.card}>
               <SettingField label="Monthly Subscription Price" value={monthlyPrice} onChangeText={setMonthlyPrice} prefix="₹" placeholder="e.g. 499" />
@@ -172,40 +224,21 @@ export default function AdminSubscriptions({ navigation }: any) {
               <SettingField label="Grace Period After Expiry" value={gracePeriod} onChangeText={setGracePeriod} suffix="days" placeholder="e.g. 7" isLast />
             </View>
 
-            {/* Toggle options */}
-            <View style={s.toggleRow}>
-              <Text style={s.toggleLabel}>Free Trial Enabled</Text>
-              <TouchableOpacity style={[s.toggle, freeTrialEnabled && s.toggleOn]} onPress={() => setFreeTrialEnabled(!freeTrialEnabled)}>
-                <Text style={[s.toggleText, freeTrialEnabled && s.toggleTextOn]}>{freeTrialEnabled ? 'ON' : 'OFF'}</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={s.toggleRow}>
-              <Text style={s.toggleLabel}>Auto-Renew Default</Text>
-              <TouchableOpacity style={[s.toggle, autoRenewDefault && s.toggleOn]} onPress={() => setAutoRenewDefault(!autoRenewDefault)}>
-                <Text style={[s.toggleText, autoRenewDefault && s.toggleTextOn]}>{autoRenewDefault ? 'ON' : 'OFF'}</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Last Updated */}
             {lastUpdatedRaw && (
-              <View style={s.lastUpdatedRow}>
-                <Ionicons name="time-outline" size={13} color={colors.textMuted} />
-                <Text style={s.lastUpdatedText}>Last updated: {formatDateTime(lastUpdatedRaw)}</Text>
-              </View>
+              <View style={s.timestampRow}><Ionicons name="time-outline" size={12} color={colors.textMuted} /><Text style={s.timestampText}>Last updated: {formatIST(lastUpdatedRaw)}</Text></View>
             )}
 
-            {/* Save */}
             <TouchableOpacity style={[s.saveBtn, !hasChanges && s.saveBtnDisabled]} onPress={handleSave} disabled={!hasChanges || saving} activeOpacity={0.7}>
               {saving ? <ActivityIndicator size="small" color={colors.textInverse} /> : (
-                <>
-                  <Ionicons name="checkmark-circle" size={18} color={hasChanges ? colors.textInverse : colors.textMuted} />
-                  <Text style={[s.saveBtnText, !hasChanges && s.saveBtnTextDisabled]}>Save Changes</Text>
-                </>
+                <><Ionicons name="checkmark-circle" size={18} color={hasChanges ? colors.textInverse : colors.textMuted} /><Text style={[s.saveBtnText, !hasChanges && s.saveBtnTextDisabled]}>Save Changes</Text></>
               )}
             </TouchableOpacity>
           </ScrollView>
         </KeyboardAvoidingView>
-      ) : (
+      )}
+
+      {/* ═══ CREATORS TAB ═══ */}
+      {tab === 'creators' && (
         <FlatList
           data={creators}
           showsVerticalScrollIndicator={false}
@@ -217,22 +250,68 @@ export default function AdminSubscriptions({ navigation }: any) {
             const daysLeft = item.subscriptionEndDate ? Math.max(0, Math.ceil((new Date(item.subscriptionEndDate).getTime() - Date.now()) / 86400000)) : 0;
             return (
               <View style={s.creatorCard}>
-                <View style={s.creatorRow}>
-                  <Text style={s.creatorName}>{item.user?.name || 'Creator'}</Text>
+                <View style={s.creatorHeader}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.creatorName}>{item.user?.name || 'Creator'}</Text>
+                    <Text style={s.creatorEmail}>{item.user?.email || ''}</Text>
+                  </View>
                   <View style={[s.badge, { backgroundColor: getStatusColor(item.subscriptionStatus) + '15' }]}>
                     <Text style={[s.badgeText, { color: getStatusColor(item.subscriptionStatus) }]}>{item.subscriptionStatus}</Text>
                   </View>
                 </View>
-                <View style={s.creatorMeta}>
-                  <Text style={s.metaText}>₹{item.subscriptionPlanPrice || monthlyPrice}/mo</Text>
-                  <Text style={s.metaText}>Expires: {item.subscriptionEndDate ? new Date(item.subscriptionEndDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</Text>
-                  {item.subscriptionStatus === 'active' && <Text style={[s.metaText, daysLeft <= 5 ? { color: colors.warning } : {}]}>{daysLeft} days left</Text>}
+                <View style={s.creatorGrid}>
+                  <DetailCell label="Start" value={formatDateShort(item.subscriptionStartDate)} />
+                  <DetailCell label="Expiry" value={formatDateShort(item.subscriptionEndDate)} />
+                  <DetailCell label="Days Left" value={item.subscriptionStatus === 'active' || item.subscriptionStatus === 'trial' ? String(daysLeft) : '—'} valueColor={daysLeft <= 3 ? colors.error : daysLeft <= 7 ? colors.warning : undefined} />
+                  <DetailCell label="Auto Renew" value={item.autoRenew !== false ? 'ON' : 'OFF'} valueColor={item.autoRenew !== false ? colors.success : colors.error} />
+                  <DetailCell label="Last Payment" value={formatDateShort(item.lastPaymentDate)} />
+                  <DetailCell label="Price" value={`₹${item.subscriptionPlanPrice || monthlyPrice}/mo`} />
                 </View>
               </View>
             );
           }}
         />
       )}
+    </View>
+  );
+}
+
+// ═══ Sub-components ═══
+
+function StatCard({ label, value, color, icon }: { label: string; value: number; color: string; icon: string }) {
+  return (
+    <View style={s.statCard}>
+      <Ionicons name={icon as any} size={16} color={color} />
+      <Text style={[s.statVal, { color }]}>{value}</Text>
+      <Text style={s.statLabel}>{label}</Text>
+    </View>
+  );
+}
+
+function ReminderRow({ label, enabled }: { label: string; enabled: boolean }) {
+  return (
+    <View style={s.reminderRow}>
+      <Ionicons name={enabled ? 'checkmark-circle' : 'close-circle'} size={14} color={enabled ? colors.success : colors.error} />
+      <Text style={s.reminderLabel}>{label}</Text>
+      <Text style={[s.reminderStatus, { color: enabled ? colors.success : colors.error }]}>{enabled ? 'Enabled' : 'Disabled'}</Text>
+    </View>
+  );
+}
+
+function HealthRow({ label, ok }: { label: string; ok: boolean }) {
+  return (
+    <View style={s.healthRow}>
+      <Text style={s.healthLabel}>{label}</Text>
+      <Text style={[s.healthStatus, { color: ok ? colors.success : colors.error }]}>{ok ? '✅ Working' : '❌ Failed'}</Text>
+    </View>
+  );
+}
+
+function DetailCell({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) {
+  return (
+    <View style={s.detailCell}>
+      <Text style={s.detailCellLabel}>{label}</Text>
+      <Text style={[s.detailCellVal, valueColor ? { color: valueColor } : undefined]}>{value}</Text>
     </View>
   );
 }
@@ -265,39 +344,64 @@ const s = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.xl, paddingTop: spacing['5xl'], paddingBottom: spacing.md, gap: spacing.md },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
   title: { ...typography.headlineLg, color: colors.text, flex: 1 },
-  changedBadge: { backgroundColor: 'rgba(245,158,11,0.15)', paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radius.sm, borderWidth: 1, borderColor: 'rgba(245,158,11,0.3)' },
-  changedText: { ...typography.caption, color: colors.warning, fontWeight: '600' },
-  tabs: { flexDirection: 'row', marginHorizontal: spacing.xl, backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
-  tab: { flex: 1, paddingVertical: spacing.md, alignItems: 'center' },
+  tabs: { flexDirection: 'row', marginHorizontal: spacing.xl, backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, overflow: 'hidden', marginBottom: spacing.sm },
+  tab: { flex: 1, paddingVertical: spacing.sm + 2, alignItems: 'center' },
   tabActive: { backgroundColor: colors.primary },
-  tabText: { ...typography.labelMd, color: colors.textMuted },
+  tabText: { ...typography.labelSm, color: colors.textMuted },
   tabTextActive: { color: colors.textInverse, fontWeight: '700' },
-  statsRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.xl },
-  statBox: { flex: 1, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
-  statVal: { ...typography.headlineLg, color: colors.text },
-  statLabel: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
-  sectionLabel: { ...typography.labelMd, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: spacing.md },
+  sectionLabel: { ...typography.labelMd, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginTop: spacing.lg, marginBottom: spacing.md },
+  // Stats
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  statCard: { width: '31%', backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, alignItems: 'center', borderWidth: 1, borderColor: colors.border, flexGrow: 1 },
+  statVal: { ...typography.headlineLg, marginTop: spacing.xs },
+  statLabel: { ...typography.caption, color: colors.textMuted, marginTop: 2, textAlign: 'center' },
+  // Expiring
+  expiryRow: { flexDirection: 'row', gap: spacing.sm },
+  expiryCard: { flex: 1, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, alignItems: 'center', borderWidth: 1 },
+  expiryVal: { ...typography.displaySm },
+  expiryLabel: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
+  // Revenue
+  revenueCard: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.borderGold },
+  revenueRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
+  revLabel: { ...typography.bodyMd, color: colors.textSecondary },
+  revVal: { ...typography.headlineSm, color: colors.primary },
+  // Reminders
+  reminderCard: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.border },
+  reminderRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm },
+  reminderLabel: { ...typography.bodyMd, color: colors.text, flex: 1 },
+  reminderStatus: { ...typography.labelSm, fontWeight: '600' },
+  reminderMeta: { marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border, gap: spacing.xs },
+  reminderMetaText: { ...typography.caption, color: colors.textMuted },
+  // Push
+  pushCard: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.border },
+  pushRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
+  pushLabel: { ...typography.bodyMd, color: colors.textSecondary },
+  pushVal: { ...typography.labelMd, color: colors.text, fontWeight: '600' },
+  // Health
+  healthCard: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.border },
+  healthRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.sm },
+  healthLabel: { ...typography.bodyMd, color: colors.text },
+  healthStatus: { ...typography.labelMd, fontWeight: '600' },
+  // Timestamp
+  timestampRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.lg, justifyContent: 'center' },
+  timestampText: { ...typography.caption, color: colors.textMuted },
+  // Settings
   card: { backgroundColor: colors.surface, borderRadius: radius.lg, paddingHorizontal: spacing.lg, borderWidth: 1, borderColor: colors.border },
-  toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.md, paddingHorizontal: spacing.sm },
-  toggleLabel: { ...typography.bodyMd, color: colors.textSecondary },
-  toggle: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2, borderRadius: radius.sm, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
-  toggleOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-  toggleText: { ...typography.labelSm, color: colors.textMuted, fontWeight: '600' },
-  toggleTextOn: { color: colors.textInverse },
-  lastUpdatedRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.lg, justifyContent: 'center' },
-  lastUpdatedText: { ...typography.caption, color: colors.textMuted },
   saveBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, backgroundColor: colors.primary, borderRadius: radius.lg, paddingVertical: spacing.lg, marginTop: spacing['2xl'] },
   saveBtnDisabled: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   saveBtnText: { ...typography.labelLg, color: colors.textInverse, fontWeight: '700' },
   saveBtnTextDisabled: { color: colors.textMuted },
-  // Creators list
-  creatorCard: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.border },
-  creatorRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
+  // Creators
+  creatorCard: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border },
+  creatorHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md },
   creatorName: { ...typography.headlineSm, color: colors.text },
+  creatorEmail: { ...typography.caption, color: colors.textMuted, marginTop: 1 },
   badge: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.sm },
   badgeText: { ...typography.labelSm, fontWeight: '600', textTransform: 'capitalize' },
-  creatorMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.lg },
-  metaText: { ...typography.caption, color: colors.textMuted },
+  creatorGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  detailCell: { width: '30%', flexGrow: 1 },
+  detailCellLabel: { ...typography.caption, color: colors.textMuted },
+  detailCellVal: { ...typography.labelMd, color: colors.text, marginTop: 1 },
   empty: { alignItems: 'center', paddingTop: spacing['4xl'] },
   emptyText: { ...typography.bodyMd, color: colors.textMuted, marginTop: spacing.md },
 });

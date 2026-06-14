@@ -11,11 +11,15 @@ const PLAN_NAMES: Record<string, string> = {
 };
 
 function formatDateTime(isoString: string): string {
+  if (!isoString) return '—';
   const date = new Date(isoString);
   if (isNaN(date.getTime())) return '—';
-  const day = date.getDate();
+  // Convert to IST (UTC+5:30)
+  const istOffset = 5.5 * 60 * 60 * 1000;
+  const ist = new Date(date.getTime() + istOffset);
+  const day = ist.getUTCDate();
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  return `${day} ${months[date.getMonth()]} ${date.getFullYear()}`;
+  return `${day} ${months[ist.getUTCMonth()]} ${ist.getUTCFullYear()}`;
 }
 
 export default function AdminPromotions({ navigation }: any) {
