@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, Alert, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, radius } from '../../theme';
 import api from '../../services/api';
@@ -61,8 +61,8 @@ export default function CreatorLeads({ navigation }: any) {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}><Ionicons name="arrow-back" size={20} color={colors.text} /></TouchableOpacity>
-        <Text style={styles.title}>Leads & Inquiries</Text>
-        <Text style={styles.count}>{leads.filter(l => l.status === 'pending').length} new</Text>
+        <Text style={styles.title}>Inquiries</Text>
+        <TouchableOpacity style={styles.addBtn} onPress={() => navigation.navigate('CreateInquiry')}><Ionicons name="add" size={20} color={colors.primary} /></TouchableOpacity>
       </View>
 
       {/* Tabs */}
@@ -117,6 +117,14 @@ export default function CreatorLeads({ navigation }: any) {
                   <TouchableOpacity style={styles.acceptBtn} onPress={() => handleAccept(item)}><Ionicons name="checkmark" size={14} color={colors.textInverse} /><Text style={styles.acceptText}>Accept</Text></TouchableOpacity>
                 </View>
               )}
+
+              {/* Contact Actions */}
+              {item.phone && (
+                <View style={styles.contactRow}>
+                  <TouchableOpacity style={styles.contactBtn} onPress={() => Linking.openURL(`tel:${item.phone}`)}><Ionicons name="call" size={14} color={colors.info} /><Text style={styles.contactBtnText}>Call</Text></TouchableOpacity>
+                  <TouchableOpacity style={styles.contactBtn} onPress={() => Linking.openURL(`https://wa.me/91${item.phone.replace(/\D/g, '').slice(-10)}`)}><Ionicons name="logo-whatsapp" size={14} color={colors.success} /><Text style={styles.contactBtnText}>WhatsApp</Text></TouchableOpacity>
+                </View>
+              )}
             </View>
           )}
         />
@@ -155,4 +163,8 @@ const styles = StyleSheet.create({
   acceptText: { ...typography.labelMd, color: colors.textInverse, fontWeight: '600' },
   empty: { alignItems: 'center', paddingTop: spacing['4xl'] },
   emptyText: { ...typography.bodyMd, color: colors.textMuted, marginTop: spacing.md },
+  addBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primaryMuted, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.borderGold },
+  contactRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
+  contactBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, paddingVertical: spacing.sm, borderRadius: radius.sm, backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border },
+  contactBtnText: { ...typography.labelSm, color: colors.text },
 });

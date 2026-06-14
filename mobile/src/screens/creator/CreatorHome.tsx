@@ -39,7 +39,7 @@ export default function CreatorHome({ navigation }: any) {
 
   const quickActions = [
     { icon: 'calendar-outline', label: 'Bookings', screen: 'CreatorBookings' },
-    { icon: 'people-outline', label: 'Leads', screen: 'CreatorLeads' },
+    { icon: 'people-outline', label: 'Inquiries', screen: 'CreatorLeads' },
     { icon: 'images-outline', label: 'Portfolio', screen: 'CreatorPortfolio' },
     { icon: 'pricetag-outline', label: 'Packages', screen: 'CreatorPackages' },
     { icon: 'card-outline', label: 'Wallet', screen: 'CreatorWallet' },

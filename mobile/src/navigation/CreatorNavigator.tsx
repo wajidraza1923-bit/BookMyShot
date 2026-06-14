@@ -8,6 +8,7 @@ import CreatorHome from '../screens/creator/CreatorHome';
 import CreatorBookings from '../screens/creator/CreatorBookings';
 import BookingDetail from '../screens/creator/BookingDetail';
 import CreatorLeads from '../screens/creator/CreatorLeads';
+import CreateInquiry from '../screens/creator/CreateInquiry';
 import CreatorWallet from '../screens/creator/CreatorWallet';
 import CreatorProfile from '../screens/creator/CreatorProfile';
 import CreatorNotifications from '../screens/creator/CreatorNotifications';
@@ -57,6 +58,7 @@ export default function CreatorNavigator() {
       <Stack.Screen name="CreatorBookings" component={CreatorBookings} />
       <Stack.Screen name="BookingDetail" component={BookingDetail} />
       <Stack.Screen name="CreatorLeads" component={CreatorLeads} />
+      <Stack.Screen name="CreateInquiry" component={CreateInquiry} />
       <Stack.Screen name="CreatorPortfolio" component={CreatorPortfolio} />
       <Stack.Screen name="CreatorPackages" component={CreatorPackages} />
       <Stack.Screen name="CreatorWallet" component={CreatorWallet} />
