@@ -78,13 +78,19 @@ export default function CreatorPortfolio({ navigation }: any) {
     try {
       const formData = new FormData();
       validAssets.forEach((asset, i) => {
+        console.log(`[Portfolio] UPLOAD FILE ${i}: ${asset.uri}`);
+        console.log(`[Portfolio] TYPE: ${asset.mimeType}`);
+        console.log(`[Portfolio] SIZE: ${asset.fileSize ? (asset.fileSize / 1024 / 1024).toFixed(2) + ' MB' : 'unknown'}`);
         formData.append('photos', { uri: asset.uri, name: asset.fileName || `photo_${i}.jpg`, type: asset.mimeType || 'image/jpeg' } as any);
       });
 
+      console.log('[Portfolio] API URL: POST /creators/upload/portfolio');
       const res = await api.post('/creators/upload/portfolio', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         timeout: 120000,
       });
+      console.log('[Portfolio] RESPONSE STATUS: 200');
+      console.log('[Portfolio] RESPONSE BODY:', JSON.stringify(res.data)?.substring(0, 300));
 
       const slots = res.data?.slots;
       Alert.alert('Uploaded', `${res.data?.uploaded || validAssets.length} photo(s) uploaded.${slots ? `\n${slots.remaining} slots remaining.` : ''}`);
@@ -123,13 +129,20 @@ export default function CreatorPortfolio({ navigation }: any) {
 
     setUploading(true);
     try {
+      console.log(`[Portfolio] VIDEO UPLOAD FILE: ${asset.uri}`);
+      console.log(`[Portfolio] VIDEO TYPE: ${asset.mimeType}`);
+      console.log(`[Portfolio] VIDEO SIZE: ${asset.fileSize ? (asset.fileSize / 1024 / 1024).toFixed(2) + ' MB' : 'unknown'}`);
+
       const formData = new FormData();
       formData.append('videos', { uri: asset.uri, name: asset.fileName || 'video.mp4', type: asset.mimeType || 'video/mp4' } as any);
 
+      console.log('[Portfolio] API URL: POST /creators/upload/videos');
       const res = await api.post('/creators/upload/videos', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         timeout: 180000, // 3 min for video
       });
+      console.log('[Portfolio] VIDEO RESPONSE STATUS: 200');
+      console.log('[Portfolio] VIDEO RESPONSE:', JSON.stringify(res.data)?.substring(0, 300));
 
       const slots = res.data?.slots;
       Alert.alert('Uploaded', `Video uploaded.${slots ? `\n${slots.remaining} slots remaining.` : ''}`);
@@ -143,13 +156,22 @@ export default function CreatorPortfolio({ navigation }: any) {
   const deletePhoto = (item: any) => {
     const url = typeof item === 'string' ? item : item.url;
     const publicId = typeof item === 'string' ? '' : (item.publicId || '');
+    console.log('[Portfolio] DELETE PHOTO URL:', url);
+    console.log('[Portfolio] DELETE PHOTO publicId:', publicId);
     Alert.alert('Delete Photo', 'Remove this photo from your portfolio?', [
       { text: 'Cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
         try {
-          await api.delete('/creators/portfolio', { data: { url, publicId } });
+          console.log('[Portfolio] API URL: DELETE /creators/portfolio');
+          console.log('[Portfolio] REQUEST BODY:', JSON.stringify({ url, publicId }));
+          const res = await api.delete('/creators/portfolio', { data: { url, publicId } });
+          console.log('[Portfolio] DELETE RESPONSE:', JSON.stringify(res.data)?.substring(0, 200));
           await load();
-        } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed to delete'); }
+          Alert.alert('Deleted', 'Photo removed from portfolio');
+        } catch (e: any) {
+          console.log('[Portfolio] DELETE ERROR:', e.response?.status, e.response?.data?.message || e.message);
+          Alert.alert('Error', e.response?.data?.message || 'Failed to delete');
+        }
       }}
     ]);
   };
@@ -158,13 +180,22 @@ export default function CreatorPortfolio({ navigation }: any) {
   const deleteVideo = (item: any) => {
     const url = typeof item === 'string' ? item : item.url;
     const publicId = typeof item === 'string' ? '' : (item.publicId || '');
+    console.log('[Portfolio] DELETE VIDEO URL:', url);
+    console.log('[Portfolio] DELETE VIDEO publicId:', publicId);
     Alert.alert('Delete Video', 'Remove this video from your portfolio?', [
       { text: 'Cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
         try {
-          await api.delete('/creators/videos', { data: { url, publicId } });
+          console.log('[Portfolio] API URL: DELETE /creators/videos');
+          console.log('[Portfolio] REQUEST BODY:', JSON.stringify({ url, publicId }));
+          const res = await api.delete('/creators/videos', { data: { url, publicId } });
+          console.log('[Portfolio] DELETE VIDEO RESPONSE:', JSON.stringify(res.data)?.substring(0, 200));
           await load();
-        } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed to delete'); }
+          Alert.alert('Deleted', 'Video removed from portfolio');
+        } catch (e: any) {
+          console.log('[Portfolio] DELETE VIDEO ERROR:', e.response?.status, e.response?.data?.message || e.message);
+          Alert.alert('Error', e.response?.data?.message || 'Failed to delete');
+        }
       }}
     ]);
   };
@@ -199,13 +230,14 @@ export default function CreatorPortfolio({ navigation }: any) {
       {/* Gallery */}
       {tab === 'photos' ? (
         <FlatList
+          key="photos-grid"
           data={portfolio}
           numColumns={3}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ padding: spacing.xl, paddingBottom: 100 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />}
           columnWrapperStyle={{ gap: spacing.sm }}
-          keyExtractor={(item, i) => (typeof item === 'string' ? item : item.url) + i}
+          keyExtractor={(item, i) => 'photo-' + (typeof item === 'string' ? item : item.url) + i}
           ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
           ListEmptyComponent={
             <View style={styles.empty}>
@@ -224,11 +256,13 @@ export default function CreatorPortfolio({ navigation }: any) {
         />
       ) : (
         <FlatList
+          key="videos-list"
           data={videos}
+          numColumns={1}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ padding: spacing.xl, paddingBottom: 100 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />}
-          keyExtractor={(item, i) => (typeof item === 'string' ? item : item.url) + i}
+          keyExtractor={(item, i) => 'video-' + (typeof item === 'string' ? item : item.url) + i}
           ListEmptyComponent={
             <View style={styles.empty}>
               <Ionicons name="videocam-outline" size={48} color={colors.textMuted} />
