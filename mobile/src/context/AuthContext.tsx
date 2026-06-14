@@ -31,6 +31,7 @@ interface AuthContextType extends AuthState {
   register: (name: string, email: string, password: string, role: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  setAuthDirect: (token: string, user: any) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -39,6 +40,7 @@ const AuthContext = createContext<AuthContextType>({
   register: async () => ({ success: false }),
   logout: async () => {},
   refreshUser: async () => {},
+  setAuthDirect: () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -244,11 +246,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {}
   };
 
+  const setAuthDirect = (newToken: string, newUser: any) => {
+    const normalized = normalizeUser(newUser);
+    setToken(newToken);
+    setUser(normalized);
+  };
+
   const role: UserRole = user?.role || null;
   const isAuthenticated = !!token && !!user;
 
   return (
-    <AuthContext.Provider value={{ user, token, role, isLoading, isAuthenticated, login, register, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, token, role, isLoading, isAuthenticated, login, register, logout, refreshUser, setAuthDirect }}>
       {children}
     </AuthContext.Provider>
   );
