@@ -36,14 +36,14 @@ export default function AdminDashboard({ navigation }: any) {
 
   const menuItems = [
     { icon: 'people-outline', label: 'Creator Management', desc: 'Approve, reject, manage creators', screen: 'AdminCreators' },
-    { icon: 'person-outline', label: 'User Management', desc: 'View and manage users', screen: '' },
-    { icon: 'calendar-outline', label: 'Booking Management', desc: 'All bookings, payments, events', screen: '' },
-    { icon: 'chatbubble-outline', label: 'Inquiries', desc: 'Homepage & contact inquiries', screen: '' },
-    { icon: 'diamond-outline', label: 'Subscriptions', desc: 'Plans, renewals, billing', screen: '' },
-    { icon: 'cash-outline', label: 'Earnings & Commission', desc: 'Revenue reports, commissions', screen: '' },
+    { icon: 'person-outline', label: 'User Management', desc: 'View and manage users', screen: 'AdminCreators' },
+    { icon: 'calendar-outline', label: 'Booking Management', desc: 'All bookings, payments, events', screen: 'AdminBookings' },
+    { icon: 'chatbubble-outline', label: 'Inquiries', desc: 'Homepage & contact inquiries', screen: 'AdminInquiries' },
+    { icon: 'diamond-outline', label: 'Subscriptions', desc: 'Plans, renewals, billing', screen: 'AdminSubscriptions' },
+    { icon: 'cash-outline', label: 'Earnings & Commission', desc: 'Revenue reports, commissions', screen: 'AdminEarnings' },
     { icon: 'star-outline', label: 'Promotions', desc: 'Featured creators, boosts', screen: 'AdminPromotions' },
-    { icon: 'notifications-outline', label: 'Notifications', desc: 'Send notifications, alerts', screen: '' },
-    { icon: 'settings-outline', label: 'Platform Settings', desc: 'Commission %, pricing, config', screen: '' },
+    { icon: 'notifications-outline', label: 'Notifications', desc: 'Send notifications, alerts', screen: 'AdminInquiries' },
+    { icon: 'settings-outline', label: 'Platform Settings', desc: 'Commission %, pricing, config', screen: 'AdminSettings' },
   ];
 
   return (
