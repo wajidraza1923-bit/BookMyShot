@@ -5,10 +5,11 @@ import { colors, spacing, typography, radius } from '../../theme';
 import api from '../../services/api';
 
 export default function CreatorSubscription({ navigation }: any) {
-  const [data, setData] = useState<any>(null);
+  const [creator, setCreator] = useState<any>(null);
   const [config, setConfig] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [subscribing, setSubscribing] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -16,15 +17,21 @@ export default function CreatorSubscription({ navigation }: any) {
         api.get('/creator/dashboard'),
         api.get('/config/public'),
       ]);
-      setData(dashRes.data);
+      setCreator(dashRes.data);
+      // configRes.data is the parsed response body (axios auto-parses)
       setConfig(configRes.data);
-    } catch {} finally { setLoading(false); }
+    } catch (e: any) {
+      console.log('[Subscription] Load error:', e.message);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { load(); }, []);
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
   const handleSubscribe = async () => {
+    setSubscribing(true);
     try {
       const { getRazorpayConfig, createSubscription, openRazorpaySubscription, verifySubscription, isNativeRazorpayAvailable } = require('../../services/payment');
 
@@ -54,7 +61,6 @@ export default function CreatorSubscription({ navigation }: any) {
           const meRes = await api.get('/auth/me');
           const user = meRes.data?.user;
 
-          // Open native Razorpay checkout (same as website Razorpay popup)
           const paymentResult = await openRazorpaySubscription(
             rpConfig.keyId,
             subRes.subscriptionId,
@@ -62,7 +68,6 @@ export default function CreatorSubscription({ navigation }: any) {
             user?.email || ''
           );
 
-          // Verify on backend (same as website POST /razorpay/verify-subscription)
           const verified = await verifySubscription(
             paymentResult.razorpay_subscription_id,
             paymentResult.razorpay_payment_id,
@@ -76,7 +81,6 @@ export default function CreatorSubscription({ navigation }: any) {
             Alert.alert('Verification Failed', 'Payment made but verification failed. Contact support if charged.');
           }
         } catch (e: any) {
-          // Razorpay checkout was dismissed or payment failed
           if (e.code === 'PAYMENT_CANCELLED') {
             Alert.alert('Cancelled', 'Payment was cancelled.');
           } else {
@@ -84,66 +88,147 @@ export default function CreatorSubscription({ navigation }: any) {
           }
         }
       } else {
-        // Development mode: show subscription ID for testing
         Alert.alert(
           'Development Mode',
-          `Razorpay native SDK not available (Expo Go).\n\nSubscription ID: ${subRes.subscriptionId}\n\nIn production APK, the Razorpay checkout will open automatically.\n\nTo test: Use the website subscription page.`,
+          `Razorpay native SDK not available (Expo Go).\n\nSubscription ID: ${subRes.subscriptionId}\n\nIn production APK, the Razorpay checkout will open automatically.`,
           [{ text: 'OK' }]
         );
       }
     } catch (e: any) {
-      Alert.alert('Error', e.response?.data?.message || e.message || 'Failed to create subscription');
+      Alert.alert('Error', e.response?.data?.message || e.message || 'Failed to process subscription');
+    } finally {
+      setSubscribing(false);
     }
   };
 
-  if (loading) return <View style={s.container}><ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 80 }} /></View>;
+  if (loading) {
+    return (
+      <View style={s.container}>
+        <View style={s.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
+            <Ionicons name="arrow-back" size={20} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={s.title}>Subscription</Text>
+        </View>
+        <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 80 }} />
+      </View>
+    );
+  }
 
-  const subStatus = data?.subscriptionStatus || 'inactive';
-  const planPrice = data?.subscriptionPlanPrice || config?.subscription?.monthlyPlanPrice || 0;
-  const renewalPrice = config?.subscription?.monthlyPlanPrice || planPrice;
-  const endDate = data?.subscriptionExpiry;
-  const daysLeft = endDate ? Math.max(0, Math.ceil((new Date(endDate).getTime() - Date.now()) / 86400000)) : 0;
+  // Parse subscription data (same fields as website uses)
+  const subStatus = creator?.subscriptionStatus || 'inactive';
+  const subEndDate = creator?.subscriptionExpiry ? new Date(creator.subscriptionExpiry) : null;
+  const subStartDate = creator?.subscriptionStartDate ? new Date(creator.subscriptionStartDate) : null;
+  const lastPaymentDate = creator?.lastPaymentDate ? new Date(creator.lastPaymentDate) : null;
+  const autoRenew = creator?.autoRenew !== false;
+  const daysRemaining = subEndDate ? Math.max(0, Math.ceil((subEndDate.getTime() - Date.now()) / 86400000)) : 0;
 
+  // Price from platform settings database (NOT hardcoded)
+  const monthlyPlanPrice = config?.subscription?.monthlyPlanPrice || 0;
+  const creatorPlanPrice = creator?.subscriptionPlanPrice || monthlyPlanPrice;
+  const renewalPrice = monthlyPlanPrice; // Current DB price for renewal
+  const priceChanged = creatorPlanPrice > 0 && renewalPrice > 0 && creatorPlanPrice !== renewalPrice;
+
+  // Status display
   const isActive = subStatus === 'active' || subStatus === 'trial';
+  const isTrial = subStatus === 'trial';
   const isExpired = subStatus === 'expired' || subStatus === 'suspended' || subStatus === 'overdue';
+  const isOverdue = subStatus === 'overdue';
+
+  const statusColor = subStatus === 'active' ? colors.success
+    : subStatus === 'trial' ? colors.primary
+    : subStatus === 'overdue' ? colors.error
+    : subStatus === 'expired' ? colors.error
+    : colors.textMuted;
+
+  const statusLabel = subStatus === 'active' ? 'Active'
+    : subStatus === 'trial' ? 'Free Trial'
+    : subStatus === 'overdue' ? 'OVERDUE'
+    : subStatus === 'expired' ? 'Expired'
+    : subStatus === 'suspended' ? 'Suspended'
+    : 'Inactive';
 
   return (
     <View style={s.container}>
       <View style={s.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}><Ionicons name="arrow-back" size={20} color={colors.text} /></TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
+          <Ionicons name="arrow-back" size={20} color={colors.text} />
+        </TouchableOpacity>
         <Text style={s.title}>Subscription</Text>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />} contentContainerStyle={{ paddingBottom: 100 }}>
 
-        {/* Status Card */}
-        <View style={[s.statusCard, { borderColor: isActive ? colors.success + '30' : colors.error + '30' }]}>
-          <View style={[s.statusIcon, { backgroundColor: isActive ? colors.success + '15' : colors.error + '15' }]}>
-            <Ionicons name={isActive ? 'checkmark-circle' : 'alert-circle'} size={28} color={isActive ? colors.success : colors.error} />
+        {/* Warning Banners */}
+        {isOverdue && (
+          <View style={s.warningBanner}>
+            <Ionicons name="alert-triangle" size={16} color={colors.error} />
+            <Text style={s.warningText}>Your account is overdue. Booking creation is disabled until payment is made.</Text>
           </View>
-          <Text style={s.statusLabel}>{isActive ? 'Active Subscription' : isExpired ? 'Subscription Expired' : 'No Active Subscription'}</Text>
-          <Text style={[s.statusBadge, { color: isActive ? colors.success : colors.error }]}>{subStatus.toUpperCase()}</Text>
+        )}
+        {!isOverdue && isActive && daysRemaining > 0 && daysRemaining <= 5 && (
+          <View style={[s.warningBanner, { backgroundColor: 'rgba(245,158,11,0.08)', borderColor: 'rgba(245,158,11,0.2)' }]}>
+            <Ionicons name="time-outline" size={16} color={colors.warning} />
+            <Text style={[s.warningText, { color: colors.warning }]}>{daysRemaining} day{daysRemaining > 1 ? 's' : ''} remaining until subscription expires.</Text>
+          </View>
+        )}
 
-          {isActive && endDate && (
-            <View style={s.expiryRow}>
-              <Text style={s.expiryLabel}>Expires: {new Date(endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}</Text>
-              <Text style={[s.daysLeft, { color: daysLeft <= 7 ? colors.error : colors.success }]}>{daysLeft} days left</Text>
+        {/* Subscription Card */}
+        <View style={[s.subCard, { borderLeftColor: statusColor }]}>
+          <View style={s.subCardHeader}>
+            <View style={{ flex: 1 }}>
+              <View style={s.planRow}>
+                <Ionicons name="diamond" size={16} color={colors.primary} />
+                <Text style={s.planName}>Subscription · Basic Plan</Text>
+              </View>
+
+              {/* Details Grid (same as website) */}
+              <View style={s.detailsGrid}>
+                <DetailRow label="Status" value={statusLabel} valueColor={statusColor} bold />
+                <DetailRow label="Auto Renew" value={autoRenew ? 'ON' : 'OFF'} />
+                <DetailRow label="Next Billing" value={subEndDate ? formatDate(subEndDate) : '—'} />
+                <DetailRow label="Last Payment" value={lastPaymentDate ? formatDate(lastPaymentDate) : '—'} />
+                <DetailRow label="Start Date" value={subStartDate ? formatDate(subStartDate) : '—'} />
+                <DetailRow label="Days Remaining" value={subStatus ? String(daysRemaining) : '—'} valueColor={daysRemaining <= 5 ? colors.warning : undefined} bold={daysRemaining <= 5} />
+              </View>
             </View>
+
+            {/* Price */}
+            <View style={s.priceBox}>
+              <Text style={s.priceAmount}>₹{isActive ? creatorPlanPrice : renewalPrice}</Text>
+              <Text style={s.priceUnit}>per month</Text>
+              {priceChanged && isActive && (
+                <Text style={s.renewalNote}>Renewal: ₹{renewalPrice}/mo</Text>
+              )}
+            </View>
+          </View>
+
+          {/* Subscribe/Renew Button */}
+          {(isExpired || !subStatus || subStatus === 'inactive' || subStatus === 'pending_payment') && (
+            <TouchableOpacity style={s.payBtn} onPress={handleSubscribe} disabled={subscribing} activeOpacity={0.85}>
+              {subscribing ? (
+                <ActivityIndicator size="small" color={colors.textInverse} />
+              ) : (
+                <Text style={s.payBtnText}>Pay Subscription ₹{renewalPrice}</Text>
+              )}
+            </TouchableOpacity>
+          )}
+
+          {isActive && (
+            <TouchableOpacity style={[s.payBtn, s.payBtnOutline]} onPress={handleSubscribe} disabled={subscribing} activeOpacity={0.85}>
+              {subscribing ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Text style={[s.payBtnText, { color: colors.primary }]}>Pay Subscription ₹{renewalPrice}</Text>
+              )}
+            </TouchableOpacity>
           )}
         </View>
 
-        {/* Plan Details */}
-        <View style={s.planCard}>
-          <Text style={s.planTitle}>Creator Pro Plan</Text>
-          <View style={s.priceRow}>
-            <Text style={s.priceAmount}>₹{planPrice}</Text>
-            <Text style={s.priceUnit}>/month</Text>
-          </View>
-          {planPrice !== renewalPrice && (
-            <Text style={s.renewalNote}>Renewal price: ₹{renewalPrice}/month</Text>
-          )}
-
-          <View style={s.features}>
+        {/* Features */}
+        <View style={s.featuresCard}>
+          <Text style={s.featuresTitle}>Plan Benefits</Text>
+          <View style={s.featuresList}>
             <Feature text="Profile visible in search & listings" />
             <Feature text="Receive inquiries & bookings" />
             <Feature text="Accept payments from clients" />
@@ -153,37 +238,54 @@ export default function CreatorSubscription({ navigation }: any) {
             <Feature text="Featured listing eligibility" />
             <Feature text="Priority support" />
           </View>
-
-          {(!isActive || isExpired) && (
-            <TouchableOpacity style={s.subscribeBtn} onPress={handleSubscribe} activeOpacity={0.85}>
-              <Text style={s.subscribeBtnText}>{isExpired ? 'Renew Subscription' : 'Subscribe Now'} — ₹{renewalPrice}/mo</Text>
-            </TouchableOpacity>
-          )}
-
-          {isActive && (
-            <View style={s.activeNote}>
-              <Ionicons name="shield-checkmark" size={14} color={colors.success} />
-              <Text style={s.activeNoteText}>AutoPay active — renews automatically</Text>
-            </View>
-          )}
         </View>
 
-        {/* Info */}
-        <View style={s.infoCard}>
-          <Ionicons name="information-circle-outline" size={16} color={colors.info} />
-          <Text style={s.infoText}>
-            {isExpired
-              ? 'Your subscription has expired. New bookings, inquiries, and events are disabled until you renew.'
-              : 'Subscription is managed via Razorpay AutoPay. Payment is charged automatically each month.'}
-          </Text>
-        </View>
+        {/* AutoPay Info */}
+        {isActive && (
+          <View style={s.infoCard}>
+            <Ionicons name="shield-checkmark-outline" size={16} color={colors.success} />
+            <Text style={s.infoText}>AutoPay is active. Your subscription renews automatically each month via Razorpay.</Text>
+          </View>
+        )}
+
+        {isExpired && (
+          <View style={[s.infoCard, { borderColor: 'rgba(239,68,68,0.15)', backgroundColor: 'rgba(239,68,68,0.04)' }]}>
+            <Ionicons name="alert-circle-outline" size={16} color={colors.error} />
+            <Text style={[s.infoText, { color: colors.error }]}>Your subscription has expired. New bookings, inquiries, and events are disabled until you renew.</Text>
+          </View>
+        )}
+
+        {isTrial && (
+          <View style={[s.infoCard, { borderColor: colors.borderGold, backgroundColor: 'rgba(212,175,55,0.04)' }]}>
+            <Ionicons name="sparkles-outline" size={16} color={colors.primary} />
+            <Text style={[s.infoText, { color: colors.primary }]}>You're on a free trial. Subscribe before it ends to keep your profile active.</Text>
+          </View>
+        )}
       </ScrollView>
     </View>
   );
 }
 
+function formatDate(date: Date): string {
+  return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function DetailRow({ label, value, valueColor, bold }: { label: string; value: string; valueColor?: string; bold?: boolean }) {
+  return (
+    <View style={s.detailRow}>
+      <Text style={s.detailLabel}>{label}</Text>
+      <Text style={[s.detailValue, valueColor ? { color: valueColor } : undefined, bold ? { fontWeight: '700' } : undefined]}>{value}</Text>
+    </View>
+  );
+}
+
 function Feature({ text }: { text: string }) {
-  return <View style={s.featureRow}><Ionicons name="checkmark-circle" size={14} color={colors.primary} /><Text style={s.featureText}>{text}</Text></View>;
+  return (
+    <View style={s.featureRow}>
+      <Ionicons name="checkmark-circle" size={14} color={colors.primary} />
+      <Text style={s.featureText}>{text}</Text>
+    </View>
+  );
 }
 
 const s = StyleSheet.create({
@@ -191,26 +293,42 @@ const s = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.xl, paddingTop: spacing['5xl'], paddingBottom: spacing.md, gap: spacing.md },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
   title: { ...typography.headlineLg, color: colors.text, flex: 1 },
-  statusCard: { marginHorizontal: spacing.xl, marginTop: spacing.lg, backgroundColor: colors.surface, borderRadius: radius.xl, padding: spacing.xl, borderWidth: 1, alignItems: 'center' },
-  statusIcon: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.md },
-  statusLabel: { ...typography.headlineMd, color: colors.text, marginBottom: spacing.xs },
-  statusBadge: { ...typography.labelMd, fontWeight: '700', letterSpacing: 1 },
-  expiryRow: { marginTop: spacing.lg, alignItems: 'center' },
-  expiryLabel: { ...typography.bodySm, color: colors.textSecondary },
-  daysLeft: { ...typography.labelLg, fontWeight: '700', marginTop: spacing.xs },
-  planCard: { marginHorizontal: spacing.xl, marginTop: spacing.xl, backgroundColor: colors.surface, borderRadius: radius.xl, padding: spacing.xl, borderWidth: 1, borderColor: colors.borderGold },
-  planTitle: { ...typography.headlineLg, color: colors.primary, marginBottom: spacing.sm },
-  priceRow: { flexDirection: 'row', alignItems: 'baseline', marginBottom: spacing.xs },
-  priceAmount: { fontSize: 36, fontWeight: '700', color: colors.text },
-  priceUnit: { ...typography.bodyMd, color: colors.textMuted, marginLeft: spacing.xs },
-  renewalNote: { ...typography.caption, color: colors.warning, marginBottom: spacing.lg },
-  features: { gap: spacing.md, marginTop: spacing.lg },
+
+  // Warning banners
+  warningBanner: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginHorizontal: spacing.xl, marginTop: spacing.md, padding: spacing.md, backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.2)', borderRadius: radius.lg },
+  warningText: { ...typography.bodySm, color: colors.error, flex: 1 },
+
+  // Subscription card
+  subCard: { marginHorizontal: spacing.xl, marginTop: spacing.lg, backgroundColor: colors.surface, borderRadius: radius.xl, padding: spacing.xl, borderWidth: 1, borderColor: colors.border, borderLeftWidth: 3 },
+  subCardHeader: { flexDirection: 'row', gap: spacing.lg },
+  planRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
+  planName: { ...typography.headlineSm, color: colors.primary },
+
+  // Details grid
+  detailsGrid: { gap: spacing.xs },
+  detailRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 },
+  detailLabel: { ...typography.caption, color: colors.textMuted },
+  detailValue: { ...typography.bodySm, color: colors.text },
+
+  // Price box
+  priceBox: { alignItems: 'center', justifyContent: 'center' },
+  priceAmount: { fontSize: 24, fontWeight: '700', color: colors.primary },
+  priceUnit: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
+  renewalNote: { ...typography.caption, color: colors.warning, marginTop: spacing.xs },
+
+  // Pay button
+  payBtn: { marginTop: spacing.lg, backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: spacing.md + 2, alignItems: 'center' },
+  payBtnOutline: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.primary },
+  payBtnText: { ...typography.labelLg, color: colors.textInverse, fontWeight: '700' },
+
+  // Features card
+  featuresCard: { marginHorizontal: spacing.xl, marginTop: spacing.xl, backgroundColor: colors.surface, borderRadius: radius.xl, padding: spacing.xl, borderWidth: 1, borderColor: colors.borderGold },
+  featuresTitle: { ...typography.headlineSm, color: colors.text, marginBottom: spacing.lg },
+  featuresList: { gap: spacing.md },
   featureRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   featureText: { ...typography.bodyMd, color: colors.textSecondary },
-  subscribeBtn: { marginTop: spacing.xl, backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: spacing.lg, alignItems: 'center' },
-  subscribeBtnText: { ...typography.labelLg, color: colors.textInverse, fontWeight: '700' },
-  activeNote: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.xl, paddingTop: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border },
-  activeNoteText: { ...typography.bodySm, color: colors.success },
-  infoCard: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, marginHorizontal: spacing.xl, marginTop: spacing.xl, backgroundColor: 'rgba(59,130,246,0.06)', borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, borderColor: 'rgba(59,130,246,0.15)' },
-  infoText: { ...typography.bodySm, color: colors.info, flex: 1, lineHeight: 18 },
+
+  // Info cards
+  infoCard: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, marginHorizontal: spacing.xl, marginTop: spacing.xl, backgroundColor: 'rgba(34,197,94,0.04)', borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, borderColor: 'rgba(34,197,94,0.15)' },
+  infoText: { ...typography.bodySm, color: colors.success, flex: 1, lineHeight: 18 },
 });
