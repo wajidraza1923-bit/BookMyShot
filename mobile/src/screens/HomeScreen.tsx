@@ -7,7 +7,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, radius, shadows } from '../theme';
 import { SectionHeader, SkeletonLoader, CategoryPill } from '../components';
 import { creatorsAPI } from '../services/api';
-import { mockCreators, mockCategories, mockCities, promotionalBanners } from '../constants/mockData';
+import { mockCreators } from '../constants/mockData';
+import api from '../services/api';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.72;
@@ -17,13 +18,22 @@ export default function HomeScreen({ navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [creators, setCreators] = useState<any[]>(mockCreators);
   const [activeCategory, setActiveCategory] = useState('all');
+  const [categories, setCategories] = useState<any[]>([]);
+  const [cities, setCities] = useState<any[]>([]);
+  const [banners, setBanners] = useState<any[]>([]);
 
   const loadData = useCallback(async () => {
     try {
-      const res = await creatorsAPI.getAll();
-      const data = res.data?.creators || res.data?.data || [];
+      const [creatorsRes, configRes] = await Promise.all([
+        creatorsAPI.getAll(),
+        api.get('/app-config').catch(() => ({ data: { categories: [], cities: [], banners: [] } })),
+      ]);
+      const data = creatorsRes.data?.creators || creatorsRes.data?.data || [];
       if (data.length > 0) setCreators(data);
-    } catch { /* use mock data */ }
+      if (configRes.data?.categories?.length) setCategories(configRes.data.categories);
+      if (configRes.data?.cities?.length) setCities(configRes.data.cities);
+      if (configRes.data?.banners?.length) setBanners(configRes.data.banners);
+    } catch { /* use fallback data */ }
     finally { setLoading(false); }
   }, []);
 
@@ -63,7 +73,7 @@ export default function HomeScreen({ navigation }: any) {
         {/* ═══ PROMO BANNERS ═══ */}
         <FlatList
           horizontal showsHorizontalScrollIndicator={false}
-          data={promotionalBanners}
+          data={banners}
           contentContainerStyle={{ paddingHorizontal: spacing.xl, paddingTop: spacing.lg }}
           renderItem={({ item }) => (
             <View style={[styles.promoBanner, { backgroundColor: item.color + '15', borderColor: item.color + '30' }]}>
@@ -77,7 +87,7 @@ export default function HomeScreen({ navigation }: any) {
         {/* ═══ CATEGORIES ═══ */}
         <SectionHeader title="Categories" actionLabel="See all" onAction={() => navigation.navigate('Discover')} />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.catRow}>
-          {mockCategories.map(cat => (
+          {categories.map(cat => (
             <TouchableOpacity key={cat.id} style={[styles.catItem, activeCategory === cat.id && styles.catItemActive]} onPress={() => setActiveCategory(cat.id)}>
               <Text style={styles.catIcon}>{cat.icon}</Text>
               <Text style={[styles.catLabel, activeCategory === cat.id && styles.catLabelActive]}>{cat.label}</Text>
@@ -133,7 +143,7 @@ export default function HomeScreen({ navigation }: any) {
         <SectionHeader title="Popular Cities" subtitle="Explore by location" />
         <FlatList
           horizontal showsHorizontalScrollIndicator={false}
-          data={mockCities}
+          data={cities}
           contentContainerStyle={{ paddingHorizontal: spacing.xl }}
           renderItem={({ item }) => (
             <TouchableOpacity style={styles.cityCard} onPress={() => navigation.navigate('Discover', { city: item.name })} activeOpacity={0.85}>

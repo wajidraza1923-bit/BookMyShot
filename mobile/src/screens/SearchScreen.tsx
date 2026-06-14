@@ -3,7 +3,8 @@ import { View, Text, FlatList, StyleSheet, TouchableOpacity, ScrollView, Image, 
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, radius } from '../theme';
 import { creatorsAPI } from '../services/api';
-import { mockCreators, mockCategories, mockCities, trendingSearches } from '../constants/mockData';
+import { mockCreators } from '../constants/mockData';
+import api from '../services/api';
 
 export default function SearchScreen({ navigation, route }: any) {
   const [query, setQuery] = useState('');
@@ -12,6 +13,25 @@ export default function SearchScreen({ navigation, route }: any) {
   const [selectedCity, setSelectedCity] = useState(route?.params?.city || '');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [showResults, setShowResults] = useState(!!route?.params?.city);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [cities, setCities] = useState<any[]>([]);
+  const [trendingSearches, setTrendingSearches] = useState<string[]>([]);
+
+  useEffect(() => {
+    loadConfig();
+  }, []);
+
+  const loadConfig = async () => {
+    try {
+      const res = await api.get('/app-config');
+      if (res.data?.categories) setCategories(res.data.categories.filter((c: any) => c.id !== 'all'));
+      if (res.data?.cities) setCities(res.data.cities);
+      // Use city names as trending searches
+      const trending = (res.data?.cities || []).slice(0, 3).map((c: any) => `${c.name} photographer`);
+      trending.push('Pre-wedding shoot', 'Candid photography');
+      setTrendingSearches(trending);
+    } catch {}
+  };
 
   const searchCreators = useCallback(async () => {
     setLoading(true);
@@ -52,7 +72,7 @@ export default function SearchScreen({ navigation, route }: any) {
       {/* Categories */}
       <Text style={styles.sectionLabel}>Browse by Category</Text>
       <View style={styles.catGrid}>
-        {mockCategories.filter(c => c.id !== 'all').map(cat => (
+        {categories.map(cat => (
           <TouchableOpacity key={cat.id} style={styles.catCard} onPress={() => { setSelectedCategory(cat.id); setShowResults(true); }}>
             <Text style={styles.catCardIcon}>{cat.icon}</Text>
             <Text style={styles.catCardLabel}>{cat.label}</Text>
@@ -65,7 +85,7 @@ export default function SearchScreen({ navigation, route }: any) {
       <Text style={styles.sectionLabel}>Popular Cities</Text>
       <FlatList
         horizontal showsHorizontalScrollIndicator={false}
-        data={mockCities}
+        data={cities}
         contentContainerStyle={{ paddingHorizontal: spacing.xl }}
         renderItem={({ item }) => (
           <TouchableOpacity style={styles.cityChip} onPress={() => { setSelectedCity(item.name); setShowResults(true); }}>

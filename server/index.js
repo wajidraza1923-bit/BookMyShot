@@ -316,6 +316,54 @@ app.get("/api/config/public", async (req, res) => {
   }
 });
 
+// Mobile app config — dynamic categories, cities, banners from real data
+app.get("/api/app-config", async (req, res) => {
+  try {
+    const Creator = require("./models/Creator");
+    const creators = await Creator.find({ status: "approved", subscriptionStatus: { $in: ["active", "trial"] } }).select("category city").lean();
+
+    // Derive categories from real creator data
+    const catCounts: Record<string, number> = {};
+    creators.forEach(c => { if (c.category) catCounts[c.category] = (catCounts[c.category] || 0) + 1; });
+    const categoryIcons: Record<string, string> = { wedding: '💒', 'pre-wedding': '💑', cinematography: '🎬', makeup: '💄', mehendi: '🌿', drone: '🚁', decoration: '🎊', photography: '📸' };
+    const categories = [{ id: 'all', label: 'All', icon: '✨', count: creators.length }];
+    Object.entries(catCounts).sort((a, b) => b[1] - a[1]).forEach(([id, count]) => {
+      categories.push({ id, label: id.charAt(0).toUpperCase() + id.slice(1).replace(/-/g, ' '), icon: categoryIcons[id] || '📷', count });
+    });
+
+    // Derive cities from real creator data
+    const cityCounts: Record<string, number> = {};
+    creators.forEach(c => { if (c.city) cityCounts[c.city] = (cityCounts[c.city] || 0) + 1; });
+    const cities = Object.entries(cityCounts).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([name, count]) => ({ id: name.toLowerCase().replace(/\s+/g, '-'), name, count }));
+
+    // Get announcements/banners from admin if available
+    let banners = [];
+    try {
+      const Announcement = require("./models/Announcement");
+      const active = await Announcement.find({ active: true }).sort("-createdAt").limit(5).lean();
+      banners = active.map((a: any) => ({ id: a._id, title: a.title, subtitle: a.message || '', color: '#D4AF37' }));
+    } catch {}
+    if (banners.length === 0) {
+      banners = [{ id: '1', title: 'Premium Creators', subtitle: 'Verified & trusted professionals', color: '#D4AF37' }];
+    }
+
+    // Commission from config
+    const configService = require("./services/configService");
+    const commSettings = await configService.getCommissionSettings();
+
+    res.json({
+      success: true,
+      categories,
+      cities,
+      banners,
+      commission: { bmsLeadPercent: commSettings.bmsLeadCommissionPercent || 5, creatorLeadPercent: commSettings.creatorLeadCommissionPercent || 3 },
+      totalCreators: creators.length,
+    });
+  } catch (err) {
+    res.json({ success: true, categories: [], cities: [], banners: [], commission: { bmsLeadPercent: 5, creatorLeadPercent: 3 }, totalCreators: 0 });
+  }
+});
+
 // Public social links endpoint (no auth required)
 app.get("/api/social-links", async (req, res) => {
   try {

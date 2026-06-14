@@ -218,7 +218,7 @@ export default function CreatorProfileScreen({ route, navigation }: any) {
         <View style={styles.ctaPrice}>
           <Text style={styles.ctaPriceLabel}>Starting from</Text>
           <Text style={styles.ctaPriceValue}>
-            ₹{(packages[0]?.price || creator.startingPrice || 15000).toLocaleString('en-IN')}
+            ₹{(packages[0]?.price || creator.startingPrice || 0).toLocaleString('en-IN')}
           </Text>
         </View>
         <Button title="Send Inquiry" onPress={() => {}} size="md" style={styles.ctaBtn} />
