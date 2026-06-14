@@ -44,6 +44,7 @@ export default function AdminDashboard({ navigation }: any) {
     { icon: 'star-outline', label: 'Promotions', desc: 'Featured creators, boosts', screen: 'AdminPromotions' },
     { icon: 'notifications-outline', label: 'Notifications', desc: 'Send notifications, alerts', screen: 'AdminInquiries' },
     { icon: 'settings-outline', label: 'Platform Settings', desc: 'Commission %, pricing, config', screen: 'AdminSettings' },
+    { icon: 'flask-outline', label: 'QA Testing', desc: 'Run API tests, verify features', screen: 'QADashboard' },
   ];
 
   return (
