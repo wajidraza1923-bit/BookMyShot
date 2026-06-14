@@ -43,7 +43,7 @@ export default function CreatorHome({ navigation }: any) {
     { icon: 'images-outline', label: 'Portfolio', screen: 'CreatorPortfolio' },
     { icon: 'pricetag-outline', label: 'Packages', screen: 'CreatorPackages' },
     { icon: 'card-outline', label: 'Wallet', screen: 'CreatorWallet' },
-    { icon: 'star-outline', label: 'Reviews', screen: 'CreatorReviews' },
+    { icon: 'rocket-outline', label: 'Promotions', screen: 'CreatorPromotions' },
     { icon: 'calendar-clear-outline', label: 'Calendar', screen: 'CreatorCalendar' },
     { icon: 'settings-outline', label: 'Settings', screen: 'CreatorSettings' },
   ];
