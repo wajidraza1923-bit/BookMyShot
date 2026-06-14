@@ -89,6 +89,20 @@ export default function CreatorHome({ navigation }: any) {
           </View>
         )}
 
+        {/* Subscription Expiry Warning */}
+        {(stats as any).expiryWarning && (
+          <TouchableOpacity style={[styles.alertCard, { borderColor: (stats as any).expiryWarning.level === 'critical' || (stats as any).expiryWarning.level === 'expired' ? 'rgba(239,68,68,0.3)' : 'rgba(245,158,11,0.3)', backgroundColor: (stats as any).expiryWarning.level === 'critical' || (stats as any).expiryWarning.level === 'expired' ? 'rgba(239,68,68,0.06)' : 'rgba(245,158,11,0.06)' }]} activeOpacity={0.8} onPress={() => navigation.navigate('CreatorSubscription')}>
+            <Ionicons name={(stats as any).expiryWarning.level === 'critical' || (stats as any).expiryWarning.level === 'expired' ? 'warning' : 'time-outline'} size={18} color={(stats as any).expiryWarning.level === 'critical' || (stats as any).expiryWarning.level === 'expired' ? colors.error : colors.warning} />
+            <View style={styles.alertContent}>
+              <Text style={[styles.alertTitle, { color: (stats as any).expiryWarning.level === 'critical' || (stats as any).expiryWarning.level === 'expired' ? colors.error : colors.warning }]}>
+                {(stats as any).expiryWarning.level === 'expired' ? 'Subscription Expired' : `Expires in ${(stats as any).subscriptionDaysLeft} day${(stats as any).subscriptionDaysLeft > 1 ? 's' : ''}`}
+              </Text>
+              <Text style={styles.alertSubtitle}>{(stats as any).expiryWarning.message}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+          </TouchableOpacity>
+        )}
+
         {/* Quick Actions */}
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.actionsGrid}>

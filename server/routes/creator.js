@@ -103,6 +103,17 @@ router.get("/dashboard", async (req, res, next) => {
       subscriptionPlanPrice: creator.subscriptionPlanPrice || 0,
       lastPaymentDate: creator.lastPaymentDate,
       autoRenew: creator.autoRenew !== false,
+      // Expiry warning for dashboard
+      subscriptionDaysLeft: creator.subscriptionEndDate ? Math.max(0, Math.ceil((creator.subscriptionEndDate - now) / 86400000)) : null,
+      expiryWarning: (() => {
+        if (!creator.subscriptionEndDate) return null;
+        const dl = Math.ceil((creator.subscriptionEndDate - now) / 86400000);
+        if (dl <= 0) return { level: "expired", message: "Your subscription has expired. Profile is hidden." };
+        if (dl === 1) return { level: "critical", message: "Subscription expires TOMORROW. Without renewal: profile hidden, no bookings, no inquiries, promotions removed." };
+        if (dl <= 3 && creator.autoRenew === false) return { level: "urgent", message: `${dl} days left. AutoPay is off — renew manually.` };
+        if (dl <= 7 && creator.autoRenew === false) return { level: "warning", message: `${dl} days until expiry. AutoPay is off.` };
+        return null;
+      })(),
       upcomingBookings: upcomingEvents.slice(0, 3).map(b => ({
         _id: b._id,
         clientName: b.clientName,

@@ -1,13 +1,19 @@
 /**
  * BookMyShot — Automated Scheduler
  * Runs daily cron jobs for subscription alerts, commission reminders, and promotion expiry.
+ * 
+ * Subscription Reminder Logic:
+ * - AutoPay ON: No reminders sent (Razorpay handles renewal automatically)
+ * - AutoPay OFF (cancelled): Send reminders at 7, 5, 3, 1 days before expiry
+ * - Day of expiry: Dashboard warning + expiry notification
+ * - After expiry: Immediately expire (no grace period)
  */
 const cron = require("node-cron");
 
 function initScheduler() {
   console.log("[Scheduler] Starting automated jobs...");
 
-  // Daily at 9:00 AM IST — Subscription expiry reminders (7/3/1 days)
+  // Daily at 9:00 AM IST — Subscription expiry + pre-expiry reminders
   cron.schedule("0 9 * * *", async () => {
     console.log("[Scheduler] Running subscription alerts...");
     try {
@@ -16,33 +22,68 @@ function initScheduler() {
       const emailService = require("./emailService");
       const now = new Date();
       const creators = await Creator.find({ subscriptionStatus: { $in: ["active", "trial"] } }).populate("user", "name email");
-      let sent = 0;
+      let expired = 0;
+      let reminded = 0;
 
       for (const c of creators) {
         if (!c.subscriptionEndDate || !c.user) continue;
         const daysLeft = Math.ceil((c.subscriptionEndDate - now) / 86400000);
 
         if (daysLeft <= 0) {
-          // Expired
-          await Creator.updateOne({ _id: c._id }, { $set: { subscriptionStatus: "expired" } });
+          // ═══ EXPIRED — instant loss of access ═══
+          await Creator.updateOne({ _id: c._id }, { $set: { subscriptionStatus: "expired", featured: false } });
           if (c.user.email) {
             emailService.sendSubscriptionExpired({ email: c.user.email, name: c.user.name, creatorId: c._id, userId: c.user._id }).catch(() => {});
           }
-          await Notification.create({ user: c.user._id, type: "subscription", title: "⚠️ Subscription Expired", message: "Your subscription has expired. Renew to continue." });
-          sent++;
-        } else if ([7, 3, 1].includes(daysLeft)) {
+          await Notification.create({
+            user: c.user._id,
+            type: "subscription",
+            title: "⚠️ Subscription Expired",
+            message: "Your subscription has expired. Your profile is now hidden from search, bookings and inquiries are disabled. Renew immediately to restore access.",
+          });
+          expired++;
+        } else if (daysLeft === 1) {
+          // ═══ LAST DAY — warn everyone (AutoPay ON or OFF) ═══
+          // Even with AutoPay, inform them about what happens if payment fails
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          const existing = await Notification.findOne({ user: c.user._id, type: "subscription", createdAt: { $gte: today } });
+          if (!existing) {
+            const autoPayMsg = c.autoRenew
+              ? "Your subscription renews tomorrow via AutoPay. If payment fails, your profile will be hidden."
+              : "Your subscription expires TOMORROW. Without renewal:\n• Profile hidden from search\n• No new bookings or inquiries\n• Promotions removed\nRenew now to stay visible.";
+            if (c.user.email) {
+              emailService.sendSubscriptionExpiryReminder({ email: c.user.email, name: c.user.name, daysLeft: 1, endDate: c.subscriptionEndDate, creatorId: c._id, userId: c.user._id }).catch(() => {});
+            }
+            await Notification.create({
+              user: c.user._id,
+              type: "subscription",
+              title: "🚨 Subscription Expires Tomorrow",
+              message: autoPayMsg,
+            });
+            reminded++;
+          }
+        } else if ([7, 5, 3].includes(daysLeft)) {
+          // ═══ PRE-EXPIRY REMINDERS — only if AutoPay is OFF ═══
+          // If creator has AutoPay enabled, Razorpay handles renewal automatically — no need to nag
+          if (c.autoRenew === true) continue;
+
           const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
           const existing = await Notification.findOne({ user: c.user._id, type: "subscription", createdAt: { $gte: today } });
           if (!existing) {
             if (c.user.email) {
               emailService.sendSubscriptionExpiryReminder({ email: c.user.email, name: c.user.name, daysLeft, endDate: c.subscriptionEndDate, creatorId: c._id, userId: c.user._id }).catch(() => {});
             }
-            await Notification.create({ user: c.user._id, type: "subscription", title: `⏰ Subscription Expires in ${daysLeft} Day${daysLeft > 1 ? "s" : ""}`, message: `Renew now to avoid interruption.` });
-            sent++;
+            await Notification.create({
+              user: c.user._id,
+              type: "subscription",
+              title: `⏰ Subscription Expires in ${daysLeft} Days`,
+              message: `Your subscription expires in ${daysLeft} days. AutoPay is off — please renew manually to keep your profile active.`,
+            });
+            reminded++;
           }
         }
       }
-      console.log(`[Scheduler] Subscription alerts: ${sent} sent`);
+      console.log(`[Scheduler] Subscription alerts: ${expired} expired, ${reminded} reminded`);
     } catch (e) {
       console.error("[Scheduler] Subscription alerts error:", e.message);
     }

@@ -245,6 +245,23 @@ router.post("/cancel-subscription", protect, authorize("creator"), async (req, r
     creator.autoRenew = false;
     await creator.save();
 
+    // Send immediate reminder since AutoPay is now off
+    const daysLeft = creator.subscriptionEndDate ? Math.ceil((creator.subscriptionEndDate - new Date()) / 86400000) : 0;
+    if (daysLeft > 0) {
+      const Notification = require("../models/Notification");
+      await Notification.create({
+        user: req.user._id,
+        type: "subscription",
+        title: "📢 AutoPay Cancelled",
+        message: `AutoPay has been turned off. Your subscription expires in ${daysLeft} day${daysLeft > 1 ? "s" : ""}. After that, your profile will be hidden from search and you won't receive bookings or inquiries. Renew manually before expiry.`,
+      });
+      // Send email
+      const emailService = require("../services/emailService");
+      if (req.user.email) {
+        emailService.sendSubscriptionExpiryReminder({ email: req.user.email, name: req.user.name, daysLeft, endDate: creator.subscriptionEndDate, creatorId: creator._id, userId: req.user._id }).catch(() => {});
+      }
+    }
+
     res.json({ success: true, message: "Subscription will be cancelled at the end of current period" });
   } catch (e) {
     next(e);

@@ -173,12 +173,15 @@ export default function AdminSubscriptions({ navigation }: any) {
           {/* Reminder System */}
           <Text style={s.sectionLabel}>Reminder System</Text>
           <View style={s.reminderCard}>
-            <ReminderRow label="7 days before expiry" enabled />
-            <ReminderRow label="3 days before expiry" enabled />
-            <ReminderRow label="1 day before expiry" enabled />
-            <ReminderRow label="On expiry (auto-expire)" enabled />
+            <ReminderRow label="7 days before (AutoPay OFF only)" enabled />
+            <ReminderRow label="5 days before (AutoPay OFF only)" enabled />
+            <ReminderRow label="3 days before (AutoPay OFF only)" enabled />
+            <ReminderRow label="1 day before (ALL creators)" enabled />
+            <ReminderRow label="On expiry → instant disable" enabled />
+            <ReminderRow label="Cancel AutoPay → immediate alert" enabled />
             <View style={s.reminderMeta}>
               <Text style={s.reminderMetaText}>Cron: Daily 9:00 AM IST</Text>
+              <Text style={s.reminderMetaText}>Logic: Skip if AutoPay ON (Razorpay handles)</Text>
               <Text style={s.reminderMetaText}>Sent Today: {notifs.remindersSentToday || 0}</Text>
               {notifs.lastSent && <Text style={s.reminderMetaText}>Last Push: {formatIST(notifs.lastSent)}</Text>}
             </View>
