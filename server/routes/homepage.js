@@ -26,6 +26,7 @@ router.get("/", async (req, res, next) => {
     // Combine featured + spotlight creators
     const featured = await Creator.find({
       status: "approved",
+      subscriptionStatus: { $in: ["active", "trial"] },
       $or: [
         { featured: true },
         { _id: { $in: spotlightCreatorIds } },
@@ -37,7 +38,7 @@ router.get("/", async (req, res, next) => {
     const creators =
       featured.length > 0
         ? featured
-        : await Creator.find({ status: "approved" })
+        : await Creator.find({ status: "approved", subscriptionStatus: { $in: ["active", "trial"] } })
             .populate("user", "name avatar")
             .sort("-rating")
             .limit(6);

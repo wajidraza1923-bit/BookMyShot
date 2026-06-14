@@ -27,7 +27,6 @@ const DEFAULTS = {
     yearlyPlanPrice: 2999,
     trialDays: 30,
     autoRenewDefault: true,
-    gracePeriodDays: 7,
     featuredPortfolioPrice: 999,
     searchBoostPrice: 499,
     homepageFeaturedPrice: 1499,

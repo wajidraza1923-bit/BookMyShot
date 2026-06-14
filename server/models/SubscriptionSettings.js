@@ -8,7 +8,6 @@ const subscriptionSettingsSchema = new mongoose.Schema(
     trialAmount: { type: Number, default: 1 },
     freeTrialEnabled: { type: Boolean, default: true },
     autoRenewDefault: { type: Boolean, default: true },
-    gracePeriodDays: { type: Number, default: 7 },
     // Future pricing
     futureMonthlyPrice: { type: Number, default: 0 },
     priceChangeMode: { type: String, enum: ["new_only", "all_creators", ""], default: "" },

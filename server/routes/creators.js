@@ -72,8 +72,12 @@ router.get("/public/:id", async (req, res, next) => {
     if (!creator || creator.status !== "approved") {
       return res.status(404).json({ success: false, message: "Creator not found" });
     }
+
+    // If subscription expired, mark as unavailable (profile visible but can't accept work)
+    const isAvailable = ["active", "trial"].includes(creator.subscriptionStatus);
+
     const user = creator.user || {};
-    res.json({ success: true, creator, user });
+    res.json({ success: true, creator, user, isAvailable });
   } catch (e) {
     next(e);
   }

@@ -44,7 +44,6 @@ export default function AdminSubscriptions({ navigation }: any) {
   // Settings fields
   const [monthlyPrice, setMonthlyPrice] = useState('');
   const [trialDays, setTrialDays] = useState('');
-  const [gracePeriod, setGracePeriod] = useState('');
   const [original, setOriginal] = useState<any>(null);
   const [lastUpdatedRaw, setLastUpdatedRaw] = useState<string | null>(null);
 
@@ -64,8 +63,7 @@ export default function AdminSubscriptions({ navigation }: any) {
       const sub = settingsRes.data?.data || settingsRes.data?.settings || settingsRes.data || {};
       setMonthlyPrice(String(sub.monthlyPlanPrice || 0));
       setTrialDays(String(sub.trialDays || 0));
-      setGracePeriod(String(sub.gracePeriodDays || 7));
-      setOriginal({ monthlyPlanPrice: sub.monthlyPlanPrice || 0, trialDays: sub.trialDays || 0, gracePeriodDays: sub.gracePeriodDays || 7 });
+      setOriginal({ monthlyPlanPrice: sub.monthlyPlanPrice || 0, trialDays: sub.trialDays || 0 });
       setHasChanges(false);
       if (sub.updatedAt) setLastUpdatedRaw(sub.updatedAt);
 
@@ -82,15 +80,14 @@ export default function AdminSubscriptions({ navigation }: any) {
 
   useEffect(() => {
     if (!original) return;
-    setHasChanges(String(original.monthlyPlanPrice) !== monthlyPrice || String(original.trialDays) !== trialDays || String(original.gracePeriodDays) !== gracePeriod);
-  }, [monthlyPrice, trialDays, gracePeriod, original]);
+    setHasChanges(String(original.monthlyPlanPrice) !== monthlyPrice || String(original.trialDays) !== trialDays);
+  }, [monthlyPrice, trialDays, original]);
 
   const handleSave = () => {
-    const mp = Number(monthlyPrice); const td = Number(trialDays); const gp = Number(gracePeriod);
+    const mp = Number(monthlyPrice); const td = Number(trialDays);
     if (isNaN(mp) || mp < 0) return Alert.alert('Invalid', 'Monthly price must be ≥ 0');
     if (isNaN(td) || td < 0) return Alert.alert('Invalid', 'Trial days must be ≥ 0');
-    if (isNaN(gp) || gp < 0) return Alert.alert('Invalid', 'Grace period must be ≥ 0');
-    Alert.alert('Confirm', `Save subscription settings?\n\nMonthly: ₹${mp}\nTrial: ${td} days\nGrace: ${gp} days`, [
+    Alert.alert('Confirm', `Save subscription settings?\n\nMonthly: ₹${mp}\nTrial: ${td} days`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Save', onPress: saveToBackend },
     ]);
@@ -99,7 +96,7 @@ export default function AdminSubscriptions({ navigation }: any) {
   const saveToBackend = async () => {
     setSaving(true);
     try {
-      await api.put('/admin/subscription-settings', { monthlyPlanPrice: Number(monthlyPrice), trialDays: Number(trialDays), gracePeriodDays: Number(gracePeriod) });
+      await api.put('/admin/subscription-settings', { monthlyPlanPrice: Number(monthlyPrice), trialDays: Number(trialDays) });
       Alert.alert('✓ Saved', 'Subscription settings updated.');
       await load();
     } catch (e: any) { Alert.alert('Failed', e.response?.data?.message || e.message); }
@@ -220,8 +217,7 @@ export default function AdminSubscriptions({ navigation }: any) {
             <Text style={s.sectionLabel}>Subscription Pricing</Text>
             <View style={s.card}>
               <SettingField label="Monthly Subscription Price" value={monthlyPrice} onChangeText={setMonthlyPrice} prefix="₹" placeholder="e.g. 499" />
-              <SettingField label="Trial Days (New Creators)" value={trialDays} onChangeText={setTrialDays} suffix="days" placeholder="e.g. 30" />
-              <SettingField label="Grace Period After Expiry" value={gracePeriod} onChangeText={setGracePeriod} suffix="days" placeholder="e.g. 7" isLast />
+              <SettingField label="Trial Days (New Creators)" value={trialDays} onChangeText={setTrialDays} suffix="days" placeholder="e.g. 30" isLast />
             </View>
 
             {lastUpdatedRaw && (

@@ -66,8 +66,8 @@ const validateSubscriptionSettings = (req, res, next) => {
     }
   }
 
-  // Also validate trialDays and gracePeriodDays as non-negative integers
-  for (const field of ["trialDays", "gracePeriodDays"]) {
+  // Also validate trialDays as non-negative integer
+  for (const field of ["trialDays"]) {
     if (req.body[field] !== undefined) {
       const val = Number(req.body[field]);
       if (isNaN(val) || val < 0) {

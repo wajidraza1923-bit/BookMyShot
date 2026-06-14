@@ -508,7 +508,6 @@
               <div class="form-group"><label>Monthly Plan Price (₹)</label><input type="number" id="ssMonthlyPrice" min="0" step="1"></div>
               <div class="form-group"><label>Future Monthly Price (₹)</label><input type="number" id="ssFuturePrice" min="0" step="1" placeholder="0 = no change planned"></div>
               <div class="form-group"><label>Yearly Plan Price (₹)</label><input type="number" id="ssYearlyPrice" min="0" step="1"></div>
-              <div class="form-group"><label>Grace Period Days</label><input type="number" id="ssGracePeriod" min="0"></div>
               <div class="form-group"><label>Price Change Mode</label>
                 <select id="ssPriceChangeMode">
                   <option value="">No future price change</option>
@@ -1836,7 +1835,6 @@
         document.getElementById("ssMonthlyPrice").value = s.monthlyPlanPrice ?? 299;
         document.getElementById("ssFuturePrice").value = s.futureMonthlyPrice || 0;
         document.getElementById("ssYearlyPrice").value = s.yearlyPlanPrice ?? 2999;
-        document.getElementById("ssGracePeriod").value = s.gracePeriodDays ?? 7;
         document.getElementById("ssPriceChangeMode").value = s.priceChangeMode || "";
         document.getElementById("ssFeaturedPrice").value = s.featuredPortfolioPrice ?? 999;
         document.getElementById("ssBoostPrice").value = s.searchBoostPrice ?? 499;
@@ -1858,7 +1856,6 @@
         monthlyPlanPrice: Number(document.getElementById("ssMonthlyPrice").value),
         futureMonthlyPrice: Number(document.getElementById("ssFuturePrice").value) || 0,
         yearlyPlanPrice: Number(document.getElementById("ssYearlyPrice").value),
-        gracePeriodDays: Number(document.getElementById("ssGracePeriod").value),
         priceChangeMode: document.getElementById("ssPriceChangeMode").value,
         featuredPortfolioPrice: Number(document.getElementById("ssFeaturedPrice").value),
         searchBoostPrice: Number(document.getElementById("ssBoostPrice").value),
