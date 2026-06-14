@@ -8,7 +8,9 @@
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0A0A0A",
     "updates": {
-      "enabled": false
+      "enabled": false,
+      "checkAutomatically": "NEVER",
+      "fallbackToCacheTimeout": 0
     },
     "splash": {
       "backgroundColor": "#0A0A0A",
