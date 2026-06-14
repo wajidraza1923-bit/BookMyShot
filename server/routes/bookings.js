@@ -177,9 +177,59 @@ router.patch("/:id/status", protect, async (req, res, next) => {
 
     if (status === "Creator Accepted") {
       booking.status = "Creator Accepted";
-      booking.amount = amount || booking.budget || 0;
-      booking.remaining = booking.amount;
+      const newAmount = amount || booking.budget || 0;
+      booking.amount = newAmount;
+      booking.remaining = newAmount;
       if (creatorNotes) booking.creatorNotes = creatorNotes;
+
+      // Immediately calculate commission (highest amount wins, no payment dependency)
+      if (newAmount > 0) {
+        const configService = require("../services/configService");
+        const commSettings = await configService.getCommissionSettings();
+        const leadSource = booking.leadSource || "bookmyshot";
+        const commPercent = leadSource === "creator"
+          ? (commSettings.creatorLeadCommissionPercent || 3)
+          : (commSettings.bmsLeadCommissionPercent || 5);
+        const previousHighest = booking.commissionLockedAmount || 0;
+
+        if (newAmount > previousHighest) {
+          const commAmount = Math.round((newAmount * commPercent) / 100);
+          booking.commissionPercent = commPercent;
+          booking.commissionAmount = commAmount;
+          booking.commissionLockedAmount = newAmount;
+          booking.commissionLocked = true;
+          booking.creatorReceivable = newAmount - commAmount;
+          booking.commissionStatus = "pending";
+
+          // Create/update Commission record immediately
+          const Commission = require("../models/Commission");
+          let commission = await Commission.findOne({ booking: booking._id });
+          if (commission) {
+            commission.totalAmount = newAmount;
+            commission.highestDealAmount = newAmount;
+            commission.commissionPercent = commPercent;
+            commission.commissionAmount = commAmount;
+            commission.creatorEarning = newAmount - commAmount;
+            if (commission.status === "cancelled") commission.status = "pending";
+            await commission.save();
+          } else {
+            await Commission.create({
+              booking: booking._id,
+              creator: booking.creator,
+              user: booking.user,
+              totalAmount: newAmount,
+              highestDealAmount: newAmount,
+              leadSource,
+              commissionPercent: commPercent,
+              commissionAmount: commAmount,
+              creatorEarning: newAmount - commAmount,
+              status: "pending",
+            });
+          }
+        } else {
+          booking.creatorReceivable = newAmount - (booking.commissionAmount || 0);
+        }
+      }
     } else if (status === "rejected") {
       booking.status = "rejected";
       if (creatorNotes) booking.creatorNotes = creatorNotes;

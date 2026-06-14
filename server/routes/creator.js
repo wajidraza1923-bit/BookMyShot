@@ -330,8 +330,36 @@ router.patch("/booking-requests/:id", async (req, res, next) => {
         booking.commissionLocked = true;
         booking.creatorReceivable = amount - commAmount;
         if (!booking.commissionStatus) booking.commissionStatus = "pending";
+
+        // Create or update Commission record IMMEDIATELY (no payment dependency)
+        const Commission = require("../models/Commission");
+        let commission = await Commission.findOne({ booking: booking._id });
+        if (commission) {
+          // Update existing record (ratchet: amount only increases)
+          commission.totalAmount = amount;
+          commission.highestDealAmount = amount;
+          commission.commissionPercent = commPercent;
+          commission.commissionAmount = commAmount;
+          commission.creatorEarning = amount - commAmount;
+          if (commission.status === "cancelled") commission.status = "pending";
+          await commission.save();
+        } else {
+          // Create new commission record
+          await Commission.create({
+            booking: booking._id,
+            creator: creator._id,
+            user: booking.user,
+            totalAmount: amount,
+            highestDealAmount: amount,
+            leadSource,
+            commissionPercent: commPercent,
+            commissionAmount: commAmount,
+            creatorEarning: amount - commAmount,
+            status: "pending",
+          });
+        }
       } else {
-        // Same or lower → keep existing commission
+        // Same or lower → keep existing commission based on highest
         booking.creatorReceivable = amount - (booking.commissionAmount || 0);
       }
     }
@@ -609,6 +637,7 @@ router.post("/inquiries", async (req, res, next) => {
         creator: creator._id,
         user: req.user._id,
         totalAmount: booking.amount,
+        highestDealAmount: booking.amount,
         leadSource: "creator",
         commissionPercent: commPercent,
         commissionAmount: commAmount,
