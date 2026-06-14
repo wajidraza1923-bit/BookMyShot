@@ -4,17 +4,22 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, radius } from '../../theme';
 import api from '../../services/api';
 
-const STATUS_FLOW = ['Booking Created', 'Creator Accepted', 'Payment Submitted', 'Payment Approved', 'Event Scheduled', 'Completed'];
-
 export default function CreatorBookings({ navigation }: any) {
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [tab, setTab] = useState('all');
-  const [selectedBooking, setSelectedBooking] = useState<any>(null);
-  const [amountInput, setAmountInput] = useState('');
-  const [showAmountModal, setShowAmountModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  // Modals
+  const [showAmountModal, setShowAmountModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [activeBookingId, setActiveBookingId] = useState('');
+  const [amountInput, setAmountInput] = useState('');
+  const [payForm, setPayForm] = useState({ amount: '', type: 'advance', notes: '' });
+  const [eventForm, setEventForm] = useState({ name: '', date: '', location: '' });
 
   const load = useCallback(async () => {
     try {
@@ -27,96 +32,152 @@ export default function CreatorBookings({ navigation }: any) {
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
   const filtered = bookings.filter(b => {
-    // Tab filter
     let tabMatch = true;
     if (tab === 'pending') tabMatch = b.status === 'Booking Created';
     else if (tab === 'active') tabMatch = ['Creator Accepted', 'Payment Submitted', 'Payment Approved', 'Event Scheduled'].includes(b.status);
     else if (tab === 'done') tabMatch = b.status === 'Completed' || b.status === 'completed';
     else if (tab === 'rejected') tabMatch = b.status === 'rejected' || b.status === 'cancelled';
-    // Search filter
     if (!tabMatch) return false;
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
-    return (b.clientName || '').toLowerCase().includes(q) ||
-      (b.clientPhone || '').includes(q) ||
-      (b.eventType || '').toLowerCase().includes(q) ||
-      (b.eventLocation || '').toLowerCase().includes(q);
+    return (b.clientName || '').toLowerCase().includes(q) || (b.clientPhone || '').includes(q) || (b.eventType || '').toLowerCase().includes(q) || (b.eventLocation || '').toLowerCase().includes(q);
   });
 
-  // Accept booking: requires amount input (same as website)
-  const handleAccept = (booking: any) => {
-    setSelectedBooking(booking);
-    setAmountInput(String(booking.amount || booking.budget || ''));
-    setShowAmountModal(true);
-  };
-
-  const confirmAccept = async () => {
-    const amount = parseInt(amountInput) || 0;
-    if (amount <= 0) { Alert.alert('Error', 'Enter a valid booking amount'); return; }
+  // ═══ ACTIONS (reuse same API calls as BookingDetail) ═══
+  const acceptBooking = async () => {
+    const amount = parseInt(amountInput);
+    if (!amount || amount <= 0) { Alert.alert('Error', 'Enter a valid amount'); return; }
     try {
-      await api.patch(`/creator/booking-requests/${selectedBooking._id}`, { status: 'Creator Accepted', amount });
-      setShowAmountModal(false);
-      setSelectedBooking(null);
-      await load();
+      await api.patch(`/creator/booking-requests/${activeBookingId}`, { status: 'Creator Accepted', amount });
+      setShowAmountModal(false); await load();
       Alert.alert('Accepted', `Booking accepted for ₹${amount.toLocaleString('en-IN')}`);
-    } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed to accept'); }
+    } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
   };
 
-  // Reject booking
-  const handleReject = (booking: any) => {
-    Alert.alert('Reject Booking', `Reject booking from ${booking.clientName || 'client'}?`, [
-      { text: 'Cancel' },
-      { text: 'Reject', style: 'destructive', onPress: async () => {
-        try {
-          await api.patch(`/creator/booking-requests/${booking._id}`, { status: 'rejected' });
-          await load();
-        } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
-      }}
-    ]);
+  const setProjectAmount = async () => {
+    const amount = parseInt(amountInput);
+    if (!amount || amount <= 0) { Alert.alert('Error', 'Invalid amount'); return; }
+    try {
+      await api.patch(`/payment-records/booking/${activeBookingId}/amount`, { amount });
+      setShowAmountModal(false); await load();
+      Alert.alert('Updated', `Amount set to ₹${amount.toLocaleString('en-IN')}`);
+    } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
   };
 
-  // Mark completed
-  const handleComplete = (booking: any) => {
-    Alert.alert('Complete Booking', 'Mark this booking as completed?', [
-      { text: 'Cancel' },
-      { text: 'Complete', onPress: async () => {
-        try {
-          await api.patch(`/creator/bookings/${booking._id}/complete`);
-          await load();
-          Alert.alert('Done', 'Booking marked as completed');
-        } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
-      }}
-    ]);
+  const recordPayment = async () => {
+    const amount = parseInt(payForm.amount);
+    if (!amount || amount <= 0) { Alert.alert('Error', 'Enter valid amount'); return; }
+    try {
+      await api.post('/payment-records/creator', { bookingId: activeBookingId, amount, paymentType: payForm.type, notes: payForm.notes });
+      setShowPaymentModal(false); setPayForm({ amount: '', type: 'advance', notes: '' }); await load();
+      Alert.alert('Recorded', `₹${amount.toLocaleString('en-IN')} payment recorded`);
+    } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
   };
 
-  const getColor = (s: string) => {
+  const markPaid = (id: string) => Alert.alert('Mark Paid', 'Mark as fully paid?', [{ text: 'Cancel' }, { text: 'Confirm', onPress: async () => { try { await api.patch(`/payment-records/booking/${id}/mark-paid`); await load(); } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); } } }]);
+
+  const addEvent = async () => {
+    if (!eventForm.name || !eventForm.date) { Alert.alert('Error', 'Name and date required'); return; }
+    try {
+      await api.post('/booking-events', { bookingId: activeBookingId, eventName: eventForm.name, eventDate: eventForm.date, location: eventForm.location });
+      setShowEventModal(false); setEventForm({ name: '', date: '', location: '' }); await load();
+    } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
+  };
+
+  const rejectBooking = (id: string) => Alert.alert('Reject', 'Reject this booking?', [{ text: 'Cancel' }, { text: 'Reject', style: 'destructive', onPress: async () => { try { await api.patch(`/creator/booking-requests/${id}`, { status: 'rejected' }); await load(); } catch {} } }]);
+  const completeBooking = (id: string) => Alert.alert('Complete', 'Mark as completed?', [{ text: 'Cancel' }, { text: 'Complete', onPress: async () => { try { await api.patch(`/creator/bookings/${id}/complete`); await load(); } catch {} } }]);
+
+  const getStatusColor = (s: string) => {
     if (s === 'Completed' || s === 'completed') return colors.success;
     if (s === 'Booking Created') return colors.warning;
     if (s === 'rejected' || s === 'cancelled') return colors.error;
-    if (s?.includes('Accepted') || s?.includes('Scheduled') || s?.includes('Approved')) return colors.info;
-    return colors.textMuted;
+    return colors.info;
   };
 
-  const getActions = (booking: any) => {
-    switch (booking.status) {
-      case 'Booking Created':
-        return (
-          <View style={styles.actionRow}>
-            <TouchableOpacity style={styles.rejectBtn} onPress={() => handleReject(booking)}><Ionicons name="close" size={14} color={colors.error} /><Text style={styles.rejectText}>Reject</Text></TouchableOpacity>
-            <TouchableOpacity style={styles.acceptBtn} onPress={() => handleAccept(booking)}><Ionicons name="checkmark" size={14} color={colors.textInverse} /><Text style={styles.acceptText}>Accept</Text></TouchableOpacity>
+  const toggleExpand = (id: string) => setExpandedId(expandedId === id ? null : id);
+
+  const renderCard = ({ item }: { item: any }) => {
+    const isExpanded = expandedId === item._id;
+    const totalPaid = item.advancePaid || 0;
+    const remaining = (item.amount || 0) - totalPaid;
+    const progress = item.amount > 0 ? Math.min(100, Math.round((totalPaid / item.amount) * 100)) : 0;
+    const sc = getStatusColor(item.status);
+
+    return (
+      <View style={styles.card}>
+        {/* ═══ COLLAPSED VIEW ═══ */}
+        <TouchableOpacity activeOpacity={0.85} onPress={() => toggleExpand(item._id)}>
+          <View style={styles.cardTop}>
+            <View style={styles.cardInfo}>
+              <Text style={styles.cardName}>{item.clientName || 'Client'}</Text>
+              <Text style={styles.cardMeta}>{item.eventType || 'Event'} • {item.eventDate ? new Date(item.eventDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—'}</Text>
+            </View>
+            <View style={[styles.badge, { backgroundColor: sc + '15', borderColor: sc + '30' }]}>
+              <Text style={[styles.badgeText, { color: sc }]} numberOfLines={1}>{item.status}</Text>
+            </View>
           </View>
-        );
-      case 'Creator Accepted':
-      case 'Payment Submitted':
-      case 'Payment Approved':
-      case 'Event Scheduled':
-        return (
-          <View style={styles.actionRow}>
-            <TouchableOpacity style={styles.completeBtn} onPress={() => handleComplete(booking)}><Ionicons name="checkmark-done" size={14} color={colors.success} /><Text style={styles.completeText}>Mark Complete</Text></TouchableOpacity>
+
+          {/* Financial Summary (always visible) */}
+          <View style={styles.financialRow}>
+            <View style={styles.finItem}><Text style={styles.finLabel}>Total</Text><Text style={styles.finValue}>₹{(item.amount || 0).toLocaleString('en-IN')}</Text></View>
+            <View style={styles.finItem}><Text style={styles.finLabel}>Paid</Text><Text style={[styles.finValue, { color: colors.success }]}>₹{totalPaid.toLocaleString('en-IN')}</Text></View>
+            <View style={styles.finItem}><Text style={styles.finLabel}>Due</Text><Text style={[styles.finValue, { color: remaining > 0 ? colors.warning : colors.success }]}>₹{Math.max(0, remaining).toLocaleString('en-IN')}</Text></View>
           </View>
-        );
-      default: return null;
-    }
+
+          {/* Progress bar */}
+          {item.amount > 0 && (
+            <View style={styles.progressWrap}>
+              <View style={styles.progressBar}><View style={[styles.progressFill, { width: `${progress}%` }]} /></View>
+              <Text style={styles.progressText}>{progress}%</Text>
+            </View>
+          )}
+
+          {/* Commission + Net */}
+          {item.commissionAmount > 0 && (
+            <View style={styles.commRow}>
+              <Text style={styles.commText}>Commission ({item.commissionPercent || 5}%): <Text style={{ color: colors.error }}>-₹{item.commissionAmount.toLocaleString('en-IN')}</Text></Text>
+              <Text style={styles.commText}>You receive: <Text style={{ color: colors.primary, fontWeight: '700' }}>₹{(item.creatorReceivable || 0).toLocaleString('en-IN')}</Text></Text>
+            </View>
+          )}
+
+          {/* Payment status badge */}
+          <View style={styles.metaRow}>
+            <View style={styles.metaItem}><Ionicons name="card-outline" size={11} color={colors.textMuted} /><Text style={styles.metaText}>{item.paymentStatus || 'unpaid'}</Text></View>
+            {item.eventLocation && <View style={styles.metaItem}><Ionicons name="location-outline" size={11} color={colors.textMuted} /><Text style={styles.metaText}>{item.eventLocation}</Text></View>}
+            <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={colors.textMuted} />
+          </View>
+        </TouchableOpacity>
+
+        {/* ═══ EXPANDED VIEW ═══ */}
+        {isExpanded && (
+          <View style={styles.expanded}>
+            {/* Quick Actions */}
+            <View style={styles.quickActions}>
+              <ActionBtn icon="cash-outline" label="Set Amount" onPress={() => { setActiveBookingId(item._id); setAmountInput(String(item.amount || '')); setShowAmountModal(true); }} />
+              <ActionBtn icon="card-outline" label="Record Pay" onPress={() => { setActiveBookingId(item._id); setShowPaymentModal(true); }} />
+              <ActionBtn icon="checkmark-done" label="Mark Paid" onPress={() => markPaid(item._id)} />
+              <ActionBtn icon="calendar-outline" label="Add Event" onPress={() => { setActiveBookingId(item._id); setShowEventModal(true); }} />
+            </View>
+
+            {/* Status Actions */}
+            {item.status === 'Booking Created' && (
+              <View style={styles.statusActions}>
+                <TouchableOpacity style={styles.rejectBtn} onPress={() => rejectBooking(item._id)}><Ionicons name="close" size={14} color={colors.error} /><Text style={styles.rejectText}>Reject</Text></TouchableOpacity>
+                <TouchableOpacity style={styles.acceptBtn} onPress={() => { setActiveBookingId(item._id); setAmountInput(String(item.budget || '')); setShowAmountModal(true); }}><Ionicons name="checkmark" size={14} color={colors.textInverse} /><Text style={styles.acceptText}>Accept</Text></TouchableOpacity>
+              </View>
+            )}
+            {['Creator Accepted', 'Event Scheduled'].includes(item.status) && (
+              <TouchableOpacity style={styles.completeBtn} onPress={() => completeBooking(item._id)}><Ionicons name="checkmark-done" size={14} color={colors.success} /><Text style={styles.completeText}>Mark Complete</Text></TouchableOpacity>
+            )}
+
+            {/* View Full Details */}
+            <TouchableOpacity style={styles.detailsBtn} onPress={() => navigation.navigate('BookingDetail', { bookingId: item._id })}>
+              <Text style={styles.detailsBtnText}>View Full Details</Text><Ionicons name="arrow-forward" size={14} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    );
   };
 
   return (
@@ -127,7 +188,6 @@ export default function CreatorBookings({ navigation }: any) {
         <Text style={styles.count}>{bookings.length}</Text>
       </View>
 
-      {/* Tabs */}
       <View style={styles.tabs}>
         {['all', 'pending', 'active', 'done', 'rejected'].map(t => (
           <TouchableOpacity key={t} style={[styles.tab, tab === t && styles.tabActive]} onPress={() => setTab(t)}>
@@ -144,100 +204,60 @@ export default function CreatorBookings({ navigation }: any) {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />}
           keyExtractor={item => item._id}
           ListHeaderComponent={
-            <View style={styles.searchWrap}>
-              <Ionicons name="search" size={16} color={colors.textMuted} />
-              <TextInput style={styles.searchInput} placeholder="Search by name, phone, city..." placeholderTextColor={colors.textMuted} value={searchQuery} onChangeText={setSearchQuery} selectionColor={colors.primary} />
-              {searchQuery ? <TouchableOpacity onPress={() => setSearchQuery('')}><Ionicons name="close-circle" size={16} color={colors.textMuted} /></TouchableOpacity> : null}
-            </View>
+            <View style={styles.searchWrap}><Ionicons name="search" size={16} color={colors.textMuted} /><TextInput style={styles.searchInput} placeholder="Search name, phone, city..." placeholderTextColor={colors.textMuted} value={searchQuery} onChangeText={setSearchQuery} selectionColor={colors.primary} />{searchQuery ? <TouchableOpacity onPress={() => setSearchQuery('')}><Ionicons name="close-circle" size={16} color={colors.textMuted} /></TouchableOpacity> : null}</View>
           }
           ListEmptyComponent={<View style={styles.empty}><Ionicons name="calendar-outline" size={40} color={colors.textMuted} /><Text style={styles.emptyText}>No bookings found</Text></View>}
-          renderItem={({ item }) => (
-            <TouchableOpacity style={styles.card} activeOpacity={0.85} onPress={() => navigation.navigate('BookingDetail', { bookingId: item._id })}>
-              {/* Client Info */}
-              <View style={styles.cardTop}>
-                <View style={styles.cardInfo}>
-                  <Text style={styles.cardName}>{item.clientName || item.user?.name || 'Client'}</Text>
-                  <Text style={styles.cardMeta}>{item.clientEmail || item.user?.email || ''}</Text>
-                  {item.clientPhone && <Text style={styles.cardMeta}>{item.clientPhone}</Text>}
-                </View>
-                <View style={[styles.badge, { backgroundColor: getColor(item.status) + '15', borderColor: getColor(item.status) + '30' }]}>
-                  <Text style={[styles.badgeText, { color: getColor(item.status) }]} numberOfLines={1}>{item.status}</Text>
-                </View>
-              </View>
-
-              {/* Event Details */}
-              <View style={styles.detailsGrid}>
-                <View style={styles.detailItem}>
-                  <Ionicons name="camera-outline" size={13} color={colors.textMuted} />
-                  <Text style={styles.detailText}>{item.eventType || 'Event'}</Text>
-                </View>
-                <View style={styles.detailItem}>
-                  <Ionicons name="calendar-outline" size={13} color={colors.textMuted} />
-                  <Text style={styles.detailText}>{item.eventDate ? new Date(item.eventDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</Text>
-                </View>
-                {item.eventLocation && <View style={styles.detailItem}><Ionicons name="location-outline" size={13} color={colors.textMuted} /><Text style={styles.detailText}>{item.eventLocation}</Text></View>}
-                <View style={styles.detailItem}>
-                  <Ionicons name="cash-outline" size={13} color={colors.primary} />
-                  <Text style={[styles.detailText, { color: colors.primary, fontWeight: '600' }]}>₹{(item.amount || item.budget || 0).toLocaleString('en-IN')}</Text>
-                </View>
-              </View>
-
-              {/* Commission info */}
-              {item.commissionAmount > 0 && (
-                <View style={styles.commRow}>
-                  <Text style={styles.commLabel}>Commission ({item.commissionPercent || 5}%):</Text>
-                  <Text style={styles.commValue}>₹{item.commissionAmount.toLocaleString('en-IN')}</Text>
-                  <Text style={styles.commLabel}> | You receive:</Text>
-                  <Text style={[styles.commValue, { color: colors.success }]}>₹{(item.creatorReceivable || 0).toLocaleString('en-IN')}</Text>
-                </View>
-              )}
-
-              {/* Message */}
-              {item.message && <Text style={styles.cardMessage} numberOfLines={2}>"{item.message}"</Text>}
-
-              {/* Payment status */}
-              {item.paymentStatus && item.paymentStatus !== 'unpaid' && (
-                <View style={styles.paymentRow}>
-                  <Ionicons name="card-outline" size={12} color={colors.textMuted} />
-                  <Text style={styles.paymentText}>Payment: {item.paymentStatus}</Text>
-                </View>
-              )}
-
-              {/* Actions */}
-              {getActions(item)}
-            </TouchableOpacity>
-          )}
+          renderItem={renderCard}
         />
       )}
 
-      {/* Amount Modal (same as website prompt) */}
+      {/* ═══ SET AMOUNT MODAL ═══ */}
       <Modal visible={showAmountModal} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Accept Booking</Text>
-            <Text style={styles.modalSubtitle}>Enter the booking amount (₹). Commission will be calculated on this.</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={amountInput}
-              onChangeText={setAmountInput}
-              keyboardType="numeric"
-              placeholder="e.g. 45000"
-              placeholderTextColor={colors.textMuted}
-              selectionColor={colors.primary}
-              autoFocus
-            />
-            {amountInput && parseInt(amountInput) > 0 && (
-              <Text style={styles.modalCalc}>Commission (5%): ₹{Math.round(parseInt(amountInput) * 0.05).toLocaleString('en-IN')} | You receive: ₹{Math.round(parseInt(amountInput) * 0.95).toLocaleString('en-IN')}</Text>
-            )}
-            <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.modalCancel} onPress={() => setShowAmountModal(false)}><Text style={styles.modalCancelText}>Cancel</Text></TouchableOpacity>
-              <TouchableOpacity style={styles.modalConfirm} onPress={confirmAccept}><Text style={styles.modalConfirmText}>Accept ₹{amountInput || '0'}</Text></TouchableOpacity>
-            </View>
+        <View style={styles.modalBg}><View style={styles.modal}>
+          <Text style={styles.modalTitle}>Set Project Amount</Text>
+          <Text style={styles.modalSub}>Commission calculated on highest amount (never decreases)</Text>
+          <TextInput style={styles.modalInput} value={amountInput} onChangeText={setAmountInput} keyboardType="numeric" placeholder="₹ Amount" placeholderTextColor={colors.textMuted} selectionColor={colors.primary} autoFocus />
+          {parseInt(amountInput) > 0 && <Text style={styles.modalCalc}>Commission (5%): ₹{Math.round(parseInt(amountInput) * 0.05).toLocaleString('en-IN')} • You: ₹{Math.round(parseInt(amountInput) * 0.95).toLocaleString('en-IN')}</Text>}
+          <View style={styles.modalBtns}>
+            <TouchableOpacity style={styles.modalCancel} onPress={() => setShowAmountModal(false)}><Text style={styles.modalCancelText}>Cancel</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.modalConfirm} onPress={() => { const b = bookings.find(x => x._id === activeBookingId); b?.status === 'Booking Created' ? acceptBooking() : setProjectAmount(); }}><Text style={styles.modalConfirmText}>{bookings.find(x => x._id === activeBookingId)?.status === 'Booking Created' ? 'Accept' : 'Save'}</Text></TouchableOpacity>
           </View>
-        </View>
+        </View></View>
+      </Modal>
+
+      {/* ═══ RECORD PAYMENT MODAL ═══ */}
+      <Modal visible={showPaymentModal} transparent animationType="fade">
+        <View style={styles.modalBg}><View style={styles.modal}>
+          <Text style={styles.modalTitle}>Record Payment</Text>
+          <View style={styles.payTypeRow}>{['advance', 'partial', 'final'].map(t => (<TouchableOpacity key={t} style={[styles.payTypeBtn, payForm.type === t && styles.payTypeBtnActive]} onPress={() => setPayForm({ ...payForm, type: t })}><Text style={[styles.payTypeText, payForm.type === t && styles.payTypeTextActive]}>{t.charAt(0).toUpperCase() + t.slice(1)}</Text></TouchableOpacity>))}</View>
+          <TextInput style={styles.modalInput} value={payForm.amount} onChangeText={v => setPayForm({ ...payForm, amount: v })} keyboardType="numeric" placeholder="₹ Amount" placeholderTextColor={colors.textMuted} selectionColor={colors.primary} />
+          <TextInput style={[styles.modalInput, { height: 50 }]} value={payForm.notes} onChangeText={v => setPayForm({ ...payForm, notes: v })} placeholder="Notes (optional)" placeholderTextColor={colors.textMuted} selectionColor={colors.primary} multiline />
+          <View style={styles.modalBtns}>
+            <TouchableOpacity style={styles.modalCancel} onPress={() => setShowPaymentModal(false)}><Text style={styles.modalCancelText}>Cancel</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.modalConfirm} onPress={recordPayment}><Text style={styles.modalConfirmText}>Record</Text></TouchableOpacity>
+          </View>
+        </View></View>
+      </Modal>
+
+      {/* ═══ ADD EVENT MODAL ═══ */}
+      <Modal visible={showEventModal} transparent animationType="fade">
+        <View style={styles.modalBg}><View style={styles.modal}>
+          <Text style={styles.modalTitle}>Add Event</Text>
+          <TextInput style={styles.modalInput} value={eventForm.name} onChangeText={v => setEventForm({ ...eventForm, name: v })} placeholder="Event name (e.g. Haldi)" placeholderTextColor={colors.textMuted} selectionColor={colors.primary} />
+          <TextInput style={styles.modalInput} value={eventForm.date} onChangeText={v => setEventForm({ ...eventForm, date: v })} placeholder="Date (YYYY-MM-DD)" placeholderTextColor={colors.textMuted} selectionColor={colors.primary} />
+          <TextInput style={styles.modalInput} value={eventForm.location} onChangeText={v => setEventForm({ ...eventForm, location: v })} placeholder="Location (optional)" placeholderTextColor={colors.textMuted} selectionColor={colors.primary} />
+          <View style={styles.modalBtns}>
+            <TouchableOpacity style={styles.modalCancel} onPress={() => setShowEventModal(false)}><Text style={styles.modalCancelText}>Cancel</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.modalConfirm} onPress={addEvent}><Text style={styles.modalConfirmText}>Add</Text></TouchableOpacity>
+          </View>
+        </View></View>
       </Modal>
     </View>
   );
+}
+
+function ActionBtn({ icon, label, onPress }: { icon: string; label: string; onPress: () => void }) {
+  return <TouchableOpacity style={styles.actionBtn} onPress={onPress}><Ionicons name={icon as any} size={16} color={colors.primary} /><Text style={styles.actionLabel}>{label}</Text></TouchableOpacity>;
 }
 
 const styles = StyleSheet.create({
@@ -251,43 +271,58 @@ const styles = StyleSheet.create({
   tabActive: { backgroundColor: colors.primaryMuted },
   tabText: { ...typography.labelSm, color: colors.textMuted, fontSize: 9 },
   tabTextActive: { color: colors.primary },
+  searchWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, height: 40, gap: spacing.sm, marginBottom: spacing.lg },
+  searchInput: { flex: 1, ...typography.bodySm, color: colors.text, height: '100%' },
   card: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing.md },
   cardInfo: { flex: 1, marginRight: spacing.sm },
   cardName: { ...typography.headlineSm, color: colors.text },
-  cardMeta: { ...typography.caption, color: colors.textMuted, marginTop: 1 },
-  badge: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.sm, borderWidth: 1, maxWidth: 120 },
+  cardMeta: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
+  badge: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.sm, borderWidth: 1, maxWidth: 110 },
   badgeText: { ...typography.labelSm, fontWeight: '600', fontSize: 9 },
-  detailsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, paddingBottom: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
-  detailItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  detailText: { ...typography.bodySm, color: colors.textSecondary },
-  commRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', marginTop: spacing.sm, paddingTop: spacing.sm },
-  commLabel: { ...typography.caption, color: colors.textMuted },
-  commValue: { ...typography.labelSm, color: colors.error },
-  cardMessage: { ...typography.bodySm, color: colors.textSecondary, fontStyle: 'italic', marginTop: spacing.sm },
-  paymentRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.sm },
-  paymentText: { ...typography.caption, color: colors.textMuted, textTransform: 'capitalize' },
-  actionRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
+  financialRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.sm },
+  finItem: { alignItems: 'center', flex: 1 },
+  finLabel: { ...typography.caption, color: colors.textMuted },
+  finValue: { ...typography.labelLg, color: colors.text, fontWeight: '700', marginTop: 1 },
+  progressWrap: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
+  progressBar: { flex: 1, height: 5, backgroundColor: colors.border, borderRadius: 3, overflow: 'hidden' },
+  progressFill: { height: 5, backgroundColor: colors.success, borderRadius: 3 },
+  progressText: { ...typography.labelSm, color: colors.textMuted, width: 30 },
+  commRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.sm },
+  commText: { ...typography.caption, color: colors.textMuted },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border },
+  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  metaText: { ...typography.caption, color: colors.textMuted, textTransform: 'capitalize' },
+  expanded: { marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
+  quickActions: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
+  actionBtn: { flex: 1, alignItems: 'center', paddingVertical: spacing.sm + 2, backgroundColor: colors.background, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border, gap: 2 },
+  actionLabel: { ...typography.labelSm, color: colors.textSecondary, fontSize: 9 },
+  statusActions: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.md },
   rejectBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, paddingVertical: spacing.sm + 2, borderRadius: radius.sm, backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.2)' },
   rejectText: { ...typography.labelMd, color: colors.error, fontWeight: '600' },
   acceptBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, paddingVertical: spacing.sm + 2, borderRadius: radius.sm, backgroundColor: colors.primary },
   acceptText: { ...typography.labelMd, color: colors.textInverse, fontWeight: '600' },
-  completeBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, paddingVertical: spacing.sm + 2, borderRadius: radius.sm, backgroundColor: 'rgba(16,185,129,0.08)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.2)' },
+  completeBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, paddingVertical: spacing.sm + 2, borderRadius: radius.sm, backgroundColor: 'rgba(16,185,129,0.08)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.2)', marginBottom: spacing.md },
   completeText: { ...typography.labelMd, color: colors.success, fontWeight: '600' },
+  detailsBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingVertical: spacing.sm + 2, borderRadius: radius.sm, backgroundColor: colors.primaryMuted, borderWidth: 1, borderColor: colors.borderGold },
+  detailsBtnText: { ...typography.labelMd, color: colors.primary, fontWeight: '600' },
   empty: { alignItems: 'center', paddingTop: spacing['4xl'] },
   emptyText: { ...typography.bodyMd, color: colors.textMuted, marginTop: spacing.md },
-  searchWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, height: 40, gap: spacing.sm, marginBottom: spacing.lg },
-  searchInput: { flex: 1, ...typography.bodySm, color: colors.text, height: '100%' },
-  // Modal
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: spacing.xl },
-  modalContent: { backgroundColor: colors.surface, borderRadius: radius.xl, padding: spacing.xl, borderWidth: 1, borderColor: colors.border },
+  // Modals
+  modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: spacing.xl },
+  modal: { backgroundColor: colors.surface, borderRadius: radius.xl, padding: spacing.xl, borderWidth: 1, borderColor: colors.border },
   modalTitle: { ...typography.headlineLg, color: colors.text, marginBottom: spacing.xs },
-  modalSubtitle: { ...typography.bodySm, color: colors.textMuted, marginBottom: spacing.xl, lineHeight: 18 },
-  modalInput: { backgroundColor: colors.background, borderRadius: radius.md, borderWidth: 1, borderColor: colors.primary + '40', paddingHorizontal: spacing.lg, paddingVertical: spacing.md, ...typography.headlineMd, color: colors.primary, textAlign: 'center' },
-  modalCalc: { ...typography.caption, color: colors.textMuted, textAlign: 'center', marginTop: spacing.md },
-  modalActions: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.xl },
+  modalSub: { ...typography.caption, color: colors.textMuted, marginBottom: spacing.xl },
+  modalInput: { backgroundColor: colors.background, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, ...typography.bodyMd, color: colors.text, marginBottom: spacing.md },
+  modalCalc: { ...typography.caption, color: colors.textMuted, textAlign: 'center', marginBottom: spacing.md },
+  modalBtns: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
   modalCancel: { flex: 1, paddingVertical: spacing.md, alignItems: 'center', borderRadius: radius.md, borderWidth: 1, borderColor: colors.border },
   modalCancelText: { ...typography.labelLg, color: colors.textSecondary },
   modalConfirm: { flex: 1, paddingVertical: spacing.md, alignItems: 'center', borderRadius: radius.md, backgroundColor: colors.primary },
   modalConfirmText: { ...typography.labelLg, color: colors.textInverse, fontWeight: '600' },
+  payTypeRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
+  payTypeBtn: { flex: 1, paddingVertical: spacing.sm + 2, alignItems: 'center', borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border },
+  payTypeBtnActive: { borderColor: colors.primary, backgroundColor: colors.primaryMuted },
+  payTypeText: { ...typography.labelMd, color: colors.textMuted },
+  payTypeTextActive: { color: colors.primary },
 });
