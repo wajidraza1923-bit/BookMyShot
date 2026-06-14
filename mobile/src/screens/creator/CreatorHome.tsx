@@ -10,11 +10,19 @@ export default function CreatorHome({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState({ totalEarnings: 0, monthlyEarnings: 0, totalBookings: 0, pendingPayments: 0, upcomingEventsCount: 0, newInquiries: 0, favorites: 0, reviews: 0, commissionDue: 0 });
   const [loading, setLoading] = useState(true);
+  const [promo, setPromo] = useState<any>({ featured: null, rank: null, pending: 0 });
 
   const loadDashboard = useCallback(async () => {
     try {
-      const res = await api.get('/creator/dashboard');
-      if (res.data) setStats(res.data);
+      const [dashRes, featuredRes, activeRes, requestsRes] = await Promise.all([
+        api.get('/creator/dashboard'),
+        api.get('/promotions/my-featured').catch(() => ({ data: { active: null } })),
+        api.get('/promotions/my-active').catch(() => ({ data: { active: null } })),
+        api.get('/promotions/my-requests').catch(() => ({ data: { data: [] } })),
+      ]);
+      if (dashRes.data) setStats(dashRes.data);
+      const pending = (requestsRes.data?.data || []).filter((r: any) => r.status === 'pending').length;
+      setPromo({ featured: featuredRes.data?.active, rank: activeRes.data?.active, pending });
     } catch {}
     finally { setLoading(false); }
   }, []);
@@ -94,6 +102,56 @@ export default function CreatorHome({ navigation }: any) {
           ))}
         </View>
 
+        {/* ═══ GROWTH & PROMOTION ═══ */}
+        <Text style={styles.sectionTitle}>Growth & Promotion</Text>
+
+        {/* Featured Status */}
+        {promo.featured ? (
+          <View style={styles.featuredCard}>
+            <View style={styles.featuredBadge}><Ionicons name="star" size={14} color={colors.textInverse} /><Text style={styles.featuredBadgeText}>FEATURED</Text></View>
+            <View style={styles.featuredInfo}>
+              <Text style={styles.featuredTitle}>{promo.featured.planType?.replace('_', ' #').replace('featured', 'Featured') || 'Featured Creator'}</Text>
+              <Text style={styles.featuredExpiry}>Expires: {promo.featured.expiryDate ? new Date(promo.featured.expiryDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'} • {promo.featured.daysRemaining || 0} days left</Text>
+            </View>
+          </View>
+        ) : (
+          <TouchableOpacity style={styles.promoCard} onPress={() => navigation.navigate('CreatorPromotions')} activeOpacity={0.85}>
+            <View style={styles.promoIcon}><Ionicons name="rocket-outline" size={22} color={colors.primary} /></View>
+            <View style={styles.promoContent}>
+              <Text style={styles.promoTitle}>Get Featured</Text>
+              <Text style={styles.promoSubtitle}>Boost your profile visibility and get more bookings</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+          </TouchableOpacity>
+        )}
+
+        {/* Rank Status */}
+        {promo.rank && (
+          <View style={styles.rankCard}>
+            <Text style={styles.rankEmoji}>{promo.rank.planType === 'rank_1' ? '🥇' : promo.rank.planType === 'rank_2' ? '🥈' : promo.rank.planType === 'rank_3' ? '🥉' : '🏅'}</Text>
+            <View style={styles.rankInfo}>
+              <Text style={styles.rankTitle}>{promo.rank.planType?.replace('_', ' #').replace('rank', 'Rank')}</Text>
+              <Text style={styles.rankExpiry}>{promo.rank.daysRemaining || 0} days remaining</Text>
+            </View>
+            <View style={styles.rankBadge}><Text style={styles.rankBadgeText}>ACTIVE</Text></View>
+          </View>
+        )}
+
+        {/* Pending Requests */}
+        {promo.pending > 0 && (
+          <TouchableOpacity style={styles.pendingCard} onPress={() => navigation.navigate('CreatorPromotions')} activeOpacity={0.8}>
+            <Ionicons name="hourglass-outline" size={16} color={colors.warning} />
+            <Text style={styles.pendingText}>{promo.pending} promotion request{promo.pending > 1 ? 's' : ''} pending approval</Text>
+            <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+          </TouchableOpacity>
+        )}
+
+        {/* Promote Button */}
+        <TouchableOpacity style={styles.promoteBtn} onPress={() => navigation.navigate('CreatorPromotions')} activeOpacity={0.85}>
+          <Ionicons name="star-outline" size={16} color={colors.primary} />
+          <Text style={styles.promoteBtnText}>View Promotions & Rankings</Text>
+        </TouchableOpacity>
+
         {/* Activity Summary */}
         <Text style={styles.sectionTitle}>Activity Overview</Text>
         <View style={styles.activityRow}>
@@ -165,4 +223,27 @@ const styles = StyleSheet.create({
   subInfo: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   subTitle: { ...typography.labelLg, color: colors.primary },
   subStatus: { ...typography.labelMd, color: colors.success, fontWeight: '600' },
+  // Growth & Promotion
+  featuredCard: { flexDirection: 'row', alignItems: 'center', marginHorizontal: spacing.xl, marginBottom: spacing.md, backgroundColor: 'rgba(212,175,55,0.06)', borderWidth: 1, borderColor: colors.borderGold, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.md },
+  featuredBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.primary, paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2, borderRadius: radius.sm },
+  featuredBadgeText: { ...typography.labelSm, color: colors.textInverse, fontWeight: '800', letterSpacing: 0.5 },
+  featuredInfo: { flex: 1 },
+  featuredTitle: { ...typography.headlineSm, color: colors.primary },
+  featuredExpiry: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
+  promoCard: { flexDirection: 'row', alignItems: 'center', marginHorizontal: spacing.xl, marginBottom: spacing.md, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.md },
+  promoIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primaryMuted, alignItems: 'center', justifyContent: 'center' },
+  promoContent: { flex: 1 },
+  promoTitle: { ...typography.headlineSm, color: colors.text },
+  promoSubtitle: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
+  rankCard: { flexDirection: 'row', alignItems: 'center', marginHorizontal: spacing.xl, marginBottom: spacing.md, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderGold, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.md },
+  rankEmoji: { fontSize: 28 },
+  rankInfo: { flex: 1 },
+  rankTitle: { ...typography.headlineSm, color: colors.text },
+  rankExpiry: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
+  rankBadge: { backgroundColor: colors.success + '15', paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.sm },
+  rankBadgeText: { ...typography.labelSm, color: colors.success, fontWeight: '700' },
+  pendingCard: { flexDirection: 'row', alignItems: 'center', marginHorizontal: spacing.xl, marginBottom: spacing.md, backgroundColor: 'rgba(245,158,11,0.06)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.15)', borderRadius: radius.md, padding: spacing.md, gap: spacing.sm },
+  pendingText: { ...typography.bodySm, color: colors.warning, flex: 1 },
+  promoteBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, marginHorizontal: spacing.xl, marginBottom: spacing.md, paddingVertical: spacing.md, borderRadius: radius.md, backgroundColor: colors.primaryMuted, borderWidth: 1, borderColor: colors.borderGold },
+  promoteBtnText: { ...typography.labelMd, color: colors.primary, fontWeight: '600' },
 });
