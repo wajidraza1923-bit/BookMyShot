@@ -16,6 +16,26 @@ interface CommissionSettings {
   creatorLeadCommissionPercent: number;
 }
 
+// Format UTC date to local timezone: "14 Jun 2026, 2:01 PM"
+function formatDateTime(isoString: string): string {
+  const date = new Date(isoString);
+  if (isNaN(date.getTime())) return 'Unknown';
+
+  const day = date.getDate();
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const month = months[date.getMonth()];
+  const year = date.getFullYear();
+
+  let hours = date.getHours();
+  const minutes = date.getMinutes();
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  if (hours === 0) hours = 12;
+  const minuteStr = minutes < 10 ? `0${minutes}` : String(minutes);
+
+  return `${day} ${month} ${year}, ${hours}:${minuteStr} ${ampm}`;
+}
+
 export default function AdminSettings({ navigation }: any) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -33,8 +53,8 @@ export default function AdminSettings({ navigation }: any) {
   // Original values for change detection
   const [original, setOriginal] = useState<{ sub: SubscriptionSettings; comm: CommissionSettings } | null>(null);
 
-  // Last updated info
-  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  // Last updated info (raw ISO string from DB)
+  const [lastUpdatedRaw, setLastUpdatedRaw] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -66,9 +86,12 @@ export default function AdminSettings({ navigation }: any) {
       setOriginal({ sub: subValues, comm: commValues });
       setHasChanges(false);
 
-      // Get last updated time if available
-      if (sub.updatedAt) {
-        setLastUpdated(new Date(sub.updatedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }));
+      // Store the most recent updatedAt from either settings doc
+      const subUpdated = sub.updatedAt ? new Date(sub.updatedAt).getTime() : 0;
+      const commUpdated = comm.updatedAt ? new Date(comm.updatedAt).getTime() : 0;
+      const latestRaw = subUpdated >= commUpdated ? sub.updatedAt : comm.updatedAt;
+      if (latestRaw) {
+        setLastUpdatedRaw(latestRaw);
       }
     } catch (e: any) {
       Alert.alert('Error', 'Failed to load settings: ' + (e.response?.data?.message || e.message));
@@ -139,9 +162,8 @@ export default function AdminSettings({ navigation }: any) {
 
       Alert.alert('✓ Saved', 'Platform settings updated successfully. Changes are effective immediately.');
       setHasChanges(false);
-      setLastUpdated(new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }));
 
-      // Refresh to get confirmed values from DB
+      // Refresh to get confirmed updatedAt from DB
       await load();
     } catch (e: any) {
       const msg = e.response?.data?.message || e.message || 'Failed to save settings';
@@ -240,10 +262,10 @@ export default function AdminSettings({ navigation }: any) {
           </View>
 
           {/* Last Updated */}
-          {lastUpdated && (
+          {lastUpdatedRaw && (
             <View style={s.lastUpdatedRow}>
               <Ionicons name="time-outline" size={13} color={colors.textMuted} />
-              <Text style={s.lastUpdatedText}>Last updated: {lastUpdated}</Text>
+              <Text style={s.lastUpdatedText}>Last updated: {formatDateTime(lastUpdatedRaw)}</Text>
             </View>
           )}
 
