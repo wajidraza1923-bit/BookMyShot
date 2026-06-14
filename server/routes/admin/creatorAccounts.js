@@ -29,9 +29,9 @@ router.get("/", async (req, res, next) => {
 
     const [creators, total] = await Promise.all([
       Creator.find(filter)
-        .populate("user", "name email")
+        .populate("user", "name email avatar phone")
         .select(
-          "user status subscriptionStatus featured verified specialty location city category badge rank"
+          "user status subscriptionStatus subscriptionStartDate subscriptionEndDate subscriptionPlanPrice lastPaymentDate autoRenew nextBillingDate razorpaySubscriptionId featured verified specialty location city category badge rank"
         )
         .skip(skip)
         .limit(limitNum)

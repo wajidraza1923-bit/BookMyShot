@@ -247,6 +247,7 @@ export default function AdminSubscriptions({ navigation }: any) {
           ListEmptyComponent={<View style={s.empty}><Ionicons name="diamond-outline" size={40} color={colors.textMuted} /><Text style={s.emptyText}>No creators with subscriptions</Text></View>}
           renderItem={({ item }) => {
             const daysLeft = item.subscriptionEndDate ? Math.max(0, Math.ceil((new Date(item.subscriptionEndDate).getTime() - Date.now()) / 86400000)) : 0;
+            const isActive = item.subscriptionStatus === 'active' || item.subscriptionStatus === 'trial';
             return (
               <View style={s.creatorCard}>
                 <View style={s.creatorHeader}>
@@ -259,11 +260,13 @@ export default function AdminSubscriptions({ navigation }: any) {
                   </View>
                 </View>
                 <View style={s.creatorGrid}>
-                  <DetailCell label="Start" value={formatDateShort(item.subscriptionStartDate)} />
-                  <DetailCell label="Expiry" value={formatDateShort(item.subscriptionEndDate)} />
-                  <DetailCell label="Days Left" value={item.subscriptionStatus === 'active' || item.subscriptionStatus === 'trial' ? String(daysLeft) : '—'} valueColor={daysLeft <= 3 ? colors.error : daysLeft <= 7 ? colors.warning : undefined} />
+                  <DetailCell label="Plan" value="Monthly" />
+                  <DetailCell label="Start Date" value={formatDateShort(item.subscriptionStartDate)} />
+                  <DetailCell label="Expiry Date" value={formatDateShort(item.subscriptionEndDate)} />
+                  <DetailCell label="Days Remaining" value={isActive ? String(daysLeft) : '0'} valueColor={isActive ? (daysLeft <= 3 ? colors.error : daysLeft <= 7 ? colors.warning : colors.success) : colors.error} />
+                  <DetailCell label="Last Payment" value={item.lastPaymentDate ? `₹${item.subscriptionPlanPrice || monthlyPrice} | ${formatDateShort(item.lastPaymentDate)}` : '—'} />
                   <DetailCell label="Auto Renew" value={item.autoRenew !== false ? 'ON' : 'OFF'} valueColor={item.autoRenew !== false ? colors.success : colors.error} />
-                  <DetailCell label="Last Payment" value={formatDateShort(item.lastPaymentDate)} />
+                  <DetailCell label="Next Billing" value={isActive ? formatDateShort(item.nextBillingDate || item.subscriptionEndDate) : '—'} />
                   <DetailCell label="Price" value={`₹${item.subscriptionPlanPrice || monthlyPrice}/mo`} />
                 </View>
               </View>
