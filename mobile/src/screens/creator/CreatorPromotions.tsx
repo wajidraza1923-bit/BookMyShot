@@ -93,9 +93,9 @@ export default function CreatorPromotions({ navigation }: any) {
                 {isMySlot ? (
                   <Text style={s.slotOwned}>YOU OWN THIS</Text>
                 ) : slot?.occupied ? (
-                  <Text style={s.slotTaken}>{slot.ownerName}</Text>
+                  <Text style={s.slotTaken}>{slot.ownerName}{'\n'}Until {slot.expiryDate ? new Date(slot.expiryDate).toLocaleDateString('en-IN',{day:'2-digit',month:'short'}) : ''}</Text>
                 ) : (
-                  <TouchableOpacity style={s.applyBtn} onPress={() => handleApply(id)}><Text style={s.applyBtnText}>Apply</Text></TouchableOpacity>
+                  <TouchableOpacity style={s.applyBtn} onPress={() => handleApply(id)}><Text style={s.applyBtnText}>Apply Now</Text></TouchableOpacity>
                 )}
               </View>
             );
@@ -117,9 +117,9 @@ export default function CreatorPromotions({ navigation }: any) {
                 {isMyRank ? (
                   <Text style={s.slotOwned}>YOU OWN THIS</Text>
                 ) : slot?.occupied ? (
-                  <Text style={s.slotTaken}>{slot.ownerName}</Text>
+                  <Text style={s.slotTaken}>{slot.ownerName}{'\n'}Until {slot.expiryDate ? new Date(slot.expiryDate).toLocaleDateString('en-IN',{day:'2-digit',month:'short'}) : ''}</Text>
                 ) : (
-                  <TouchableOpacity style={s.applyBtn} onPress={() => handleApply(id)}><Text style={s.applyBtnText}>Apply</Text></TouchableOpacity>
+                  <TouchableOpacity style={s.applyBtn} onPress={() => handleApply(id)}><Text style={s.applyBtnText}>Apply Now</Text></TouchableOpacity>
                 )}
               </View>
             );
