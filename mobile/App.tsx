@@ -48,9 +48,9 @@ export default function App() {
         <StatusBar barStyle="light-content" backgroundColor={colors.background} />
         <View style={styles.brandSplash}>
           <View style={styles.splashContent}>
-            <View style={styles.splashIcon}><Text style={styles.splashEmoji}>📸</Text></View>
             <Text style={styles.splashBrand}>BOOKMYSHOT</Text>
-            <Text style={styles.splashTagline}>India's Creator Booking Platform</Text>
+            <View style={styles.splashDivider} />
+            <Text style={styles.splashTagline}>India's Premium Creator Platform</Text>
           </View>
         </View>
       </View>
@@ -76,9 +76,9 @@ export default function App() {
       {showBrandSplash && (
         <Animated.View style={[styles.brandSplash, { opacity: fadeAnim }]}>
           <View style={styles.splashContent}>
-            <View style={styles.splashIcon}><Text style={styles.splashEmoji}>📸</Text></View>
             <Text style={styles.splashBrand}>BOOKMYSHOT</Text>
-            <Text style={styles.splashTagline}>India's Creator Booking Platform</Text>
+            <View style={styles.splashDivider} />
+            <Text style={styles.splashTagline}>India's Premium Creator Platform</Text>
           </View>
         </Animated.View>
       )}
@@ -90,8 +90,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   brandSplash: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', zIndex: 999 },
   splashContent: { alignItems: 'center' },
-  splashIcon: { width: 88, height: 88, borderRadius: 44, backgroundColor: 'rgba(212,175,55,0.08)', borderWidth: 2, borderColor: 'rgba(212,175,55,0.3)', alignItems: 'center', justifyContent: 'center', marginBottom: spacing['2xl'] },
-  splashEmoji: { fontSize: 38 },
-  splashBrand: { fontSize: 22, fontWeight: '300', color: colors.primary, letterSpacing: 6, marginBottom: spacing.sm },
-  splashTagline: { ...typography.caption, color: colors.textMuted, letterSpacing: 1 },
+  splashBrand: { fontSize: 26, fontWeight: '300', color: colors.primary, letterSpacing: 8 },
+  splashDivider: { width: 40, height: 1, backgroundColor: colors.primary, marginVertical: spacing.md, opacity: 0.5 },
+  splashTagline: { ...typography.caption, color: colors.textMuted, letterSpacing: 1.5, textTransform: 'uppercase' },
 });

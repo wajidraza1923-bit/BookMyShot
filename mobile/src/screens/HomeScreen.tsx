@@ -8,12 +8,14 @@ import { colors, spacing, typography, radius, shadows } from '../theme';
 import { SectionHeader, SkeletonLoader, CategoryPill } from '../components';
 import { creatorsAPI } from '../services/api';
 import { mockCreators } from '../constants/mockData';
+import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.72;
 
 export default function HomeScreen({ navigation }: any) {
+  const { isAuthenticated } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [creators, setCreators] = useState<any[]>(mockCreators);
@@ -79,14 +81,33 @@ export default function HomeScreen({ navigation }: any) {
         {/* ═══ HEADER ═══ */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.greeting}>Hello, Welcome 👋</Text>
-            <Text style={styles.brandName}>BookMyShot</Text>
+            <Text style={styles.brandName}>BOOKMYSHOT</Text>
+            <Text style={styles.greeting}>India's Premium Creator Platform</Text>
           </View>
-          <TouchableOpacity style={styles.notifBtn} onPress={() => navigation.navigate('Profile')}>
-            <Ionicons name="notifications-outline" size={21} color={colors.text} />
-            <View style={styles.notifDot} />
-          </TouchableOpacity>
+          {isAuthenticated ? (
+            <TouchableOpacity style={styles.notifBtn} onPress={() => navigation.navigate('Profile')}>
+              <Ionicons name="notifications-outline" size={21} color={colors.text} />
+              <View style={styles.notifDot} />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={styles.loginHeaderBtn} onPress={() => navigation.navigate('Account')}>
+              <Text style={styles.loginHeaderText}>Login</Text>
+            </TouchableOpacity>
+          )}
         </View>
+
+        {/* Guest CTA Banner */}
+        {!isAuthenticated && (
+          <View style={styles.guestBanner}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.guestTitle}>Find Your Perfect Creator</Text>
+              <Text style={styles.guestSubtitle}>Sign up to book photographers, send inquiries and save favorites</Text>
+            </View>
+            <TouchableOpacity style={styles.guestSignupBtn} onPress={() => navigation.navigate('Account')} activeOpacity={0.85}>
+              <Text style={styles.guestSignupText}>Sign Up</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* ═══ SEARCH BAR ═══ */}
         <TouchableOpacity style={styles.searchBar} onPress={() => navigation.navigate('Discover')} activeOpacity={0.8}>
@@ -126,7 +147,7 @@ export default function HomeScreen({ navigation }: any) {
         {/* ═══ FEATURED CREATORS (only shown if active promotions exist) ═══ */}
         {featuredCreators.length > 0 && (
           <>
-            <SectionHeader title="Featured Creators" subtitle="Premium spotlight" actionLabel="View all" onAction={() => navigation.navigate('Discover')} />
+            <SectionHeader title="Featured Creators" subtitle="Handpicked Portfolios" actionLabel="View all" onAction={() => navigation.navigate('Discover')} />
             <FlatList
               horizontal showsHorizontalScrollIndicator={false}
               data={featuredCreators}
@@ -155,8 +176,8 @@ export default function HomeScreen({ navigation }: any) {
           </>
         )}
 
-        {/* ═══ TRENDING THIS WEEK ═══ */}
-        <SectionHeader title="Trending This Week" subtitle="Most booked creators" actionLabel="See all" onAction={() => navigation.navigate('Discover')} />
+        {/* ═══ ALL CREATORS (same as website "Our Creators" section) ═══ */}
+        <SectionHeader title="All Creators" subtitle="Browse all approved creators" actionLabel="See all" onAction={() => navigation.navigate('Discover')} />
         <FlatList
           horizontal showsHorizontalScrollIndicator={false}
           data={trending}
@@ -232,10 +253,17 @@ export default function HomeScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.xl, paddingTop: spacing['5xl'], paddingBottom: spacing.sm },
-  greeting: { ...typography.bodySm, color: colors.textMuted },
-  brandName: { ...typography.displayMd, color: colors.text, marginTop: 2 },
+  greeting: { ...typography.caption, color: colors.textMuted, letterSpacing: 0.5, marginTop: 3 },
+  brandName: { fontSize: 18, fontWeight: '300', color: colors.primary, letterSpacing: 4 },
   notifBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
   notifDot: { position: 'absolute', top: 10, right: 11, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary },
+  loginHeaderBtn: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, backgroundColor: colors.primary, borderRadius: radius.md },
+  loginHeaderText: { ...typography.labelMd, color: colors.textInverse, fontWeight: '600' },
+  guestBanner: { flexDirection: 'row', alignItems: 'center', marginHorizontal: spacing.xl, marginTop: spacing.md, padding: spacing.lg, backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.borderGold, gap: spacing.md },
+  guestTitle: { ...typography.headlineSm, color: colors.text },
+  guestSubtitle: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
+  guestSignupBtn: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm + 2, backgroundColor: colors.primary, borderRadius: radius.sm },
+  guestSignupText: { ...typography.labelMd, color: colors.textInverse, fontWeight: '700' },
   searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, marginHorizontal: spacing.xl, marginTop: spacing.lg, paddingHorizontal: spacing.lg, height: 48, gap: spacing.md },
   searchText: { flex: 1, ...typography.bodyMd, color: colors.textMuted },
   searchFilter: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.primaryMuted, alignItems: 'center', justifyContent: 'center' },
