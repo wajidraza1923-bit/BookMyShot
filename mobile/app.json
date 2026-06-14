@@ -7,6 +7,9 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0A0A0A",
+    "updates": {
+      "enabled": false
+    },
     "splash": {
       "backgroundColor": "#0A0A0A",
       "resizeMode": "contain"
