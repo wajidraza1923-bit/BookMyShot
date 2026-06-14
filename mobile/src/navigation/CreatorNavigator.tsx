@@ -35,13 +35,14 @@ function CreatorTabs() {
         tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: { fontSize: 10, fontWeight: '500', letterSpacing: 0.2 },
         tabBarIcon: ({ focused, color }) => {
-          const icons: Record<string, string> = { Dashboard: focused ? 'grid' : 'grid-outline', Bookings: focused ? 'calendar' : 'calendar-outline', Messages: focused ? 'chatbubble' : 'chatbubble-outline', Profile: focused ? 'person' : 'person-outline' };
+          const icons: Record<string, string> = { Dashboard: focused ? 'grid' : 'grid-outline', Bookings: focused ? 'calendar' : 'calendar-outline', Calendar: focused ? 'today' : 'today-outline', Messages: focused ? 'chatbubble' : 'chatbubble-outline', Profile: focused ? 'person' : 'person-outline' };
           return <Ionicons name={(icons[route.name] || 'grid') as any} size={21} color={color} />;
         },
       })}
     >
       <Tab.Screen name="Dashboard" component={CreatorHome} />
       <Tab.Screen name="Bookings" component={BookingsScreen} />
+      <Tab.Screen name="Calendar" component={CreatorCalendar} />
       <Tab.Screen name="Messages" component={MessagesScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>

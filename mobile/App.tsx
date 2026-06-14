@@ -50,7 +50,7 @@ export default function App() {
           <View style={styles.splashContent}>
             <View style={styles.splashIcon}><Text style={styles.splashEmoji}>📸</Text></View>
             <Text style={styles.splashBrand}>BOOKMYSHOT</Text>
-            <Text style={styles.splashTagline}>Premium Wedding Creators</Text>
+            <Text style={styles.splashTagline}>India's Creator Booking Platform</Text>
           </View>
         </View>
       </View>
@@ -78,7 +78,7 @@ export default function App() {
           <View style={styles.splashContent}>
             <View style={styles.splashIcon}><Text style={styles.splashEmoji}>📸</Text></View>
             <Text style={styles.splashBrand}>BOOKMYSHOT</Text>
-            <Text style={styles.splashTagline}>Premium Wedding Creators</Text>
+            <Text style={styles.splashTagline}>India's Creator Booking Platform</Text>
           </View>
         </Animated.View>
       )}
