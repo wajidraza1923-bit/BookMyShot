@@ -35,7 +35,7 @@ export default function AdminDashboard({ navigation }: any) {
   ];
 
   const menuItems = [
-    { icon: 'people-outline', label: 'Creator Management', desc: 'Approve, reject, manage creators', screen: 'AdminPromotions' },
+    { icon: 'people-outline', label: 'Creator Management', desc: 'Approve, reject, manage creators', screen: 'AdminCreators' },
     { icon: 'person-outline', label: 'User Management', desc: 'View and manage users', screen: '' },
     { icon: 'calendar-outline', label: 'Booking Management', desc: 'All bookings, payments, events', screen: '' },
     { icon: 'chatbubble-outline', label: 'Inquiries', desc: 'Homepage & contact inquiries', screen: '' },
