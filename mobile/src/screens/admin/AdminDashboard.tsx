@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, radius } from '../../theme';
 import { useAuth } from '../../context/AuthContext';
@@ -35,15 +35,15 @@ export default function AdminDashboard({ navigation }: any) {
   ];
 
   const menuItems = [
-    { icon: 'people-outline', label: 'Creator Management', desc: 'Approve, reject, manage creators' },
-    { icon: 'person-outline', label: 'User Management', desc: 'View and manage users' },
-    { icon: 'calendar-outline', label: 'Booking Management', desc: 'All bookings, payments, events' },
-    { icon: 'chatbubble-outline', label: 'Inquiries', desc: 'Homepage & contact inquiries' },
-    { icon: 'diamond-outline', label: 'Subscriptions', desc: 'Plans, renewals, billing' },
-    { icon: 'cash-outline', label: 'Earnings & Commission', desc: 'Revenue reports, commissions' },
-    { icon: 'star-outline', label: 'Promotions', desc: 'Featured creators, boosts' },
-    { icon: 'notifications-outline', label: 'Notifications', desc: 'Send notifications, alerts' },
-    { icon: 'settings-outline', label: 'Platform Settings', desc: 'Commission %, pricing, config' },
+    { icon: 'people-outline', label: 'Creator Management', desc: 'Approve, reject, manage creators', screen: 'AdminPromotions' },
+    { icon: 'person-outline', label: 'User Management', desc: 'View and manage users', screen: '' },
+    { icon: 'calendar-outline', label: 'Booking Management', desc: 'All bookings, payments, events', screen: '' },
+    { icon: 'chatbubble-outline', label: 'Inquiries', desc: 'Homepage & contact inquiries', screen: '' },
+    { icon: 'diamond-outline', label: 'Subscriptions', desc: 'Plans, renewals, billing', screen: '' },
+    { icon: 'cash-outline', label: 'Earnings & Commission', desc: 'Revenue reports, commissions', screen: '' },
+    { icon: 'star-outline', label: 'Promotions', desc: 'Featured creators, boosts', screen: 'AdminPromotions' },
+    { icon: 'notifications-outline', label: 'Notifications', desc: 'Send notifications, alerts', screen: '' },
+    { icon: 'settings-outline', label: 'Platform Settings', desc: 'Commission %, pricing, config', screen: '' },
   ];
 
   return (
@@ -72,7 +72,10 @@ export default function AdminDashboard({ navigation }: any) {
         {/* Menu */}
         <Text style={s.sectionTitle}>Management</Text>
         {menuItems.map((item, i) => (
-          <TouchableOpacity key={i} style={s.menuItem} activeOpacity={0.7}>
+          <TouchableOpacity key={i} style={s.menuItem} activeOpacity={0.7} onPress={() => {
+            if (item.screen) navigation.navigate(item.screen);
+            else Alert.alert(item.label, 'This section is coming soon.');
+          }}>
             <View style={s.menuIcon}><Ionicons name={item.icon as any} size={20} color={colors.primary} /></View>
             <View style={s.menuContent}>
               <Text style={s.menuLabel}>{item.label}</Text>
