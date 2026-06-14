@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authAPI } from '../services/api';
+import api from '../services/api';
 
 const API_BASE = 'https://site--bookmyshot--ykz2mr8mzlrv.code.run/api';
 
@@ -242,6 +243,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     console.log('[Auth] Logging out...');
+    // Clear push token on backend
+    try { await api.post('/notifications/push-token', { token: '', platform: '' }); } catch {}
     await clearSession();
   };
 

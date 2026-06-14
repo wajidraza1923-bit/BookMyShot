@@ -66,12 +66,15 @@ export async function registerForPushNotifications(): Promise<string | null> {
 
     // Android notification channel
     if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('default', {
+      await Notifications.setNotificationChannelAsync('bookmyshot', {
         name: 'BookMyShot',
+        description: 'Booking updates, inquiries, payments, and promotions',
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: '#D4AF37',
         sound: 'default',
+        enableVibrate: true,
+        showBadge: true,
       });
     }
 
@@ -101,4 +104,20 @@ export function addNotificationReceivedListener(callback: (notification: Notific
  */
 export function addNotificationResponseListener(callback: (response: Notifications.NotificationResponse) => void) {
   return Notifications.addNotificationResponseReceivedListener(callback);
+}
+
+/**
+ * Get the screen to navigate to based on notification data
+ */
+export function getDeepLinkScreen(data: any): { screen: string; params?: any } | null {
+  if (!data) return null;
+  switch (data.type) {
+    case 'booking': return { screen: 'CreatorBookings' };
+    case 'inquiry': return { screen: 'CreatorLeads' };
+    case 'payment': return { screen: 'CreatorWallet' };
+    case 'promotion': return { screen: 'CreatorPromotions' };
+    case 'subscription': return { screen: 'CreatorSubscription' };
+    case 'review': return { screen: 'CreatorReviews' };
+    default: return { screen: 'CreatorNotifications' };
+  }
 }

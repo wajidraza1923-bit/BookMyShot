@@ -33,8 +33,22 @@
         {
           "fonts": []
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#D4AF37",
+          "defaultChannel": "bookmyshot"
+        }
       ]
     ],
+    "notification": {
+      "icon": "./assets/notification-icon.png",
+      "color": "#D4AF37",
+      "androidMode": "default",
+      "androidCollapsedTitle": "BookMyShot"
+    },
     "extra": {
       "apiBaseUrl": "https://site--bookmyshot--ykz2mr8mzlrv.code.run/api"
     }
