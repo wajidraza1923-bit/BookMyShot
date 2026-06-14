@@ -1,52 +1,71 @@
 /**
  * BookMyShot Push Notification Service
- * Uses expo-notifications for token registration + local display
- * FCM handles delivery when app is closed (requires production build)
+ * 
+ * IMPORTANT: expo-notifications native module is NOT available in Expo Go (SDK 53+).
+ * All notification code is wrapped safely to prevent crashes in Expo Go.
+ * Push notifications only work in development builds or production APKs.
  */
-import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
-import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from './api';
 
-// Configure notification behavior
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+// Safely load notification modules (they crash in Expo Go)
+let Notifications: any = null;
+let Device: any = null;
+let Constants: any = null;
+let isNotificationAvailable = false;
+
+try {
+  Notifications = require('expo-notifications');
+  Device = require('expo-device');
+  Constants = require('expo-constants');
+  
+  // Test if native module actually works
+  if (Notifications && typeof Notifications.setNotificationHandler === 'function') {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+      }),
+    });
+    isNotificationAvailable = true;
+  }
+} catch (e: any) {
+  console.log('[Push] expo-notifications not available:', e.message || 'Expo Go detected');
+}
 
 /**
  * Register for push notifications and send token to backend
  */
 export async function registerForPushNotifications(): Promise<string | null> {
+  if (!isNotificationAvailable || !Notifications || !Device) {
+    console.log('[Push] Notifications not available in this environment');
+    return null;
+  }
+
   if (!Device.isDevice) {
     console.log('[Push] Not a physical device — skipping registration');
     return null;
   }
 
-  // Check/request permissions
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  let finalStatus = existingStatus;
-
-  if (existingStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
-  }
-
-  if (finalStatus !== 'granted') {
-    console.log('[Push] Permission not granted');
-    return null;
-  }
-
-  // Get Expo push token (works with FCM on Android)
   try {
-    const projectId = Constants.expoConfig?.extra?.eas?.projectId || Constants.easConfig?.projectId;
+    // Check/request permissions
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+
+    if (finalStatus !== 'granted') {
+      console.log('[Push] Permission not granted');
+      return null;
+    }
+
+    // Get Expo push token (works with FCM on Android)
+    const projectId = Constants?.expoConfig?.extra?.eas?.projectId || Constants?.easConfig?.projectId;
     const tokenData = await Notifications.getExpoPushTokenAsync({
       projectId: projectId || undefined,
     });
@@ -69,7 +88,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
       await Notifications.setNotificationChannelAsync('bookmyshot', {
         name: 'BookMyShot',
         description: 'Booking updates, inquiries, payments, and promotions',
-        importance: Notifications.AndroidImportance.MAX,
+        importance: Notifications.AndroidImportance?.MAX || 5,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: '#D4AF37',
         sound: 'default',
@@ -79,8 +98,8 @@ export async function registerForPushNotifications(): Promise<string | null> {
     }
 
     return token;
-  } catch (e) {
-    console.log('[Push] Token registration error:', e);
+  } catch (e: any) {
+    console.log('[Push] Registration error:', e.message);
     return null;
   }
 }
@@ -89,20 +108,23 @@ export async function registerForPushNotifications(): Promise<string | null> {
  * Set badge count
  */
 export async function setBadgeCount(count: number) {
-  await Notifications.setBadgeCountAsync(count);
+  if (!isNotificationAvailable || !Notifications) return;
+  try { await Notifications.setBadgeCountAsync(count); } catch {}
 }
 
 /**
  * Listen for notification received (foreground)
  */
-export function addNotificationReceivedListener(callback: (notification: Notifications.Notification) => void) {
+export function addNotificationReceivedListener(callback: (notification: any) => void) {
+  if (!isNotificationAvailable || !Notifications) return { remove: () => {} };
   return Notifications.addNotificationReceivedListener(callback);
 }
 
 /**
  * Listen for notification tap (opens app / deep link)
  */
-export function addNotificationResponseListener(callback: (response: Notifications.NotificationResponse) => void) {
+export function addNotificationResponseListener(callback: (response: any) => void) {
+  if (!isNotificationAvailable || !Notifications) return { remove: () => {} };
   return Notifications.addNotificationResponseReceivedListener(callback);
 }
 
