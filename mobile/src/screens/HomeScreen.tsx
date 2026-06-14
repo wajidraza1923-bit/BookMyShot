@@ -17,6 +17,7 @@ export default function HomeScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [creators, setCreators] = useState<any[]>(mockCreators);
+  const [featuredCreators, setFeaturedCreators] = useState<any[]>([]);
   const [activeCategory, setActiveCategory] = useState('all');
   const [categories, setCategories] = useState<any[]>([]);
   const [cities, setCities] = useState<any[]>([]);
@@ -24,15 +25,42 @@ export default function HomeScreen({ navigation }: any) {
 
   const loadData = useCallback(async () => {
     try {
-      const [creatorsRes, configRes] = await Promise.all([
+      const [creatorsRes, configRes, featuredRes] = await Promise.all([
         creatorsAPI.getAll(),
         api.get('/app-config').catch(() => ({ data: { categories: [], cities: [], banners: [] } })),
+        api.get('/promotions/featured-status').catch(() => ({ data: { slots: {} } })),
       ]);
-      const data = creatorsRes.data?.creators || creatorsRes.data?.data || [];
-      if (data.length > 0) setCreators(data);
+
+      // All creators from public listing (already filtered by active/trial subscription on backend)
+      const allCreators = creatorsRes.data?.creators || creatorsRes.data?.data || [];
       if (configRes.data?.categories?.length) setCategories(configRes.data.categories);
       if (configRes.data?.cities?.length) setCities(configRes.data.cities);
       if (configRes.data?.banners?.length) setBanners(configRes.data.banners);
+
+      // ═══ FEATURED CREATORS — ordered by slot number (1-4) ═══
+      // Only show creators with ACTIVE featured promotions
+      const slots = featuredRes.data?.slots || {};
+      const featuredSlotIds: string[] = [];
+      const orderedFeatured: any[] = [];
+
+      // Process in order: featured_1, featured_2, featured_3, featured_4
+      for (const slotKey of ['featured_1', 'featured_2', 'featured_3', 'featured_4']) {
+        const slot = slots[slotKey];
+        if (slot?.occupied && slot?.creatorId) {
+          featuredSlotIds.push(slot.creatorId.toString());
+          // Find this creator in the allCreators list
+          const creator = allCreators.find((c: any) => c._id === slot.creatorId || c._id?.toString() === slot.creatorId?.toString());
+          if (creator) {
+            orderedFeatured.push({ ...creator, _featuredSlot: slotKey });
+          }
+        }
+      }
+
+      setFeaturedCreators(orderedFeatured);
+
+      // ═══ ALL CREATORS — exclude those already shown in Featured ═══
+      const nonFeatured = allCreators.filter((c: any) => !featuredSlotIds.includes(c._id?.toString()));
+      if (allCreators.length > 0) setCreators(nonFeatured.length > 0 ? nonFeatured : allCreators);
     } catch { /* use fallback data */ }
     finally { setLoading(false); }
   }, []);
@@ -41,7 +69,6 @@ export default function HomeScreen({ navigation }: any) {
 
   const onRefresh = async () => { setRefreshing(true); await loadData(); setRefreshing(false); };
 
-  const featured = creators.filter(c => c.featured).slice(0, 5);
   const topRated = [...creators].sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 6);
   const trending = creators.slice(0, 4);
 
@@ -96,30 +123,37 @@ export default function HomeScreen({ navigation }: any) {
           ))}
         </ScrollView>
 
-        {/* ═══ FEATURED CREATORS ═══ */}
-        <SectionHeader title="Featured Creators" subtitle="Handpicked for you" actionLabel="View all" onAction={() => navigation.navigate('Discover')} />
-        <FlatList
-          horizontal showsHorizontalScrollIndicator={false}
-          data={featured}
-          contentContainerStyle={{ paddingHorizontal: spacing.xl }}
-          renderItem={({ item }) => (
-            <TouchableOpacity style={styles.featuredCard} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })} activeOpacity={0.9}>
-              <Image source={{ uri: item.portfolio?.[0] || item.user?.avatar }} style={styles.featuredImg} />
-              <View style={styles.featuredOverlay}>
-                {item.verified && <View style={styles.verifiedBadge}><Ionicons name="checkmark-circle" size={12} color="#fff" /><Text style={styles.verifiedText}>Verified</Text></View>}
-                <View style={styles.featuredBottom}>
-                  <Text style={styles.featuredName} numberOfLines={1}>{item.user?.name}</Text>
-                  <Text style={styles.featuredMeta}>{item.specialty} • {item.city}</Text>
-                  <View style={styles.featuredRow}>
-                    <View style={styles.ratingBadge}><Ionicons name="star" size={10} color={colors.primary} /><Text style={styles.ratingText}>{item.rating}</Text></View>
-                    <Text style={styles.featuredPrice}>₹{(item.startingPrice || 0).toLocaleString('en-IN')}</Text>
+        {/* ═══ FEATURED CREATORS (only shown if active promotions exist) ═══ */}
+        {featuredCreators.length > 0 && (
+          <>
+            <SectionHeader title="Featured Creators" subtitle="Premium spotlight" actionLabel="View all" onAction={() => navigation.navigate('Discover')} />
+            <FlatList
+              horizontal showsHorizontalScrollIndicator={false}
+              data={featuredCreators}
+              contentContainerStyle={{ paddingHorizontal: spacing.xl }}
+              renderItem={({ item, index }) => (
+                <TouchableOpacity style={styles.featuredCard} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })} activeOpacity={0.9}>
+                  <Image source={{ uri: item.portfolio?.[0] || item.user?.avatar }} style={styles.featuredImg} />
+                  <View style={styles.featuredOverlay}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                      <View style={styles.featuredRankBadge}><Text style={styles.featuredRankText}>#{index + 1}</Text></View>
+                      {item.verified && <View style={styles.verifiedBadge}><Ionicons name="checkmark-circle" size={12} color="#fff" /><Text style={styles.verifiedText}>Verified</Text></View>}
+                    </View>
+                    <View style={styles.featuredBottom}>
+                      <Text style={styles.featuredName} numberOfLines={1}>{item.user?.name}</Text>
+                      <Text style={styles.featuredMeta}>{item.specialty} • {item.city}</Text>
+                      <View style={styles.featuredRow}>
+                        <View style={styles.ratingBadge}><Ionicons name="star" size={10} color={colors.primary} /><Text style={styles.ratingText}>{item.rating || '5.0'}</Text></View>
+                        <Text style={styles.featuredPrice}>₹{(item.startingPrice || item.budgetMin || 0).toLocaleString('en-IN')}</Text>
+                      </View>
+                    </View>
                   </View>
-                </View>
-              </View>
-            </TouchableOpacity>
-          )}
-          keyExtractor={i => i._id}
-        />
+                </TouchableOpacity>
+              )}
+              keyExtractor={i => i._id}
+            />
+          </>
+        )}
 
         {/* ═══ TRENDING THIS WEEK ═══ */}
         <SectionHeader title="Trending This Week" subtitle="Most booked creators" actionLabel="See all" onAction={() => navigation.navigate('Discover')} />
@@ -220,6 +254,8 @@ const styles = StyleSheet.create({
   featuredOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'space-between', padding: spacing.lg, backgroundColor: 'rgba(0,0,0,0.2)' },
   verifiedBadge: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: 'rgba(16,185,129,0.9)', paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radius.sm },
   verifiedText: { color: '#fff', fontSize: 9, fontWeight: '700' },
+  featuredRankBadge: { backgroundColor: colors.primary, paddingHorizontal: spacing.sm + 2, paddingVertical: 3, borderRadius: radius.sm },
+  featuredRankText: { color: colors.textInverse, fontSize: 10, fontWeight: '800' },
   featuredBottom: { backgroundColor: 'rgba(0,0,0,0.7)', borderRadius: radius.md, padding: spacing.md },
   featuredName: { ...typography.headlineSm, color: colors.text },
   featuredMeta: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
