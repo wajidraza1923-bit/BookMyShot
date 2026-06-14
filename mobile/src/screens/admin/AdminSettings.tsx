@@ -5,34 +5,20 @@ import { colors, spacing, typography, radius } from '../../theme';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 
-interface SubscriptionSettings {
-  monthlyPlanPrice: number;
-  trialDays: number;
-  featuredPortfolioPrice: number;
-}
-
-interface CommissionSettings {
-  bmsLeadCommissionPercent: number;
-  creatorLeadCommissionPercent: number;
-}
-
-// Format UTC date to local timezone: "14 Jun 2026, 2:01 PM"
+// Format UTC date to local: "14 Jun 2026, 2:01 PM"
 function formatDateTime(isoString: string): string {
   const date = new Date(isoString);
   if (isNaN(date.getTime())) return 'Unknown';
-
   const day = date.getDate();
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const month = months[date.getMonth()];
   const year = date.getFullYear();
-
   let hours = date.getHours();
   const minutes = date.getMinutes();
   const ampm = hours >= 12 ? 'PM' : 'AM';
   hours = hours % 12;
   if (hours === 0) hours = 12;
   const minuteStr = minutes < 10 ? `0${minutes}` : String(minutes);
-
   return `${day} ${month} ${year}, ${hours}:${minuteStr} ${ampm}`;
 }
 
@@ -43,131 +29,68 @@ export default function AdminSettings({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
-  // Editable fields
-  const [monthlyPrice, setMonthlyPrice] = useState('');
-  const [trialDays, setTrialDays] = useState('');
-  const [featuredPrice, setFeaturedPrice] = useState('');
+  // Commission fields only
   const [bmsCommission, setBmsCommission] = useState('');
   const [creatorCommission, setCreatorCommission] = useState('');
 
-  // Original values for change detection
-  const [original, setOriginal] = useState<{ sub: SubscriptionSettings; comm: CommissionSettings } | null>(null);
-
-  // Last updated info (raw ISO string from DB)
+  // Original values
+  const [original, setOriginal] = useState<{ bms: number; creator: number } | null>(null);
   const [lastUpdatedRaw, setLastUpdatedRaw] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const [subRes, commRes] = await Promise.all([
-        api.get('/admin/subscription-settings'),
-        api.get('/admin/commission-settings'),
-      ]);
+      const res = await api.get('/admin/commission-settings');
+      const comm = res.data?.data || res.data?.settings || res.data || {};
 
-      const sub = subRes.data?.data || subRes.data?.settings || subRes.data || {};
-      const comm = commRes.data?.data || commRes.data?.settings || commRes.data || {};
+      const bms = comm.bmsLeadCommissionPercent || 0;
+      const cr = comm.creatorLeadCommissionPercent || 0;
 
-      const subValues: SubscriptionSettings = {
-        monthlyPlanPrice: sub.monthlyPlanPrice || 0,
-        trialDays: sub.trialDays || 0,
-        featuredPortfolioPrice: sub.featuredPortfolioPrice || 0,
-      };
-
-      const commValues: CommissionSettings = {
-        bmsLeadCommissionPercent: comm.bmsLeadCommissionPercent || 0,
-        creatorLeadCommissionPercent: comm.creatorLeadCommissionPercent || 0,
-      };
-
-      setMonthlyPrice(String(subValues.monthlyPlanPrice));
-      setTrialDays(String(subValues.trialDays));
-      setFeaturedPrice(String(subValues.featuredPortfolioPrice));
-      setBmsCommission(String(commValues.bmsLeadCommissionPercent));
-      setCreatorCommission(String(commValues.creatorLeadCommissionPercent));
-
-      setOriginal({ sub: subValues, comm: commValues });
+      setBmsCommission(String(bms));
+      setCreatorCommission(String(cr));
+      setOriginal({ bms, creator: cr });
       setHasChanges(false);
 
-      // Store the most recent updatedAt from either settings doc
-      const subUpdated = sub.updatedAt ? new Date(sub.updatedAt).getTime() : 0;
-      const commUpdated = comm.updatedAt ? new Date(comm.updatedAt).getTime() : 0;
-      const latestRaw = subUpdated >= commUpdated ? sub.updatedAt : comm.updatedAt;
-      if (latestRaw) {
-        setLastUpdatedRaw(latestRaw);
-      }
+      if (comm.updatedAt) setLastUpdatedRaw(comm.updatedAt);
     } catch (e: any) {
-      Alert.alert('Error', 'Failed to load settings: ' + (e.response?.data?.message || e.message));
+      Alert.alert('Error', 'Failed to load commission settings');
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => { load(); }, []);
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await load();
-    setRefreshing(false);
-  };
+  const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
   // Detect changes
   useEffect(() => {
     if (!original) return;
-    const changed =
-      String(original.sub.monthlyPlanPrice) !== monthlyPrice ||
-      String(original.sub.trialDays) !== trialDays ||
-      String(original.sub.featuredPortfolioPrice) !== featuredPrice ||
-      String(original.comm.bmsLeadCommissionPercent) !== bmsCommission ||
-      String(original.comm.creatorLeadCommissionPercent) !== creatorCommission;
+    const changed = String(original.bms) !== bmsCommission || String(original.creator) !== creatorCommission;
     setHasChanges(changed);
-  }, [monthlyPrice, trialDays, featuredPrice, bmsCommission, creatorCommission, original]);
+  }, [bmsCommission, creatorCommission, original]);
 
-  const handleSave = async () => {
-    // Validate inputs
-    const mp = Number(monthlyPrice);
-    const td = Number(trialDays);
-    const fp = Number(featuredPrice);
+  const handleSave = () => {
     const bc = Number(bmsCommission);
     const cc = Number(creatorCommission);
+    if (isNaN(bc) || bc < 0 || bc > 100) return Alert.alert('Invalid', 'BMS commission must be 0–100%');
+    if (isNaN(cc) || cc < 0 || cc > 100) return Alert.alert('Invalid', 'Creator commission must be 0–100%');
 
-    if (isNaN(mp) || mp < 0) return Alert.alert('Invalid', 'Monthly price must be a valid number ≥ 0');
-    if (isNaN(td) || td < 0 || !Number.isInteger(td)) return Alert.alert('Invalid', 'Trial days must be a whole number ≥ 0');
-    if (isNaN(fp) || fp < 0) return Alert.alert('Invalid', 'Featured price must be a valid number ≥ 0');
-    if (isNaN(bc) || bc < 0 || bc > 100) return Alert.alert('Invalid', 'BMS commission must be between 0–100%');
-    if (isNaN(cc) || cc < 0 || cc > 100) return Alert.alert('Invalid', 'Creator commission must be between 0–100%');
-
-    Alert.alert(
-      'Confirm Changes',
-      `Are you sure you want to update platform settings?\n\nMonthly Price: ₹${mp}\nTrial Days: ${td}\nFeatured Price: ₹${fp}\nBMS Commission: ${bc}%\nCreator Commission: ${cc}%`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Save', style: 'destructive', onPress: saveToBackend },
-      ]
-    );
+    Alert.alert('Confirm', `Save commission settings?\n\nBMS Lead: ${bc}%\nCreator Lead: ${cc}%`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Save', onPress: saveToBackend },
+    ]);
   };
 
   const saveToBackend = async () => {
     setSaving(true);
     try {
-      // Update subscription settings
-      await api.put('/admin/subscription-settings', {
-        monthlyPlanPrice: Number(monthlyPrice),
-        trialDays: Number(trialDays),
-        featuredPortfolioPrice: Number(featuredPrice),
-      });
-
-      // Update commission settings
       await api.put('/admin/commission-settings', {
         bmsLeadCommissionPercent: Number(bmsCommission),
         creatorLeadCommissionPercent: Number(creatorCommission),
       });
-
-      Alert.alert('✓ Saved', 'Platform settings updated successfully. Changes are effective immediately.');
-      setHasChanges(false);
-
-      // Refresh to get confirmed updatedAt from DB
+      Alert.alert('✓ Saved', 'Commission settings updated. All future calculations will use these values.');
       await load();
     } catch (e: any) {
-      const msg = e.response?.data?.message || e.message || 'Failed to save settings';
-      Alert.alert('Save Failed', msg);
+      Alert.alert('Save Failed', e.response?.data?.message || e.message);
     } finally {
       setSaving(false);
     }
@@ -177,9 +100,7 @@ export default function AdminSettings({ navigation }: any) {
     return (
       <View style={s.container}>
         <View style={s.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
-            <Ionicons name="arrow-back" size={20} color={colors.text} />
-          </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}><Ionicons name="arrow-back" size={20} color={colors.text} /></TouchableOpacity>
           <Text style={s.title}>Platform Settings</Text>
         </View>
         <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 80 }} />
@@ -190,75 +111,31 @@ export default function AdminSettings({ navigation }: any) {
   return (
     <View style={s.container}>
       <View style={s.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
-          <Ionicons name="arrow-back" size={20} color={colors.text} />
-        </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}><Ionicons name="arrow-back" size={20} color={colors.text} /></TouchableOpacity>
         <Text style={s.title}>Platform Settings</Text>
         {hasChanges && <View style={s.changedBadge}><Text style={s.changedText}>Unsaved</Text></View>}
       </View>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />}
-          contentContainerStyle={{ padding: spacing.xl, paddingBottom: 120 }}
-        >
-          {/* Admin Info */}
+        <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />} contentContainerStyle={{ padding: spacing.xl, paddingBottom: 120 }}>
+
+          {/* Admin info */}
           <View style={s.infoBar}>
             <Ionicons name="shield-checkmark" size={14} color={colors.primary} />
             <Text style={s.infoText}>Logged in as {user?.name || 'Super Admin'}</Text>
           </View>
 
-          {/* Subscription Section */}
-          <Text style={s.sectionLabel}>Subscription Settings</Text>
-          <View style={s.card}>
-            <SettingField
-              label="Monthly Subscription Price"
-              value={monthlyPrice}
-              onChangeText={setMonthlyPrice}
-              prefix="₹"
-              keyboardType="numeric"
-              placeholder="e.g. 499"
-            />
-            <SettingField
-              label="Trial Days"
-              value={trialDays}
-              onChangeText={setTrialDays}
-              suffix="days"
-              keyboardType="numeric"
-              placeholder="e.g. 7"
-            />
-            <SettingField
-              label="Featured Creator Price"
-              value={featuredPrice}
-              onChangeText={setFeaturedPrice}
-              prefix="₹"
-              keyboardType="numeric"
-              placeholder="e.g. 999"
-              isLast
-            />
+          {/* Explanation */}
+          <View style={s.explainCard}>
+            <Ionicons name="information-circle-outline" size={16} color={colors.info} />
+            <Text style={s.explainText}>Commission percentages applied to all bookings. BMS Lead = bookings from BookMyShot platform. Creator Lead = bookings from creator's own clients.</Text>
           </View>
 
-          {/* Commission Section */}
+          {/* Commission Settings */}
           <Text style={s.sectionLabel}>Commission Settings</Text>
           <View style={s.card}>
-            <SettingField
-              label="BMS Lead Commission"
-              value={bmsCommission}
-              onChangeText={setBmsCommission}
-              suffix="%"
-              keyboardType="numeric"
-              placeholder="e.g. 5"
-            />
-            <SettingField
-              label="Creator Lead Commission"
-              value={creatorCommission}
-              onChangeText={setCreatorCommission}
-              suffix="%"
-              keyboardType="numeric"
-              placeholder="e.g. 3"
-              isLast
-            />
+            <SettingField label="BMS Lead Commission" value={bmsCommission} onChangeText={setBmsCommission} suffix="%" placeholder="e.g. 5" />
+            <SettingField label="Creator Lead Commission" value={creatorCommission} onChangeText={setCreatorCommission} suffix="%" placeholder="e.g. 3" isLast />
           </View>
 
           {/* Last Updated */}
@@ -270,15 +147,8 @@ export default function AdminSettings({ navigation }: any) {
           )}
 
           {/* Save Button */}
-          <TouchableOpacity
-            style={[s.saveBtn, !hasChanges && s.saveBtnDisabled]}
-            onPress={handleSave}
-            disabled={!hasChanges || saving}
-            activeOpacity={0.7}
-          >
-            {saving ? (
-              <ActivityIndicator size="small" color={colors.textInverse} />
-            ) : (
+          <TouchableOpacity style={[s.saveBtn, !hasChanges && s.saveBtnDisabled]} onPress={handleSave} disabled={!hasChanges || saving} activeOpacity={0.7}>
+            {saving ? <ActivityIndicator size="small" color={colors.textInverse} /> : (
               <>
                 <Ionicons name="checkmark-circle" size={18} color={hasChanges ? colors.textInverse : colors.textMuted} />
                 <Text style={[s.saveBtnText, !hasChanges && s.saveBtnTextDisabled]}>Save Changes</Text>
@@ -286,43 +156,43 @@ export default function AdminSettings({ navigation }: any) {
             )}
           </TouchableOpacity>
 
-          {/* Audit Notice */}
+          {/* Audit notice */}
           <View style={s.auditNotice}>
             <Ionicons name="lock-closed-outline" size={13} color={colors.textMuted} />
             <Text style={s.auditText}>All changes are logged with admin ID, timestamp, and previous values for audit compliance.</Text>
           </View>
+
+          {/* Navigation helpers */}
+          <Text style={s.sectionLabel}>Other Settings</Text>
+          <TouchableOpacity style={s.navCard} onPress={() => navigation.navigate('AdminSubscriptions')} activeOpacity={0.7}>
+            <Ionicons name="diamond-outline" size={18} color={colors.primary} />
+            <View style={{ flex: 1 }}>
+              <Text style={s.navTitle}>Subscription Settings</Text>
+              <Text style={s.navDesc}>Monthly price, trial days, renewal</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+          </TouchableOpacity>
+          <TouchableOpacity style={s.navCard} onPress={() => navigation.navigate('AdminPromotions')} activeOpacity={0.7}>
+            <Ionicons name="star-outline" size={18} color={colors.primary} />
+            <View style={{ flex: 1 }}>
+              <Text style={s.navTitle}>Promotion Settings</Text>
+              <Text style={s.navDesc}>Featured prices, rank prices, slot management</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+          </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
   );
 }
 
-interface SettingFieldProps {
-  label: string;
-  value: string;
-  onChangeText: (text: string) => void;
-  prefix?: string;
-  suffix?: string;
-  keyboardType?: 'numeric' | 'default';
-  placeholder?: string;
-  isLast?: boolean;
-}
-
-function SettingField({ label, value, onChangeText, prefix, suffix, keyboardType = 'default', placeholder, isLast }: SettingFieldProps) {
+function SettingField({ label, value, onChangeText, prefix, suffix, placeholder, isLast }: any) {
   return (
     <View style={[fieldStyles.container, !isLast && fieldStyles.borderBottom]}>
       <Text style={fieldStyles.label}>{label}</Text>
       <View style={fieldStyles.inputRow}>
         {prefix && <Text style={fieldStyles.prefix}>{prefix}</Text>}
-        <TextInput
-          style={fieldStyles.input}
-          value={value}
-          onChangeText={onChangeText}
-          keyboardType={keyboardType}
-          placeholder={placeholder}
-          placeholderTextColor={colors.textMuted}
-          selectionColor={colors.primary}
-        />
+        <TextInput style={fieldStyles.input} value={value} onChangeText={onChangeText} keyboardType="numeric" placeholder={placeholder} placeholderTextColor={colors.textMuted} selectionColor={colors.primary} />
         {suffix && <Text style={fieldStyles.suffix}>{suffix}</Text>}
       </View>
     </View>
@@ -346,9 +216,11 @@ const s = StyleSheet.create({
   title: { ...typography.headlineLg, color: colors.text, flex: 1 },
   changedBadge: { backgroundColor: 'rgba(245,158,11,0.15)', paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radius.sm, borderWidth: 1, borderColor: 'rgba(245,158,11,0.3)' },
   changedText: { ...typography.caption, color: colors.warning, fontWeight: '600' },
-  infoBar: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.xl, backgroundColor: colors.primaryMuted, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.md },
+  infoBar: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.lg, backgroundColor: colors.primaryMuted, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.md },
   infoText: { ...typography.bodySm, color: colors.primary },
-  sectionLabel: { ...typography.labelMd, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginTop: spacing.lg, marginBottom: spacing.md },
+  explainCard: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, marginBottom: spacing.xl, backgroundColor: 'rgba(59,130,246,0.06)', borderRadius: radius.lg, padding: spacing.md, borderWidth: 1, borderColor: 'rgba(59,130,246,0.12)' },
+  explainText: { ...typography.bodySm, color: colors.info, flex: 1, lineHeight: 18 },
+  sectionLabel: { ...typography.labelMd, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginTop: spacing.xl, marginBottom: spacing.md },
   card: { backgroundColor: colors.surface, borderRadius: radius.lg, paddingHorizontal: spacing.lg, borderWidth: 1, borderColor: colors.border },
   lastUpdatedRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.lg, justifyContent: 'center' },
   lastUpdatedText: { ...typography.caption, color: colors.textMuted },
@@ -358,4 +230,7 @@ const s = StyleSheet.create({
   saveBtnTextDisabled: { color: colors.textMuted },
   auditNotice: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, marginTop: spacing.xl, paddingHorizontal: spacing.sm },
   auditText: { ...typography.caption, color: colors.textMuted, flex: 1, lineHeight: 16 },
+  navCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.sm },
+  navTitle: { ...typography.headlineSm, color: colors.text },
+  navDesc: { ...typography.caption, color: colors.textMuted, marginTop: 1 },
 });
