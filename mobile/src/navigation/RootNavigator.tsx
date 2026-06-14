@@ -8,7 +8,7 @@ import { colors } from '../theme';
 import CustomerNavigator from './CustomerNavigator';
 import CreatorNavigator from './CreatorNavigator';
 import AdminNavigator from './AdminNavigator';
-import AuthNavigator from './AuthNavigator';
+import GuestNavigator from './GuestNavigator';
 
 const Stack = createNativeStackNavigator();
 
@@ -42,7 +42,7 @@ export default function RootNavigator() {
   }
 
   const getNavigator = () => {
-    if (!isAuthenticated) return <AuthNavigator />;
+    if (!isAuthenticated) return <GuestNavigator />;
     switch (role) {
       case 'creator': return <CreatorNavigator />;
       case 'admin': return <AdminNavigator />;

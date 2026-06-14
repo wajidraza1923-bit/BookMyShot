@@ -14,16 +14,29 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { colors, spacing, typography, radius, shadows } from '../theme';
 import Button from '../components/Button';
+import LoginRequiredSheet from '../components/LoginRequiredSheet';
 import { creatorsAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 const { width } = Dimensions.get('window');
 const GALLERY_SIZE = (width - spacing.xl * 2 - spacing.sm * 2) / 3;
 
 export default function CreatorProfileScreen({ route, navigation }: any) {
   const { id } = route.params;
+  const { isAuthenticated } = useAuth();
   const [creator, setCreator] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'portfolio' | 'packages' | 'reviews'>('portfolio');
+  const [showLoginSheet, setShowLoginSheet] = useState(false);
+
+  const handleRestrictedAction = () => {
+    if (!isAuthenticated) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      setShowLoginSheet(true);
+      return true;
+    }
+    return false;
+  };
 
   useEffect(() => {
     loadCreator();
@@ -221,8 +234,16 @@ export default function CreatorProfileScreen({ route, navigation }: any) {
             ₹{(packages[0]?.price || creator.startingPrice || 0).toLocaleString('en-IN')}
           </Text>
         </View>
-        <Button title="Send Inquiry" onPress={() => {}} size="md" style={styles.ctaBtn} />
+        <Button title="Send Inquiry" onPress={() => { if (!handleRestrictedAction()) { /* TODO: open inquiry form */ } }} size="md" style={styles.ctaBtn} />
       </View>
+
+      {/* Login Required Sheet for Guest Users */}
+      <LoginRequiredSheet
+        visible={showLoginSheet}
+        onClose={() => setShowLoginSheet(false)}
+        onLogin={() => { setShowLoginSheet(false); navigation.navigate('Login'); }}
+        onSignUp={() => { setShowLoginSheet(false); navigation.navigate('Register'); }}
+      />
     </View>
   );
 }
