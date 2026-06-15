@@ -1,2 +1,388 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Contact Us — BookMyShot</title><meta name="description" content="Get in touch with BookMyShot support team. We're here to help with bookings, payments, and creator queries."><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><style>:root{--gold:#D4AF37;--bg:#070503;--card:#0f0c09;--text:#F5F0E8;--muted:#A09890;--border:rgba(212,175,55,.12);--font:'Inter',sans-serif}*{margin:0;padding:0;box-sizing:border-box}body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.7}.container{max-width:800px;margin:0 auto;padding:4rem 1.5rem}.back{display:inline-flex;align-items:center;gap:.5rem;color:var(--muted);font-size:.85rem;margin-bottom:2rem;text-decoration:none}.back:hover{color:var(--gold)}h1{font-size:2rem;font-weight:700;margin-bottom:1.5rem;color:var(--gold)}h2{font-size:1.2rem;font-weight:600;margin:2rem 0 .75rem;color:var(--text)}p{color:var(--muted);margin-bottom:1rem;font-size:.9rem}.contact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin:2rem 0}.contact-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.5rem;text-align:center}.contact-card i{font-size:1.5rem;color:var(--gold);margin-bottom:.75rem;display:block}.contact-card h4{font-size:.85rem;margin-bottom:.25rem}.contact-card p{font-size:.8rem;margin:0}a{color:var(--gold);text-decoration:none}</style><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">  <script src="/js/ga.js"></script>
-</head><body><div class="container"><a href="/" class="back">← Back to Home</a><h1>Contact Us</h1><p>We'd love to hear from you. Whether you have a question about bookings, payments, creator onboarding, or anything else — our team is ready to help.</p><div class="contact-grid"><div class="contact-card"><i class="fas fa-envelope"></i><h4>Email</h4><p><a href="mailto:support@bookmyshot.in">support@bookmyshot.in</a></p></div><div class="contact-card"><i class="fab fa-whatsapp"></i><h4>WhatsApp</h4><p><a href="https://wa.me/918492922173">+918492922173</a></p></div><div class="contact-card"><i class="fas fa-clock"></i><h4>Hours</h4><p>Mon - Sat, 10am - 7pm IST</p></div></div><h2>Response Time</h2><p>We typically respond within 24 hours on business days. For urgent matters, please reach out via WhatsApp.</p><h2>Office</h2><p>BookMyShot<br>India</p></div></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact Us - BookMyShot</title>
+  <meta name="description" content="Contact BookMyShot - Get in touch with India's premium photography booking platform. Email, phone, and office address for support and partnerships.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="/favico.png">
+  <style>
+    :root {
+      --bg: #0a0806;
+      --surface: rgba(255,255,255,0.04);
+      --accent: #D4AF37;
+      --accent-dark: #b8962e;
+      --text: #f6eee7;
+      --muted: #b9aa98;
+      --border: rgba(255,255,255,0.08);
+      --font-display: 'Playfair Display', serif;
+      --font-body: 'Outfit', system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.7;
+    }
+    a { color: var(--accent); text-decoration: none; transition: color 0.2s; }
+    a:hover { color: #e8c84a; }
+    ::selection { background: rgba(212,175,55,0.3); color: #fff; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(10,8,6,0.95);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand-logo {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+    }
+    .back-home {
+      font-size: 0.85rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .back-home:hover { color: var(--accent); }
+
+    .page-container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem 4rem;
+    }
+    .page-title {
+      font-family: var(--font-display);
+      font-size: 2.4rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }
+    .page-subtitle {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 2.5rem;
+    }
+    .section-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--accent);
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .content p, .content li {
+      color: var(--muted);
+      font-size: 0.92rem;
+      margin-bottom: 0.8rem;
+    }
+
+    /* Contact grid */
+    .contact-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.5rem;
+      margin: 2rem 0;
+    }
+    .contact-card {
+      padding: 1.5rem;
+      background: rgba(212,175,55,0.04);
+      border: 1px solid rgba(212,175,55,0.15);
+      border-radius: 16px;
+      text-align: center;
+    }
+    .contact-icon {
+      font-size: 2rem;
+      margin-bottom: 0.8rem;
+      display: block;
+    }
+    .contact-card h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }
+    .contact-card p {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 0;
+    }
+    .contact-card a {
+      font-size: 0.85rem;
+    }
+
+    /* Contact form */
+    .contact-form {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2rem;
+      margin-top: 2rem;
+    }
+    .form-group {
+      margin-bottom: 1.2rem;
+    }
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 0.4rem;
+    }
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      padding: 0.8rem 1rem;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      transition: border-color 0.2s;
+    }
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .form-group textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+    .form-group select {
+      appearance: none;
+      cursor: pointer;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    .submit-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.9rem 2rem;
+      background: var(--accent);
+      color: #0a0806;
+      border: none;
+      border-radius: 10px;
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .submit-btn:hover {
+      background: #e8c84a;
+      transform: translateY(-1px);
+    }
+    .submit-btn:active {
+      transform: translateY(0);
+    }
+
+    /* Response hours */
+    .response-info {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin: 1.5rem 0;
+      padding: 1.5rem;
+      background: rgba(212,175,55,0.04);
+      border: 1px solid rgba(212,175,55,0.12);
+      border-radius: 14px;
+    }
+    .response-item {
+      text-align: center;
+    }
+    .response-item strong {
+      display: block;
+      color: var(--accent);
+      font-size: 0.85rem;
+      margin-bottom: 0.2rem;
+    }
+    .response-item span {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .site-footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem 1.5rem;
+      text-align: center;
+    }
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .footer-links a {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .footer-links a:hover { color: var(--accent); }
+    .footer-copy {
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.3);
+    }
+
+    @media (max-width: 600px) {
+      .page-title { font-size: 1.8rem; }
+      .page-container { padding: 2rem 1rem 3rem; }
+      .site-header { padding: 0.8rem 1rem; }
+      .form-row { grid-template-columns: 1fr; }
+      .contact-form { padding: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="site-header">
+    <a href="/" class="brand-logo">BOOKMYSHOT</a>
+    <a href="/" class="back-home">&#8592; Back to Home</a>
+  </header>
+
+  <main class="page-container content">
+    <h1 class="page-title">Contact Us</h1>
+    <p class="page-subtitle">We'd love to hear from you. Reach out for support, partnerships, or just to say hello.</p>
+
+    <div class="contact-grid">
+      <div class="contact-card">
+        <span class="contact-icon">📧</span>
+        <h3>Email Us</h3>
+        <p><a href="mailto:bookmyshott@gmail.com">bookmyshott@gmail.com</a></p>
+      </div>
+      <div class="contact-card">
+        <span class="contact-icon">📞</span>
+        <h3>Call Us</h3>
+        <p>+91 XXXXX XXXXX</p>
+        <p style="font-size:0.75rem;color:rgba(255,255,255,0.3);margin-top:0.3rem">Mon-Sat, 10AM - 7PM IST</p>
+      </div>
+      <div class="contact-card">
+        <span class="contact-icon">📍</span>
+        <h3>Visit Us</h3>
+        <p>BookMyShot Office<br>India</p>
+      </div>
+    </div>
+
+    <div class="response-info">
+      <div class="response-item">
+        <strong>Email Response</strong>
+        <span>Within 24 hours</span>
+      </div>
+      <div class="response-item">
+        <strong>Phone Support</strong>
+        <span>Mon-Sat, 10AM-7PM</span>
+      </div>
+      <div class="response-item">
+        <strong>Dispute Resolution</strong>
+        <span>Within 48 hours</span>
+      </div>
+    </div>
+
+    <h2 class="section-title">Send Us a Message</h2>
+    <form class="contact-form" id="contactForm" onsubmit="handleContactSubmit(event)">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="contact-name">Full Name *</label>
+          <input type="text" id="contact-name" name="name" placeholder="Your full name" required>
+        </div>
+        <div class="form-group">
+          <label for="contact-email">Email Address *</label>
+          <input type="email" id="contact-email" name="email" placeholder="your@email.com" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="contact-phone">Phone Number</label>
+          <input type="tel" id="contact-phone" name="phone" placeholder="+91 XXXXX XXXXX">
+        </div>
+        <div class="form-group">
+          <label for="contact-subject">Subject *</label>
+          <select id="contact-subject" name="subject" required>
+            <option value="">Select a topic</option>
+            <option value="general">General Enquiry</option>
+            <option value="booking">Booking Support</option>
+            <option value="creator">Creator Registration</option>
+            <option value="payment">Payment Issue</option>
+            <option value="refund">Refund Request</option>
+            <option value="complaint">Complaint</option>
+            <option value="partnership">Partnership</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="contact-message">Message *</label>
+        <textarea id="contact-message" name="message" placeholder="Tell us how we can help you..." required></textarea>
+      </div>
+      <button type="submit" class="submit-btn">Send Message &#8594;</button>
+    </form>
+
+    <h2 class="section-title">Frequently Asked Questions</h2>
+    <p><strong>How do I register as a creator?</strong><br>Visit our registration page and sign up as a photographer or videographer. Once verified, your profile will go live.</p>
+    <p><strong>How long does verification take?</strong><br>Creator verification typically takes 24-48 hours after submission of required documents.</p>
+    <p><strong>I have a payment issue. What should I do?</strong><br>Email us at <a href="mailto:bookmyshott@gmail.com">bookmyshott@gmail.com</a> with your transaction ID and we'll resolve it within 48 hours.</p>
+    <p><strong>Can I partner with BookMyShot?</strong><br>We're always open to partnerships. Select "Partnership" in the contact form above or email us directly.</p>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-links">
+      <a href="/privacy-policy.html">Privacy Policy</a>
+      <a href="/terms.html">Terms & Conditions</a>
+      <a href="/refund-policy.html">Refund Policy</a>
+      <a href="/cancellation-policy.html">Cancellation Policy</a>
+      <a href="/about.html">About Us</a>
+      <a href="/contact.html">Contact</a>
+    </div>
+    <p class="footer-copy">&copy; 2025 BookMyShot. All Rights Reserved.</p>
+  </footer>
+
+  <script>
+    function handleContactSubmit(e) {
+      e.preventDefault();
+      var form = e.target;
+      var name = form.querySelector('#contact-name').value;
+      var email = form.querySelector('#contact-email').value;
+      var subject = form.querySelector('#contact-subject').value;
+      var message = form.querySelector('#contact-message').value;
+
+      // Construct mailto link as a fallback
+      var mailSubject = encodeURIComponent('BookMyShot Contact: ' + subject);
+      var mailBody = encodeURIComponent('Name: ' + name + '\nEmail: ' + email + '\n\n' + message);
+      window.location.href = 'mailto:bookmyshott@gmail.com?subject=' + mailSubject + '&body=' + mailBody;
+
+      // Show confirmation
+      var btn = form.querySelector('.submit-btn');
+      btn.textContent = 'Message Sent ✓';
+      btn.style.background = '#2ecc71';
+      setTimeout(function() {
+        btn.textContent = 'Send Message →';
+        btn.style.background = '';
+        form.reset();
+      }, 3000);
+    }
+  </script>
+
+</body>
+</html>

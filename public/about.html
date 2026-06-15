@@ -1,2 +1,365 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>About Us — BookMyShot</title><meta name="description" content="Learn about BookMyShot, India's premium creator booking platform connecting talent with opportunity."><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><style>:root{--gold:#D4AF37;--bg:#070503;--card:#0f0c09;--text:#F5F0E8;--muted:#A09890;--border:rgba(212,175,55,.12);--font:'Inter',sans-serif}*{margin:0;padding:0;box-sizing:border-box}body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.7}.container{max-width:800px;margin:0 auto;padding:4rem 1.5rem}.back{display:inline-flex;align-items:center;gap:.5rem;color:var(--muted);font-size:.85rem;margin-bottom:2rem;text-decoration:none}.back:hover{color:var(--gold)}h1{font-size:2rem;font-weight:700;margin-bottom:1.5rem;color:var(--gold)}h2{font-size:1.2rem;font-weight:600;margin:2rem 0 .75rem;color:var(--text)}p{color:var(--muted);margin-bottom:1rem;font-size:.9rem}ul{color:var(--muted);margin:0 0 1rem 1.5rem;font-size:.9rem}li{margin-bottom:.5rem}</style>  <script src="/js/ga.js"></script>
-</head><body><div class="container"><a href="/" class="back">← Back to Home</a><h1>About BookMyShot</h1><p>BookMyShot is India's premium creator booking platform, connecting talented creators with clients who need their expertise. We make it simple to discover, book, and collaborate with photographers, influencers, YouTubers, singers, models, actors, and event hosts.</p><h2>Our Mission</h2><p>To democratize access to creative talent by building a transparent, secure, and efficient marketplace where creators can grow their careers and clients can find the perfect match for their projects.</p><h2>What We Do</h2><ul><li>Provide a curated marketplace of verified creators across India</li><li>Enable secure bookings with protected payments</li><li>Offer transparent pricing with no hidden fees</li><li>Support both creators and clients with dedicated customer service</li><li>Build tools that help creators manage their business professionally</li></ul><h2>Our Values</h2><ul><li><strong>Transparency</strong> — Clear pricing, honest communication, no surprises</li><li><strong>Quality</strong> — Every creator is vetted before joining the platform</li><li><strong>Security</strong> — Payments are protected, data is encrypted</li><li><strong>Growth</strong> — We invest in tools that help creators succeed</li></ul><h2>Contact Us</h2><p>Have questions? Reach out at <a href="mailto:support@bookmyshot.in" style="color:var(--gold)">support@bookmyshot.in</a></p></div></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About Us - BookMyShot</title>
+  <meta name="description" content="About BookMyShot - India's premium photography and videography marketplace. Learn about our mission, vision, and how we connect couples with talented wedding creators.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="/favico.png">
+  <style>
+    :root {
+      --bg: #0a0806;
+      --surface: rgba(255,255,255,0.04);
+      --accent: #D4AF37;
+      --accent-dark: #b8962e;
+      --text: #f6eee7;
+      --muted: #b9aa98;
+      --border: rgba(255,255,255,0.08);
+      --font-display: 'Playfair Display', serif;
+      --font-body: 'Outfit', system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.7;
+    }
+    a { color: var(--accent); text-decoration: none; transition: color 0.2s; }
+    a:hover { color: #e8c84a; }
+    ::selection { background: rgba(212,175,55,0.3); color: #fff; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(10,8,6,0.95);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand-logo {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+    }
+    .back-home {
+      font-size: 0.85rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .back-home:hover { color: var(--accent); }
+
+    .page-container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem 4rem;
+    }
+    .page-title {
+      font-family: var(--font-display);
+      font-size: 2.4rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }
+    .page-subtitle {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 2.5rem;
+    }
+    .section-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--accent);
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .content p, .content li {
+      color: var(--muted);
+      font-size: 0.92rem;
+      margin-bottom: 0.8rem;
+    }
+    .content ul {
+      padding-left: 1.5rem;
+      margin-bottom: 1.2rem;
+    }
+    .content li { margin-bottom: 0.4rem; }
+
+    /* Hero section */
+    .about-hero {
+      text-align: center;
+      padding: 2rem 0 3rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 2rem;
+    }
+    .about-hero .page-title {
+      margin-bottom: 1rem;
+    }
+    .about-hero p {
+      font-size: 1.05rem;
+      color: var(--muted);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* Stats */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1.5rem;
+      margin: 2rem 0;
+    }
+    .stat-card {
+      text-align: center;
+      padding: 1.5rem 1rem;
+      background: rgba(212,175,55,0.04);
+      border: 1px solid rgba(212,175,55,0.15);
+      border-radius: 16px;
+    }
+    .stat-number {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--accent);
+      display: block;
+    }
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 0.3rem;
+    }
+
+    /* How it works */
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.5rem;
+      margin: 2rem 0;
+    }
+    .step-card {
+      padding: 1.5rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      text-align: center;
+    }
+    .step-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(212,175,55,0.15);
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+    }
+    .step-card h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }
+    .step-card p {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    /* Team */
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin: 2rem 0;
+    }
+    .team-card {
+      text-align: center;
+      padding: 2rem 1.5rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+    }
+    .team-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: rgba(212,175,55,0.1);
+      border: 2px solid rgba(212,175,55,0.3);
+      margin: 0 auto 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+    }
+    .team-card h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.3rem;
+    }
+    .team-card p {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .site-footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem 1.5rem;
+      text-align: center;
+    }
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .footer-links a {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .footer-links a:hover { color: var(--accent); }
+    .footer-copy {
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.3);
+    }
+
+    @media (max-width: 600px) {
+      .page-title { font-size: 1.8rem; }
+      .page-container { padding: 2rem 1rem 3rem; }
+      .site-header { padding: 0.8rem 1rem; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="site-header">
+    <a href="/" class="brand-logo">BOOKMYSHOT</a>
+    <a href="/" class="back-home">&#8592; Back to Home</a>
+  </header>
+
+  <main class="page-container content">
+    <div class="about-hero">
+      <h1 class="page-title">About BookMyShot</h1>
+      <p>India's premium marketplace connecting couples with talented photographers and videographers for life's most memorable moments.</p>
+    </div>
+
+    <h2 class="section-title">Our Mission</h2>
+    <p>BookMyShot exists to make finding and booking exceptional wedding photographers and videographers effortless. We believe every couple deserves access to verified, talented creators who can capture their special moments with artistry and professionalism.</p>
+    <p>We bridge the gap between talented creators who deserve visibility and clients who seek quality assurance, transparent pricing, and a seamless booking experience.</p>
+
+    <h2 class="section-title">Our Vision</h2>
+    <p>To become India's most trusted platform for wedding and event photography services — a place where every creator thrives and every client finds their perfect match. We envision a world where no talented photographer goes undiscovered and no couple settles for less than extraordinary.</p>
+
+    <h2 class="section-title">Platform at a Glance</h2>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span class="stat-number">500+</span>
+        <span class="stat-label">Verified Creators</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-number">50+</span>
+        <span class="stat-label">Cities Covered</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-number">1000+</span>
+        <span class="stat-label">Bookings Made</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-number">4.8★</span>
+        <span class="stat-label">Average Rating</span>
+      </div>
+    </div>
+
+    <h2 class="section-title">How It Works</h2>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-number">1</div>
+        <h3>Browse Creators</h3>
+        <p>Explore verified photographers and videographers filtered by location, style, budget, and availability.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-number">2</div>
+        <h3>View Portfolios</h3>
+        <p>Review detailed portfolios, past work, client reviews, and pricing to find your perfect match.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-number">3</div>
+        <h3>Book Securely</h3>
+        <p>Send an enquiry, discuss details, and confirm your booking with secure payment through our platform.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-number">4</div>
+        <h3>Enjoy Your Day</h3>
+        <p>Relax and let the creator capture your moments beautifully. Rate and review after the event.</p>
+      </div>
+    </div>
+
+    <h2 class="section-title">Why BookMyShot?</h2>
+    <ul>
+      <li><strong>Verified Creators:</strong> Every photographer and videographer is verified for quality and professionalism</li>
+      <li><strong>Transparent Pricing:</strong> No hidden fees — see clear pricing before you book</li>
+      <li><strong>Secure Payments:</strong> All transactions are protected through trusted payment gateways</li>
+      <li><strong>Concierge Support:</strong> Our team assists you throughout the booking and event process</li>
+      <li><strong>Portfolio Reviews:</strong> Access real work samples and genuine client reviews</li>
+      <li><strong>Pan-India Coverage:</strong> Find creators across major cities and towns in India</li>
+    </ul>
+
+    <h2 class="section-title">Our Team</h2>
+    <p>We're a passionate team of technologists, designers, and wedding industry experts committed to revolutionizing how India books creative talent.</p>
+    <div class="team-grid">
+      <div class="team-card">
+        <div class="team-avatar">👤</div>
+        <h3>Founder & CEO</h3>
+        <p>Visionary leader driving BookMyShot's mission to transform wedding photography booking in India.</p>
+      </div>
+      <div class="team-card">
+        <div class="team-avatar">👤</div>
+        <h3>Head of Technology</h3>
+        <p>Building the platform that makes discovering and booking creators seamless and secure.</p>
+      </div>
+      <div class="team-card">
+        <div class="team-avatar">👤</div>
+        <h3>Head of Operations</h3>
+        <p>Ensuring smooth experiences for both creators and clients across every interaction.</p>
+      </div>
+    </div>
+
+    <h2 class="section-title">Get In Touch</h2>
+    <p>Have questions, feedback, or partnership ideas? We'd love to hear from you.</p>
+    <ul>
+      <li>Email: <a href="mailto:bookmyshott@gmail.com">bookmyshott@gmail.com</a></li>
+      <li>Website: <a href="https://bookmyshot.in">bookmyshot.in</a></li>
+      <li>Visit our <a href="/contact.html">Contact Page</a> for more ways to reach us.</li>
+    </ul>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-links">
+      <a href="/privacy-policy.html">Privacy Policy</a>
+      <a href="/terms.html">Terms & Conditions</a>
+      <a href="/refund-policy.html">Refund Policy</a>
+      <a href="/cancellation-policy.html">Cancellation Policy</a>
+      <a href="/about.html">About Us</a>
+      <a href="/contact.html">Contact</a>
+    </div>
+    <p class="footer-copy">&copy; 2025 BookMyShot. All Rights Reserved.</p>
+  </footer>
+
+</body>
+</html>

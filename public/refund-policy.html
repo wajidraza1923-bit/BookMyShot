@@ -1,2 +1,239 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Refund Policy — BookMyShot</title><meta name="description" content="BookMyShot refund policy. Learn how refunds work for bookings on our creator platform."><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><style>:root{--gold:#D4AF37;--bg:#070503;--text:#F5F0E8;--muted:#A09890;--font:'Inter',sans-serif}*{margin:0;padding:0;box-sizing:border-box}body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.7}.container{max-width:800px;margin:0 auto;padding:4rem 1.5rem}.back{display:inline-flex;align-items:center;gap:.5rem;color:var(--muted);font-size:.85rem;margin-bottom:2rem;text-decoration:none}.back:hover{color:var(--gold)}h1{font-size:2rem;font-weight:700;margin-bottom:.5rem;color:var(--gold)}.updated{font-size:.8rem;color:var(--muted);margin-bottom:2rem}h2{font-size:1.1rem;font-weight:600;margin:2rem 0 .75rem;color:var(--text)}p,li{color:var(--muted);font-size:.88rem;margin-bottom:.75rem}ul{margin:0 0 1rem 1.5rem}table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.85rem}th,td{padding:.75rem;text-align:left;border-bottom:1px solid rgba(255,255,255,.06)}th{color:var(--gold);font-weight:600;font-size:.75rem;text-transform:uppercase}td{color:var(--muted)}</style>  <script src="/js/ga.js"></script>
-</head><body><div class="container"><a href="/" class="back">← Back to Home</a><h1>Refund Policy</h1><p class="updated">Last updated: June 2026</p><h2>When Refunds Apply</h2><ul><li>Creator cancels the booking before work begins — full refund</li><li>Creator fails to deliver agreed work within the deadline — full or partial refund</li><li>Client cancels before creator accepts — full refund</li><li>Client cancels after creator accepts — partial refund (see table below)</li><li>Platform error causing double charge — full refund of duplicate</li></ul><h2>Refund Schedule</h2><table><thead><tr><th>Cancellation Timing</th><th>Refund Amount</th></tr></thead><tbody><tr><td>Before creator accepts</td><td>100% refund</td></tr><tr><td>After acceptance, 7+ days before event</td><td>80% refund</td></tr><tr><td>After acceptance, 3-7 days before event</td><td>50% refund</td></tr><tr><td>After acceptance, less than 3 days</td><td>No refund</td></tr><tr><td>Creator cancels (any time)</td><td>100% refund</td></tr></tbody></table><h2>Processing Time</h2><p>Refunds are processed within 5-7 business days to your original payment method. Bank processing may take an additional 2-3 days.</p><h2>How to Request a Refund</h2><ul><li>Contact our support team at <a href="mailto:support@bookmyshot.com" style="color:var(--gold)">support@bookmyshot.in</a></li><li>Include your booking ID and reason for refund</li><li>Our team will review and process within 48 hours</li></ul><h2>Non-Refundable Items</h2><ul><li>Platform subscription fees (creator subscriptions)</li><li>Completed bookings where work was delivered as agreed</li><li>Bookings cancelled less than 3 days before the event</li></ul><h2>Creator Subscription Refunds</h2><p>Creator subscription fees are non-refundable once the subscription period has been activated and the creator has been granted access to the dashboard. Subscriptions are billed on a monthly basis. If you believe you were charged in error, please contact our support team within 7 days of the transaction. For more details about subscription plans, visit <a href="/how-bookmyshot-works.html" style="color:var(--gold)">How BookMyShot Works</a>.</p></div></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Refund Policy - BookMyShot</title>
+  <meta name="description" content="BookMyShot Refund Policy - Subscription refunds, commission refunds, promotion refunds, and cancellation timelines for India's premium photography booking platform.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="/favico.png">
+  <style>
+    :root {
+      --bg: #0a0806;
+      --surface: rgba(255,255,255,0.04);
+      --accent: #D4AF37;
+      --accent-dark: #b8962e;
+      --text: #f6eee7;
+      --muted: #b9aa98;
+      --border: rgba(255,255,255,0.08);
+      --font-display: 'Playfair Display', serif;
+      --font-body: 'Outfit', system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.7;
+    }
+    a { color: var(--accent); text-decoration: none; transition: color 0.2s; }
+    a:hover { color: #e8c84a; }
+    ::selection { background: rgba(212,175,55,0.3); color: #fff; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(10,8,6,0.95);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand-logo {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+    }
+    .back-home {
+      font-size: 0.85rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .back-home:hover { color: var(--accent); }
+
+    .page-container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem 4rem;
+    }
+    .page-title {
+      font-family: var(--font-display);
+      font-size: 2.4rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }
+    .page-subtitle {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 2.5rem;
+    }
+    .section-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--accent);
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .content p, .content li {
+      color: var(--muted);
+      font-size: 0.92rem;
+      margin-bottom: 0.8rem;
+    }
+    .content ul, .content ol {
+      padding-left: 1.5rem;
+      margin-bottom: 1.2rem;
+    }
+    .content li { margin-bottom: 0.4rem; }
+    .highlight-box {
+      background: rgba(212,175,55,0.06);
+      border: 1px solid rgba(212,175,55,0.2);
+      border-radius: 12px;
+      padding: 1.2rem 1.5rem;
+      margin: 1.5rem 0;
+    }
+    .highlight-box p {
+      color: var(--text);
+      font-size: 0.9rem;
+      margin-bottom: 0;
+    }
+
+    .site-footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem 1.5rem;
+      text-align: center;
+    }
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .footer-links a {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .footer-links a:hover { color: var(--accent); }
+    .footer-copy {
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.3);
+    }
+
+    @media (max-width: 600px) {
+      .page-title { font-size: 1.8rem; }
+      .page-container { padding: 2rem 1rem 3rem; }
+      .site-header { padding: 0.8rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="site-header">
+    <a href="/" class="brand-logo">BOOKMYSHOT</a>
+    <a href="/" class="back-home">&#8592; Back to Home</a>
+  </header>
+
+  <main class="page-container content">
+    <h1 class="page-title">Refund Policy</h1>
+    <p class="page-subtitle">Last updated: January 2025</p>
+
+    <p>At BookMyShot, we strive to provide a fair and transparent refund process for all users. This policy outlines the terms for refunds across our different service categories.</p>
+
+    <div class="highlight-box">
+      <p><strong>Important:</strong> All refund requests must be submitted within the specified timelines. Requests received after the deadline may not be eligible for processing.</p>
+    </div>
+
+    <h2 class="section-title">1. Subscription Refunds (Creator Plans)</h2>
+    <p>BookMyShot offers subscription plans for creators to access premium features:</p>
+    <ul>
+      <li><strong>Within 48 hours of purchase:</strong> Full refund available if no premium features have been used</li>
+      <li><strong>After 48 hours:</strong> No refund for the current billing period</li>
+      <li><strong>Auto-renewal charges:</strong> Refundable within 24 hours of the renewal charge if you forgot to cancel</li>
+      <li><strong>Plan downgrades:</strong> No prorated refunds; the current plan remains active until the billing cycle ends</li>
+    </ul>
+    <p>To cancel your subscription, go to your account settings or contact our support team.</p>
+
+    <h2 class="section-title">2. Commission Refunds</h2>
+    <p>BookMyShot charges a platform commission on bookings facilitated through the platform:</p>
+    <ul>
+      <li><strong>Booking cancelled by Client:</strong> Commission is refunded to the Creator if the Client cancels within the eligible cancellation window</li>
+      <li><strong>Booking cancelled by Creator:</strong> Commission is refunded to the Client; Creator may be penalized</li>
+      <li><strong>Mutual cancellation:</strong> Commission is refunded to both parties</li>
+      <li><strong>Completed bookings:</strong> Commission is non-refundable once the service has been delivered</li>
+      <li><strong>Disputed bookings:</strong> Commission refund is determined after dispute resolution</li>
+    </ul>
+
+    <h2 class="section-title">3. Promotion & Featured Listing Refunds</h2>
+    <p>Creators who purchase promotional placements or featured listings:</p>
+    <ul>
+      <li><strong>Before promotion goes live:</strong> Full refund available</li>
+      <li><strong>Within first 24 hours of going live:</strong> 50% refund if the promotion has not generated significant impressions</li>
+      <li><strong>After 24 hours of going live:</strong> No refund available</li>
+      <li><strong>Technical issues:</strong> If our platform error prevented the promotion from displaying correctly, a full refund or credit will be issued</li>
+    </ul>
+
+    <h2 class="section-title">4. Booking Payment Refunds</h2>
+    <p>For payments made through the BookMyShot platform for booking services:</p>
+    <ul>
+      <li><strong>Advance/token amount:</strong> Refund eligibility depends on cancellation timing (see <a href="/cancellation-policy.html">Cancellation Policy</a>)</li>
+      <li><strong>Full payment:</strong> Refund as per the cancellation timeline agreed during booking</li>
+      <li><strong>Service not delivered:</strong> Full refund if the Creator fails to deliver the agreed service</li>
+      <li><strong>Partial service delivery:</strong> Prorated refund based on the extent of service delivered, at BookMyShot's discretion</li>
+    </ul>
+
+    <h2 class="section-title">5. Refund Processing</h2>
+    <ul>
+      <li>Approved refunds are processed within <strong>5-7 business days</strong></li>
+      <li>Refunds are credited to the original payment method</li>
+      <li>Bank processing time may add an additional 3-5 business days</li>
+      <li>UPI refunds are typically faster (1-3 business days)</li>
+    </ul>
+
+    <h2 class="section-title">6. Non-Refundable Items</h2>
+    <ul>
+      <li>Convenience fees and payment gateway charges</li>
+      <li>Services that have been fully delivered and accepted</li>
+      <li>Subscriptions used beyond the 48-hour window</li>
+      <li>Promotional credits and discount coupons</li>
+    </ul>
+
+    <h2 class="section-title">7. How to Request a Refund</h2>
+    <ol>
+      <li>Log in to your BookMyShot account</li>
+      <li>Navigate to your booking/subscription history</li>
+      <li>Select the transaction and click "Request Refund"</li>
+      <li>Provide the reason for your refund request</li>
+      <li>Our team will review and respond within 48 hours</li>
+    </ol>
+    <p>Alternatively, email us at <a href="mailto:bookmyshott@gmail.com">bookmyshott@gmail.com</a> with your order details and reason for the refund.</p>
+
+    <h2 class="section-title">8. Disputes</h2>
+    <p>If you disagree with a refund decision, you may escalate the matter by contacting our support team. BookMyShot's decision in dispute resolution is final and binding.</p>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-links">
+      <a href="/privacy-policy.html">Privacy Policy</a>
+      <a href="/terms.html">Terms & Conditions</a>
+      <a href="/refund-policy.html">Refund Policy</a>
+      <a href="/cancellation-policy.html">Cancellation Policy</a>
+      <a href="/about.html">About Us</a>
+      <a href="/contact.html">Contact</a>
+    </div>
+    <p class="footer-copy">&copy; 2025 BookMyShot. All Rights Reserved.</p>
+  </footer>
+
+</body>
+</html>
