@@ -118,24 +118,6 @@ export default function HomeScreen({ navigation }: any) {
           <View style={s.searchFilter}><Ionicons name="options-outline" size={15} color={colors.textMuted} /></View>
         </TouchableOpacity>
 
-        {/* ═══ TRENDING CATEGORIES ═══ */}
-        <View style={s.sectionRow}>
-          <Text style={s.sectionTitle}>Trending Categories</Text>
-        </View>
-        <FlatList
-          horizontal showsHorizontalScrollIndicator={false}
-          data={categories.length > 0 ? categories : defaultCategories}
-          contentContainerStyle={{ paddingHorizontal: spacing.xl }}
-          keyExtractor={i => i.id || i.label}
-          renderItem={({ item }) => (
-            <TouchableOpacity style={s.catChip} onPress={() => navigation.navigate('Discover', { category: item.id })} activeOpacity={0.8}>
-              <Text style={s.catIcon}>{item.icon || '📸'}</Text>
-              <Text style={s.catLabel}>{item.label}</Text>
-              {item.count > 0 && <Text style={s.catCount}>{item.count > 1000 ? `${(item.count/1000).toFixed(1)}K+` : `${item.count}+`}</Text>}
-            </TouchableOpacity>
-          )}
-        />
-
         {/* ═══ FEATURED CREATORS ═══ */}
         {featuredCreators.length > 0 && (
           <Animated.View style={{ opacity: fadeAnim }}>
