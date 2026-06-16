@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, RefreshControl,
-  FlatList, Image, TouchableOpacity, Dimensions, Animated, Platform, Easing,
+  FlatList, Image, TouchableOpacity, Dimensions, Animated, Platform, Easing, Linking, Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, radius, shadows } from '../theme';
@@ -237,52 +237,52 @@ export default function HomeScreen({ navigation }: any) {
           <View style={s.fGrid}>
             <View style={s.fCol}>
               <Text style={s.fHead}>COMPANY</Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Discover')}><Text style={s.fLink}>About Us</Text></TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Discover')}><Text style={s.fLink}>Contact</Text></TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Discover')}><Text style={s.fLink}>Careers</Text></TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Discover')}><Text style={s.fLink}>Press</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => Alert.alert('About Us', 'BookMyShot is India\'s premium wedding creator marketplace. We connect couples with verified photographers, videographers, and filmmakers across 100+ cities.')}><Text style={s.fLink}>About Us</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => Linking.openURL('mailto:support@bookmyshot.in')}><Text style={s.fLink}>Contact</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => Alert.alert('Careers', 'We\'re hiring! Send your resume to support@bookmyshot.in with subject "Careers"')}><Text style={s.fLink}>Careers</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => Alert.alert('Press', 'For media inquiries, email support@bookmyshot.in')}><Text style={s.fLink}>Press</Text></TouchableOpacity>
             </View>
             <View style={s.fCol}>
               <Text style={s.fHead}>CREATORS</Text>
               <TouchableOpacity onPress={() => navigation.navigate('Account')}><Text style={s.fLink}>Join as Creator</Text></TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Discover')}><Text style={s.fLink}>Pricing</Text></TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Discover')}><Text style={s.fLink}>Creator Resources</Text></TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Discover')}><Text style={s.fLink}>Help Center</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => Alert.alert('Pricing', 'Monthly subscription: Database-driven pricing.\nCommission: 3-5% per booking.\nFeatured listing: Premium placement.')}><Text style={s.fLink}>Pricing</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => Alert.alert('Creator Resources', 'Tips to grow your business:\n• Complete your portfolio\n• Add 10 best photos\n• Set competitive pricing\n• Respond to inquiries fast')}><Text style={s.fLink}>Resources</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => Linking.openURL('mailto:support@bookmyshot.in?subject=Help')}><Text style={s.fLink}>Help Center</Text></TouchableOpacity>
             </View>
             <View style={s.fCol}>
               <Text style={s.fHead}>CUSTOMERS</Text>
               <TouchableOpacity onPress={() => navigation.navigate('Discover')}><Text style={s.fLink}>Find Creator</Text></TouchableOpacity>
               <TouchableOpacity onPress={() => navigation.navigate('Discover', { category: 'wedding' })}><Text style={s.fLink}>Photography</Text></TouchableOpacity>
               <TouchableOpacity onPress={() => navigation.navigate('Discover', { category: 'videography' })}><Text style={s.fLink}>Videography</Text></TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Discover')}><Text style={s.fLink}>Support</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => Linking.openURL('mailto:support@bookmyshot.in?subject=Support')}><Text style={s.fLink}>Support</Text></TouchableOpacity>
             </View>
           </View>
           <View style={s.fDivider} />
           <Text style={s.fHead}>LEGAL</Text>
           <View style={s.fLegalRow}>
-            <Text style={s.fLink}>Privacy Policy</Text>
+            <TouchableOpacity onPress={() => Linking.openURL('https://bookmyshot.in/privacy-policy.html')}><Text style={s.fLink}>Privacy Policy</Text></TouchableOpacity>
             <Text style={s.fDot}>•</Text>
-            <Text style={s.fLink}>Terms & Conditions</Text>
+            <TouchableOpacity onPress={() => Linking.openURL('https://bookmyshot.in/terms.html')}><Text style={s.fLink}>Terms</Text></TouchableOpacity>
             <Text style={s.fDot}>•</Text>
-            <Text style={s.fLink}>Refund Policy</Text>
+            <TouchableOpacity onPress={() => Linking.openURL('https://bookmyshot.in/refund-policy.html')}><Text style={s.fLink}>Refund</Text></TouchableOpacity>
             <Text style={s.fDot}>•</Text>
-            <Text style={s.fLink}>Cancellation</Text>
+            <TouchableOpacity onPress={() => Linking.openURL('https://bookmyshot.in/cancellation-policy.html')}><Text style={s.fLink}>Cancellation</Text></TouchableOpacity>
           </View>
           <View style={s.fDivider} />
           <Text style={s.fSocialTitle}>CONNECT WITH US</Text>
           <View style={s.socialRow}>
-            <TouchableOpacity style={s.socialBtn}><Ionicons name="logo-instagram" size={16} color="#F5B942" /></TouchableOpacity>
-            <TouchableOpacity style={s.socialBtn}><Ionicons name="logo-facebook" size={16} color="#F5B942" /></TouchableOpacity>
-            <TouchableOpacity style={s.socialBtn}><Ionicons name="logo-youtube" size={16} color="#F5B942" /></TouchableOpacity>
-            <TouchableOpacity style={s.socialBtn}><Ionicons name="logo-linkedin" size={16} color="#F5B942" /></TouchableOpacity>
-            <TouchableOpacity style={s.socialBtn}><Ionicons name="logo-twitter" size={16} color="#F5B942" /></TouchableOpacity>
-            <TouchableOpacity style={s.socialBtn}><Ionicons name="logo-whatsapp" size={16} color="#F5B942" /></TouchableOpacity>
+            <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://instagram.com/bookmyshot')}><Ionicons name="logo-instagram" size={16} color="#F5B942" /></TouchableOpacity>
+            <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://facebook.com/bookmyshot')}><Ionicons name="logo-facebook" size={16} color="#F5B942" /></TouchableOpacity>
+            <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://youtube.com/@bookmyshot')}><Ionicons name="logo-youtube" size={16} color="#F5B942" /></TouchableOpacity>
+            <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://linkedin.com/company/bookmyshot')}><Ionicons name="logo-linkedin" size={16} color="#F5B942" /></TouchableOpacity>
+            <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://twitter.com/bookmyshot')}><Ionicons name="logo-twitter" size={16} color="#F5B942" /></TouchableOpacity>
+            <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://wa.me/918492922173')}><Ionicons name="logo-whatsapp" size={16} color="#F5B942" /></TouchableOpacity>
           </View>
           <View style={s.fDivider} />
-          <View style={s.fBottomRow}>
+          <TouchableOpacity style={s.fBottomRow} onPress={() => Linking.openURL('mailto:support@bookmyshot.in')}>
             <Ionicons name="mail-outline" size={12} color="rgba(245,185,66,0.6)" />
             <Text style={s.fEmail}>support@bookmyshot.in</Text>
-          </View>
+          </TouchableOpacity>
           <Text style={s.fCopy}>© 2026 BookMyShot. All Rights Reserved.</Text>
           <Text style={s.fVersion}>Made with ❤️ in India • v2.0.0</Text>
         </View>
