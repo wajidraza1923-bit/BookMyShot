@@ -126,9 +126,21 @@ export default function HomeScreen({ navigation }: any) {
 
         {/* HERO */}
         <Animated.View style={[s.hero, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-          <Image source={{ uri: WEDDING_IMGS[heroIdx] }} style={s.heroImg} />
-          <View style={s.heroOverlay} />
-          <View style={s.heroVignette} />
+          {/* Pure black cinematic background with camera elements */}
+          <View style={s.heroBg}>
+            {/* Camera lens rings */}
+            <View style={s.lensRing1} />
+            <View style={s.lensRing2} />
+            <View style={s.lensRing3} />
+            {/* Aperture blades */}
+            <View style={s.aperture1} />
+            <View style={s.aperture2} />
+            {/* Orange glow */}
+            <View style={s.orangeGlow} />
+            <View style={s.orangeGlow2} />
+            {/* Light streak */}
+            <Animated.View style={[s.lightStreak, { transform: [{ translateX: shimmer.interpolate({ inputRange: [0, 1], outputRange: [-200, width + 100] }) }] }]} />
+          </View>
           <View style={s.heroInner}>
             <View style={s.heroTagRow}>
               <View style={s.heroTagLine} />
@@ -347,9 +359,19 @@ const s = StyleSheet.create({
   signInText: { fontSize: 11, fontWeight: '700', color: '#000' },
   // Hero
   hero: { marginHorizontal: 0, borderRadius: 0, overflow: 'hidden', height: 440, marginTop: 0 },
-  heroImg: { width: '100%', height: '100%', resizeMode: 'cover' },
-  heroOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.45)' },
-  heroVignette: { ...StyleSheet.absoluteFillObject, borderWidth: 0, borderColor: 'transparent', borderLeftWidth: 60, borderLeftColor: 'rgba(0,0,0,0.5)', borderBottomWidth: 80, borderBottomColor: 'rgba(0,0,0,0.7)' },
+  heroBg: { ...StyleSheet.absoluteFillObject, backgroundColor: '#050505' },
+  // Camera lens rings
+  lensRing1: { position: 'absolute', right: -40, top: 40, width: 220, height: 220, borderRadius: 110, borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.08)' },
+  lensRing2: { position: 'absolute', right: -20, top: 60, width: 180, height: 180, borderRadius: 90, borderWidth: 1, borderColor: 'rgba(255,140,43,0.05)' },
+  lensRing3: { position: 'absolute', right: 20, top: 100, width: 100, height: 100, borderRadius: 50, borderWidth: 1, borderColor: 'rgba(255,255,255,0.03)' },
+  // Aperture
+  aperture1: { position: 'absolute', right: 30, top: 120, width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(255,140,43,0.03)', borderWidth: 0.5, borderColor: 'rgba(255,140,43,0.06)' },
+  aperture2: { position: 'absolute', left: -60, bottom: 100, width: 140, height: 140, borderRadius: 70, borderWidth: 1, borderColor: 'rgba(255,255,255,0.02)' },
+  // Glow
+  orangeGlow: { position: 'absolute', right: 30, top: 80, width: 160, height: 160, borderRadius: 80, backgroundColor: 'rgba(255,140,43,0.04)' },
+  orangeGlow2: { position: 'absolute', left: 20, bottom: 60, width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255,140,43,0.03)' },
+  // Light streak
+  lightStreak: { position: 'absolute', top: '40%', width: 100, height: 1, backgroundColor: 'rgba(255,180,71,0.15)', transform: [{ rotate: '-15deg' }] },
   heroInner: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 22, paddingBottom: 28 },
   heroTag: { fontSize: 10, fontWeight: '700', color: '#FFB347', letterSpacing: 4 },
   heroTagRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
