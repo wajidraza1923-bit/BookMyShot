@@ -131,29 +131,27 @@ export default function HomeScreen({ navigation }: any) {
           <Image source={{ uri: WEDDING_IMGS[heroIdx] }} style={s.heroImg} />
           <View style={s.heroOverlay} />
           <View style={s.heroVignette} />
-          {/* Decorative aperture rings */}
-          <View style={s.apertureRing1} />
-          <View style={s.apertureRing2} />
           <View style={s.heroInner}>
             <View style={s.heroTagRow}>
               <View style={s.heroTagLine} />
-              <Text style={s.heroTag}>✦  PREMIUM WEDDING CINEMA</Text>
+              <Text style={s.heroTag}>PREMIUM WEDDING CINEMA</Text>
               <View style={s.heroTagLine} />
             </View>
-            <View style={s.heroDivider} />
-            <Text style={s.heroTitle}>Capture Your Dream{'\n'}Wedding Experience</Text>
+            <Text style={s.heroTitle}>Capture Your</Text>
+            <Text style={s.heroTitleGold}>Dream Wedding</Text>
+            <Text style={s.heroTitle}>Experience</Text>
             <Text style={s.heroSub}>Cinematic photographers, award-winning filmmakers & creative professionals — all verified.</Text>
             <View style={s.trustRow}>
-              <View style={s.trustChip}><Ionicons name="checkmark-circle" size={12} color="#10B981" /><Text style={s.trustChipText}>Verified</Text></View>
-              <View style={s.trustChip}><Ionicons name="star" size={12} color="#FF8C2B" /><Text style={s.trustChipText}>Real Reviews</Text></View>
-              <View style={s.trustChip}><Ionicons name="flash" size={12} color="#8B5CF6" /><Text style={s.trustChipText}>Fast Reply</Text></View>
+              <View style={s.trustChip}><Ionicons name="checkmark-circle" size={11} color="#10B981" /><Text style={s.trustChipText}>Verified</Text></View>
+              <View style={s.trustChip}><Ionicons name="star" size={11} color="#FFB347" /><Text style={s.trustChipText}>Real Reviews</Text></View>
+              <View style={s.trustChip}><Ionicons name="flash" size={11} color="#A78BFA" /><Text style={s.trustChipText}>Fast Reply</Text></View>
             </View>
             <View style={s.heroBtnRow}>
               <TouchableOpacity style={s.heroBtn} onPress={() => navigation.navigate('Discover')} activeOpacity={0.85}>
                 <Ionicons name="search" size={14} color="#000" /><Text style={s.heroBtnText}>Find Creator</Text>
               </TouchableOpacity>
               <TouchableOpacity style={s.heroBtnGlass} onPress={() => navigation.navigate('Discover')} activeOpacity={0.85}>
-                <Text style={s.heroBtnGlassText}>Explore</Text><Ionicons name="arrow-forward" size={12} color="#FF8C2B" />
+                <Text style={s.heroBtnGlassText}>Explore</Text><Ionicons name="arrow-forward" size={12} color="#FFB347" />
               </TouchableOpacity>
             </View>
           </View>
@@ -347,29 +345,25 @@ const s = StyleSheet.create({
   signInPill: { paddingHorizontal: 14, paddingVertical: 6, backgroundColor: '#FF8C2B', borderRadius: 16 },
   signInText: { fontSize: 11, fontWeight: '700', color: '#000' },
   // Hero
-  hero: { marginHorizontal: 16, borderRadius: 24, overflow: 'hidden', height: 300, marginTop: 12 },
+  hero: { marginHorizontal: 0, borderRadius: 0, overflow: 'hidden', height: 420, marginTop: 0 },
   heroImg: { width: '100%', height: '100%', resizeMode: 'cover' },
   heroOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.55)' },
-  heroVignette: { ...StyleSheet.absoluteFillObject, borderWidth: 50, borderColor: 'rgba(0,0,0,0.45)', borderTopColor: 'rgba(0,0,0,0.25)', borderBottomColor: 'rgba(0,0,0,0.7)', borderRadius: 24 },
-  heroInner: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 20 },
-  heroTag: { fontSize: 13, fontWeight: '700', color: '#FF9A2F', letterSpacing: 4 },
-  heroTagCapsule: { alignSelf: 'flex-start', backgroundColor: 'rgba(0,0,0,0.5)', borderWidth: 1, borderColor: 'rgba(245,185,66,0.3)', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6, marginBottom: 10 },
-  heroTagRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 30 },
-  heroTagLine: { height: 1, width: 20, backgroundColor: '#FF8C2B', opacity: 0.5 },
-  heroTitle: { fontSize: 28, fontWeight: '800', color: '#FFFFFF', lineHeight: 34, textShadowColor: 'rgba(0,0,0,0.8)', textShadowOffset: { width: 0, height: 4 }, textShadowRadius: 24 },
-  heroSub: { fontSize: 13, fontWeight: '500', color: '#FFB347', marginTop: 10, lineHeight: 20, letterSpacing: 0.3, textShadowColor: 'rgba(255,140,43,0.35)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 12 },
-  heroDivider: { width: 36, height: 2, backgroundColor: '#FF8C2B', marginVertical: 10, opacity: 0.6, borderRadius: 1 },
+  heroVignette: { ...StyleSheet.absoluteFillObject, borderWidth: 0, borderColor: 'transparent', borderBottomWidth: 80, borderBottomColor: 'rgba(0,0,0,0.6)' },
+  heroInner: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 24, paddingBottom: 32 },
+  heroTag: { fontSize: 10, fontWeight: '700', color: '#FFB347', letterSpacing: 4 },
+  heroTagRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
+  heroTagLine: { height: 1, width: 18, backgroundColor: '#FF8C2B', opacity: 0.6 },
+  heroTitle: { fontSize: 30, fontWeight: '300', color: '#FFFFFF', lineHeight: 38, letterSpacing: -0.5 },
+  heroTitleGold: { fontSize: 32, fontWeight: '700', color: '#FFB347', lineHeight: 40, textShadowColor: 'rgba(255,140,43,0.3)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 16 },
+  heroSub: { fontSize: 12.5, fontWeight: '400', color: 'rgba(255,255,255,0.8)', marginTop: 12, lineHeight: 19 },
   trustRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
-  trustChip: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-  trustChipText: { fontSize: 9, color: '#fff', fontWeight: '600' },
+  trustChip: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
+  trustChipText: { fontSize: 10, color: '#fff', fontWeight: '500' },
   heroBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FF8C2B', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, marginTop: 14 },
   heroBtnText: { fontSize: 12, fontWeight: '700', color: '#000' },
   heroBtnRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
   heroBtnGlass: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,140,43,0.3)' },
   heroBtnGlassText: { fontSize: 12, fontWeight: '600', color: '#FFB347' },
-  // Aperture decorative rings
-  apertureRing1: { position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: 60, borderWidth: 1, borderColor: 'rgba(245,185,66,0.08)' },
-  apertureRing2: { position: 'absolute', top: -10, right: -10, width: 80, height: 80, borderRadius: 40, borderWidth: 1, borderColor: 'rgba(245,185,66,0.05)' },
   // Stats
   statsBar: { flexDirection: 'row', marginHorizontal: 16, marginTop: -16, backgroundColor: 'rgba(15,12,8,0.96)', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: 'rgba(245,185,66,0.12)' },
   stat: { flex: 1, alignItems: 'center' },
