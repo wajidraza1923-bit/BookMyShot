@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, RefreshControl,
-  FlatList, Image, TouchableOpacity, Dimensions, Animated, Platform, Easing, Linking, Alert,
+  FlatList, Image, TouchableOpacity, Dimensions, Animated, Platform, Easing, Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, radius, shadows } from '../theme';
@@ -237,36 +237,36 @@ export default function HomeScreen({ navigation }: any) {
           <View style={s.fGrid}>
             <View style={s.fCol}>
               <Text style={s.fHead}>COMPANY</Text>
-              <TouchableOpacity onPress={() => Alert.alert('About Us', 'BookMyShot is India\'s premium wedding creator marketplace. We connect couples with verified photographers, videographers, and filmmakers across 100+ cities.')}><Text style={s.fLink}>About Us</Text></TouchableOpacity>
-              <TouchableOpacity onPress={() => Linking.openURL('mailto:support@bookmyshot.in')}><Text style={s.fLink}>Contact</Text></TouchableOpacity>
-              <TouchableOpacity onPress={() => Alert.alert('Careers', 'We\'re hiring! Send your resume to support@bookmyshot.in with subject "Careers"')}><Text style={s.fLink}>Careers</Text></TouchableOpacity>
-              <TouchableOpacity onPress={() => Alert.alert('Press', 'For media inquiries, email support@bookmyshot.in')}><Text style={s.fLink}>Press</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate('Info', { page: 'About' })}><Text style={s.fLink}>About Us</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate('Info', { page: 'Contact' })}><Text style={s.fLink}>Contact</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate('Info', { page: 'Careers' })}><Text style={s.fLink}>Careers</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate('Info', { page: 'Press' })}><Text style={s.fLink}>Press</Text></TouchableOpacity>
             </View>
             <View style={s.fCol}>
               <Text style={s.fHead}>CREATORS</Text>
               <TouchableOpacity onPress={() => navigation.navigate('Account')}><Text style={s.fLink}>Join as Creator</Text></TouchableOpacity>
-              <TouchableOpacity onPress={() => Alert.alert('Pricing', 'Monthly subscription: Database-driven pricing.\nCommission: 3-5% per booking.\nFeatured listing: Premium placement.')}><Text style={s.fLink}>Pricing</Text></TouchableOpacity>
-              <TouchableOpacity onPress={() => Alert.alert('Creator Resources', 'Tips to grow your business:\n• Complete your portfolio\n• Add 10 best photos\n• Set competitive pricing\n• Respond to inquiries fast')}><Text style={s.fLink}>Resources</Text></TouchableOpacity>
-              <TouchableOpacity onPress={() => Linking.openURL('mailto:support@bookmyshot.in?subject=Help')}><Text style={s.fLink}>Help Center</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate('Info', { page: 'Resources' })}><Text style={s.fLink}>Pricing</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate('Info', { page: 'Resources' })}><Text style={s.fLink}>Creator Resources</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate('Info', { page: 'Help' })}><Text style={s.fLink}>Help Center</Text></TouchableOpacity>
             </View>
             <View style={s.fCol}>
               <Text style={s.fHead}>CUSTOMERS</Text>
               <TouchableOpacity onPress={() => navigation.navigate('Discover')}><Text style={s.fLink}>Find Creator</Text></TouchableOpacity>
               <TouchableOpacity onPress={() => navigation.navigate('Discover', { category: 'wedding' })}><Text style={s.fLink}>Photography</Text></TouchableOpacity>
               <TouchableOpacity onPress={() => navigation.navigate('Discover', { category: 'videography' })}><Text style={s.fLink}>Videography</Text></TouchableOpacity>
-              <TouchableOpacity onPress={() => Linking.openURL('mailto:support@bookmyshot.in?subject=Support')}><Text style={s.fLink}>Support</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate('Info', { page: 'Help' })}><Text style={s.fLink}>Support</Text></TouchableOpacity>
             </View>
           </View>
           <View style={s.fDivider} />
           <Text style={s.fHead}>LEGAL</Text>
           <View style={s.fLegalRow}>
-            <TouchableOpacity onPress={() => Linking.openURL('https://bookmyshot.in/privacy-policy.html')}><Text style={s.fLink}>Privacy Policy</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('Info', { page: 'Privacy' })}><Text style={s.fLink}>Privacy Policy</Text></TouchableOpacity>
             <Text style={s.fDot}>•</Text>
-            <TouchableOpacity onPress={() => Linking.openURL('https://bookmyshot.in/terms.html')}><Text style={s.fLink}>Terms</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('Info', { page: 'Terms' })}><Text style={s.fLink}>Terms</Text></TouchableOpacity>
             <Text style={s.fDot}>•</Text>
-            <TouchableOpacity onPress={() => Linking.openURL('https://bookmyshot.in/refund-policy.html')}><Text style={s.fLink}>Refund</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('Info', { page: 'Refund' })}><Text style={s.fLink}>Refund</Text></TouchableOpacity>
             <Text style={s.fDot}>•</Text>
-            <TouchableOpacity onPress={() => Linking.openURL('https://bookmyshot.in/cancellation-policy.html')}><Text style={s.fLink}>Cancellation</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('Info', { page: 'Cancellation' })}><Text style={s.fLink}>Cancellation</Text></TouchableOpacity>
           </View>
           <View style={s.fDivider} />
           <Text style={s.fSocialTitle}>CONNECT WITH US</Text>

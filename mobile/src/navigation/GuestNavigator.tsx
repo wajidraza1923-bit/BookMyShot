@@ -11,6 +11,7 @@ import CreatorProfileScreen from '../screens/CreatorProfileScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import AdminLoginScreen from '../screens/AdminLoginScreen';
+import InfoScreen from '../screens/InfoScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -45,6 +46,7 @@ export default function GuestNavigator() {
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
       <Stack.Screen name="AdminLogin" component={AdminLoginScreen} />
+      <Stack.Screen name="Info" component={InfoScreen} />
     </Stack.Navigator>
   );
 }
