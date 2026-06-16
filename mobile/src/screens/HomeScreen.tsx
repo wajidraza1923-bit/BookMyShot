@@ -127,57 +127,56 @@ export default function HomeScreen({ navigation }: any) {
         {/* HERO */}
         <Animated.View style={[s.hero, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
           <View style={s.heroBg}>
-            {/* Large camera lens graphics */}
-            <View style={s.lensLeft1} />
-            <View style={s.lensLeft2} />
-            <View style={s.lensRight1} />
-            <View style={s.lensRight2} />
-            <View style={s.lensRight3} />
-            {/* Orange flares */}
-            <View style={s.flare1} />
-            <View style={s.flare2} />
-            <View style={s.flare3} />
-            <Animated.View style={[s.lightStreak, { transform: [{ translateX: shimmer.interpolate({ inputRange: [0, 1], outputRange: [-200, width + 100] }) }] }]} />
+            {/* Multiple lens layers - LEFT */}
+            <View style={s.lensL1} /><View style={s.lensL2} /><View style={s.lensL3} />
+            {/* Multiple lens layers - RIGHT (larger, more visible) */}
+            <View style={s.lensR1} /><View style={s.lensR2} /><View style={s.lensR3} /><View style={s.lensR4} /><View style={s.lensR5} />
+            {/* Center glow */}
+            <View style={s.centerGlow} />
+            {/* Flare particles */}
+            <View style={s.particle1} /><View style={s.particle2} /><View style={s.particle3} /><View style={s.particle4} /><View style={s.particle5} />
+            {/* Light streaks */}
+            <Animated.View style={[s.streak1, { transform: [{ translateX: shimmer.interpolate({ inputRange: [0, 1], outputRange: [-250, width + 150] }) }] }]} />
+            <View style={s.streak2} />
           </View>
 
-          {/* BMS Logo Center */}
-          <View style={s.logoSection}>
-            <View style={s.logoGlowBig} />
-            <View style={s.logoRingOuter} />
-            <View style={s.logoRingMid} />
-            <View style={s.logoCircle}>
-              <Text style={s.logoLetters}>BMS</Text>
+          {/* BMS LOGO - Large centered */}
+          <View style={s.logoArea}>
+            <View style={s.logoGlow} />
+            <View style={s.logoRing4} />
+            <View style={s.logoRing3} />
+            <View style={s.logoRing2} />
+            <View style={s.logoRing1} />
+            <View style={s.logoCore}>
+              <Text style={s.logoBMS}>BMS</Text>
             </View>
           </View>
 
-          {/* Brand Text */}
-          <View style={s.brandCenter}>
-            <Text style={s.brandTitle}>B O O K M Y S H O T</Text>
+          {/* Brand */}
+          <View style={s.brandArea}>
+            <Text style={s.brandText}>B O O K M Y S H O T</Text>
+            <View style={s.brandFlare} />
             <Text style={s.brandSub}>India's Premium Wedding Creator Marketplace</Text>
           </View>
 
-          {/* Heading */}
+          {/* Content */}
           <View style={s.heroContent}>
-            <View style={s.heroTagRow}>
-              <View style={s.heroTagLine} />
-              <Text style={s.heroTag}>PREMIUM WEDDING CINEMA</Text>
-              <View style={s.heroTagLine} />
+            <View style={s.tagRow}><View style={s.tagLine} /><Text style={s.tagText}>PREMIUM WEDDING CINEMA</Text><View style={s.tagLine} /></View>
+            <Text style={s.h1White}>Capture Your</Text>
+            <Text style={s.h1Gold}>Dream Wedding</Text>
+            <Text style={s.h1White}>Experience</Text>
+            <Text style={s.heroDesc}>Cinematic photographers, award-winning filmmakers & creative professionals — all verified.</Text>
+            <View style={s.chipRow}>
+              <View style={s.chip}><Ionicons name="checkmark-circle" size={13} color="#10B981" /><Text style={s.chipText}>Verified</Text></View>
+              <View style={s.chip}><Ionicons name="star" size={13} color="#FFB347" /><Text style={s.chipText}>Real Reviews</Text></View>
+              <View style={s.chip}><Ionicons name="flash" size={13} color="#A78BFA" /><Text style={s.chipText}>Fast Reply</Text></View>
             </View>
-            <Text style={s.heroTitle}>Capture Your</Text>
-            <Text style={s.heroTitleGold}>Dream Wedding</Text>
-            <Text style={s.heroTitle}>Experience</Text>
-            <Text style={s.heroSub}>Cinematic photographers, award-winning filmmakers & creative professionals — all verified.</Text>
-            <View style={s.trustRow}>
-              <View style={s.trustChip}><Ionicons name="checkmark-circle" size={12} color="#10B981" /><Text style={s.trustChipText}>Verified</Text></View>
-              <View style={s.trustChip}><Ionicons name="star" size={12} color="#FFB347" /><Text style={s.trustChipText}>Real Reviews</Text></View>
-              <View style={s.trustChip}><Ionicons name="flash" size={12} color="#A78BFA" /><Text style={s.trustChipText}>Fast Reply</Text></View>
-            </View>
-            <View style={s.heroBtnRow}>
-              <TouchableOpacity style={s.heroBtn} onPress={() => navigation.navigate('Discover')} activeOpacity={0.85}>
-                <Ionicons name="search" size={14} color="#000" /><Text style={s.heroBtnText}>Find Creator</Text>
+            <View style={s.btnRow}>
+              <TouchableOpacity style={s.btnPrimary} onPress={() => navigation.navigate('Discover')} activeOpacity={0.85}>
+                <Ionicons name="search" size={15} color="#000" /><Text style={s.btnPrimaryText}>Find Creator</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={s.heroBtnGlass} onPress={() => navigation.navigate('Discover')} activeOpacity={0.85}>
-                <Text style={s.heroBtnGlassText}>Explore</Text><Ionicons name="arrow-forward" size={12} color="#FFB347" />
+              <TouchableOpacity style={s.btnGlass} onPress={() => navigation.navigate('Discover')} activeOpacity={0.85}>
+                <Text style={s.btnGlassText}>Explore</Text><Ionicons name="arrow-forward" size={13} color="#FFB347" />
               </TouchableOpacity>
             </View>
           </View>
@@ -374,46 +373,59 @@ const s = StyleSheet.create({
   signInPill: { paddingHorizontal: 14, paddingVertical: 6, backgroundColor: '#FF8C2B', borderRadius: 16 },
   signInText: { fontSize: 11, fontWeight: '700', color: '#000' },
   // Hero
-  hero: { marginHorizontal: 0, overflow: 'hidden', minHeight: 680 },
-  heroBg: { ...StyleSheet.absoluteFillObject, backgroundColor: '#050505' },
-  // Large camera lens circles
-  lensLeft1: { position: 'absolute', left: -80, top: 40, width: 240, height: 240, borderRadius: 120, borderWidth: 2, borderColor: 'rgba(255,140,43,0.07)' },
-  lensLeft2: { position: 'absolute', left: -60, top: 60, width: 200, height: 200, borderRadius: 100, borderWidth: 1, borderColor: 'rgba(255,140,43,0.04)' },
-  lensRight1: { position: 'absolute', right: -60, top: 20, width: 220, height: 220, borderRadius: 110, borderWidth: 2, borderColor: 'rgba(255,140,43,0.06)' },
-  lensRight2: { position: 'absolute', right: -40, top: 50, width: 170, height: 170, borderRadius: 85, borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.04)' },
-  lensRight3: { position: 'absolute', right: -20, top: 80, width: 120, height: 120, borderRadius: 60, borderWidth: 1, borderColor: 'rgba(255,255,255,0.03)' },
-  // Flares
-  flare1: { position: 'absolute', left: 30, top: 100, width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,140,43,0.3)' },
-  flare2: { position: 'absolute', right: 50, top: 160, width: 4, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,180,71,0.25)' },
-  flare3: { position: 'absolute', left: width * 0.4, top: 200, width: 3, height: 3, borderRadius: 1.5, backgroundColor: 'rgba(255,200,100,0.2)' },
-  lightStreak: { position: 'absolute', top: 150, width: 140, height: 1, backgroundColor: 'rgba(255,180,71,0.1)', transform: [{ rotate: '-10deg' }] },
-  // Logo section
-  logoSection: { alignItems: 'center', justifyContent: 'center', marginTop: 40, height: 140 },
-  logoGlowBig: { position: 'absolute', width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(255,140,43,0.05)' },
-  logoRingOuter: { position: 'absolute', width: 110, height: 110, borderRadius: 55, borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.12)' },
-  logoRingMid: { position: 'absolute', width: 90, height: 90, borderRadius: 45, borderWidth: 1, borderColor: 'rgba(255,140,43,0.08)' },
-  logoCircle: { width: 70, height: 70, borderRadius: 35, backgroundColor: 'rgba(255,140,43,0.08)', borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.3)', alignItems: 'center', justifyContent: 'center' },
-  logoLetters: { fontSize: 22, fontWeight: '800', color: '#FF8C2B', letterSpacing: 3 },
-  // Brand center
-  brandCenter: { alignItems: 'center', marginTop: 16 },
-  brandTitle: { fontSize: 16, fontWeight: '300', color: '#fff', letterSpacing: 4 },
-  brandSub: { fontSize: 10, color: 'rgba(255,255,255,0.5)', marginTop: 6 },
-  // Hero content
-  heroContent: { paddingHorizontal: 22, marginTop: 28, paddingBottom: 24 },
-  heroTag: { fontSize: 10, fontWeight: '700', color: '#FFB347', letterSpacing: 4 },
-  heroTagRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
-  heroTagLine: { height: 1, width: 18, backgroundColor: '#FF8C2B', opacity: 0.6 },
-  heroTitle: { fontSize: 30, fontWeight: '300', color: '#FFFFFF', lineHeight: 38, letterSpacing: -0.5 },
-  heroTitleGold: { fontSize: 32, fontWeight: '700', color: '#FFB347', lineHeight: 40, textShadowColor: 'rgba(255,140,43,0.3)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 16 },
-  heroSub: { fontSize: 12.5, fontWeight: '400', color: 'rgba(255,255,255,0.8)', marginTop: 12, lineHeight: 19 },
-  trustRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
-  trustChip: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
-  trustChipText: { fontSize: 10, color: '#fff', fontWeight: '500' },
-  heroBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FF8C2B', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, marginTop: 14 },
-  heroBtnText: { fontSize: 12, fontWeight: '700', color: '#000' },
-  heroBtnRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
-  heroBtnGlass: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,140,43,0.3)' },
-  heroBtnGlassText: { fontSize: 12, fontWeight: '600', color: '#FFB347' },
+  hero: { overflow: 'hidden', minHeight: 750 },
+  heroBg: { ...StyleSheet.absoluteFillObject, backgroundColor: '#030303' },
+  // Left lens layers
+  lensL1: { position: 'absolute', left: -100, top: 20, width: 280, height: 280, borderRadius: 140, borderWidth: 2.5, borderColor: 'rgba(255,140,43,0.09)' },
+  lensL2: { position: 'absolute', left: -80, top: 40, width: 240, height: 240, borderRadius: 120, borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.06)' },
+  lensL3: { position: 'absolute', left: -60, top: 60, width: 200, height: 200, borderRadius: 100, borderWidth: 1, borderColor: 'rgba(255,140,43,0.04)' },
+  // Right lens layers (larger, more prominent)
+  lensR1: { position: 'absolute', right: -80, top: 10, width: 300, height: 300, borderRadius: 150, borderWidth: 3, borderColor: 'rgba(255,140,43,0.08)' },
+  lensR2: { position: 'absolute', right: -60, top: 30, width: 260, height: 260, borderRadius: 130, borderWidth: 2, borderColor: 'rgba(255,140,43,0.06)' },
+  lensR3: { position: 'absolute', right: -40, top: 50, width: 220, height: 220, borderRadius: 110, borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.05)' },
+  lensR4: { position: 'absolute', right: -20, top: 70, width: 180, height: 180, borderRadius: 90, borderWidth: 1, borderColor: 'rgba(255,140,43,0.04)' },
+  lensR5: { position: 'absolute', right: 0, top: 90, width: 140, height: 140, borderRadius: 70, borderWidth: 1, borderColor: 'rgba(255,255,255,0.025)' },
+  // Center glow
+  centerGlow: { position: 'absolute', top: 60, left: width / 2 - 100, width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(255,140,43,0.04)' },
+  // Particles
+  particle1: { position: 'absolute', left: 40, top: 80, width: 5, height: 5, borderRadius: 2.5, backgroundColor: 'rgba(255,140,43,0.4)' },
+  particle2: { position: 'absolute', right: 60, top: 140, width: 3, height: 3, borderRadius: 1.5, backgroundColor: 'rgba(255,180,71,0.35)' },
+  particle3: { position: 'absolute', left: width * 0.3, top: 180, width: 4, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,200,100,0.25)' },
+  particle4: { position: 'absolute', right: 100, top: 60, width: 3, height: 3, borderRadius: 1.5, backgroundColor: 'rgba(255,160,50,0.3)' },
+  particle5: { position: 'absolute', left: 80, top: 200, width: 2, height: 2, borderRadius: 1, backgroundColor: 'rgba(255,140,43,0.4)' },
+  // Streaks
+  streak1: { position: 'absolute', top: 160, width: 160, height: 1.5, backgroundColor: 'rgba(255,180,71,0.12)', transform: [{ rotate: '-8deg' }] },
+  streak2: { position: 'absolute', top: 100, left: 60, width: 80, height: 0.5, backgroundColor: 'rgba(255,200,100,0.08)', transform: [{ rotate: '15deg' }] },
+  // Logo
+  logoArea: { alignItems: 'center', justifyContent: 'center', marginTop: 36, height: 180 },
+  logoGlow: { position: 'absolute', width: 180, height: 180, borderRadius: 90, backgroundColor: 'rgba(255,140,43,0.06)' },
+  logoRing4: { position: 'absolute', width: 150, height: 150, borderRadius: 75, borderWidth: 1, borderColor: 'rgba(255,140,43,0.06)' },
+  logoRing3: { position: 'absolute', width: 130, height: 130, borderRadius: 65, borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.1)' },
+  logoRing2: { position: 'absolute', width: 110, height: 110, borderRadius: 55, borderWidth: 2, borderColor: 'rgba(255,140,43,0.15)' },
+  logoRing1: { position: 'absolute', width: 95, height: 95, borderRadius: 47.5, borderWidth: 2.5, borderColor: 'rgba(255,140,43,0.2)' },
+  logoCore: { width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255,140,43,0.08)', borderWidth: 2, borderColor: 'rgba(255,140,43,0.35)', alignItems: 'center', justifyContent: 'center' },
+  logoBMS: { fontSize: 26, fontWeight: '800', color: '#FF8C2B', letterSpacing: 3 },
+  // Brand
+  brandArea: { alignItems: 'center', marginTop: 18 },
+  brandText: { fontSize: 18, fontWeight: '300', color: '#fff', letterSpacing: 5 },
+  brandFlare: { width: 60, height: 2, backgroundColor: 'rgba(255,140,43,0.3)', marginVertical: 8, borderRadius: 1 },
+  brandSub: { fontSize: 11, color: 'rgba(255,255,255,0.5)', letterSpacing: 0.5 },
+  // Content
+  heroContent: { paddingHorizontal: 22, marginTop: 30, paddingBottom: 20 },
+  tagRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 18 },
+  tagLine: { height: 1, width: 28, backgroundColor: 'rgba(255,140,43,0.5)' },
+  tagText: { fontSize: 11, fontWeight: '700', color: '#FF8C2B', letterSpacing: 4 },
+  h1White: { fontSize: 32, fontWeight: '300', color: '#fff', lineHeight: 40 },
+  h1Gold: { fontSize: 36, fontWeight: '700', color: '#FFB347', lineHeight: 44, textShadowColor: 'rgba(255,140,43,0.3)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 16 },
+  heroDesc: { fontSize: 14, color: 'rgba(255,255,255,0.65)', marginTop: 16, lineHeight: 21 },
+  chipRow: { flexDirection: 'row', gap: 8, marginTop: 18 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.06)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+  chipText: { fontSize: 11, color: '#fff', fontWeight: '500' },
+  btnRow: { flexDirection: 'row', gap: 12, marginTop: 22 },
+  btnPrimary: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: '#FF8C2B', paddingHorizontal: 22, paddingVertical: 13, borderRadius: 14 },
+  btnPrimaryText: { fontSize: 14, fontWeight: '700', color: '#000' },
+  btnGlass: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 20, paddingVertical: 13, borderRadius: 14, borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.35)', backgroundColor: 'rgba(255,255,255,0.03)' },
+  btnGlassText: { fontSize: 14, fontWeight: '600', color: '#FFB347' },
   // Stats
   statsBar: { flexDirection: 'row', marginHorizontal: 16, marginTop: -16, backgroundColor: 'rgba(15,12,8,0.96)', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: 'rgba(245,185,66,0.12)' },
   stat: { flex: 1, alignItems: 'center' },
