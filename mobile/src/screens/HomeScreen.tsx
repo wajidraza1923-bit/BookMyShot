@@ -233,12 +233,54 @@ export default function HomeScreen({ navigation }: any) {
           <Text style={s.fLogo}>BOOKMYSHOT</Text>
           <Text style={s.fTag}>India's Premium Wedding Creator Marketplace</Text>
           <View style={s.fGrid}>
-            <View style={s.fCol}><Text style={s.fHead}>COMPANY</Text><Text style={s.fLink}>About Us</Text><Text style={s.fLink}>Contact</Text><Text style={s.fLink}>Careers</Text></View>
-            <View style={s.fCol}><Text style={s.fHead}>CREATORS</Text><Text style={s.fLink}>Join</Text><Text style={s.fLink}>Pricing</Text><Text style={s.fLink}>Resources</Text></View>
-            <View style={s.fCol}><Text style={s.fHead}>LEGAL</Text><Text style={s.fLink}>Privacy</Text><Text style={s.fLink}>Terms</Text><Text style={s.fLink}>Refund</Text></View>
+            <View style={s.fCol}>
+              <Text style={s.fHead}>COMPANY</Text>
+              <Text style={s.fLink}>About Us</Text>
+              <Text style={s.fLink}>Contact</Text>
+              <Text style={s.fLink}>Careers</Text>
+              <Text style={s.fLink}>Press</Text>
+            </View>
+            <View style={s.fCol}>
+              <Text style={s.fHead}>CREATORS</Text>
+              <Text style={s.fLink}>Join as Creator</Text>
+              <Text style={s.fLink}>Pricing</Text>
+              <Text style={s.fLink}>Resources</Text>
+              <Text style={s.fLink}>Help</Text>
+            </View>
+            <View style={s.fCol}>
+              <Text style={s.fHead}>CUSTOMERS</Text>
+              <Text style={s.fLink}>Find Creator</Text>
+              <Text style={s.fLink}>Photography</Text>
+              <Text style={s.fLink}>Videography</Text>
+              <Text style={s.fLink}>Support</Text>
+            </View>
           </View>
-          <View style={s.socialRow}><Ionicons name="logo-instagram" size={18} color="#F5B942" /><Ionicons name="logo-facebook" size={18} color="#F5B942" /><Ionicons name="logo-youtube" size={18} color="#F5B942" /><Ionicons name="logo-linkedin" size={18} color="#F5B942" /><Ionicons name="logo-twitter" size={18} color="#F5B942" /></View>
-          <Text style={s.fCopy}>© 2026 BookMyShot. All Rights Reserved. v2.0.0</Text>
+          <View style={s.fDivider} />
+          <View style={s.fCol}>
+            <Text style={s.fHead}>LEGAL</Text>
+            <View style={s.fLegalRow}>
+              <Text style={s.fLink}>Privacy Policy</Text>
+              <Text style={s.fDot}>•</Text>
+              <Text style={s.fLink}>Terms</Text>
+              <Text style={s.fDot}>•</Text>
+              <Text style={s.fLink}>Refund</Text>
+              <Text style={s.fDot}>•</Text>
+              <Text style={s.fLink}>Cancellation</Text>
+            </View>
+          </View>
+          <View style={s.fDivider} />
+          <Text style={s.fSocialTitle}>FOLLOW US</Text>
+          <View style={s.socialRow}>
+            <TouchableOpacity style={s.socialBtn}><Ionicons name="logo-instagram" size={16} color="#F5B942" /></TouchableOpacity>
+            <TouchableOpacity style={s.socialBtn}><Ionicons name="logo-facebook" size={16} color="#F5B942" /></TouchableOpacity>
+            <TouchableOpacity style={s.socialBtn}><Ionicons name="logo-youtube" size={16} color="#F5B942" /></TouchableOpacity>
+            <TouchableOpacity style={s.socialBtn}><Ionicons name="logo-linkedin" size={16} color="#F5B942" /></TouchableOpacity>
+            <TouchableOpacity style={s.socialBtn}><Ionicons name="logo-twitter" size={16} color="#F5B942" /></TouchableOpacity>
+          </View>
+          <View style={s.fDivider} />
+          <Text style={s.fCopy}>© 2026 BookMyShot. All Rights Reserved.</Text>
+          <Text style={s.fEmail}>bookmyshott@gmail.com</Text>
+          <Text style={s.fVersion}>v2.0.0</Text>
         </View>
         <View style={{ height: 90 }} />
       </ScrollView>
@@ -391,13 +433,20 @@ const s = StyleSheet.create({
   ctaBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#F5B942', paddingHorizontal: 18, paddingVertical: 11, borderRadius: 12 },
   ctaBtnText: { fontSize: 12, fontWeight: '700', color: '#000' },
   // Footer
-  footer: { marginTop: 44, paddingHorizontal: 20, paddingVertical: 28, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.04)', alignItems: 'center' },
-  fLogo: { fontSize: 13, fontWeight: '300', color: '#F5B942', letterSpacing: 5 },
-  fTag: { fontSize: 9, color: 'rgba(255,255,255,0.3)', marginTop: 4 },
-  fGrid: { flexDirection: 'row', marginTop: 20, gap: 24 },
-  fCol: { alignItems: 'center' },
-  fHead: { fontSize: 8, fontWeight: '700', color: '#F5B942', letterSpacing: 1.5, marginBottom: 6 },
-  fLink: { fontSize: 10, color: 'rgba(255,255,255,0.35)', paddingVertical: 2 },
-  socialRow: { flexDirection: 'row', gap: 18, marginTop: 18 },
-  fCopy: { fontSize: 8, color: 'rgba(255,255,255,0.15)', marginTop: 16 },
+  footer: { marginTop: 44, paddingHorizontal: 20, paddingVertical: 32, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)', backgroundColor: 'rgba(10,8,5,0.95)' },
+  fLogo: { fontSize: 14, fontWeight: '300', color: '#F5B942', letterSpacing: 5 },
+  fTag: { fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 4, marginBottom: 20 },
+  fGrid: { flexDirection: 'row', justifyContent: 'space-between' },
+  fCol: { flex: 1 },
+  fHead: { fontSize: 9, fontWeight: '700', color: '#F5B942', letterSpacing: 1.5, marginBottom: 8 },
+  fLink: { fontSize: 11, color: 'rgba(255,255,255,0.45)', paddingVertical: 3 },
+  fDot: { fontSize: 8, color: 'rgba(255,255,255,0.2)', marginHorizontal: 4 },
+  fLegalRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
+  fDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.04)', marginVertical: 16 },
+  fSocialTitle: { fontSize: 9, fontWeight: '700', color: 'rgba(255,255,255,0.3)', letterSpacing: 1.5, marginBottom: 10 },
+  socialRow: { flexDirection: 'row', gap: 12 },
+  socialBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(245,185,66,0.06)', borderWidth: 1, borderColor: 'rgba(245,185,66,0.15)', alignItems: 'center', justifyContent: 'center' },
+  fCopy: { fontSize: 9, color: 'rgba(255,255,255,0.2)', marginTop: 4 },
+  fEmail: { fontSize: 10, color: 'rgba(245,185,66,0.4)', marginTop: 6 },
+  fVersion: { fontSize: 8, color: 'rgba(255,255,255,0.1)', marginTop: 4 },
 });
