@@ -10,11 +10,14 @@ export default function AdminBookings({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
-    try { const res = await api.get('/admin/creator-accounts'); /* Use bookings endpoint if available */
-      // Try the general bookings list
-      const bRes = await api.get('/bookings/creator').catch(() => api.get('/admin/creator-accounts'));
-      setBookings(bRes.data?.bookings || []);
-    } catch {} finally { setLoading(false); }
+    try {
+      const res = await api.get('/bookings/all');
+      const data = res.data?.bookings || res.data?.data || [];
+      setBookings(Array.isArray(data) ? data : []);
+    } catch (e: any) {
+      console.log('[AdminBookings] Error:', e.response?.status, e.message);
+      setBookings([]);
+    } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { load(); }, []);

@@ -13,8 +13,8 @@ export default function AdminDashboard({ navigation }: any) {
 
   const load = useCallback(async () => {
     try {
-      const res = await api.get('/admin/dashboard-overview');
-      setData(res.data);
+      const res = await api.get('/admin/dashboard');
+      setData(res.data?.data || res.data);
     } catch {} finally { setLoading(false); }
   }, []);
 
@@ -23,15 +23,15 @@ export default function AdminDashboard({ navigation }: any) {
 
   if (loading) return <View style={s.container}><ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 80 }} /></View>;
 
-  const stats = data?.stats || {};
+  const stats = data || {};
 
   const statCards = [
-    { label: 'Total Users', value: stats.totalUsers || 0, icon: 'people', color: colors.info },
-    { label: 'Total Creators', value: stats.totalCreators || 0, icon: 'camera', color: colors.primary },
-    { label: 'Total Bookings', value: stats.totalBookings || 0, icon: 'calendar', color: colors.success },
+    { label: 'Total Creators', value: stats.totalCreators || stats.activeCreators || 0, icon: 'camera', color: colors.primary },
+    { label: 'Active', value: stats.activeCreators || 0, icon: 'checkmark-circle', color: colors.success },
+    { label: 'Featured', value: stats.featuredCreators || 0, icon: 'star', color: colors.warning },
     { label: 'Revenue', value: `₹${(stats.totalRevenue || 0).toLocaleString('en-IN')}`, icon: 'wallet', color: colors.primary },
-    { label: 'Subscriptions', value: stats.activeSubscriptions || 0, icon: 'diamond', color: colors.warning },
     { label: 'Pending', value: stats.pendingApprovals || 0, icon: 'hourglass', color: colors.error },
+    { label: 'Payments', value: stats.pendingPayments || 0, icon: 'card', color: colors.info },
   ];
 
   const menuItems = [

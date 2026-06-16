@@ -54,8 +54,8 @@ export default function AdminSubscriptions({ navigation }: any) {
     try {
       const [analyticsRes, settingsRes, creatorsRes] = await Promise.all([
         api.get('/admin/subscription-analytics').catch(() => ({ data: { data: null } })),
-        api.get('/admin/subscription-settings'),
-        api.get('/admin/creator-accounts'),
+        api.get('/admin/subscription-settings').catch(() => ({ data: {} })),
+        api.get('/admin/creator-accounts').catch(() => ({ data: { data: { creators: [] } } })),
       ]);
 
       setAnalytics(analyticsRes.data?.data || null);
