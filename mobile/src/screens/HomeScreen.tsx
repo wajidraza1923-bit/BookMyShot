@@ -29,6 +29,17 @@ const CATEGORIES = [
   { id: 'cinematography', icon: '🎥', label: 'Cinematography', count: '900+', img: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=200' },
 ];
 
+const WEDDING_MOMENTS = [
+  { img: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500', label: 'Royal Wedding', city: 'Udaipur, India' },
+  { img: 'https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=500', label: 'Bride Portrait', city: 'Jaipur, India' },
+  { img: 'https://images.unsplash.com/photo-1606216794079-73f85bbd57d5?w=500', label: 'Mehndi Ceremony', city: 'Delhi, India' },
+  { img: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=500', label: 'Reception', city: 'Mumbai, India' },
+  { img: 'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=500', label: 'Destination Wedding', city: 'Goa, India' },
+  { img: 'https://images.unsplash.com/photo-1537633552985-df8429e8048b?w=500', label: 'Cinematic Couple', city: 'Kerala, India' },
+  { img: 'https://images.unsplash.com/photo-1591604466107-ec97de577aff?w=500', label: 'Palace Wedding', city: 'Jodhpur, India' },
+  { img: 'https://images.unsplash.com/photo-1460978812857-470ed1c77af0?w=500', label: 'Wedding Film', city: 'Bangalore, India' },
+];
+
 const TESTIMONIALS = [
   { name: 'Priya & Rahul', city: 'Mumbai', text: 'Found our dream photographer in minutes. The quality was beyond expectations!', rating: 5, event: 'Wedding' },
   { name: 'Ankit & Meera', city: 'Delhi', text: 'BookMyShot made our pre-wedding shoot magical. Highly recommend!', rating: 5, event: 'Pre Wedding' },
@@ -189,6 +200,30 @@ export default function HomeScreen({ navigation }: any) {
           <View style={s.stat}><Counter end={5000} /><Text style={s.statLbl}>Weddings</Text></View>
           <View style={s.statDiv} />
           <View style={s.stat}><Counter end={100} /><Text style={s.statLbl}>Cities</Text></View>
+        </View>
+
+        {/* WEDDING MOMENTS CAROUSEL */}
+        <View style={s.momentsSection}>
+          <Text style={s.momentsTitle}>Featured Wedding Moments</Text>
+          <FlatList
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            data={WEDDING_MOMENTS}
+            contentContainerStyle={{ paddingHorizontal: 20 }}
+            keyExtractor={(_, i) => String(i)}
+            renderItem={({ item }) => (
+              <View style={s.momentCard}>
+                <Image source={{ uri: item.img }} style={s.momentImg} />
+                <View style={s.momentOverlay} />
+                <View style={s.momentWatermark}><Text style={s.momentWM}>BMS</Text></View>
+                <View style={s.momentContent}>
+                  <View style={s.momentAccent} />
+                  <Text style={s.momentLabel}>{item.label}</Text>
+                  <Text style={s.momentCity}>{item.city}</Text>
+                </View>
+              </View>
+            )}
+          />
         </View>
 
         {/* CATEGORIES */}
@@ -427,7 +462,7 @@ const s = StyleSheet.create({
   btnGlass: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 20, paddingVertical: 13, borderRadius: 14, borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.35)', backgroundColor: 'rgba(255,255,255,0.03)' },
   btnGlassText: { fontSize: 14, fontWeight: '600', color: '#FFB347' },
   // Stats
-  statsBar: { flexDirection: 'row', marginHorizontal: 16, marginTop: -16, backgroundColor: 'rgba(15,12,8,0.96)', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: 'rgba(245,185,66,0.12)' },
+  statsBar: { flexDirection: 'row', marginHorizontal: 16, marginTop: 20, backgroundColor: 'rgba(15,12,8,0.96)', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: 'rgba(255,140,43,0.12)' },
   stat: { flex: 1, alignItems: 'center' },
   counterNum: { fontSize: 17, fontWeight: '700', color: '#FF8C2B' },
   statLbl: { fontSize: 9, color: 'rgba(255,255,255,0.4)', marginTop: 2 },
@@ -438,6 +473,18 @@ const s = StyleSheet.create({
   secLabel: { fontSize: 8, fontWeight: '700', color: '#FF8C2B', letterSpacing: 2 },
   secTitle2: { fontSize: 15, fontWeight: '700', color: '#fff', marginTop: 2 },
   viewAll: { fontSize: 11, fontWeight: '600', color: '#FF8C2B' },
+  // Moments carousel
+  momentsSection: { marginTop: 24 },
+  momentsTitle: { fontSize: 15, fontWeight: '700', color: '#fff', paddingHorizontal: 20, marginBottom: 12 },
+  momentCard: { width: width * 0.7, height: 220, borderRadius: 20, overflow: 'hidden', marginRight: 12 },
+  momentImg: { width: '100%', height: '100%', resizeMode: 'cover' },
+  momentOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.35)' },
+  momentWatermark: { position: 'absolute', top: 12, right: 12, opacity: 0.18 },
+  momentWM: { fontSize: 12, fontWeight: '800', color: '#FF8C2B', letterSpacing: 2 },
+  momentContent: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 14 },
+  momentAccent: { width: 24, height: 2, backgroundColor: '#FF8C2B', marginBottom: 6, borderRadius: 1 },
+  momentLabel: { fontSize: 14, fontWeight: '600', color: '#fff' },
+  momentCity: { fontSize: 10, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
   // Categories
   catHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginTop: 28, marginBottom: 12 },
   catCard: { width: 110, height: 80, borderRadius: 12, overflow: 'hidden', marginRight: 10 },
