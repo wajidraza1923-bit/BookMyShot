@@ -232,57 +232,64 @@ export default function HomeScreen({ navigation }: any) {
         <View style={s.footer}>
           <Text style={s.fLogo}>BOOKMYSHOT</Text>
           <Text style={s.fTag}>India's Premium Wedding Creator Marketplace</Text>
+          <Text style={s.fAbout}>BookMyShot connects couples with verified photographers, videographers, drone operators and wedding filmmakers. Browse portfolios, compare creators and book the perfect team for your special day.</Text>
+          <View style={s.fDivider} />
           <View style={s.fGrid}>
             <View style={s.fCol}>
               <Text style={s.fHead}>COMPANY</Text>
-              <Text style={s.fLink}>About Us</Text>
-              <Text style={s.fLink}>Contact</Text>
-              <Text style={s.fLink}>Careers</Text>
-              <Text style={s.fLink}>Press</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Discover')}><Text style={s.fLink}>About Us</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate('Discover')}><Text style={s.fLink}>Contact</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate('Discover')}><Text style={s.fLink}>Careers</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate('Discover')}><Text style={s.fLink}>Press</Text></TouchableOpacity>
             </View>
             <View style={s.fCol}>
               <Text style={s.fHead}>CREATORS</Text>
-              <Text style={s.fLink}>Join as Creator</Text>
-              <Text style={s.fLink}>Pricing</Text>
-              <Text style={s.fLink}>Resources</Text>
-              <Text style={s.fLink}>Help</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Account')}><Text style={s.fLink}>Join as Creator</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate('Discover')}><Text style={s.fLink}>Pricing</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate('Discover')}><Text style={s.fLink}>Creator Resources</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate('Discover')}><Text style={s.fLink}>Help Center</Text></TouchableOpacity>
             </View>
             <View style={s.fCol}>
               <Text style={s.fHead}>CUSTOMERS</Text>
-              <Text style={s.fLink}>Find Creator</Text>
-              <Text style={s.fLink}>Photography</Text>
-              <Text style={s.fLink}>Videography</Text>
-              <Text style={s.fLink}>Support</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Discover')}><Text style={s.fLink}>Find Creator</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate('Discover', { category: 'wedding' })}><Text style={s.fLink}>Photography</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate('Discover', { category: 'videography' })}><Text style={s.fLink}>Videography</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate('Discover')}><Text style={s.fLink}>Support</Text></TouchableOpacity>
             </View>
           </View>
           <View style={s.fDivider} />
-          <View style={s.fCol}>
-            <Text style={s.fHead}>LEGAL</Text>
-            <View style={s.fLegalRow}>
-              <Text style={s.fLink}>Privacy Policy</Text>
-              <Text style={s.fDot}>•</Text>
-              <Text style={s.fLink}>Terms</Text>
-              <Text style={s.fDot}>•</Text>
-              <Text style={s.fLink}>Refund</Text>
-              <Text style={s.fDot}>•</Text>
-              <Text style={s.fLink}>Cancellation</Text>
-            </View>
+          <Text style={s.fHead}>LEGAL</Text>
+          <View style={s.fLegalRow}>
+            <Text style={s.fLink}>Privacy Policy</Text>
+            <Text style={s.fDot}>•</Text>
+            <Text style={s.fLink}>Terms & Conditions</Text>
+            <Text style={s.fDot}>•</Text>
+            <Text style={s.fLink}>Refund Policy</Text>
+            <Text style={s.fDot}>•</Text>
+            <Text style={s.fLink}>Cancellation</Text>
           </View>
           <View style={s.fDivider} />
-          <Text style={s.fSocialTitle}>FOLLOW US</Text>
+          <Text style={s.fSocialTitle}>CONNECT WITH US</Text>
           <View style={s.socialRow}>
             <TouchableOpacity style={s.socialBtn}><Ionicons name="logo-instagram" size={16} color="#F5B942" /></TouchableOpacity>
             <TouchableOpacity style={s.socialBtn}><Ionicons name="logo-facebook" size={16} color="#F5B942" /></TouchableOpacity>
             <TouchableOpacity style={s.socialBtn}><Ionicons name="logo-youtube" size={16} color="#F5B942" /></TouchableOpacity>
             <TouchableOpacity style={s.socialBtn}><Ionicons name="logo-linkedin" size={16} color="#F5B942" /></TouchableOpacity>
             <TouchableOpacity style={s.socialBtn}><Ionicons name="logo-twitter" size={16} color="#F5B942" /></TouchableOpacity>
+            <TouchableOpacity style={s.socialBtn}><Ionicons name="logo-whatsapp" size={16} color="#F5B942" /></TouchableOpacity>
           </View>
           <View style={s.fDivider} />
+          <View style={s.fBottomRow}>
+            <Ionicons name="mail-outline" size={12} color="rgba(245,185,66,0.6)" />
+            <Text style={s.fEmail}>support@bookmyshot.in</Text>
+          </View>
           <Text style={s.fCopy}>© 2026 BookMyShot. All Rights Reserved.</Text>
-          <Text style={s.fEmail}>bookmyshott@gmail.com</Text>
-          <Text style={s.fVersion}>v2.0.0</Text>
+          <Text style={s.fVersion}>Made with ❤️ in India • v2.0.0</Text>
         </View>
-        <View style={{ height: 90 }} />
+      </ScrollView>
+    </View>
+  );
+}
       </ScrollView>
     </View>
   );
@@ -433,20 +440,22 @@ const s = StyleSheet.create({
   ctaBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#F5B942', paddingHorizontal: 18, paddingVertical: 11, borderRadius: 12 },
   ctaBtnText: { fontSize: 12, fontWeight: '700', color: '#000' },
   // Footer
-  footer: { marginTop: 44, paddingHorizontal: 20, paddingVertical: 32, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)', backgroundColor: 'rgba(10,8,5,0.95)' },
+  footer: { marginTop: 44, paddingHorizontal: 20, paddingTop: 28, paddingBottom: 20, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)', backgroundColor: 'rgba(8,6,4,0.98)' },
   fLogo: { fontSize: 14, fontWeight: '300', color: '#F5B942', letterSpacing: 5 },
-  fTag: { fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 4, marginBottom: 20 },
+  fTag: { fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 4 },
+  fAbout: { fontSize: 11, color: 'rgba(255,255,255,0.3)', lineHeight: 17, marginTop: 10 },
   fGrid: { flexDirection: 'row', justifyContent: 'space-between' },
   fCol: { flex: 1 },
   fHead: { fontSize: 9, fontWeight: '700', color: '#F5B942', letterSpacing: 1.5, marginBottom: 8 },
-  fLink: { fontSize: 11, color: 'rgba(255,255,255,0.45)', paddingVertical: 3 },
-  fDot: { fontSize: 8, color: 'rgba(255,255,255,0.2)', marginHorizontal: 4 },
-  fLegalRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
+  fLink: { fontSize: 11, color: 'rgba(255,255,255,0.5)', paddingVertical: 4 },
+  fDot: { fontSize: 8, color: 'rgba(255,255,255,0.2)', marginHorizontal: 6 },
+  fLegalRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', marginBottom: 4 },
   fDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.04)', marginVertical: 16 },
   fSocialTitle: { fontSize: 9, fontWeight: '700', color: 'rgba(255,255,255,0.3)', letterSpacing: 1.5, marginBottom: 10 },
-  socialRow: { flexDirection: 'row', gap: 12 },
+  socialRow: { flexDirection: 'row', gap: 10 },
   socialBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(245,185,66,0.06)', borderWidth: 1, borderColor: 'rgba(245,185,66,0.15)', alignItems: 'center', justifyContent: 'center' },
-  fCopy: { fontSize: 9, color: 'rgba(255,255,255,0.2)', marginTop: 4 },
-  fEmail: { fontSize: 10, color: 'rgba(245,185,66,0.4)', marginTop: 6 },
-  fVersion: { fontSize: 8, color: 'rgba(255,255,255,0.1)', marginTop: 4 },
+  fBottomRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
+  fEmail: { fontSize: 11, color: 'rgba(245,185,66,0.6)' },
+  fCopy: { fontSize: 9, color: 'rgba(255,255,255,0.2)' },
+  fVersion: { fontSize: 9, color: 'rgba(255,255,255,0.15)', marginTop: 4 },
 });
