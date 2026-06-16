@@ -136,6 +136,7 @@ export default function HomeScreen({ navigation }: any) {
           <View style={s.apertureRing2} />
           <View style={s.heroInner}>
             <View style={s.heroTagCapsule}><Text style={s.heroTag}>✦  PREMIUM WEDDING CINEMA</Text></View>
+            <View style={s.heroDivider} />
             <Text style={s.heroTitle}>Capture Your Dream{'\n'}Wedding Experience</Text>
             <Text style={s.heroSub}>Cinematic photographers, award-winning filmmakers & creative professionals — all verified.</Text>
             <View style={s.trustRow}>
@@ -350,7 +351,8 @@ const s = StyleSheet.create({
   heroTag: { fontSize: 11, fontWeight: '700', color: '#F5B942', letterSpacing: 3, textShadowColor: 'rgba(245,185,66,0.4)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 12 },
   heroTagCapsule: { alignSelf: 'flex-start', backgroundColor: 'rgba(0,0,0,0.5)', borderWidth: 1, borderColor: 'rgba(245,185,66,0.3)', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6, marginBottom: 10 },
   heroTitle: { fontSize: 28, fontWeight: '800', color: '#FFFFFF', lineHeight: 34, textShadowColor: 'rgba(0,0,0,0.8)', textShadowOffset: { width: 0, height: 4 }, textShadowRadius: 24 },
-  heroSub: { fontSize: 12, color: 'rgba(255,255,255,0.9)', marginTop: 8, lineHeight: 18, textShadowColor: 'rgba(0,0,0,0.7)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 12 },
+  heroSub: { fontSize: 13, fontWeight: '500', color: '#F5B942', marginTop: 10, lineHeight: 20, letterSpacing: 0.3, textShadowColor: 'rgba(245,185,66,0.35)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 12 },
+  heroDivider: { width: 36, height: 2, backgroundColor: '#F5B942', marginVertical: 10, opacity: 0.6, borderRadius: 1 },
   trustRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
   trustChip: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
   trustChipText: { fontSize: 9, color: '#fff', fontWeight: '600' },
