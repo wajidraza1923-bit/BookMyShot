@@ -14,10 +14,10 @@ const CARD_W = width * 0.8;
 const HALF = (width - spacing.xl * 2 - 10) / 2;
 
 const WEDDING_IMGS = [
+  'https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=900',
   'https://images.unsplash.com/photo-1519741497674-611481863552?w=900',
-  'https://images.unsplash.com/photo-1606216794079-73f85bbd57d5?w=900',
-  'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=900',
-  'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=900',
+  'https://images.unsplash.com/photo-1460978812857-470ed1c77af0?w=900',
+  'https://images.unsplash.com/photo-1537633552985-df8429e8048b?w=900',
 ];
 
 const CATEGORIES = [
@@ -130,6 +130,7 @@ export default function HomeScreen({ navigation }: any) {
         <Animated.View style={[s.hero, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
           <Image source={{ uri: WEDDING_IMGS[heroIdx] }} style={s.heroImg} />
           <View style={s.heroOverlay} />
+          <View style={s.heroVignette} />
           {/* Decorative aperture rings */}
           <View style={s.apertureRing1} />
           <View style={s.apertureRing2} />
@@ -298,14 +299,15 @@ const s = StyleSheet.create({
   // Hero
   hero: { marginHorizontal: 16, borderRadius: 24, overflow: 'hidden', height: 300, marginTop: 12 },
   heroImg: { width: '100%', height: '100%', resizeMode: 'cover' },
-  heroOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.5)' },
+  heroOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.65)' },
+  heroVignette: { ...StyleSheet.absoluteFillObject, backgroundColor: 'transparent', borderWidth: 40, borderColor: 'rgba(0,0,0,0.4)', borderRadius: 24 },
   heroInner: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 20 },
-  heroTag: { fontSize: 9, fontWeight: '700', color: '#F5B942', letterSpacing: 2, marginBottom: 8 },
-  heroTitle: { fontSize: 24, fontWeight: '800', color: '#fff', lineHeight: 30 },
-  heroSub: { fontSize: 11.5, color: 'rgba(255,255,255,0.7)', marginTop: 8, lineHeight: 17 },
+  heroTag: { fontSize: 9, fontWeight: '700', color: '#F5B942', letterSpacing: 2, marginBottom: 8, textShadowColor: 'rgba(0,0,0,0.8)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 8 },
+  heroTitle: { fontSize: 26, fontWeight: '800', color: '#fff', lineHeight: 32, textShadowColor: 'rgba(0,0,0,0.7)', textShadowOffset: { width: 0, height: 4 }, textShadowRadius: 20 },
+  heroSub: { fontSize: 11.5, color: 'rgba(255,255,255,0.85)', marginTop: 8, lineHeight: 17, textShadowColor: 'rgba(0,0,0,0.6)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 10 },
   trustRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
-  trustChip: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-  trustChipText: { fontSize: 9, color: 'rgba(255,255,255,0.8)', fontWeight: '500' },
+  trustChip: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  trustChipText: { fontSize: 9, color: '#fff', fontWeight: '600' },
   heroBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#F5B942', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, alignSelf: 'flex-start', marginTop: 14 },
   heroBtnText: { fontSize: 12, fontWeight: '700', color: '#000' },
   heroBtnRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
