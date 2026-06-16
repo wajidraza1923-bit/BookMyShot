@@ -63,6 +63,7 @@ export default function HomeScreen({ navigation }: any) {
   const [creators, setCreators] = useState<any[]>([]);
   const [featured, setFeatured] = useState<any[]>([]);
   const [moments, setMoments] = useState<any[]>([]);
+  const [testimonials, setTestimonials] = useState<any[]>(TESTIMONIALS);
   const [heroIdx, setHeroIdx] = useState(0);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
@@ -97,6 +98,13 @@ export default function HomeScreen({ navigation }: any) {
         momentsData = momRes.data?.data || [];
       } catch {}
       setMoments(momentsData.length > 0 ? momentsData : WEDDING_MOMENTS);
+
+      // Fetch testimonials
+      try {
+        const testRes = await api.get('/testimonials');
+        const testData = testRes.data?.data || [];
+        if (testData.length > 0) setTestimonials(testData);
+      } catch {}
       const all = creatorsRes.data?.creators || creatorsRes.data?.data || [];
       const slots = featuredRes.data?.slots || {};
       const fIds: string[] = []; const ordered: any[] = [];
@@ -286,15 +294,25 @@ export default function HomeScreen({ navigation }: any) {
 
         {/* TESTIMONIALS */}
         <Text style={[s.secTitle, {marginTop: 32}]}>What Couples Say</Text>
-        <FlatList horizontal showsHorizontalScrollIndicator={false} data={TESTIMONIALS} contentContainerStyle={{ paddingHorizontal: 20 }} keyExtractor={(_, i) => String(i)}
+        <FlatList horizontal showsHorizontalScrollIndicator={false} data={testimonials} contentContainerStyle={{ paddingHorizontal: 20 }} keyExtractor={(_, i) => String(i)}
           renderItem={({ item }) => (
             <View style={s.testCard}>
-              <View style={s.testStars}>{[1,2,3,4,5].map(i => <Ionicons key={i} name="star" size={12} color="#FF8C2B" />)}</View>
-              <Text style={s.testText}>"{item.text}"</Text>
-              <View style={s.testBottom}><Text style={s.testName}>{item.name}</Text><Text style={s.testMeta}>{item.city} • {item.event}</Text></View>
-              <View style={s.testBadge}><Ionicons name="checkmark-circle" size={10} color="#10B981" /><Text style={s.testBadgeText}>Verified Booking</Text></View>
+              <View style={s.testStars}>{[1,2,3,4,5].map(i => <Ionicons key={i} name="star" size={12} color={i <= (item.rating || 5) ? '#FF8C2B' : 'rgba(255,255,255,0.15)'} />)}</View>
+              <Text style={s.testText}>"{item.review || item.text}"</Text>
+              <View style={s.testBottom}><Text style={s.testName}>{item.name}</Text><Text style={s.testMeta}>{item.city} • {item.eventType || item.event}</Text></View>
+              {(item.verifiedBooking || item.verified) && <View style={s.testBadge}><Ionicons name="checkmark-circle" size={10} color="#10B981" /><Text style={s.testBadgeText}>Verified Booking</Text></View>}
             </View>
           )} />
+
+        {/* GENERAL INQUIRY */}
+        <View style={s.inquirySection}>
+          <Text style={s.inquiryTitle}>Need Help Finding the Right Creator?</Text>
+          <Text style={s.inquirySub}>Tell us your requirements and our team will connect you with the best creators.</Text>
+          <TouchableOpacity style={s.inquiryBtn} onPress={() => navigation.navigate('Info', { page: 'Contact' })} activeOpacity={0.85}>
+            <Ionicons name="chatbubble-ellipses-outline" size={16} color="#000" />
+            <Text style={s.inquiryBtnText}>Submit Inquiry</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* CTA */}
         {!isAuthenticated && (
@@ -551,6 +569,12 @@ const s = StyleSheet.create({
   testMeta: { fontSize: 9, color: 'rgba(255,255,255,0.4)', marginTop: 2 },
   testBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8 },
   testBadgeText: { fontSize: 9, color: '#10B981' },
+  // Inquiry
+  inquirySection: { marginHorizontal: 16, marginTop: 32, padding: 22, backgroundColor: 'rgba(255,140,43,0.03)', borderWidth: 1, borderColor: 'rgba(255,140,43,0.12)', borderRadius: 20, alignItems: 'center' },
+  inquiryTitle: { fontSize: 15, fontWeight: '700', color: '#fff', textAlign: 'center' },
+  inquirySub: { fontSize: 12, color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginTop: 6, lineHeight: 18, marginBottom: 16 },
+  inquiryBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FF8C2B', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12 },
+  inquiryBtnText: { fontSize: 13, fontWeight: '700', color: '#000' },
   // CTA
   cta: { marginHorizontal: 16, marginTop: 36, backgroundColor: 'rgba(245,185,66,0.03)', borderWidth: 1, borderColor: 'rgba(245,185,66,0.12)', borderRadius: 20, padding: 24, alignItems: 'center' },
   ctaIcon: { fontSize: 32, marginBottom: 8 },
