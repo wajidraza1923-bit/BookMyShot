@@ -29,7 +29,7 @@ interface AuthState {
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
-  register: (name: string, email: string, password: string, role: string) => Promise<{ success: boolean; message?: string }>;
+  register: (name: string, email: string, password: string, role: string) => Promise<{ success: boolean; message?: string; requiresVerification?: boolean; email?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   setAuthDirect: (token: string, user: any) => void;
@@ -246,7 +246,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Success but no token (requires email verification)
       if (!data.token) {
         return {
-          success: data.success || false,
+          success: false,
+          requiresVerification: true,
+          email: email,
           message: data.message || 'Please verify your email to continue.',
         };
       }

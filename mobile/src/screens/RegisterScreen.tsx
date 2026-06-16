@@ -43,15 +43,17 @@ export default function RegisterScreen({ navigation }: any) {
     setLoading(true);
     const result = await authRegister(name.trim(), email.trim().toLowerCase(), password, role);
     setLoading(false);
-    if (!result.success) {
-      // Check if email verification is needed
-      if (result.message?.includes('verify') || result.message?.includes('Verify') || result.message?.includes('OTP')) {
-        navigation.navigate('VerifyEmail', { email: email.trim().toLowerCase() });
-      } else {
-        Alert.alert('Registration Failed', result.message || 'Something went wrong');
-      }
+    console.log('REGISTER RESULT:', JSON.stringify(result));
+    if (result.success) {
+      // Auto-login happened, RootNavigator will route
+      return;
     }
-    // If success with token, AuthContext updates → RootNavigator auto-routes by role
+    // Check if email verification is needed
+    if (result.requiresVerification) {
+      navigation.navigate('VerifyEmail', { email: email.trim().toLowerCase() });
+    } else {
+      Alert.alert('Registration Failed', result.message || 'Something went wrong');
+    }
   };
 
   return (
