@@ -21,12 +21,12 @@ const WEDDING_IMGS = [
 ];
 
 const CATEGORIES = [
-  { id: 'wedding', icon: '💒', label: 'Wedding Photography', count: '4.2K+', img: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=200' },
-  { id: 'candid', icon: '📸', label: 'Candid Photography', count: '2.3K+', img: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=200' },
-  { id: 'videography', icon: '🎬', label: 'Wedding Films', count: '1.8K+', img: 'https://images.unsplash.com/photo-1505932794465-147d1f1b2c97?w=200' },
-  { id: 'drone', icon: '🚁', label: 'Drone Coverage', count: '1.2K+', img: 'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=200' },
-  { id: 'prewedding', icon: '💑', label: 'Pre Wedding', count: '1.5K+', img: 'https://images.unsplash.com/photo-1606216794079-73f85bbd57d5?w=200' },
-  { id: 'cinematography', icon: '🎥', label: 'Cinematography', count: '900+', img: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=200' },
+  { id: 'wedding', icon: 'camera', label: 'Wedding Photography', count: '4.2K+', img: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=200' },
+  { id: 'candid', icon: 'aperture', label: 'Candid Photography', count: '2.3K+', img: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=200' },
+  { id: 'videography', icon: 'videocam', label: 'Wedding Films', count: '1.8K+', img: 'https://images.unsplash.com/photo-1505932794465-147d1f1b2c97?w=200' },
+  { id: 'drone', icon: 'airplane', label: 'Drone Coverage', count: '1.2K+', img: 'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=200' },
+  { id: 'prewedding', icon: 'heart-circle', label: 'Pre Wedding', count: '1.5K+', img: 'https://images.unsplash.com/photo-1606216794079-73f85bbd57d5?w=200' },
+  { id: 'cinematography', icon: 'film', label: 'Cinematography', count: '900+', img: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=200' },
 ];
 
 const WEDDING_MOMENTS = [
@@ -297,6 +297,7 @@ export default function HomeScreen({ navigation }: any) {
             <TouchableOpacity style={s.catCard} onPress={() => navigation.navigate('Discover', { category: item.id })} activeOpacity={0.8}>
               <Image source={{ uri: item.img }} style={s.catCardImg} />
               <View style={s.catCardOverlay} />
+              <View style={s.catCardIcon}><Ionicons name={item.icon as any} size={14} color="#FF8C2B" /></View>
               <View style={s.catCardContent}>
                 <Text style={s.catName}>{item.label}</Text>
                 <Text style={s.catCount}>{item.count}</Text>
@@ -565,6 +566,7 @@ const s = StyleSheet.create({
   catCard: { width: 110, height: 80, borderRadius: 12, overflow: 'hidden', marginRight: 10 },
   catCardImg: { width: '100%', height: '100%', resizeMode: 'cover' },
   catCardOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.55)' },
+  catCardIcon: { position: 'absolute', top: 6, left: 6, width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(255,140,43,0.15)', alignItems: 'center', justifyContent: 'center' },
   catCardContent: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 8 },
   catName: { fontSize: 10, fontWeight: '600', color: '#fff' },
   catCount: { fontSize: 9, color: '#FF8C2B', marginTop: 2 },

@@ -2,12 +2,25 @@ const express = require("express");
 const District = require("../models/District");
 const TrendingSearch = require("../models/TrendingSearch");
 const InspirationGallery = require("../models/InspirationGallery");
+const Category = require("../models/Category");
 const Creator = require("../models/Creator");
 const { protect, authorize } = require("../middleware/auth");
 
 const router = express.Router();
 
 // ═══ PUBLIC ENDPOINTS ═══
+
+// GET /categories — all active categories with creator count
+router.get("/categories", async (req, res, next) => {
+  try {
+    const cats = await Category.find({ isActive: true }).sort("sortOrder").lean();
+    const withCounts = await Promise.all(cats.map(async (c) => {
+      const count = await Creator.countDocuments({ category: new RegExp(c.slug || c.name, "i"), status: "approved", subscriptionStatus: { $in: ["active", "trial"] } });
+      return { ...c, creatorCount: count };
+    }));
+    res.json({ success: true, data: withCounts });
+  } catch (e) { next(e); }
+});
 
 // GET /districts — all active districts with creator count
 router.get("/districts", async (req, res, next) => {
@@ -101,6 +114,24 @@ router.put("/admin/inspiration/:id", protect, authorize("admin"), async (req, re
 });
 router.delete("/admin/inspiration/:id", protect, authorize("admin"), async (req, res, next) => {
   try { await InspirationGallery.findByIdAndDelete(req.params.id); res.json({ success: true }); } catch (e) { next(e); }
+});
+
+// Categories CRUD
+router.get("/admin/categories", protect, authorize("admin"), async (req, res, next) => {
+  try { res.json({ success: true, data: await Category.find().sort("sortOrder") }); } catch (e) { next(e); }
+});
+router.post("/admin/categories", protect, authorize("admin"), async (req, res, next) => {
+  try {
+    const { name, icon, imageUrl, sortOrder } = req.body;
+    const slug = (name || '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    res.status(201).json({ success: true, data: await Category.create({ name, slug, icon, imageUrl, sortOrder }) });
+  } catch (e) { next(e); }
+});
+router.put("/admin/categories/:id", protect, authorize("admin"), async (req, res, next) => {
+  try { res.json({ success: true, data: await Category.findByIdAndUpdate(req.params.id, req.body, { new: true }) }); } catch (e) { next(e); }
+});
+router.delete("/admin/categories/:id", protect, authorize("admin"), async (req, res, next) => {
+  try { await Category.findByIdAndDelete(req.params.id); res.json({ success: true }); } catch (e) { next(e); }
 });
 
 module.exports = router;

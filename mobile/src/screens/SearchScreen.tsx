@@ -21,12 +21,12 @@ const DEFAULT_DISTRICTS = [
 ];
 
 const DEFAULT_TRENDING = [
-  { title: 'Pre Wedding', icon: '💑' },
-  { title: 'Wedding Photography', icon: '📷' },
-  { title: 'Cinematography', icon: '🎬' },
-  { title: 'Drone Coverage', icon: '🚁' },
-  { title: 'Bridal Shoot', icon: '👰' },
-  { title: 'Destination Wedding', icon: '✈️' },
+  { title: 'Pre Wedding', icon: 'heart-circle' },
+  { title: 'Wedding Photography', icon: 'camera' },
+  { title: 'Cinematography', icon: 'film' },
+  { title: 'Drone Coverage', icon: 'airplane' },
+  { title: 'Bridal Shoot', icon: 'diamond' },
+  { title: 'Destination Wedding', icon: 'navigate' },
 ];
 
 const DEFAULT_INSPIRATION = [
@@ -136,7 +136,7 @@ function DiscoverContent({ districts, trendingSearches, categories, inspiration,
       {trendingSearches.length > 0 && (<>
         <Text style={s.secTitle}>Trending Searches</Text>
         <View style={s.pillWrap}>{trendingSearches.map((t: any, i: number) => (
-          <TouchableOpacity key={i} style={s.pill} onPress={() => { setQuery(t.title); setShowResults(true); }}><Text style={s.pillIcon}>{t.icon || '🔍'}</Text><Text style={s.pillText}>{t.title}</Text></TouchableOpacity>
+          <TouchableOpacity key={i} style={s.pill} onPress={() => { setQuery(t.title); setShowResults(true); }}><Ionicons name={(t.icon || 'search') as any} size={13} color="#FF8C2B" /><Text style={s.pillText}>{t.title}</Text></TouchableOpacity>
         ))}</View>
       </>)}
 
@@ -146,7 +146,7 @@ function DiscoverContent({ districts, trendingSearches, categories, inspiration,
         <FlatList horizontal showsHorizontalScrollIndicator={false} data={categories} contentContainerStyle={{ paddingHorizontal: 20 }} keyExtractor={(i: any) => i.id}
           renderItem={({ item }: any) => (
             <TouchableOpacity style={s.catCard} onPress={() => { setSelectedCategory(item.id); setShowResults(true); }}>
-              {item.image ? <Image source={{ uri: item.image }} style={s.catImg} /> : <View style={s.catPlaceholder}><Text style={s.catEmoji}>{item.icon || '📷'}</Text></View>}
+              {item.image ? <Image source={{ uri: item.image }} style={s.catImg} /> : <View style={s.catPlaceholder}><Ionicons name={(item.icon || 'camera') as any} size={24} color="#FF8C2B" /></View>}
               <View style={s.catOverlay} />
               <View style={s.catBottom}><Text style={s.catLabel}>{item.label}</Text><Text style={s.catCount}>{item.count || 0}+</Text></View>
             </TouchableOpacity>
@@ -262,14 +262,12 @@ const s = StyleSheet.create({
   seeAll: { fontSize: 11, color: '#FF8C2B', fontWeight: '600' },
   // Trending pills
   pillWrap: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 20, gap: 8 },
-  pill: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 18 },
-  pillIcon: { fontSize: 13 },
+  pill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 18 },
   pillText: { fontSize: 11, color: 'rgba(255,255,255,0.7)' },
   // Category cards
   catCard: { width: 120, height: 80, borderRadius: 12, overflow: 'hidden', marginRight: 10 },
   catImg: { width: '100%', height: '100%', resizeMode: 'cover' },
   catPlaceholder: { width: '100%', height: '100%', backgroundColor: 'rgba(255,140,43,0.06)', alignItems: 'center', justifyContent: 'center' },
-  catEmoji: { fontSize: 28 },
   catOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.5)' },
   catBottom: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 8 },
   catLabel: { fontSize: 10, fontWeight: '600', color: '#fff' },

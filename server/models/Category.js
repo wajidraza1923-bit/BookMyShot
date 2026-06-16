@@ -1,13 +1,17 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const categorySchema = new mongoose.Schema(
   {
-    name: { type: String, required: true, unique: true },
-    description: { type: String, default: '' },
-    featured: { type: Boolean, default: false },
-    slug: { type: String, unique: true, required: true },
+    name: { type: String, required: true },
+    slug: { type: String, required: true, unique: true },
+    icon: { type: String, default: "camera-outline" }, // Ionicons name
+    imageUrl: { type: String, default: "" },
+    sortOrder: { type: Number, default: 0 },
+    isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model('Category', categorySchema);
+categorySchema.index({ isActive: 1, sortOrder: 1 });
+
+module.exports = mongoose.model("Category", categorySchema);
