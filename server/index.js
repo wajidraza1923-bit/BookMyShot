@@ -60,6 +60,7 @@ const razorpayRoutes = require("./routes/razorpay");
 const featuredMomentsRoutes = require("./routes/featuredMoments");
 const testimonialRoutes = require("./routes/testimonials");
 const generalInquiryRoutes = require("./routes/generalInquiries");
+const discoverRoutes = require("./routes/discover");
 
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
@@ -398,6 +399,7 @@ app.use("/api/razorpay", razorpayRoutes);
 app.use("/api/featured-wedding-moments", featuredMomentsRoutes);
 app.use("/api/testimonials", testimonialRoutes);
 app.use("/api/general-inquiries", generalInquiryRoutes);
+app.use("/api/discover", discoverRoutes);
 app.use("/api/homepage-enquiries", homepageEnquiryRoutes);
 
 // Clean URL routes for static pages (legal, info)
