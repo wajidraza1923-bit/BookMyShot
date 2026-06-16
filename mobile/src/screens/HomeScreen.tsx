@@ -416,7 +416,7 @@ const s = StyleSheet.create({
   signInPill: { paddingHorizontal: 14, paddingVertical: 6, backgroundColor: '#FF8C2B', borderRadius: 16 },
   signInText: { fontSize: 11, fontWeight: '700', color: '#000' },
   // Hero
-  hero: { overflow: 'hidden', minHeight: 750 },
+  hero: { overflow: 'hidden' },
   heroBg: { ...StyleSheet.absoluteFillObject, backgroundColor: '#030303' },
   // Left lens layers
   lensL1: { position: 'absolute', left: -100, top: 20, width: 280, height: 280, borderRadius: 140, borderWidth: 2.5, borderColor: 'rgba(255,140,43,0.09)' },
@@ -454,7 +454,7 @@ const s = StyleSheet.create({
   brandFlare: { width: 60, height: 2, backgroundColor: 'rgba(255,140,43,0.3)', marginVertical: 8, borderRadius: 1 },
   brandSub: { fontSize: 11, color: 'rgba(255,255,255,0.5)', letterSpacing: 0.5 },
   // Content
-  heroContent: { paddingHorizontal: 22, marginTop: 30, paddingBottom: 20 },
+  heroContent: { paddingHorizontal: 22, marginTop: 30, paddingBottom: 0 },
   tagRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 18 },
   tagLine: { height: 1, width: 28, backgroundColor: 'rgba(255,140,43,0.5)' },
   tagText: { fontSize: 11, fontWeight: '700', color: '#FF8C2B', letterSpacing: 4 },
@@ -470,7 +470,7 @@ const s = StyleSheet.create({
   btnGlass: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 20, paddingVertical: 13, borderRadius: 14, borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.35)', backgroundColor: 'rgba(255,255,255,0.03)' },
   btnGlassText: { fontSize: 14, fontWeight: '600', color: '#FFB347' },
   // Stats
-  statsBar: { flexDirection: 'row', marginHorizontal: 16, marginTop: 20, backgroundColor: 'rgba(15,12,8,0.96)', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: 'rgba(255,140,43,0.12)' },
+  statsBar: { flexDirection: 'row', marginHorizontal: 16, marginTop: 24, backgroundColor: 'rgba(15,12,8,0.96)', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: 'rgba(255,140,43,0.12)' },
   stat: { flex: 1, alignItems: 'center' },
   counterNum: { fontSize: 17, fontWeight: '700', color: '#FF8C2B' },
   statLbl: { fontSize: 9, color: 'rgba(255,255,255,0.4)', marginTop: 2 },
