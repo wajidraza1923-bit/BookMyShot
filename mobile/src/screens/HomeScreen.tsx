@@ -108,7 +108,7 @@ export default function HomeScreen({ navigation }: any) {
 
   return (
     <View style={s.container}>
-      <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#F5B942" colors={['#F5B942']} />}>
+      <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF8C2B" colors={['#FF8C2B']} />}>
 
         {/* HEADER */}
         <View style={s.header}>
@@ -120,7 +120,7 @@ export default function HomeScreen({ navigation }: any) {
             </View>
           </View>
           {isAuthenticated ? (
-            <TouchableOpacity style={s.headerBtn} onPress={() => navigation.navigate('Profile')}><Ionicons name="person-circle-outline" size={26} color="#F5B942" /></TouchableOpacity>
+            <TouchableOpacity style={s.headerBtn} onPress={() => navigation.navigate('Profile')}><Ionicons name="person-circle-outline" size={26} color="#FF8C2B" /></TouchableOpacity>
           ) : (
             <TouchableOpacity style={s.signInPill} onPress={() => navigation.navigate('Account')}><Text style={s.signInText}>Sign In</Text></TouchableOpacity>
           )}
@@ -135,13 +135,17 @@ export default function HomeScreen({ navigation }: any) {
           <View style={s.apertureRing1} />
           <View style={s.apertureRing2} />
           <View style={s.heroInner}>
-            <View style={s.heroTagCapsule}><Text style={s.heroTag}>✦  PREMIUM WEDDING CINEMA</Text></View>
+            <View style={s.heroTagRow}>
+              <View style={s.heroTagLine} />
+              <Text style={s.heroTag}>✦  PREMIUM WEDDING CINEMA</Text>
+              <View style={s.heroTagLine} />
+            </View>
             <View style={s.heroDivider} />
             <Text style={s.heroTitle}>Capture Your Dream{'\n'}Wedding Experience</Text>
             <Text style={s.heroSub}>Cinematic photographers, award-winning filmmakers & creative professionals — all verified.</Text>
             <View style={s.trustRow}>
               <View style={s.trustChip}><Ionicons name="checkmark-circle" size={12} color="#10B981" /><Text style={s.trustChipText}>Verified</Text></View>
-              <View style={s.trustChip}><Ionicons name="star" size={12} color="#F5B942" /><Text style={s.trustChipText}>Real Reviews</Text></View>
+              <View style={s.trustChip}><Ionicons name="star" size={12} color="#FF8C2B" /><Text style={s.trustChipText}>Real Reviews</Text></View>
               <View style={s.trustChip}><Ionicons name="flash" size={12} color="#8B5CF6" /><Text style={s.trustChipText}>Fast Reply</Text></View>
             </View>
             <View style={s.heroBtnRow}>
@@ -149,7 +153,7 @@ export default function HomeScreen({ navigation }: any) {
                 <Ionicons name="search" size={14} color="#000" /><Text style={s.heroBtnText}>Find Creator</Text>
               </TouchableOpacity>
               <TouchableOpacity style={s.heroBtnGlass} onPress={() => navigation.navigate('Discover')} activeOpacity={0.85}>
-                <Text style={s.heroBtnGlassText}>Explore</Text><Ionicons name="arrow-forward" size={12} color="#F5B942" />
+                <Text style={s.heroBtnGlassText}>Explore</Text><Ionicons name="arrow-forward" size={12} color="#FF8C2B" />
               </TouchableOpacity>
             </View>
           </View>
@@ -196,7 +200,7 @@ export default function HomeScreen({ navigation }: any) {
             <TouchableOpacity key={item._id} style={s.gCard} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })} activeOpacity={0.85}>
               <Image source={{ uri: item.portfolio?.[0] || item.user?.avatar || WEDDING_IMGS[0] }} style={s.gImg} />
               <View style={s.gInfo}><Text style={s.gName} numberOfLines={1}>{item.user?.name}</Text><Text style={s.gMeta}>{item.specialty} • {item.city}</Text>
-              <View style={s.gRow}><Ionicons name="star" size={10} color="#F5B942" /><Text style={s.gRating}>{item.rating || '5.0'}</Text>{item.startingPrice > 0 && <Text style={s.gPrice}>₹{item.startingPrice?.toLocaleString('en-IN')}</Text>}</View></View>
+              <View style={s.gRow}><Ionicons name="star" size={10} color="#FF8C2B" /><Text style={s.gRating}>{item.rating || '5.0'}</Text>{item.startingPrice > 0 && <Text style={s.gPrice}>₹{item.startingPrice?.toLocaleString('en-IN')}</Text>}</View></View>
             </TouchableOpacity>
           ))}</View>
         </>)}
@@ -216,7 +220,7 @@ export default function HomeScreen({ navigation }: any) {
         <FlatList horizontal showsHorizontalScrollIndicator={false} data={TESTIMONIALS} contentContainerStyle={{ paddingHorizontal: 20 }} keyExtractor={(_, i) => String(i)}
           renderItem={({ item }) => (
             <View style={s.testCard}>
-              <View style={s.testStars}>{[1,2,3,4,5].map(i => <Ionicons key={i} name="star" size={12} color="#F5B942" />)}</View>
+              <View style={s.testStars}>{[1,2,3,4,5].map(i => <Ionicons key={i} name="star" size={12} color="#FF8C2B" />)}</View>
               <Text style={s.testText}>"{item.text}"</Text>
               <View style={s.testBottom}><Text style={s.testName}>{item.name}</Text><Text style={s.testMeta}>{item.city} • {item.event}</Text></View>
               <View style={s.testBadge}><Ionicons name="checkmark-circle" size={10} color="#10B981" /><Text style={s.testBadgeText}>Verified Booking</Text></View>
@@ -272,12 +276,12 @@ export default function HomeScreen({ navigation }: any) {
           <View style={s.fDivider} />
           <Text style={s.fSocialTitle}>CONNECT WITH US</Text>
           <View style={s.socialRow}>
-            <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://instagram.com/bookmyshot')}><Ionicons name="logo-instagram" size={16} color="#F5B942" /></TouchableOpacity>
-            <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://facebook.com/bookmyshot')}><Ionicons name="logo-facebook" size={16} color="#F5B942" /></TouchableOpacity>
-            <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://youtube.com/@bookmyshot')}><Ionicons name="logo-youtube" size={16} color="#F5B942" /></TouchableOpacity>
-            <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://linkedin.com/company/bookmyshot')}><Ionicons name="logo-linkedin" size={16} color="#F5B942" /></TouchableOpacity>
-            <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://twitter.com/bookmyshot')}><Ionicons name="logo-twitter" size={16} color="#F5B942" /></TouchableOpacity>
-            <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://wa.me/918492922173')}><Ionicons name="logo-whatsapp" size={16} color="#F5B942" /></TouchableOpacity>
+            <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://instagram.com/bookmyshot')}><Ionicons name="logo-instagram" size={16} color="#FF8C2B" /></TouchableOpacity>
+            <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://facebook.com/bookmyshot')}><Ionicons name="logo-facebook" size={16} color="#FF8C2B" /></TouchableOpacity>
+            <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://youtube.com/@bookmyshot')}><Ionicons name="logo-youtube" size={16} color="#FF8C2B" /></TouchableOpacity>
+            <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://linkedin.com/company/bookmyshot')}><Ionicons name="logo-linkedin" size={16} color="#FF8C2B" /></TouchableOpacity>
+            <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://twitter.com/bookmyshot')}><Ionicons name="logo-twitter" size={16} color="#FF8C2B" /></TouchableOpacity>
+            <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://wa.me/918492922173')}><Ionicons name="logo-whatsapp" size={16} color="#FF8C2B" /></TouchableOpacity>
           </View>
           <View style={s.fDivider} />
           <TouchableOpacity style={s.fBottomRow} onPress={() => Linking.openURL('mailto:support@bookmyshot.in')}>
@@ -317,8 +321,8 @@ function PremiumCard({ item, onPress, badge }: any) {
             </View>
           </View>
           <View style={s.pMetaRow}>
-            <View style={s.pChip}><Ionicons name="location-outline" size={10} color="#F5B942" /><Text style={s.pChipText}>{item.city || 'India'}</Text></View>
-            <View style={s.pChip}><Ionicons name="star" size={10} color="#F5B942" /><Text style={s.pChipText}>{item.rating || '5.0'} ({item.reviewCount || 0})</Text></View>
+            <View style={s.pChip}><Ionicons name="location-outline" size={10} color="#FF8C2B" /><Text style={s.pChipText}>{item.city || 'India'}</Text></View>
+            <View style={s.pChip}><Ionicons name="star" size={10} color="#FF8C2B" /><Text style={s.pChipText}>{item.rating || '5.0'} ({item.reviewCount || 0})</Text></View>
             {item.startingPrice > 0 && <Text style={s.pPrice}>₹{item.startingPrice?.toLocaleString('en-IN')}</Text>}
           </View>
           <View style={s.pBtnRow}>
@@ -334,48 +338,50 @@ function PremiumCard({ item, onPress, badge }: any) {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#050403' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 56 : 46, paddingBottom: 8 },
-  logo: { fontSize: 15, fontWeight: '300', color: '#F5B942', letterSpacing: 6 },
-  logoIcon: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, borderColor: '#F5B942', alignItems: 'center', justifyContent: 'center' },
+  logo: { fontSize: 15, fontWeight: '300', color: '#FF8C2B', letterSpacing: 6 },
+  logoIcon: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, borderColor: '#FF8C2B', alignItems: 'center', justifyContent: 'center' },
   logoAperture: { width: 14, height: 14, borderRadius: 7, borderWidth: 1, borderColor: 'rgba(245,185,66,0.4)' },
-  logoDot: { position: 'absolute', width: 6, height: 6, borderRadius: 3, backgroundColor: '#F5B942' },
+  logoDot: { position: 'absolute', width: 6, height: 6, borderRadius: 3, backgroundColor: '#FF8C2B' },
   shimmer: { position: 'absolute', top: 0, left: 0, width: 50, height: '100%', backgroundColor: 'rgba(255,200,60,0.2)', transform: [{ skewX: '-20deg' }] },
   headerBtn: { padding: 4 },
-  signInPill: { paddingHorizontal: 14, paddingVertical: 6, backgroundColor: '#F5B942', borderRadius: 16 },
+  signInPill: { paddingHorizontal: 14, paddingVertical: 6, backgroundColor: '#FF8C2B', borderRadius: 16 },
   signInText: { fontSize: 11, fontWeight: '700', color: '#000' },
   // Hero
   hero: { marginHorizontal: 16, borderRadius: 24, overflow: 'hidden', height: 300, marginTop: 12 },
   heroImg: { width: '100%', height: '100%', resizeMode: 'cover' },
-  heroOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.72)' },
-  heroVignette: { ...StyleSheet.absoluteFillObject, borderWidth: 50, borderColor: 'rgba(0,0,0,0.5)', borderRadius: 24 },
+  heroOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.55)' },
+  heroVignette: { ...StyleSheet.absoluteFillObject, borderWidth: 50, borderColor: 'rgba(0,0,0,0.45)', borderTopColor: 'rgba(0,0,0,0.25)', borderBottomColor: 'rgba(0,0,0,0.7)', borderRadius: 24 },
   heroInner: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 20 },
-  heroTag: { fontSize: 11, fontWeight: '700', color: '#F5B942', letterSpacing: 3, textShadowColor: 'rgba(245,185,66,0.4)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 12 },
+  heroTag: { fontSize: 13, fontWeight: '700', color: '#FF9A2F', letterSpacing: 4 },
   heroTagCapsule: { alignSelf: 'flex-start', backgroundColor: 'rgba(0,0,0,0.5)', borderWidth: 1, borderColor: 'rgba(245,185,66,0.3)', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6, marginBottom: 10 },
+  heroTagRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 30 },
+  heroTagLine: { height: 1, width: 20, backgroundColor: '#FF8C2B', opacity: 0.5 },
   heroTitle: { fontSize: 28, fontWeight: '800', color: '#FFFFFF', lineHeight: 34, textShadowColor: 'rgba(0,0,0,0.8)', textShadowOffset: { width: 0, height: 4 }, textShadowRadius: 24 },
-  heroSub: { fontSize: 13, fontWeight: '500', color: '#F5B942', marginTop: 10, lineHeight: 20, letterSpacing: 0.3, textShadowColor: 'rgba(245,185,66,0.35)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 12 },
-  heroDivider: { width: 36, height: 2, backgroundColor: '#F5B942', marginVertical: 10, opacity: 0.6, borderRadius: 1 },
+  heroSub: { fontSize: 13, fontWeight: '500', color: '#FFB347', marginTop: 10, lineHeight: 20, letterSpacing: 0.3, textShadowColor: 'rgba(255,140,43,0.35)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 12 },
+  heroDivider: { width: 36, height: 2, backgroundColor: '#FF8C2B', marginVertical: 10, opacity: 0.6, borderRadius: 1 },
   trustRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
   trustChip: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
   trustChipText: { fontSize: 9, color: '#fff', fontWeight: '600' },
-  heroBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#F5B942', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, alignSelf: 'flex-start', marginTop: 14 },
+  heroBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FF8C2B', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, marginTop: 14 },
   heroBtnText: { fontSize: 12, fontWeight: '700', color: '#000' },
   heroBtnRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
-  heroBtnGlass: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(245,185,66,0.25)' },
-  heroBtnGlassText: { fontSize: 12, fontWeight: '600', color: '#F5B942' },
+  heroBtnGlass: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,140,43,0.3)' },
+  heroBtnGlassText: { fontSize: 12, fontWeight: '600', color: '#FFB347' },
   // Aperture decorative rings
   apertureRing1: { position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: 60, borderWidth: 1, borderColor: 'rgba(245,185,66,0.08)' },
   apertureRing2: { position: 'absolute', top: -10, right: -10, width: 80, height: 80, borderRadius: 40, borderWidth: 1, borderColor: 'rgba(245,185,66,0.05)' },
   // Stats
   statsBar: { flexDirection: 'row', marginHorizontal: 16, marginTop: -16, backgroundColor: 'rgba(15,12,8,0.96)', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: 'rgba(245,185,66,0.12)' },
   stat: { flex: 1, alignItems: 'center' },
-  counterNum: { fontSize: 17, fontWeight: '700', color: '#F5B942' },
+  counterNum: { fontSize: 17, fontWeight: '700', color: '#FF8C2B' },
   statLbl: { fontSize: 9, color: 'rgba(255,255,255,0.4)', marginTop: 2 },
   statDiv: { width: 1, height: 26, backgroundColor: 'rgba(255,255,255,0.05)' },
   // Sections
   secTitle: { fontSize: 15, fontWeight: '700', color: '#fff', paddingHorizontal: 20, marginTop: 28, marginBottom: 12 },
   secRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', paddingHorizontal: 20, marginTop: 30, marginBottom: 12 },
-  secLabel: { fontSize: 8, fontWeight: '700', color: '#F5B942', letterSpacing: 2 },
+  secLabel: { fontSize: 8, fontWeight: '700', color: '#FF8C2B', letterSpacing: 2 },
   secTitle2: { fontSize: 15, fontWeight: '700', color: '#fff', marginTop: 2 },
-  viewAll: { fontSize: 11, fontWeight: '600', color: '#F5B942' },
+  viewAll: { fontSize: 11, fontWeight: '600', color: '#FF8C2B' },
   // Categories
   catChip: { alignItems: 'center', paddingVertical: 12, paddingHorizontal: 14, marginRight: 8, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', minWidth: 90 },
   catIcon: { fontSize: 22, marginBottom: 4 },
@@ -386,7 +392,7 @@ const s = StyleSheet.create({
   pImg: { width: '100%', height: '100%', resizeMode: 'cover' },
   pOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.3)' },
   pBadgeRow: { position: 'absolute', top: 12, left: 12, flexDirection: 'row', gap: 6 },
-  pBadge: { backgroundColor: '#F5B942', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  pBadge: { backgroundColor: '#FF8C2B', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   pBadgeText: { fontSize: 8, fontWeight: '800', color: '#000', letterSpacing: 0.5 },
   pVerified: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#10B981', alignItems: 'center', justifyContent: 'center' },
   pInfo: { position: 'absolute', bottom: 12, left: 12, right: 12, backgroundColor: 'rgba(8,6,4,0.92)', borderRadius: 14, padding: 12, borderWidth: 1, borderColor: 'rgba(245,185,66,0.1)' },
@@ -397,11 +403,11 @@ const s = StyleSheet.create({
   pMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
   pChip: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   pChipText: { fontSize: 10, color: 'rgba(255,255,255,0.6)' },
-  pPrice: { fontSize: 11, fontWeight: '700', color: '#F5B942', marginLeft: 'auto' },
+  pPrice: { fontSize: 11, fontWeight: '700', color: '#FF8C2B', marginLeft: 'auto' },
   pBtnRow: { flexDirection: 'row', gap: 8 },
   pBtnOutline: { flex: 1, paddingVertical: 7, alignItems: 'center', borderRadius: 8, borderWidth: 1, borderColor: 'rgba(245,185,66,0.3)' },
-  pBtnOutlineText: { fontSize: 10, fontWeight: '600', color: '#F5B942' },
-  pBtnSolid: { flex: 1, paddingVertical: 7, alignItems: 'center', borderRadius: 8, backgroundColor: '#F5B942' },
+  pBtnOutlineText: { fontSize: 10, fontWeight: '600', color: '#FF8C2B' },
+  pBtnSolid: { flex: 1, paddingVertical: 7, alignItems: 'center', borderRadius: 8, backgroundColor: '#FF8C2B' },
   pBtnSolidText: { fontSize: 10, fontWeight: '700', color: '#000' },
 
   // Grid
@@ -413,7 +419,7 @@ const s = StyleSheet.create({
   gMeta: { fontSize: 9, color: 'rgba(255,255,255,0.4)', marginTop: 2 },
   gRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
   gRating: { fontSize: 10, color: 'rgba(255,255,255,0.7)' },
-  gPrice: { fontSize: 10, fontWeight: '600', color: '#F5B942', marginLeft: 'auto' },
+  gPrice: { fontSize: 10, fontWeight: '600', color: '#FF8C2B', marginLeft: 'auto' },
   // Why
   whySec: { paddingHorizontal: 20, marginTop: 36 },
   whyTitle: { fontSize: 15, fontWeight: '700', color: '#fff', marginBottom: 14 },
@@ -434,18 +440,18 @@ const s = StyleSheet.create({
   // CTA
   cta: { marginHorizontal: 16, marginTop: 36, backgroundColor: 'rgba(245,185,66,0.03)', borderWidth: 1, borderColor: 'rgba(245,185,66,0.12)', borderRadius: 20, padding: 24, alignItems: 'center' },
   ctaIcon: { fontSize: 32, marginBottom: 8 },
-  ctaTitle: { fontSize: 15, fontWeight: '700', color: '#F5B942' },
+  ctaTitle: { fontSize: 15, fontWeight: '700', color: '#FF8C2B' },
   ctaSub: { fontSize: 11, color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginTop: 6, lineHeight: 17, marginBottom: 14 },
-  ctaBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#F5B942', paddingHorizontal: 18, paddingVertical: 11, borderRadius: 12 },
+  ctaBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FF8C2B', paddingHorizontal: 18, paddingVertical: 11, borderRadius: 12 },
   ctaBtnText: { fontSize: 12, fontWeight: '700', color: '#000' },
   // Footer
   footer: { marginTop: 44, paddingHorizontal: 20, paddingTop: 28, paddingBottom: 20, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)', backgroundColor: 'rgba(8,6,4,0.98)' },
-  fLogo: { fontSize: 14, fontWeight: '300', color: '#F5B942', letterSpacing: 5 },
+  fLogo: { fontSize: 14, fontWeight: '300', color: '#FF8C2B', letterSpacing: 5 },
   fTag: { fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 4 },
   fAbout: { fontSize: 11, color: 'rgba(255,255,255,0.3)', lineHeight: 17, marginTop: 10 },
   fGrid: { flexDirection: 'row', justifyContent: 'space-between' },
   fCol: { flex: 1 },
-  fHead: { fontSize: 9, fontWeight: '700', color: '#F5B942', letterSpacing: 1.5, marginBottom: 8 },
+  fHead: { fontSize: 9, fontWeight: '700', color: '#FF8C2B', letterSpacing: 1.5, marginBottom: 8 },
   fLink: { fontSize: 11, color: 'rgba(255,255,255,0.5)', paddingVertical: 4 },
   fDot: { fontSize: 8, color: 'rgba(255,255,255,0.2)', marginHorizontal: 6 },
   fLegalRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', marginBottom: 4 },
