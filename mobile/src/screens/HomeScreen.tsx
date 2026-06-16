@@ -126,47 +126,51 @@ export default function HomeScreen({ navigation }: any) {
 
         {/* HERO */}
         <Animated.View style={[s.hero, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-          {/* Pure black cinematic background with camera elements */}
           <View style={s.heroBg}>
-            <View style={s.lensRing1} />
-            <View style={s.lensRing2} />
-            <View style={s.lensRing3} />
-            <View style={s.aperture1} />
-            <View style={s.orangeGlow} />
-            <View style={s.orangeGlow2} />
+            {/* Large camera lens graphics */}
+            <View style={s.lensLeft1} />
+            <View style={s.lensLeft2} />
+            <View style={s.lensRight1} />
+            <View style={s.lensRight2} />
+            <View style={s.lensRight3} />
+            {/* Orange flares */}
+            <View style={s.flare1} />
+            <View style={s.flare2} />
+            <View style={s.flare3} />
             <Animated.View style={[s.lightStreak, { transform: [{ translateX: shimmer.interpolate({ inputRange: [0, 1], outputRange: [-200, width + 100] }) }] }]} />
           </View>
 
-          {/* Branding Section - Top Center */}
-          <View style={s.brandSection}>
-            <View style={s.brandLogoWrap}>
-              <View style={s.brandLogoOuter} />
-              <View style={s.brandLogoInner}>
-                <Text style={s.brandLogoText}>BMS</Text>
-              </View>
-              <View style={s.brandLogoGlow} />
+          {/* BMS Logo Center */}
+          <View style={s.logoSection}>
+            <View style={s.logoGlowBig} />
+            <View style={s.logoRingOuter} />
+            <View style={s.logoRingMid} />
+            <View style={s.logoCircle}>
+              <Text style={s.logoLetters}>BMS</Text>
             </View>
-            <Text style={s.brandName}>BOOKMYSHOT</Text>
+          </View>
+
+          {/* Brand Text */}
+          <View style={s.brandCenter}>
+            <Text style={s.brandTitle}>B O O K M Y S H O T</Text>
             <Text style={s.brandSub}>India's Premium Wedding Creator Marketplace</Text>
           </View>
 
-          {/* Hero Content */}
-          <View style={s.heroInner}>
+          {/* Heading */}
+          <View style={s.heroContent}>
             <View style={s.heroTagRow}>
               <View style={s.heroTagLine} />
               <Text style={s.heroTag}>PREMIUM WEDDING CINEMA</Text>
               <View style={s.heroTagLine} />
             </View>
-            <Animated.View style={{ opacity: fadeAnim }}>
-              <Text style={s.heroTitle}>Capture Your</Text>
-              <Text style={s.heroTitleGold}>Dream Wedding</Text>
-              <Text style={s.heroTitle}>Experience</Text>
-            </Animated.View>
+            <Text style={s.heroTitle}>Capture Your</Text>
+            <Text style={s.heroTitleGold}>Dream Wedding</Text>
+            <Text style={s.heroTitle}>Experience</Text>
             <Text style={s.heroSub}>Cinematic photographers, award-winning filmmakers & creative professionals — all verified.</Text>
             <View style={s.trustRow}>
-              <View style={s.trustChip}><Ionicons name="checkmark-circle" size={11} color="#10B981" /><Text style={s.trustChipText}>Verified</Text></View>
-              <View style={s.trustChip}><Ionicons name="star" size={11} color="#FFB347" /><Text style={s.trustChipText}>Real Reviews</Text></View>
-              <View style={s.trustChip}><Ionicons name="flash" size={11} color="#A78BFA" /><Text style={s.trustChipText}>Fast Reply</Text></View>
+              <View style={s.trustChip}><Ionicons name="checkmark-circle" size={12} color="#10B981" /><Text style={s.trustChipText}>Verified</Text></View>
+              <View style={s.trustChip}><Ionicons name="star" size={12} color="#FFB347" /><Text style={s.trustChipText}>Real Reviews</Text></View>
+              <View style={s.trustChip}><Ionicons name="flash" size={12} color="#A78BFA" /><Text style={s.trustChipText}>Fast Reply</Text></View>
             </View>
             <View style={s.heroBtnRow}>
               <TouchableOpacity style={s.heroBtn} onPress={() => navigation.navigate('Discover')} activeOpacity={0.85}>
@@ -370,25 +374,32 @@ const s = StyleSheet.create({
   signInPill: { paddingHorizontal: 14, paddingVertical: 6, backgroundColor: '#FF8C2B', borderRadius: 16 },
   signInText: { fontSize: 11, fontWeight: '700', color: '#000' },
   // Hero
-  hero: { marginHorizontal: 0, borderRadius: 0, overflow: 'hidden', height: 520, marginTop: 0 },
+  hero: { marginHorizontal: 0, overflow: 'hidden', minHeight: 680 },
   heroBg: { ...StyleSheet.absoluteFillObject, backgroundColor: '#050505' },
-  lensRing1: { position: 'absolute', right: -40, top: 60, width: 200, height: 200, borderRadius: 100, borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.08)' },
-  lensRing2: { position: 'absolute', right: -10, top: 80, width: 160, height: 160, borderRadius: 80, borderWidth: 1, borderColor: 'rgba(255,140,43,0.05)' },
-  lensRing3: { position: 'absolute', right: 30, top: 120, width: 80, height: 80, borderRadius: 40, borderWidth: 1, borderColor: 'rgba(255,255,255,0.03)' },
-  aperture1: { position: 'absolute', right: 45, top: 130, width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,140,43,0.03)' },
-  orangeGlow: { position: 'absolute', right: 20, top: 80, width: 180, height: 180, borderRadius: 90, backgroundColor: 'rgba(255,140,43,0.04)' },
-  orangeGlow2: { position: 'absolute', left: -20, bottom: 80, width: 100, height: 100, borderRadius: 50, backgroundColor: 'rgba(255,140,43,0.025)' },
-  lightStreak: { position: 'absolute', top: '35%', width: 120, height: 1, backgroundColor: 'rgba(255,180,71,0.12)', transform: [{ rotate: '-12deg' }] },
-  // Brand section
-  brandSection: { position: 'absolute', top: 24, left: 0, right: 0, alignItems: 'center' },
-  brandLogoWrap: { width: 72, height: 72, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
-  brandLogoOuter: { position: 'absolute', width: 72, height: 72, borderRadius: 36, borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.2)' },
-  brandLogoInner: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,140,43,0.06)', borderWidth: 1, borderColor: 'rgba(255,140,43,0.25)', alignItems: 'center', justifyContent: 'center' },
-  brandLogoText: { fontSize: 18, fontWeight: '800', color: '#FF8C2B', letterSpacing: 2 },
-  brandLogoGlow: { position: 'absolute', width: 90, height: 90, borderRadius: 45, backgroundColor: 'rgba(255,140,43,0.06)' },
-  brandName: { fontSize: 14, fontWeight: '800', color: '#fff', letterSpacing: 6 },
-  brandSub: { fontSize: 9.5, color: 'rgba(255,255,255,0.5)', marginTop: 4, letterSpacing: 0.5 },
-  heroInner: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 22, paddingBottom: 24 },
+  // Large camera lens circles
+  lensLeft1: { position: 'absolute', left: -80, top: 40, width: 240, height: 240, borderRadius: 120, borderWidth: 2, borderColor: 'rgba(255,140,43,0.07)' },
+  lensLeft2: { position: 'absolute', left: -60, top: 60, width: 200, height: 200, borderRadius: 100, borderWidth: 1, borderColor: 'rgba(255,140,43,0.04)' },
+  lensRight1: { position: 'absolute', right: -60, top: 20, width: 220, height: 220, borderRadius: 110, borderWidth: 2, borderColor: 'rgba(255,140,43,0.06)' },
+  lensRight2: { position: 'absolute', right: -40, top: 50, width: 170, height: 170, borderRadius: 85, borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.04)' },
+  lensRight3: { position: 'absolute', right: -20, top: 80, width: 120, height: 120, borderRadius: 60, borderWidth: 1, borderColor: 'rgba(255,255,255,0.03)' },
+  // Flares
+  flare1: { position: 'absolute', left: 30, top: 100, width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,140,43,0.3)' },
+  flare2: { position: 'absolute', right: 50, top: 160, width: 4, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,180,71,0.25)' },
+  flare3: { position: 'absolute', left: width * 0.4, top: 200, width: 3, height: 3, borderRadius: 1.5, backgroundColor: 'rgba(255,200,100,0.2)' },
+  lightStreak: { position: 'absolute', top: 150, width: 140, height: 1, backgroundColor: 'rgba(255,180,71,0.1)', transform: [{ rotate: '-10deg' }] },
+  // Logo section
+  logoSection: { alignItems: 'center', justifyContent: 'center', marginTop: 40, height: 140 },
+  logoGlowBig: { position: 'absolute', width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(255,140,43,0.05)' },
+  logoRingOuter: { position: 'absolute', width: 110, height: 110, borderRadius: 55, borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.12)' },
+  logoRingMid: { position: 'absolute', width: 90, height: 90, borderRadius: 45, borderWidth: 1, borderColor: 'rgba(255,140,43,0.08)' },
+  logoCircle: { width: 70, height: 70, borderRadius: 35, backgroundColor: 'rgba(255,140,43,0.08)', borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.3)', alignItems: 'center', justifyContent: 'center' },
+  logoLetters: { fontSize: 22, fontWeight: '800', color: '#FF8C2B', letterSpacing: 3 },
+  // Brand center
+  brandCenter: { alignItems: 'center', marginTop: 16 },
+  brandTitle: { fontSize: 16, fontWeight: '300', color: '#fff', letterSpacing: 4 },
+  brandSub: { fontSize: 10, color: 'rgba(255,255,255,0.5)', marginTop: 6 },
+  // Hero content
+  heroContent: { paddingHorizontal: 22, marginTop: 28, paddingBottom: 24 },
   heroTag: { fontSize: 10, fontWeight: '700', color: '#FFB347', letterSpacing: 4 },
   heroTagRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
   heroTagLine: { height: 1, width: 18, backgroundColor: '#FF8C2B', opacity: 0.6 },
