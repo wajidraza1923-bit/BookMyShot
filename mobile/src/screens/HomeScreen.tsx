@@ -14,21 +14,19 @@ const CARD_W = width * 0.8;
 const HALF = (width - spacing.xl * 2 - 10) / 2;
 
 const WEDDING_IMGS = [
-  'https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=900',
-  'https://images.unsplash.com/photo-1519741497674-611481863552?w=900',
-  'https://images.unsplash.com/photo-1460978812857-470ed1c77af0?w=900',
-  'https://images.unsplash.com/photo-1537633552985-df8429e8048b?w=900',
+  'https://images.unsplash.com/photo-1604604557852-d41e7a0a5c32?w=900',
+  'https://images.unsplash.com/photo-1591604466107-ec97de577aff?w=900',
+  'https://images.unsplash.com/photo-1545232979-8bf68ee9b1af?w=900',
+  'https://images.unsplash.com/photo-1620162009541-a3015e766be4?w=900',
 ];
 
 const CATEGORIES = [
-  { id: 'wedding', icon: '💒', label: 'Wedding Photography', count: '4.2K+' },
-  { id: 'candid', icon: '📸', label: 'Candid Photography', count: '2.3K+' },
-  { id: 'videography', icon: '🎬', label: 'Wedding Films', count: '1.8K+' },
-  { id: 'prewedding', icon: '💑', label: 'Pre Wedding', count: '1.5K+' },
-  { id: 'drone', icon: '🚁', label: 'Drone Coverage', count: '600+' },
-  { id: 'cinematography', icon: '🎥', label: 'Cinematography', count: '1.2K+' },
-  { id: 'bridal', icon: '👰', label: 'Bridal Shoots', count: '900+' },
-  { id: 'engagement', icon: '💍', label: 'Engagement', count: '700+' },
+  { id: 'wedding', icon: '💒', label: 'Wedding Photography', count: '4.2K+', img: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=200' },
+  { id: 'candid', icon: '📸', label: 'Candid Photography', count: '2.3K+', img: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=200' },
+  { id: 'videography', icon: '🎬', label: 'Wedding Films', count: '1.8K+', img: 'https://images.unsplash.com/photo-1505932794465-147d1f1b2c97?w=200' },
+  { id: 'drone', icon: '🚁', label: 'Drone Coverage', count: '1.2K+', img: 'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=200' },
+  { id: 'prewedding', icon: '💑', label: 'Pre Wedding', count: '1.5K+', img: 'https://images.unsplash.com/photo-1606216794079-73f85bbd57d5?w=200' },
+  { id: 'cinematography', icon: '🎥', label: 'Cinematography', count: '900+', img: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=200' },
 ];
 
 const TESTIMONIALS = [
@@ -167,13 +165,16 @@ export default function HomeScreen({ navigation }: any) {
         </View>
 
         {/* CATEGORIES */}
-        <Text style={s.secTitle}>Browse by Category</Text>
+        <View style={s.catHeader}><Text style={s.secTitle}>Browse by Category</Text><TouchableOpacity onPress={() => navigation.navigate('Discover')}><Text style={s.viewAll}>See All →</Text></TouchableOpacity></View>
         <FlatList horizontal showsHorizontalScrollIndicator={false} data={CATEGORIES} contentContainerStyle={{ paddingHorizontal: 20 }} keyExtractor={i => i.id}
           renderItem={({ item }) => (
-            <TouchableOpacity style={s.catChip} onPress={() => navigation.navigate('Discover', { category: item.id })} activeOpacity={0.8}>
-              <Text style={s.catIcon}>{item.icon}</Text>
-              <Text style={s.catName}>{item.label}</Text>
-              <Text style={s.catCount}>{item.count}</Text>
+            <TouchableOpacity style={s.catCard} onPress={() => navigation.navigate('Discover', { category: item.id })} activeOpacity={0.8}>
+              <Image source={{ uri: item.img }} style={s.catCardImg} />
+              <View style={s.catCardOverlay} />
+              <View style={s.catCardContent}>
+                <Text style={s.catName}>{item.label}</Text>
+                <Text style={s.catCount}>{item.count}</Text>
+              </View>
             </TouchableOpacity>
           )} />
 
@@ -345,11 +346,11 @@ const s = StyleSheet.create({
   signInPill: { paddingHorizontal: 14, paddingVertical: 6, backgroundColor: '#FF8C2B', borderRadius: 16 },
   signInText: { fontSize: 11, fontWeight: '700', color: '#000' },
   // Hero
-  hero: { marginHorizontal: 0, borderRadius: 0, overflow: 'hidden', height: 420, marginTop: 0 },
+  hero: { marginHorizontal: 0, borderRadius: 0, overflow: 'hidden', height: 440, marginTop: 0 },
   heroImg: { width: '100%', height: '100%', resizeMode: 'cover' },
-  heroOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.55)' },
-  heroVignette: { ...StyleSheet.absoluteFillObject, borderWidth: 0, borderColor: 'transparent', borderBottomWidth: 80, borderBottomColor: 'rgba(0,0,0,0.6)' },
-  heroInner: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 24, paddingBottom: 32 },
+  heroOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.45)' },
+  heroVignette: { ...StyleSheet.absoluteFillObject, borderWidth: 0, borderColor: 'transparent', borderLeftWidth: 60, borderLeftColor: 'rgba(0,0,0,0.5)', borderBottomWidth: 80, borderBottomColor: 'rgba(0,0,0,0.7)' },
+  heroInner: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 22, paddingBottom: 28 },
   heroTag: { fontSize: 10, fontWeight: '700', color: '#FFB347', letterSpacing: 4 },
   heroTagRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
   heroTagLine: { height: 1, width: 18, backgroundColor: '#FF8C2B', opacity: 0.6 },
@@ -377,10 +378,13 @@ const s = StyleSheet.create({
   secTitle2: { fontSize: 15, fontWeight: '700', color: '#fff', marginTop: 2 },
   viewAll: { fontSize: 11, fontWeight: '600', color: '#FF8C2B' },
   // Categories
-  catChip: { alignItems: 'center', paddingVertical: 12, paddingHorizontal: 14, marginRight: 8, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', minWidth: 90 },
-  catIcon: { fontSize: 22, marginBottom: 4 },
-  catName: { fontSize: 10, fontWeight: '500', color: '#fff', textAlign: 'center' },
-  catCount: { fontSize: 9, color: 'rgba(245,185,66,0.7)', marginTop: 2 },
+  catHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginTop: 28, marginBottom: 12 },
+  catCard: { width: 110, height: 80, borderRadius: 12, overflow: 'hidden', marginRight: 10 },
+  catCardImg: { width: '100%', height: '100%', resizeMode: 'cover' },
+  catCardOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.55)' },
+  catCardContent: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 8 },
+  catName: { fontSize: 10, fontWeight: '600', color: '#fff' },
+  catCount: { fontSize: 9, color: '#FF8C2B', marginTop: 2 },
   // Premium Card
   pCard: { width: CARD_W, height: 280, borderRadius: 20, overflow: 'hidden' },
   pImg: { width: '100%', height: '100%', resizeMode: 'cover' },
