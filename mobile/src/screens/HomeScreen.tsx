@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, RefreshControl,
-  FlatList, Image, TouchableOpacity, Dimensions, Animated, Platform, Easing, Linking,
+  FlatList, Image, TouchableOpacity, Dimensions, Animated, Platform, Easing, Linking, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, radius, shadows } from '../theme';
@@ -171,6 +171,19 @@ export default function HomeScreen({ navigation }: any) {
   useEffect(() => { loadData(); }, []);
   const onRefresh = async () => { setRefreshing(true); await loadData(); setRefreshing(false); };
   const topRated = [...creators].sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 8);
+
+  // Show loading screen until data arrives
+  if (loading) {
+    return (
+      <View style={[s.container, { alignItems: 'center', justifyContent: 'center' }]}>
+        <View style={{ alignItems: 'center' }}>
+          <View style={s.logoCore}><Text style={s.logoBMS}>BMS</Text></View>
+          <Text style={[s.brandText, { marginTop: 14 }]}>BOOKMYSHOT</Text>
+          <ActivityIndicator size="small" color="#FF8C2B" style={{ marginTop: 20 }} />
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={s.container}>
