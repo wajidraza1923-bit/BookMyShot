@@ -57,6 +57,7 @@ const bookingEventRoutes = require("./routes/bookingevents");
 const revenueRoutes = require("./routes/revenue");
 const promotionRoutes = require("./routes/promotionRequests");
 const razorpayRoutes = require("./routes/razorpay");
+const featuredMomentsRoutes = require("./routes/featuredMoments");
 
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
@@ -392,6 +393,7 @@ app.use("/api/booking-events", bookingEventRoutes);
 app.use("/api/revenue", revenueRoutes);
 app.use("/api/promotions", promotionRoutes);
 app.use("/api/razorpay", razorpayRoutes);
+app.use("/api/featured-wedding-moments", featuredMomentsRoutes);
 app.use("/api/homepage-enquiries", homepageEnquiryRoutes);
 
 // Clean URL routes for static pages (legal, info)

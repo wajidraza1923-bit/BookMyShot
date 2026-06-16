@@ -62,6 +62,7 @@ export default function HomeScreen({ navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [creators, setCreators] = useState<any[]>([]);
   const [featured, setFeatured] = useState<any[]>([]);
+  const [moments, setMoments] = useState<any[]>([]);
   const [heroIdx, setHeroIdx] = useState(0);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
@@ -89,6 +90,13 @@ export default function HomeScreen({ navigation }: any) {
         creatorsAPI.getAll(),
         api.get('/promotions/featured-status').catch(() => ({ data: { slots: {} } })),
       ]);
+      // Fetch wedding moments from API (fallback to hardcoded)
+      let momentsData: any[] = [];
+      try {
+        const momRes = await api.get('/featured-wedding-moments');
+        momentsData = momRes.data?.data || [];
+      } catch {}
+      setMoments(momentsData.length > 0 ? momentsData : WEDDING_MOMENTS);
       const all = creatorsRes.data?.creators || creatorsRes.data?.data || [];
       const slots = featuredRes.data?.slots || {};
       const fIds: string[] = []; const ordered: any[] = [];
@@ -208,18 +216,18 @@ export default function HomeScreen({ navigation }: any) {
           <FlatList
             horizontal
             showsHorizontalScrollIndicator={false}
-            data={WEDDING_MOMENTS}
+            data={moments}
             contentContainerStyle={{ paddingHorizontal: 20 }}
             keyExtractor={(_, i) => String(i)}
             renderItem={({ item }) => (
               <View style={s.momentCard}>
-                <Image source={{ uri: item.img }} style={s.momentImg} />
+                <Image source={{ uri: item.imageUrl || item.img }} style={s.momentImg} />
                 <View style={s.momentOverlay} />
                 <View style={s.momentWatermark}><Text style={s.momentWM}>BMS</Text></View>
                 <View style={s.momentContent}>
                   <View style={s.momentAccent} />
-                  <Text style={s.momentLabel}>{item.label}</Text>
-                  <Text style={s.momentCity}>{item.city}</Text>
+                  <Text style={s.momentLabel}>{item.title || item.label}</Text>
+                  <Text style={s.momentCity}>{item.location || item.city}</Text>
                 </View>
               </View>
             )}
