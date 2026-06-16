@@ -45,6 +45,7 @@ export default function AdminDashboard({ navigation }: any) {
     { icon: 'notifications-outline', label: 'Notifications', desc: 'Send notifications, alerts', screen: 'AdminInquiries' },
     { icon: 'settings-outline', label: 'Platform Settings', desc: 'Commission %, pricing, config', screen: 'AdminSettings' },
     { icon: 'flask-outline', label: 'QA Testing', desc: 'Run API tests, verify features', screen: 'QADashboard' },
+    { icon: 'create-outline', label: 'Content Management', desc: 'Categories, districts, galleries, testimonials', screen: 'ContentManager' },
   ];
 
   return (

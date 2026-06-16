@@ -10,6 +10,7 @@ import AdminSubscriptions from '../screens/admin/AdminSubscriptions';
 import AdminEarnings from '../screens/admin/AdminEarnings';
 import AdminSettings from '../screens/admin/AdminSettings';
 import QADashboard from '../screens/admin/QADashboard';
+import AdminContentManager from '../screens/admin/AdminContentManager';
 
 const Stack = createNativeStackNavigator();
 
@@ -25,6 +26,7 @@ export default function AdminNavigator() {
       <Stack.Screen name="AdminEarnings" component={AdminEarnings} />
       <Stack.Screen name="AdminSettings" component={AdminSettings} />
       <Stack.Screen name="QADashboard" component={QADashboard} />
+      <Stack.Screen name="ContentManager" component={AdminContentManager} />
     </Stack.Navigator>
   );
 }
