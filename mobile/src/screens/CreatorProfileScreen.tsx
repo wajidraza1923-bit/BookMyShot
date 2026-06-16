@@ -234,7 +234,7 @@ export default function CreatorProfileScreen({ route, navigation }: any) {
             ₹{(packages[0]?.price || creator.startingPrice || 0).toLocaleString('en-IN')}
           </Text>
         </View>
-        <Button title="Send Inquiry" onPress={() => { if (!handleRestrictedAction()) { /* TODO: open inquiry form */ } }} size="md" style={styles.ctaBtn} />
+        <Button title="Send Inquiry" onPress={() => { if (!handleRestrictedAction()) { navigation.navigate('Inquiry', { creatorId: id, creatorName: creator?.user?.name || 'Creator' }); } }} size="md" style={styles.ctaBtn} />
       </View>
 
       {/* Login Required Sheet for Guest Users */}

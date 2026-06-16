@@ -14,6 +14,7 @@ import CreatorProfileScreen from '../screens/CreatorProfileScreen';
 import ChatDetailScreen from '../screens/ChatDetailScreen';
 import SavedCreatorsScreen from '../screens/SavedCreatorsScreen';
 import InfoScreen from '../screens/InfoScreen';
+import InquiryScreen from '../screens/InquiryScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -51,6 +52,7 @@ export default function CustomerNavigator() {
       <Stack.Screen name="ChatDetail" component={ChatDetailScreen} />
       <Stack.Screen name="SavedCreators" component={SavedCreatorsScreen} />
       <Stack.Screen name="Info" component={InfoScreen} />
+      <Stack.Screen name="Inquiry" component={InquiryScreen} />
     </Stack.Navigator>
   );
 }

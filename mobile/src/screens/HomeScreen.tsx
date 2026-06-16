@@ -308,7 +308,7 @@ export default function HomeScreen({ navigation }: any) {
         <View style={s.inquirySection}>
           <Text style={s.inquiryTitle}>Need Help Finding the Right Creator?</Text>
           <Text style={s.inquirySub}>Tell us your requirements and our team will connect you with the best creators.</Text>
-          <TouchableOpacity style={s.inquiryBtn} onPress={() => navigation.navigate('Info', { page: 'Contact' })} activeOpacity={0.85}>
+          <TouchableOpacity style={s.inquiryBtn} onPress={() => navigation.navigate('Inquiry')} activeOpacity={0.85}>
             <Ionicons name="chatbubble-ellipses-outline" size={16} color="#000" />
             <Text style={s.inquiryBtnText}>Submit Inquiry</Text>
           </TouchableOpacity>
