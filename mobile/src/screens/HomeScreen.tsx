@@ -128,28 +128,40 @@ export default function HomeScreen({ navigation }: any) {
         <Animated.View style={[s.hero, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
           {/* Pure black cinematic background with camera elements */}
           <View style={s.heroBg}>
-            {/* Camera lens rings */}
             <View style={s.lensRing1} />
             <View style={s.lensRing2} />
             <View style={s.lensRing3} />
-            {/* Aperture blades */}
             <View style={s.aperture1} />
-            <View style={s.aperture2} />
-            {/* Orange glow */}
             <View style={s.orangeGlow} />
             <View style={s.orangeGlow2} />
-            {/* Light streak */}
             <Animated.View style={[s.lightStreak, { transform: [{ translateX: shimmer.interpolate({ inputRange: [0, 1], outputRange: [-200, width + 100] }) }] }]} />
           </View>
+
+          {/* Branding Section - Top Center */}
+          <View style={s.brandSection}>
+            <View style={s.brandLogoWrap}>
+              <View style={s.brandLogoOuter} />
+              <View style={s.brandLogoInner}>
+                <Text style={s.brandLogoText}>BMS</Text>
+              </View>
+              <View style={s.brandLogoGlow} />
+            </View>
+            <Text style={s.brandName}>BOOKMYSHOT</Text>
+            <Text style={s.brandSub}>India's Premium Wedding Creator Marketplace</Text>
+          </View>
+
+          {/* Hero Content */}
           <View style={s.heroInner}>
             <View style={s.heroTagRow}>
               <View style={s.heroTagLine} />
               <Text style={s.heroTag}>PREMIUM WEDDING CINEMA</Text>
               <View style={s.heroTagLine} />
             </View>
-            <Text style={s.heroTitle}>Capture Your</Text>
-            <Text style={s.heroTitleGold}>Dream Wedding</Text>
-            <Text style={s.heroTitle}>Experience</Text>
+            <Animated.View style={{ opacity: fadeAnim }}>
+              <Text style={s.heroTitle}>Capture Your</Text>
+              <Text style={s.heroTitleGold}>Dream Wedding</Text>
+              <Text style={s.heroTitle}>Experience</Text>
+            </Animated.View>
             <Text style={s.heroSub}>Cinematic photographers, award-winning filmmakers & creative professionals — all verified.</Text>
             <View style={s.trustRow}>
               <View style={s.trustChip}><Ionicons name="checkmark-circle" size={11} color="#10B981" /><Text style={s.trustChipText}>Verified</Text></View>
@@ -358,21 +370,25 @@ const s = StyleSheet.create({
   signInPill: { paddingHorizontal: 14, paddingVertical: 6, backgroundColor: '#FF8C2B', borderRadius: 16 },
   signInText: { fontSize: 11, fontWeight: '700', color: '#000' },
   // Hero
-  hero: { marginHorizontal: 0, borderRadius: 0, overflow: 'hidden', height: 440, marginTop: 0 },
+  hero: { marginHorizontal: 0, borderRadius: 0, overflow: 'hidden', height: 520, marginTop: 0 },
   heroBg: { ...StyleSheet.absoluteFillObject, backgroundColor: '#050505' },
-  // Camera lens rings
-  lensRing1: { position: 'absolute', right: -40, top: 40, width: 220, height: 220, borderRadius: 110, borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.08)' },
-  lensRing2: { position: 'absolute', right: -20, top: 60, width: 180, height: 180, borderRadius: 90, borderWidth: 1, borderColor: 'rgba(255,140,43,0.05)' },
-  lensRing3: { position: 'absolute', right: 20, top: 100, width: 100, height: 100, borderRadius: 50, borderWidth: 1, borderColor: 'rgba(255,255,255,0.03)' },
-  // Aperture
-  aperture1: { position: 'absolute', right: 30, top: 120, width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(255,140,43,0.03)', borderWidth: 0.5, borderColor: 'rgba(255,140,43,0.06)' },
-  aperture2: { position: 'absolute', left: -60, bottom: 100, width: 140, height: 140, borderRadius: 70, borderWidth: 1, borderColor: 'rgba(255,255,255,0.02)' },
-  // Glow
-  orangeGlow: { position: 'absolute', right: 30, top: 80, width: 160, height: 160, borderRadius: 80, backgroundColor: 'rgba(255,140,43,0.04)' },
-  orangeGlow2: { position: 'absolute', left: 20, bottom: 60, width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255,140,43,0.03)' },
-  // Light streak
-  lightStreak: { position: 'absolute', top: '40%', width: 100, height: 1, backgroundColor: 'rgba(255,180,71,0.15)', transform: [{ rotate: '-15deg' }] },
-  heroInner: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 22, paddingBottom: 28 },
+  lensRing1: { position: 'absolute', right: -40, top: 60, width: 200, height: 200, borderRadius: 100, borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.08)' },
+  lensRing2: { position: 'absolute', right: -10, top: 80, width: 160, height: 160, borderRadius: 80, borderWidth: 1, borderColor: 'rgba(255,140,43,0.05)' },
+  lensRing3: { position: 'absolute', right: 30, top: 120, width: 80, height: 80, borderRadius: 40, borderWidth: 1, borderColor: 'rgba(255,255,255,0.03)' },
+  aperture1: { position: 'absolute', right: 45, top: 130, width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,140,43,0.03)' },
+  orangeGlow: { position: 'absolute', right: 20, top: 80, width: 180, height: 180, borderRadius: 90, backgroundColor: 'rgba(255,140,43,0.04)' },
+  orangeGlow2: { position: 'absolute', left: -20, bottom: 80, width: 100, height: 100, borderRadius: 50, backgroundColor: 'rgba(255,140,43,0.025)' },
+  lightStreak: { position: 'absolute', top: '35%', width: 120, height: 1, backgroundColor: 'rgba(255,180,71,0.12)', transform: [{ rotate: '-12deg' }] },
+  // Brand section
+  brandSection: { position: 'absolute', top: 24, left: 0, right: 0, alignItems: 'center' },
+  brandLogoWrap: { width: 72, height: 72, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+  brandLogoOuter: { position: 'absolute', width: 72, height: 72, borderRadius: 36, borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.2)' },
+  brandLogoInner: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,140,43,0.06)', borderWidth: 1, borderColor: 'rgba(255,140,43,0.25)', alignItems: 'center', justifyContent: 'center' },
+  brandLogoText: { fontSize: 18, fontWeight: '800', color: '#FF8C2B', letterSpacing: 2 },
+  brandLogoGlow: { position: 'absolute', width: 90, height: 90, borderRadius: 45, backgroundColor: 'rgba(255,140,43,0.06)' },
+  brandName: { fontSize: 14, fontWeight: '800', color: '#fff', letterSpacing: 6 },
+  brandSub: { fontSize: 9.5, color: 'rgba(255,255,255,0.5)', marginTop: 4, letterSpacing: 0.5 },
+  heroInner: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 22, paddingBottom: 24 },
   heroTag: { fontSize: 10, fontWeight: '700', color: '#FFB347', letterSpacing: 4 },
   heroTagRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
   heroTagLine: { height: 1, width: 18, backgroundColor: '#FF8C2B', opacity: 0.6 },
