@@ -3,22 +3,23 @@ import { View, Text, FlatList, StyleSheet, TouchableOpacity, ScrollView, Image, 
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, radius } from '../theme';
 import { creatorsAPI } from '../services/api';
-import { mockCreators } from '../constants/mockData';
 import api from '../services/api';
 
 export default function SearchScreen({ navigation, route }: any) {
   const [query, setQuery] = useState('');
-  const [creators, setCreators] = useState<any[]>(mockCreators);
+  const [creators, setCreators] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCity, setSelectedCity] = useState(route?.params?.city || '');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [showResults, setShowResults] = useState(!!route?.params?.city);
+  const [selectedCategory, setSelectedCategory] = useState(route?.params?.category || '');
+  const [showResults, setShowResults] = useState(!!route?.params?.city || !!route?.params?.category);
   const [categories, setCategories] = useState<any[]>([]);
   const [cities, setCities] = useState<any[]>([]);
   const [trendingSearches, setTrendingSearches] = useState<string[]>([]);
 
   useEffect(() => {
     loadConfig();
+    // Load all creators on mount
+    searchCreators();
   }, []);
 
   const loadConfig = async () => {
@@ -42,8 +43,8 @@ export default function SearchScreen({ navigation, route }: any) {
       if (selectedCategory) params.category = selectedCategory;
       const res = await creatorsAPI.getAll(params);
       const data = res.data?.creators || res.data?.data || [];
-      setCreators(data.length > 0 ? data : mockCreators);
-    } catch { setCreators(mockCreators); }
+      setCreators(data);
+    } catch { setCreators([]); }
     finally { setLoading(false); }
   }, [query, selectedCity, selectedCategory]);
 
