@@ -68,6 +68,12 @@ export default function HomeScreen({ navigation }: any) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const shimmer = useRef(new Animated.Value(0)).current;
+  const ring1Rot = useRef(new Animated.Value(0)).current;
+  const ring2Rot = useRef(new Animated.Value(0)).current;
+  const glowPulse = useRef(new Animated.Value(0.4)).current;
+  const particle1Y = useRef(new Animated.Value(0)).current;
+  const particle2Y = useRef(new Animated.Value(0)).current;
+  const goldSweep = useRef(new Animated.Value(0)).current;
 
   // Shimmer loop for logo
   useEffect(() => {
@@ -77,6 +83,41 @@ export default function HomeScreen({ navigation }: any) {
       Animated.timing(shimmer, { toValue: 0, duration: 0, useNativeDriver: true }),
     ]));
     loop.start(); return () => loop.stop();
+  }, []);
+
+  // Rotating lens rings
+  useEffect(() => {
+    Animated.loop(Animated.timing(ring1Rot, { toValue: 1, duration: 20000, easing: Easing.linear, useNativeDriver: true })).start();
+    Animated.loop(Animated.timing(ring2Rot, { toValue: 1, duration: 30000, easing: Easing.linear, useNativeDriver: true })).start();
+  }, []);
+
+  // Glow pulse
+  useEffect(() => {
+    Animated.loop(Animated.sequence([
+      Animated.timing(glowPulse, { toValue: 0.8, duration: 2000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      Animated.timing(glowPulse, { toValue: 0.4, duration: 2000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+    ])).start();
+  }, []);
+
+  // Floating particles
+  useEffect(() => {
+    Animated.loop(Animated.sequence([
+      Animated.timing(particle1Y, { toValue: -12, duration: 3000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      Animated.timing(particle1Y, { toValue: 0, duration: 3000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+    ])).start();
+    Animated.loop(Animated.sequence([
+      Animated.timing(particle2Y, { toValue: 10, duration: 4000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      Animated.timing(particle2Y, { toValue: 0, duration: 4000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+    ])).start();
+  }, []);
+
+  // Gold sweep on "Dream Wedding" every 4s
+  useEffect(() => {
+    Animated.loop(Animated.sequence([
+      Animated.delay(4000),
+      Animated.timing(goldSweep, { toValue: 1, duration: 1200, easing: Easing.bezier(0.4, 0, 0.2, 1), useNativeDriver: true }),
+      Animated.timing(goldSweep, { toValue: 0, duration: 0, useNativeDriver: true }),
+    ])).start();
   }, []);
 
   // Hero image rotation
@@ -160,19 +201,23 @@ export default function HomeScreen({ navigation }: any) {
             <View style={s.lensR1} /><View style={s.lensR2} /><View style={s.lensR3} /><View style={s.lensR4} /><View style={s.lensR5} />
             {/* Center glow */}
             <View style={s.centerGlow} />
-            {/* Flare particles */}
-            <View style={s.particle1} /><View style={s.particle2} /><View style={s.particle3} /><View style={s.particle4} /><View style={s.particle5} />
+            {/* Flare particles - animated */}
+            <Animated.View style={[s.particle1, { transform: [{ translateY: particle1Y }] }]} />
+            <Animated.View style={[s.particle2, { transform: [{ translateY: particle2Y }] }]} />
+            <Animated.View style={[s.particle3, { transform: [{ translateY: particle1Y }] }]} />
+            <Animated.View style={[s.particle4, { transform: [{ translateY: particle2Y }] }]} />
+            <Animated.View style={[s.particle5, { transform: [{ translateY: particle1Y }] }]} />
             {/* Light streaks */}
             <Animated.View style={[s.streak1, { transform: [{ translateX: shimmer.interpolate({ inputRange: [0, 1], outputRange: [-250, width + 150] }) }] }]} />
             <View style={s.streak2} />
           </View>
 
-          {/* BMS LOGO - Large centered */}
+          {/* BMS LOGO - Large centered with animated rings */}
           <View style={s.logoArea}>
-            <View style={s.logoGlow} />
-            <View style={s.logoRing4} />
-            <View style={s.logoRing3} />
-            <View style={s.logoRing2} />
+            <Animated.View style={[s.logoGlow, { opacity: glowPulse }]} />
+            <Animated.View style={[s.logoRing4, { transform: [{ rotate: ring2Rot.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }] }]} />
+            <Animated.View style={[s.logoRing3, { transform: [{ rotate: ring1Rot.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '-360deg'] }) }] }]} />
+            <Animated.View style={[s.logoRing2, { transform: [{ rotate: ring2Rot.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }] }]} />
             <View style={s.logoRing1} />
             <View style={s.logoCore}>
               <Text style={s.logoBMS}>BMS</Text>
@@ -190,7 +235,10 @@ export default function HomeScreen({ navigation }: any) {
           <View style={s.heroContent}>
             <View style={s.tagRow}><View style={s.tagLine} /><Text style={s.tagText}>PREMIUM WEDDING CINEMA</Text><View style={s.tagLine} /></View>
             <Text style={s.h1White}>Capture Your</Text>
-            <Text style={s.h1Gold}>Dream Wedding</Text>
+            <View style={{ overflow: 'hidden' }}>
+              <Text style={s.h1Gold}>Dream Wedding</Text>
+              <Animated.View style={[s.goldSweepOverlay, { transform: [{ translateX: goldSweep.interpolate({ inputRange: [0, 1], outputRange: [-width, width] }) }] }]} />
+            </View>
             <Text style={s.h1White}>Experience</Text>
             <Text style={s.heroDesc}>Cinematic photographers, award-winning filmmakers & creative professionals — all verified.</Text>
             <View style={s.chipRow}>
@@ -478,6 +526,7 @@ const s = StyleSheet.create({
   tagText: { fontSize: 11, fontWeight: '700', color: '#FF8C2B', letterSpacing: 4 },
   h1White: { fontSize: 32, fontWeight: '300', color: '#fff', lineHeight: 40 },
   h1Gold: { fontSize: 36, fontWeight: '700', color: '#FFB347', lineHeight: 44, textShadowColor: 'rgba(255,140,43,0.3)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 16 },
+  goldSweepOverlay: { position: 'absolute', top: 0, left: 0, width: 80, height: '100%', backgroundColor: 'rgba(255,220,130,0.15)', transform: [{ skewX: '-15deg' }] },
   heroDesc: { fontSize: 14, color: 'rgba(255,255,255,0.65)', marginTop: 16, lineHeight: 21 },
   chipRow: { flexDirection: 'row', gap: 8, marginTop: 18 },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.06)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
