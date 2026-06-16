@@ -35,17 +35,10 @@ export default function InquiryScreen({ route, navigation }: any) {
       Alert.alert('Required', 'Please fill Name, Phone, and Event Type');
       return;
     }
-    if (!isAuthenticated) {
-      Alert.alert('Login Required', 'Please login to submit an inquiry', [
-        { text: 'Login', onPress: () => navigation.navigate('Login') },
-        { text: 'Cancel' },
-      ]);
-      return;
-    }
 
     setLoading(true);
     try {
-      // Use same API as website: POST /api/inquiries
+      // Use same API as website: POST /api/inquiries (no auth required for guest inquiries)
       const payload: any = {
         creatorId,
         name: form.name,
@@ -59,17 +52,27 @@ export default function InquiryScreen({ route, navigation }: any) {
       };
 
       console.log('[Inquiry] Submitting:', JSON.stringify(payload));
-      const res = await api.post('/inquiries', payload);
-      console.log('[Inquiry] Response:', res.status, JSON.stringify(res.data)?.substring(0, 200));
 
-      if (res.data?.success) {
+      // Use raw fetch to bypass auth token (guest inquiry)
+      const API_BASE = 'https://site--bookmyshot--ykz2mr8mzlrv.code.run/api';
+      const response = await fetch(`${API_BASE}/general-inquiries`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const text = await response.text();
+      let data: any;
+      try { data = JSON.parse(text); } catch { data = { success: false, message: 'Server error' }; }
+
+      console.log('[Inquiry] Response:', response.status, text.substring(0, 200));
+
+      if (response.ok && data?.success) {
         setSubmitted(true);
       } else {
-        Alert.alert('Failed', res.data?.message || 'Could not submit inquiry');
+        Alert.alert('Failed', data?.message || 'Could not submit inquiry');
       }
     } catch (e: any) {
-      const msg = e.response?.data?.message || e.message || 'Server error';
-      Alert.alert('Error', msg);
+      Alert.alert('Error', e.message || 'Network error');
     } finally {
       setLoading(false);
     }
