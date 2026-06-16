@@ -290,10 +290,6 @@ export default function HomeScreen({ navigation }: any) {
     </View>
   );
 }
-      </ScrollView>
-    </View>
-  );
-}
 
 // ═══ PREMIUM CARD ═══
 function PremiumCard({ item, onPress, badge }: any) {
