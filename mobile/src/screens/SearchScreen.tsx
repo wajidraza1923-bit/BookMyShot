@@ -7,6 +7,35 @@ import api from '../services/api';
 const { width } = Dimensions.get('window');
 const HALF = (width - 52) / 2;
 
+const DEFAULT_DISTRICTS = [
+  { name: 'Poonch', creatorCount: 120, imageUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=200' },
+  { name: 'Surankote', creatorCount: 45, imageUrl: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=200' },
+  { name: 'Rajouri', creatorCount: 85, imageUrl: 'https://images.unsplash.com/photo-1486870591958-9b9d0d1dda99?w=200' },
+  { name: 'Jammu', creatorCount: 250, imageUrl: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=200' },
+  { name: 'Srinagar', creatorCount: 180, imageUrl: 'https://images.unsplash.com/photo-1597074866923-dc0589150458?w=200' },
+  { name: 'Kathua', creatorCount: 60, imageUrl: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=200' },
+  { name: 'Udhampur', creatorCount: 55, imageUrl: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=200' },
+  { name: 'Anantnag', creatorCount: 70, imageUrl: 'https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=200' },
+  { name: 'Baramulla', creatorCount: 65, imageUrl: 'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=200' },
+  { name: 'Doda', creatorCount: 30, imageUrl: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=200' },
+];
+
+const DEFAULT_TRENDING = [
+  { title: 'Pre Wedding', icon: '💑' },
+  { title: 'Wedding Photography', icon: '📷' },
+  { title: 'Cinematography', icon: '🎬' },
+  { title: 'Drone Coverage', icon: '🚁' },
+  { title: 'Bridal Shoot', icon: '👰' },
+  { title: 'Destination Wedding', icon: '✈️' },
+];
+
+const DEFAULT_INSPIRATION = [
+  { title: 'Royal Kashmiri Weddings', imageUrl: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=400' },
+  { title: 'Mountain Weddings', imageUrl: 'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=400' },
+  { title: 'Traditional Ceremonies', imageUrl: 'https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=400' },
+  { title: 'Cinematic Films', imageUrl: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=400' },
+];
+
 export default function SearchScreen({ navigation, route }: any) {
   const [query, setQuery] = useState('');
   const [creators, setCreators] = useState<any[]>([]);
@@ -33,10 +62,10 @@ export default function SearchScreen({ navigation, route }: any) {
         api.get('/discover/trending').catch(() => ({ data: { data: [] } })),
         api.get('/discover/featured-creators').catch(() => ({ data: { data: [] } })),
       ]);
-      setDistricts(distR.data?.data || []);
-      setTrendingSearches(trendR.data?.data || []);
+      setDistricts((distR.data?.data || []).length > 0 ? distR.data.data : DEFAULT_DISTRICTS);
+      setTrendingSearches((trendR.data?.data || []).length > 0 ? trendR.data.data : DEFAULT_TRENDING);
       setCategories((catR.data?.categories || []).filter((c: any) => c.id !== 'all'));
-      setInspiration(inspR.data?.data || []);
+      setInspiration((inspR.data?.data || []).length > 0 ? inspR.data.data : DEFAULT_INSPIRATION);
       setTrendingCreators(trendCR.data?.data || []);
       setFeaturedCreators(featR.data?.data || []);
     } catch {}
@@ -130,7 +159,7 @@ function DiscoverContent({ districts, trendingSearches, categories, inspiration,
         <FlatList horizontal showsHorizontalScrollIndicator={false} data={featuredCreators} contentContainerStyle={{ paddingHorizontal: 20 }} keyExtractor={(i: any) => i._id}
           renderItem={({ item }: any) => (
             <TouchableOpacity style={s.fcCard} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })}>
-              <Image source={{ uri: item.portfolio?.[0] || item.user?.avatar }} style={s.fcImg} />
+              <Image source={{ uri: item.portfolio?.[0] || item.user?.avatar || 'https://via.placeholder.com/300x180' }} style={s.fcImg} />
               <View style={s.fcOverlay} />
               <View style={s.fcBadge}><Ionicons name="star" size={8} color="#000" /><Text style={s.fcBadgeText}>FEATURED</Text></View>
               {item.verified && <View style={s.fcVerified}><Ionicons name="checkmark" size={9} color="#fff" /></View>}
@@ -152,7 +181,7 @@ function DiscoverContent({ districts, trendingSearches, categories, inspiration,
             <TouchableOpacity style={s.distCard} onPress={() => { setSelectedCity(item.name); setShowResults(true); }}>
               {item.imageUrl ? <Image source={{ uri: item.imageUrl }} style={s.distImg} /> : <View style={s.distPlaceholder}><Ionicons name="location" size={22} color="#FF8C2B" /></View>}
               <Text style={s.distName}>{item.name}</Text>
-              <Text style={s.distCount}>{item.creatorCount || 0} creators</Text>
+              <Text style={s.distCount}>{item.creatorCount || 0}+ Creators</Text>
             </TouchableOpacity>
           )} />
       </>)}
@@ -164,7 +193,7 @@ function DiscoverContent({ districts, trendingSearches, categories, inspiration,
           renderItem={({ item, index }: any) => (
             <TouchableOpacity style={s.trCard} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })}>
               <View style={s.trRank}><Text style={s.trRankText}>#{index + 1}</Text></View>
-              <Image source={{ uri: item.user?.avatar || item.portfolio?.[0] }} style={s.trAvatar} />
+              <Image source={{ uri: item.user?.avatar || item.portfolio?.[0] || 'https://via.placeholder.com/100' }} style={s.trAvatar} />
               <Text style={s.trName} numberOfLines={1}>{item.user?.name}</Text>
               <Text style={s.trCity}>{item.city || item.specialty}</Text>
               <View style={s.trRatingRow}><Ionicons name="star" size={9} color="#FF8C2B" /><Text style={s.trRatingText}>{item.rating || '5.0'}</Text></View>
@@ -200,7 +229,7 @@ function ResultsList({ creators, navigation }: any) {
       keyExtractor={(i: any) => i._id}
       renderItem={({ item }: any) => (
         <TouchableOpacity style={s.resCard} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })}>
-          <Image source={{ uri: item.portfolio?.[0] || item.user?.avatar }} style={s.resImg} />
+          <Image source={{ uri: item.portfolio?.[0] || item.user?.avatar || 'https://via.placeholder.com/200' }} style={s.resImg} />
           <View style={s.resInfo}>
             <Text style={s.resName} numberOfLines={1}>{item.user?.name}</Text>
             <Text style={s.resMeta}>{item.specialty} • {item.city}</Text>
