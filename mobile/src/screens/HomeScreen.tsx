@@ -58,11 +58,11 @@ export default function HomeScreen({ navigation }: any) {
   const slideAnim = useRef(new Animated.Value(50)).current;
   const shimmer = useRef(new Animated.Value(0)).current;
 
-  // Shimmer loop
+  // Shimmer loop for logo
   useEffect(() => {
     const loop = Animated.loop(Animated.sequence([
-      Animated.delay(4000),
-      Animated.timing(shimmer, { toValue: 1, duration: 1200, easing: Easing.linear, useNativeDriver: true }),
+      Animated.delay(5000),
+      Animated.timing(shimmer, { toValue: 1, duration: 1500, easing: Easing.bezier(0.25, 0.1, 0.25, 1), useNativeDriver: true }),
       Animated.timing(shimmer, { toValue: 0, duration: 0, useNativeDriver: true }),
     ]));
     loop.start(); return () => loop.stop();
@@ -112,9 +112,12 @@ export default function HomeScreen({ navigation }: any) {
 
         {/* HEADER */}
         <View style={s.header}>
-          <View style={{ overflow: 'hidden' }}>
-            <Text style={s.logo}>BOOKMYSHOT</Text>
-            <Animated.View style={[s.shimmer, { transform: [{ translateX: shimmer.interpolate({ inputRange: [0, 1], outputRange: [-120, 220] }) }] }]} />
+          <View style={{ overflow: 'hidden', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <View style={s.logoIcon}><View style={s.logoAperture} /><View style={s.logoDot} /></View>
+            <View>
+              <Text style={s.logo}>BOOKMYSHOT</Text>
+              <Animated.View style={[s.shimmer, { transform: [{ translateX: shimmer.interpolate({ inputRange: [0, 1], outputRange: [-120, 220] }) }] }]} />
+            </View>
           </View>
           {isAuthenticated ? (
             <TouchableOpacity style={s.headerBtn} onPress={() => navigation.navigate('Profile')}><Ionicons name="person-circle-outline" size={26} color="#F5B942" /></TouchableOpacity>
@@ -127,18 +130,26 @@ export default function HomeScreen({ navigation }: any) {
         <Animated.View style={[s.hero, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
           <Image source={{ uri: WEDDING_IMGS[heroIdx] }} style={s.heroImg} />
           <View style={s.heroOverlay} />
+          {/* Decorative aperture rings */}
+          <View style={s.apertureRing1} />
+          <View style={s.apertureRing2} />
           <View style={s.heroInner}>
-            <Text style={s.heroTag}>✦ PREMIUM WEDDING MARKETPLACE</Text>
-            <Text style={s.heroTitle}>Find India's Best{'\n'}Wedding Creators</Text>
-            <Text style={s.heroSub}>Verified photographers, videographers, filmmakers & drone operators for your special day.</Text>
+            <Text style={s.heroTag}>✦ PREMIUM WEDDING CINEMA</Text>
+            <Text style={s.heroTitle}>Capture Your Dream{'\n'}Wedding Experience</Text>
+            <Text style={s.heroSub}>Cinematic photographers, award-winning filmmakers & creative professionals — all verified.</Text>
             <View style={s.trustRow}>
               <View style={s.trustChip}><Ionicons name="checkmark-circle" size={12} color="#10B981" /><Text style={s.trustChipText}>Verified</Text></View>
               <View style={s.trustChip}><Ionicons name="star" size={12} color="#F5B942" /><Text style={s.trustChipText}>Real Reviews</Text></View>
               <View style={s.trustChip}><Ionicons name="flash" size={12} color="#8B5CF6" /><Text style={s.trustChipText}>Fast Reply</Text></View>
             </View>
-            <TouchableOpacity style={s.heroBtn} onPress={() => navigation.navigate('Discover')} activeOpacity={0.85}>
-              <Ionicons name="search" size={15} color="#000" /><Text style={s.heroBtnText}>Find Your Creator</Text>
-            </TouchableOpacity>
+            <View style={s.heroBtnRow}>
+              <TouchableOpacity style={s.heroBtn} onPress={() => navigation.navigate('Discover')} activeOpacity={0.85}>
+                <Ionicons name="search" size={14} color="#000" /><Text style={s.heroBtnText}>Find Creator</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={s.heroBtnGlass} onPress={() => navigation.navigate('Discover')} activeOpacity={0.85}>
+                <Text style={s.heroBtnGlassText}>Explore</Text><Ionicons name="arrow-forward" size={12} color="#F5B942" />
+              </TouchableOpacity>
+            </View>
           </View>
         </Animated.View>
 
@@ -277,6 +288,9 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#050403' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 56 : 46, paddingBottom: 8 },
   logo: { fontSize: 15, fontWeight: '300', color: '#F5B942', letterSpacing: 6 },
+  logoIcon: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, borderColor: '#F5B942', alignItems: 'center', justifyContent: 'center' },
+  logoAperture: { width: 14, height: 14, borderRadius: 7, borderWidth: 1, borderColor: 'rgba(245,185,66,0.4)' },
+  logoDot: { position: 'absolute', width: 6, height: 6, borderRadius: 3, backgroundColor: '#F5B942' },
   shimmer: { position: 'absolute', top: 0, left: 0, width: 50, height: '100%', backgroundColor: 'rgba(255,200,60,0.2)', transform: [{ skewX: '-20deg' }] },
   headerBtn: { padding: 4 },
   signInPill: { paddingHorizontal: 14, paddingVertical: 6, backgroundColor: '#F5B942', borderRadius: 16 },
@@ -294,6 +308,12 @@ const s = StyleSheet.create({
   trustChipText: { fontSize: 9, color: 'rgba(255,255,255,0.8)', fontWeight: '500' },
   heroBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#F5B942', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, alignSelf: 'flex-start', marginTop: 14 },
   heroBtnText: { fontSize: 12, fontWeight: '700', color: '#000' },
+  heroBtnRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
+  heroBtnGlass: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(245,185,66,0.25)' },
+  heroBtnGlassText: { fontSize: 12, fontWeight: '600', color: '#F5B942' },
+  // Aperture decorative rings
+  apertureRing1: { position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: 60, borderWidth: 1, borderColor: 'rgba(245,185,66,0.08)' },
+  apertureRing2: { position: 'absolute', top: -10, right: -10, width: 80, height: 80, borderRadius: 40, borderWidth: 1, borderColor: 'rgba(245,185,66,0.05)' },
   // Stats
   statsBar: { flexDirection: 'row', marginHorizontal: 16, marginTop: -16, backgroundColor: 'rgba(15,12,8,0.96)', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: 'rgba(245,185,66,0.12)' },
   stat: { flex: 1, alignItems: 'center' },
