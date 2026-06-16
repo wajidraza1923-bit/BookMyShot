@@ -135,7 +135,7 @@ export default function HomeScreen({ navigation }: any) {
           <View style={s.apertureRing1} />
           <View style={s.apertureRing2} />
           <View style={s.heroInner}>
-            <Text style={s.heroTag}>✦ PREMIUM WEDDING CINEMA</Text>
+            <View style={s.heroTagCapsule}><Text style={s.heroTag}>✦  PREMIUM WEDDING CINEMA</Text></View>
             <Text style={s.heroTitle}>Capture Your Dream{'\n'}Wedding Experience</Text>
             <Text style={s.heroSub}>Cinematic photographers, award-winning filmmakers & creative professionals — all verified.</Text>
             <View style={s.trustRow}>
@@ -347,7 +347,8 @@ const s = StyleSheet.create({
   heroOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.72)' },
   heroVignette: { ...StyleSheet.absoluteFillObject, borderWidth: 50, borderColor: 'rgba(0,0,0,0.5)', borderRadius: 24 },
   heroInner: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 20 },
-  heroTag: { fontSize: 9, fontWeight: '700', color: '#F5B942', letterSpacing: 2, marginBottom: 8, textShadowColor: 'rgba(0,0,0,0.9)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 10 },
+  heroTag: { fontSize: 11, fontWeight: '700', color: '#F5B942', letterSpacing: 3, textShadowColor: 'rgba(245,185,66,0.4)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 12 },
+  heroTagCapsule: { alignSelf: 'flex-start', backgroundColor: 'rgba(0,0,0,0.5)', borderWidth: 1, borderColor: 'rgba(245,185,66,0.3)', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6, marginBottom: 10 },
   heroTitle: { fontSize: 28, fontWeight: '800', color: '#FFFFFF', lineHeight: 34, textShadowColor: 'rgba(0,0,0,0.8)', textShadowOffset: { width: 0, height: 4 }, textShadowRadius: 24 },
   heroSub: { fontSize: 12, color: 'rgba(255,255,255,0.9)', marginTop: 8, lineHeight: 18, textShadowColor: 'rgba(0,0,0,0.7)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 12 },
   trustRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
