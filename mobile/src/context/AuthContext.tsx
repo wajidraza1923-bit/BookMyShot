@@ -215,14 +215,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const res = await authAPI.register(name, email, password, role);
-      console.log('[Auth] Register response:', JSON.stringify(res.data));
+      console.log('[Auth] Register response status:', res.status);
+      console.log('[Auth] Register response data:', JSON.stringify(res.data)?.substring(0, 300));
 
       const data = res.data;
+
+      // Handle non-JSON response from transform
+      if (!data || typeof data !== 'object') {
+        return { success: false, message: 'Server returned invalid response. Please try again.' };
+      }
+
+      if (data._raw) {
+        // transformResponse flagged this as non-JSON
+        return { success: false, message: 'Server temporarily unavailable. Please try again in a moment.' };
+      }
 
       // Registration may not return a token if email verification is required
       if (!data.token) {
         return {
-          success: false,
+          success: data.success || false,
           message: data.message || 'Please verify your email to continue.',
         };
       }
@@ -235,8 +246,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('[Auth] ═══ REGISTER SUCCESS ═══');
       return { success: true };
     } catch (e: any) {
-      const message = e.response?.data?.message || e.message || 'Registration failed';
-      console.log('[Auth] Register failed:', message);
+      console.log('[Auth] Register error:', e.response?.status, e.response?.data, e.message);
+      const responseData = e.response?.data;
+      let message = 'Registration failed. Please try again.';
+      if (responseData && typeof responseData === 'object' && responseData.message) {
+        message = responseData.message;
+      } else if (e.message) {
+        message = e.message;
+      }
       return { success: false, message };
     }
   };
