@@ -210,27 +210,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const register = async (name: string, email: string, password: string, role: string) => {
-    console.log('[Auth] ═══ REGISTER ATTEMPT ═══');
-    console.log('[Auth] Payload:', JSON.stringify({ name, email, role, password: '***' }));
+    const REGISTER_URL = `${API_BASE}/auth/register`;
+    console.log('═══════════════════════════════════════');
+    console.log('REGISTER URL =', REGISTER_URL);
+    console.log('PAYLOAD =', JSON.stringify({ name, email, role, password: '***' }));
+    console.log('═══════════════════════════════════════');
 
     try {
-      const res = await authAPI.register(name, email, password, role);
-      console.log('[Auth] Register response status:', res.status);
-      console.log('[Auth] Register response data:', JSON.stringify(res.data)?.substring(0, 300));
+      const response = await fetch(REGISTER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ name, email, password, role }),
+      });
 
-      const data = res.data;
+      console.log('STATUS =', response.status);
+      console.log('CONTENT-TYPE =', response.headers.get('content-type'));
 
-      // Handle non-JSON response from transform
-      if (!data || typeof data !== 'object') {
+      const rawText = await response.text();
+      console.log('RAW RESPONSE =', rawText.substring(0, 500));
+
+      // Parse JSON safely
+      let data: any;
+      try {
+        data = JSON.parse(rawText);
+      } catch (parseErr) {
+        console.log('INVALID JSON — raw:', rawText.substring(0, 200));
         return { success: false, message: 'Server returned invalid response. Please try again.' };
       }
 
-      if (data._raw) {
-        // transformResponse flagged this as non-JSON
-        return { success: false, message: 'Server temporarily unavailable. Please try again in a moment.' };
+      // HTTP errors
+      if (!response.ok) {
+        return { success: false, message: data.message || `Error ${response.status}` };
       }
 
-      // Registration may not return a token if email verification is required
+      // Success but no token (requires email verification)
       if (!data.token) {
         return {
           success: data.success || false,
@@ -238,23 +251,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
       }
 
+      // Full success with token
       const normalizedUser = normalizeUser(data.user);
       await AsyncStorage.setItem('bms_token', data.token);
       await AsyncStorage.setItem('bms_user', JSON.stringify(normalizedUser));
       setToken(data.token);
       setUser(normalizedUser);
-      console.log('[Auth] ═══ REGISTER SUCCESS ═══');
+      console.log('═══ REGISTER SUCCESS ═══');
       return { success: true };
     } catch (e: any) {
-      console.log('[Auth] Register error:', e.response?.status, e.response?.data, e.message);
-      const responseData = e.response?.data;
-      let message = 'Registration failed. Please try again.';
-      if (responseData && typeof responseData === 'object' && responseData.message) {
-        message = responseData.message;
-      } else if (e.message) {
-        message = e.message;
-      }
-      return { success: false, message };
+      console.log('═══ REGISTER EXCEPTION ═══');
+      console.log('ERROR:', e.message);
+      return { success: false, message: `Cannot reach server: ${e.message}` };
     }
   };
 
