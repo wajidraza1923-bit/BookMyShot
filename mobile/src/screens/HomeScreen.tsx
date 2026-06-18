@@ -8,6 +8,7 @@ import { colors, spacing, typography, radius, shadows } from '../theme';
 import { creatorsAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import CinematicHero from '../components/CinematicHero';
 
 const { width } = Dimensions.get('window');
 const CARD_W = width * 0.8;
@@ -243,80 +244,8 @@ export default function HomeScreen({ navigation }: any) {
           )}
         </View>
 
-        {/* ═══ LUXURY HERO — Typography + Motion + Glass ═══ */}
-        <Animated.View style={[s.heroWrap, { opacity: fadeAnim }]}>
-          {/* Ambient glow */}
-          <Animated.View style={[s.ambientGlow, { opacity: lensPulse.interpolate({ inputRange: [1, 1.04], outputRange: [0.4, 0.7] }), transform: [{ scale: lensPulse }] }]} />
-          <View style={s.ambientGlow2} />
-
-          {/* Volumetric light beams */}
-          <Animated.View style={[s.beam1, { opacity: lensPulse.interpolate({ inputRange: [1, 1.04], outputRange: [0.03, 0.07] }) }]} />
-          <Animated.View style={[s.beam2, { opacity: lensPulse.interpolate({ inputRange: [1, 1.04], outputRange: [0.02, 0.05] }) }]} />
-          <Animated.View style={[s.beam3, { opacity: lensPulse.interpolate({ inputRange: [1, 1.04], outputRange: [0.025, 0.06] }) }]} />
-
-          {/* Gold particles */}
-          <Animated.View style={[s.gp, { left: 25, top: 80, transform: [{ translateY: particle1 }] }]} />
-          <Animated.View style={[s.gp, s.gpSm, { right: 40, top: 120, transform: [{ translateY: particle2 }] }]} />
-          <Animated.View style={[s.gp, { left: width * 0.6, top: 60, transform: [{ translateX: particle3 }] }]} />
-          <Animated.View style={[s.gp, s.gpLg, { right: 20, top: 250, transform: [{ translateY: particle1 }] }]} />
-          <Animated.View style={[s.gp, s.gpSm, { left: 55, top: 300, transform: [{ translateX: particle2 }] }]} />
-          <Animated.View style={[s.gp, { left: width * 0.3, top: 200, transform: [{ translateY: particle3 }] }]} />
-          <Animated.View style={[s.gp, s.gpSm, { right: 65, top: 350, transform: [{ translateX: particle3 }] }]} />
-
-          {/* ═══ MASSIVE TYPOGRAPHY ═══ */}
-          <Animated.View style={[s.heroTextBlock, { transform: [{ translateY: slideAnim }] }]}>
-            <Text style={s.heroMini}>BOOKMYSHOT</Text>
-            <Text style={s.heroH1Light}>Find Your</Text>
-            <Text style={s.heroH1Light}>Perfect</Text>
-            <View style={{ overflow: 'hidden' }}>
-              <Text style={s.heroH1Bold}>Wedding</Text>
-              <Animated.View style={[s.goldSweep, { transform: [{ translateX: goldSweep.interpolate({ inputRange: [0, 1], outputRange: [-width, width] }) }] }]} />
-            </View>
-            <Text style={s.heroH1Bold}>Creator</Text>
-            <Text style={s.heroDesc}>India's premium marketplace for verified photographers, filmmakers and wedding artists.</Text>
-          </Animated.View>
-
-          {/* ═══ FLOATING GLASS CARDS ═══ */}
-          <Animated.View style={[s.glassCardFloat, s.gcf1, { transform: [{ translateY: particle1 }, { perspective: 600 }, { rotateX: '-3deg' }, { rotateY: '5deg' }] }]}>
-            <Ionicons name="star" size={14} color="#F97316" />
-            <View><Text style={s.gcfNum}>4.9</Text><Text style={s.gcfLabel}>Rating</Text></View>
-          </Animated.View>
-
-          <Animated.View style={[s.glassCardFloat, s.gcf2, { transform: [{ translateY: particle2 }, { perspective: 600 }, { rotateX: '2deg' }, { rotateY: '-4deg' }] }]}>
-            <Ionicons name="people" size={14} color="#F97316" />
-            <View><Text style={s.gcfNum}>10K+</Text><Text style={s.gcfLabel}>Creators</Text></View>
-          </Animated.View>
-
-          <Animated.View style={[s.glassCardFloat, s.gcf3, { transform: [{ translateX: particle3 }, { perspective: 600 }, { rotateX: '4deg' }, { rotateY: '3deg' }] }]}>
-            <Ionicons name="calendar" size={14} color="#F97316" />
-            <View><Text style={s.gcfNum}>50K+</Text><Text style={s.gcfLabel}>Bookings</Text></View>
-          </Animated.View>
-
-          <Animated.View style={[s.glassCardFloat, s.gcf4, { transform: [{ translateY: particle3 }, { perspective: 600 }, { rotateX: '-2deg' }, { rotateY: '-5deg' }] }]}>
-            <Ionicons name="checkmark-shield" size={14} color="#10B981" />
-            <View><Text style={s.gcfNum}>Verified</Text><Text style={s.gcfLabel}>Creators</Text></View>
-          </Animated.View>
-
-          {/* ═══ BOTTOM SECTION ═══ */}
-          <Animated.View style={[s.heroBottom, { transform: [{ translateY: slideAnim }] }]}>
-            {/* Activity ticker */}
-            <Animated.View style={[s.ticker, { transform: [{ translateY: activitySlide }] }]}>
-              <View style={s.tickDot} />
-              <Text style={s.tickIcon}>{ACTIVITIES[activityIdx].icon}</Text>
-              <Text style={s.tickText} numberOfLines={1}>{ACTIVITIES[activityIdx].text}</Text>
-            </Animated.View>
-
-            {/* CTAs */}
-            <View style={s.btnRow}>
-              <TouchableOpacity style={s.btnPrimary} onPress={() => navigation.navigate('Discover')} activeOpacity={0.85}>
-                <Ionicons name="search" size={14} color="#000" /><Text style={s.btnPrimaryText}>Find Creator</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={s.btnGlass} onPress={() => navigation.navigate('Inquiry')} activeOpacity={0.85}>
-                <Ionicons name="chatbubble-ellipses-outline" size={13} color="#FFB347" /><Text style={s.btnGlassText}>Get Quote</Text>
-              </TouchableOpacity>
-            </View>
-          </Animated.View>
-        </Animated.View>
+        {/* ═══ FULL-SCREEN CINEMATIC HERO ═══ */}
+        <CinematicHero onNavigate={(screen) => navigation.navigate(screen)} />
 
         {/* HERO CONTENT — below fold */}
         <Animated.View style={{ opacity: fadeAnim }}>
