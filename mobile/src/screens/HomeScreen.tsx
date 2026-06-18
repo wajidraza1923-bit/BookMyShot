@@ -444,13 +444,13 @@ const s = StyleSheet.create({
   headerBtn: { padding: 4 },
   signInPill: { paddingHorizontal: 14, paddingVertical: 6, backgroundColor: '#FF8C2B', borderRadius: 16 },
   signInText: { fontSize: 11, fontWeight: '700', color: '#000' },
-  // Live Stats Card
-  liveStatsCard: { marginHorizontal: 16, marginTop: 16, marginBottom: 8, backgroundColor: 'rgba(255,255,255,0.02)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', borderRadius: 14, paddingVertical: 12, paddingHorizontal: 8 },
+  // Live Stats Card — WHITE BACKGROUND
+  liveStatsCard: { marginHorizontal: 0, marginTop: 0, marginBottom: 0, backgroundColor: '#ffffff', paddingVertical: 20, paddingHorizontal: 16 },
   lsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' },
   lsItem: { alignItems: 'center' },
-  lsNum: { fontSize: 15, fontWeight: '800', color: '#F97316' },
-  lsLabel: { fontSize: 7, color: 'rgba(255,255,255,0.3)', marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.5 },
-  lsDivider: { width: 1, height: 24, backgroundColor: 'rgba(255,255,255,0.04)' },
+  lsNum: { fontSize: 18, fontWeight: '800', color: '#F97316' },
+  lsLabel: { fontSize: 8, color: '#666', marginTop: 3, textTransform: 'uppercase', letterSpacing: 0.5 },
+  lsDivider: { width: 1, height: 28, backgroundColor: 'rgba(0,0,0,0.08)' },
   // Hero
   heroWrap: { paddingBottom: 20, position: 'relative', overflow: 'hidden', minHeight: 620 },
   // Ambient glow
