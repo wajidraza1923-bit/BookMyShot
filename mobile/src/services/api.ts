@@ -15,7 +15,13 @@ const api = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
-  transformRequest: [(data) => {
+  transformRequest: [(data, headers) => {
+    // Don't stringify FormData (used for file uploads)
+    if (data instanceof FormData) {
+      // Remove Content-Type so axios/fetch can set the correct multipart boundary
+      if (headers) delete headers['Content-Type'];
+      return data;
+    }
     if (data && typeof data === 'object') {
       return JSON.stringify(data);
     }
@@ -50,10 +56,14 @@ api.interceptors.request.use(
 
     const fullUrl = `${config.baseURL}${config.url}`;
     console.log(`[API] → ${config.method?.toUpperCase()} ${fullUrl}`);
-    if (config.data) {
-      const safeData = { ...JSON.parse(config.data || '{}') };
-      if (safeData.password) safeData.password = '***';
-      console.log('[API] → Body:', JSON.stringify(safeData));
+    if (config.data && !(config.data instanceof FormData)) {
+      try {
+        const safeData = { ...JSON.parse(config.data || '{}') };
+        if (safeData.password) safeData.password = '***';
+        console.log('[API] → Body:', JSON.stringify(safeData));
+      } catch {}
+    } else if (config.data instanceof FormData) {
+      console.log('[API] → Body: [FormData - file upload]');
     }
     return config;
   },
