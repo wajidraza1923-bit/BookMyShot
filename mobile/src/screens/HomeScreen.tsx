@@ -70,14 +70,7 @@ export default function HomeScreen({ navigation }: any) {
   const slideAnim = useRef(new Animated.Value(50)).current;
   const shimmer = useRef(new Animated.Value(0)).current;
   const goldSweep = useRef(new Animated.Value(0)).current;
-  // Luxury animations
-  const lensRotate = useRef(new Animated.Value(0)).current;
-  const lensPulse = useRef(new Animated.Value(1)).current;
-  const particle1 = useRef(new Animated.Value(0)).current;
-  const particle2 = useRef(new Animated.Value(0)).current;
-  const particle3 = useRef(new Animated.Value(0)).current;
-  const activitySlide = useRef(new Animated.Value(40)).current;
-  const shutterAnim = useRef(new Animated.Value(0)).current;
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   // Shimmer loop for header logo
   useEffect(() => {
@@ -89,66 +82,13 @@ export default function HomeScreen({ navigation }: any) {
     loop.start(); return () => loop.stop();
   }, []);
 
-  // Gold sweep on "Dream Wedding" every 4s
+  // Gold sweep on "Wedding Creator" every 4s
   useEffect(() => {
     Animated.loop(Animated.sequence([
       Animated.delay(4000),
       Animated.timing(goldSweep, { toValue: 1, duration: 1200, easing: Easing.bezier(0.4, 0, 0.2, 1), useNativeDriver: true }),
       Animated.timing(goldSweep, { toValue: 0, duration: 0, useNativeDriver: true }),
     ])).start();
-  }, []);
-
-  // Lens rotation + pulse (subtle breathing)
-  useEffect(() => {
-    Animated.loop(Animated.timing(lensRotate, { toValue: 1, duration: 25000, easing: Easing.linear, useNativeDriver: true })).start();
-    Animated.loop(Animated.sequence([
-      Animated.timing(lensPulse, { toValue: 1.04, duration: 2500, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-      Animated.timing(lensPulse, { toValue: 1, duration: 2500, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-    ])).start();
-  }, []);
-
-  // Golden particles floating
-  useEffect(() => {
-    Animated.loop(Animated.sequence([
-      Animated.timing(particle1, { toValue: -10, duration: 3000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-      Animated.timing(particle1, { toValue: 10, duration: 3000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-    ])).start();
-    Animated.loop(Animated.sequence([
-      Animated.timing(particle2, { toValue: 8, duration: 4000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-      Animated.timing(particle2, { toValue: -8, duration: 4000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-    ])).start();
-    Animated.loop(Animated.sequence([
-      Animated.timing(particle3, { toValue: -6, duration: 3500, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-      Animated.timing(particle3, { toValue: 6, duration: 3500, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-    ])).start();
-  }, []);
-
-  // Shutter opening on load
-  useEffect(() => {
-    Animated.sequence([
-      Animated.delay(200),
-      Animated.spring(shutterAnim, { toValue: 1, tension: 20, friction: 7, useNativeDriver: true }),
-    ]).start();
-  }, []);
-
-  // Activity feed animation
-  const [activityIdx, setActivityIdx] = useState(0);
-  const ACTIVITIES = [
-    { icon: '📸', text: 'New booking confirmed in Srinagar', time: '2m ago' },
-    { icon: '⭐', text: 'Creator rated 5 stars in Jammu', time: '5m ago' },
-    { icon: '💬', text: 'New inquiry from Rajouri', time: '8m ago' },
-    { icon: '🎬', text: 'Cinematographer booked in Poonch', time: '12m ago' },
-    { icon: '📷', text: 'Portfolio updated by creator', time: '15m ago' },
-  ];
-  useEffect(() => {
-    const t = setInterval(() => {
-      setActivityIdx(i => (i + 1) % ACTIVITIES.length);
-      Animated.sequence([
-        Animated.timing(activitySlide, { toValue: -20, duration: 0, useNativeDriver: true }),
-        Animated.spring(activitySlide, { toValue: 0, tension: 40, friction: 8, useNativeDriver: true }),
-      ]).start();
-    }, 4000);
-    return () => clearInterval(t);
   }, []);
 
   const loadData = useCallback(async () => {
@@ -226,7 +166,12 @@ export default function HomeScreen({ navigation }: any) {
 
   return (
     <View style={s.container}>
-      <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF8C2B" colors={['#FF8C2B']} />}>
+      <Animated.ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF8C2B" colors={['#FF8C2B']} />}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
+        scrollEventThrottle={16}
+      >
 
         {/* HEADER */}
         <View style={s.header}>
@@ -245,7 +190,7 @@ export default function HomeScreen({ navigation }: any) {
         </View>
 
         {/* ═══ FULL-SCREEN CINEMATIC HERO ═══ */}
-        <CinematicHero onNavigate={(screen) => navigation.navigate(screen)} />
+        <CinematicHero scrollY={scrollY} onNavigate={(screen) => navigation.navigate(screen)} />
 
         {/* HERO CONTENT — below fold */}
         <Animated.View style={{ opacity: fadeAnim }}>
@@ -421,7 +366,7 @@ export default function HomeScreen({ navigation }: any) {
             <Text style={s.fVersion}>Made with ❤️ in India • v2.0.0</Text>
           </View>
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
     </View>
   );
 }
