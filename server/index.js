@@ -117,6 +117,97 @@ const startServer = async () => {
     const configService = require("./services/configService");
     await configService.seedDefaults();
 
+    // Auto-seed CMS content collections if empty (Categories, Districts, etc.)
+    try {
+      const Category = require("./models/Category");
+      const District = require("./models/District");
+      const TrendingSearch = require("./models/TrendingSearch");
+      const InspirationGallery = require("./models/InspirationGallery");
+      const FeaturedMoment = require("./models/FeaturedMoment");
+      const Testimonial = require("./models/Testimonial");
+
+      const catCount = await Category.countDocuments();
+      const distCount = await District.countDocuments();
+      const trendCount = await TrendingSearch.countDocuments();
+      const inspCount = await InspirationGallery.countDocuments();
+      const momCount = await FeaturedMoment.countDocuments();
+      const testCount = await Testimonial.countDocuments();
+
+      if (catCount === 0) {
+        await Category.insertMany([
+          { name: "Wedding Photography", slug: "wedding-photography", icon: "camera", imageUrl: "https://images.unsplash.com/photo-1519741497674-611481863552?w=400", sortOrder: 1 },
+          { name: "Cinematography", slug: "cinematography", icon: "film", imageUrl: "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=400", sortOrder: 2 },
+          { name: "Wedding Films", slug: "wedding-films", icon: "videocam", imageUrl: "https://images.unsplash.com/photo-1505932794465-147d1f1b2c97?w=400", sortOrder: 3 },
+          { name: "Drone Coverage", slug: "drone-coverage", icon: "airplane", imageUrl: "https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=400", sortOrder: 4 },
+          { name: "Pre Wedding", slug: "pre-wedding", icon: "heart-circle", imageUrl: "https://images.unsplash.com/photo-1606216794079-73f85bbd57d5?w=400", sortOrder: 5 },
+          { name: "Bridal Shoot", slug: "bridal-shoot", icon: "diamond", imageUrl: "https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=400", sortOrder: 6 },
+          { name: "Candid Photography", slug: "candid-photography", icon: "aperture", imageUrl: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=400", sortOrder: 7 },
+          { name: "Makeup Artist", slug: "makeup-artist", icon: "color-palette", imageUrl: "https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=400", sortOrder: 8 },
+          { name: "Anchors & DJs", slug: "anchors-djs", icon: "mic", imageUrl: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400", sortOrder: 9 },
+          { name: "Destination Wedding", slug: "destination-wedding", icon: "navigate", imageUrl: "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=400", sortOrder: 10 },
+        ]);
+        console.log("[STARTUP] ✅ Categories seeded (10)");
+      }
+      if (distCount === 0) {
+        await District.insertMany([
+          { name: "Poonch", state: "Jammu & Kashmir", imageUrl: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400", sortOrder: 1 },
+          { name: "Surankote", state: "Jammu & Kashmir", imageUrl: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=400", sortOrder: 2 },
+          { name: "Rajouri", state: "Jammu & Kashmir", imageUrl: "https://images.unsplash.com/photo-1486870591958-9b9d0d1dda99?w=400", sortOrder: 3 },
+          { name: "Jammu", state: "Jammu & Kashmir", imageUrl: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=400", sortOrder: 4 },
+          { name: "Srinagar", state: "Jammu & Kashmir", imageUrl: "https://images.unsplash.com/photo-1597074866923-dc0589150458?w=400", sortOrder: 5 },
+          { name: "Kathua", state: "Jammu & Kashmir", imageUrl: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=400", sortOrder: 6 },
+          { name: "Udhampur", state: "Jammu & Kashmir", imageUrl: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=400", sortOrder: 7 },
+          { name: "Anantnag", state: "Jammu & Kashmir", imageUrl: "https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=400", sortOrder: 8 },
+          { name: "Baramulla", state: "Jammu & Kashmir", imageUrl: "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=400", sortOrder: 9 },
+          { name: "Doda", state: "Jammu & Kashmir", imageUrl: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=400", sortOrder: 10 },
+        ]);
+        console.log("[STARTUP] ✅ Districts seeded (10)");
+      }
+      if (trendCount === 0) {
+        await TrendingSearch.insertMany([
+          { title: "Pre Wedding", icon: "heart-circle", sortOrder: 1 },
+          { title: "Wedding Photography", icon: "camera", sortOrder: 2 },
+          { title: "Cinematography", icon: "film", sortOrder: 3 },
+          { title: "Drone Coverage", icon: "airplane", sortOrder: 4 },
+          { title: "Bridal Shoot", icon: "diamond", sortOrder: 5 },
+          { title: "Destination Wedding", icon: "navigate", sortOrder: 6 },
+        ]);
+        console.log("[STARTUP] ✅ Trending Searches seeded (6)");
+      }
+      if (inspCount === 0) {
+        await InspirationGallery.insertMany([
+          { title: "Royal Kashmiri Weddings", imageUrl: "https://images.unsplash.com/photo-1519741497674-611481863552?w=600", category: "Traditional", sortOrder: 1 },
+          { title: "Mountain Weddings", imageUrl: "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=600", category: "Destination", sortOrder: 2 },
+          { title: "Traditional Ceremonies", imageUrl: "https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=600", category: "Traditional", sortOrder: 3 },
+          { title: "Cinematic Wedding Films", imageUrl: "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=600", category: "Cinematic", sortOrder: 4 },
+        ]);
+        console.log("[STARTUP] ✅ Inspiration Gallery seeded (4)");
+      }
+      if (momCount === 0) {
+        await FeaturedMoment.insertMany([
+          { title: "Royal Wedding", location: "Udaipur, India", imageUrl: "https://images.unsplash.com/photo-1519741497674-611481863552?w=600", sortOrder: 1 },
+          { title: "Bride Portrait", location: "Jaipur, India", imageUrl: "https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=600", sortOrder: 2 },
+          { title: "Mehndi Ceremony", location: "Delhi, India", imageUrl: "https://images.unsplash.com/photo-1606216794079-73f85bbd57d5?w=600", sortOrder: 3 },
+          { title: "Destination Wedding", location: "Goa, India", imageUrl: "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=600", sortOrder: 4 },
+          { title: "Cinematic Couple", location: "Kerala, India", imageUrl: "https://images.unsplash.com/photo-1537633552985-df8429e8048b?w=600", sortOrder: 5 },
+          { title: "Palace Wedding", location: "Jodhpur, India", imageUrl: "https://images.unsplash.com/photo-1591604466107-ec97de577aff?w=600", sortOrder: 6 },
+        ]);
+        console.log("[STARTUP] ✅ Featured Moments seeded (6)");
+      }
+      if (testCount === 0) {
+        await Testimonial.insertMany([
+          { name: "Priya & Rahul", city: "Mumbai", eventType: "Wedding", rating: 5, review: "Found our dream photographer in minutes. The quality was beyond expectations!", verifiedBooking: true, sortOrder: 1 },
+          { name: "Ankit & Meera", city: "Delhi", eventType: "Pre Wedding", rating: 5, review: "BookMyShot made our pre-wedding shoot magical. Highly recommend!", verifiedBooking: true, sortOrder: 2 },
+          { name: "Sneha & Varun", city: "Bangalore", eventType: "Cinematography", rating: 5, review: "Professional, verified creators. Our wedding film is absolutely stunning.", verifiedBooking: true, sortOrder: 3 },
+          { name: "Fatima & Imran", city: "Srinagar", eventType: "Wedding", rating: 5, review: "The best platform for finding wedding creators in Kashmir. Amazing experience!", verifiedBooking: true, sortOrder: 4 },
+          { name: "Riya & Karan", city: "Jammu", eventType: "Pre Wedding", rating: 5, review: "Loved every moment captured. The creator understood our vision perfectly.", verifiedBooking: true, sortOrder: 5 },
+        ]);
+        console.log("[STARTUP] ✅ Testimonials seeded (5)");
+      }
+    } catch (seedErr) {
+      console.log("[STARTUP] CMS seed check:", seedErr.message);
+    }
+
     // Ensure admin account exists in production
     const User = require("./models/User");
     const existingAdmin = await User.findOne({ role: "admin" });

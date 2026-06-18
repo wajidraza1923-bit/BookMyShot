@@ -57,14 +57,15 @@ export default function SearchScreen({ navigation, route }: any) {
       const [distR, trendR, catR, inspR, trendCR, featR] = await Promise.all([
         api.get('/discover/districts').catch(() => ({ data: { data: [] } })),
         api.get('/discover/trending-searches').catch(() => ({ data: { data: [] } })),
-        api.get('/app-config').catch(() => ({ data: { categories: [] } })),
+        api.get('/discover/categories').catch(() => ({ data: { data: [] } })),
         api.get('/discover/inspiration').catch(() => ({ data: { data: [] } })),
         api.get('/discover/trending').catch(() => ({ data: { data: [] } })),
         api.get('/discover/featured-creators').catch(() => ({ data: { data: [] } })),
       ]);
       setDistricts((distR.data?.data || []).length > 0 ? distR.data.data : DEFAULT_DISTRICTS);
       setTrendingSearches((trendR.data?.data || []).length > 0 ? trendR.data.data : DEFAULT_TRENDING);
-      setCategories((catR.data?.categories || []).filter((c: any) => c.id !== 'all'));
+      const cats = catR.data?.data || [];
+      setCategories(cats.map((c: any) => ({ id: c.slug || c.name?.toLowerCase(), label: c.name, icon: c.icon || 'camera', image: c.imageUrl, count: c.creatorCount || 0 })));
       setInspiration((inspR.data?.data || []).length > 0 ? inspR.data.data : DEFAULT_INSPIRATION);
       setTrendingCreators(trendCR.data?.data || []);
       setFeaturedCreators(featR.data?.data || []);

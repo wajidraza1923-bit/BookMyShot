@@ -20,7 +20,7 @@ const WEDDING_IMGS = [
   'https://images.unsplash.com/photo-1620162009541-a3015e766be4?w=900',
 ];
 
-const CATEGORIES = [
+const CATEGORIES_DEFAULT = [
   { id: 'wedding', icon: 'camera', label: 'Wedding Photography', count: '4.2K+', img: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=200' },
   { id: 'candid', icon: 'aperture', label: 'Candid Photography', count: '2.3K+', img: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=200' },
   { id: 'videography', icon: 'videocam', label: 'Wedding Films', count: '1.8K+', img: 'https://images.unsplash.com/photo-1505932794465-147d1f1b2c97?w=200' },
@@ -63,6 +63,7 @@ export default function HomeScreen({ navigation }: any) {
   const [creators, setCreators] = useState<any[]>([]);
   const [featured, setFeatured] = useState<any[]>([]);
   const [moments, setMoments] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>(CATEGORIES_DEFAULT);
   const [testimonials, setTestimonials] = useState<any[]>(TESTIMONIALS);
   const [heroIdx, setHeroIdx] = useState(0);
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -128,10 +129,24 @@ export default function HomeScreen({ navigation }: any) {
 
   const loadData = useCallback(async () => {
     try {
-      const [creatorsRes, featuredRes] = await Promise.all([
+      const [creatorsRes, featuredRes, catsRes] = await Promise.all([
         creatorsAPI.getAll(),
         api.get('/promotions/featured-status').catch(() => ({ data: { slots: {} } })),
+        api.get('/discover/categories').catch(() => ({ data: { data: [] } })),
       ]);
+
+      // Load categories from DB (fallback to defaults)
+      const dbCats = catsRes.data?.data || [];
+      if (dbCats.length > 0) {
+        setCategories(dbCats.map((c: any) => ({
+          id: c.slug || c.name?.toLowerCase().replace(/\s+/g, '-'),
+          icon: c.icon || 'camera',
+          label: c.name,
+          count: `${c.creatorCount || 0}+`,
+          img: c.imageUrl || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=200',
+        })));
+      }
+
       // Fetch wedding moments from API (fallback to hardcoded)
       let momentsData: any[] = [];
       try {
@@ -305,7 +320,7 @@ export default function HomeScreen({ navigation }: any) {
 
         {/* CATEGORIES */}
         <View style={s.catHeader}><Text style={s.secTitle}>Browse by Category</Text><TouchableOpacity onPress={() => navigation.navigate('Discover')}><Text style={s.viewAll}>See All →</Text></TouchableOpacity></View>
-        <FlatList horizontal showsHorizontalScrollIndicator={false} data={CATEGORIES} contentContainerStyle={{ paddingHorizontal: 20 }} keyExtractor={i => i.id}
+        <FlatList horizontal showsHorizontalScrollIndicator={false} data={categories} contentContainerStyle={{ paddingHorizontal: 20 }} keyExtractor={i => i.id}
           renderItem={({ item }) => (
             <TouchableOpacity style={s.catCard} onPress={() => navigation.navigate('Discover', { category: item.id })} activeOpacity={0.8}>
               <Image source={{ uri: item.img }} style={s.catCardImg} />
@@ -384,9 +399,11 @@ export default function HomeScreen({ navigation }: any) {
 
         {/* FOOTER */}
         <View style={s.footer}>
-          <Text style={s.fLogo}>BOOKMYSHOT</Text>
-          <Text style={s.fTag}>India's Premium Wedding Creator Marketplace</Text>
-          <Text style={s.fAbout}>BookMyShot connects couples with verified photographers, videographers, drone operators and wedding filmmakers. Browse portfolios, compare creators and book the perfect team for your special day.</Text>
+          <View style={s.fCenter}>
+            <Text style={s.fLogo}>BOOKMYSHOT</Text>
+            <Text style={s.fTag}>India's Premium Wedding Creator Marketplace</Text>
+            <Text style={s.fAbout}>BookMyShot connects couples with verified photographers, videographers, drone operators and wedding filmmakers. Browse portfolios, compare creators and book the perfect team for your special day.</Text>
+          </View>
           <View style={s.fDivider} />
           <View style={s.fGrid}>
             <View style={s.fCol}>
@@ -400,7 +417,7 @@ export default function HomeScreen({ navigation }: any) {
               <Text style={s.fHead}>CREATORS</Text>
               <TouchableOpacity onPress={() => navigation.navigate('Account')}><Text style={s.fLink}>Join as Creator</Text></TouchableOpacity>
               <TouchableOpacity onPress={() => navigation.navigate('Info', { page: 'Resources' })}><Text style={s.fLink}>Pricing</Text></TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Info', { page: 'Resources' })}><Text style={s.fLink}>Creator Resources</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate('Info', { page: 'Resources' })}><Text style={s.fLink}>Resources</Text></TouchableOpacity>
               <TouchableOpacity onPress={() => navigation.navigate('Info', { page: 'Help' })}><Text style={s.fLink}>Help Center</Text></TouchableOpacity>
             </View>
             <View style={s.fCol}>
@@ -412,33 +429,39 @@ export default function HomeScreen({ navigation }: any) {
             </View>
           </View>
           <View style={s.fDivider} />
-          <Text style={s.fHead}>LEGAL</Text>
-          <View style={s.fLegalRow}>
-            <TouchableOpacity onPress={() => navigation.navigate('Info', { page: 'Privacy' })}><Text style={s.fLink}>Privacy Policy</Text></TouchableOpacity>
-            <Text style={s.fDot}>•</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Info', { page: 'Terms' })}><Text style={s.fLink}>Terms</Text></TouchableOpacity>
-            <Text style={s.fDot}>•</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Info', { page: 'Refund' })}><Text style={s.fLink}>Refund</Text></TouchableOpacity>
-            <Text style={s.fDot}>•</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Info', { page: 'Cancellation' })}><Text style={s.fLink}>Cancellation</Text></TouchableOpacity>
+          <View style={s.fCenter}>
+            <Text style={s.fHead}>LEGAL</Text>
+            <View style={s.fLegalRow}>
+              <TouchableOpacity onPress={() => navigation.navigate('Info', { page: 'Privacy' })}><Text style={s.fLink}>Privacy Policy</Text></TouchableOpacity>
+              <Text style={s.fDot}>•</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Info', { page: 'Terms' })}><Text style={s.fLink}>Terms</Text></TouchableOpacity>
+              <Text style={s.fDot}>•</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Info', { page: 'Refund' })}><Text style={s.fLink}>Refund</Text></TouchableOpacity>
+              <Text style={s.fDot}>•</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Info', { page: 'Cancellation' })}><Text style={s.fLink}>Cancellation</Text></TouchableOpacity>
+            </View>
           </View>
           <View style={s.fDivider} />
-          <Text style={s.fSocialTitle}>CONNECT WITH US</Text>
-          <View style={s.socialRow}>
-            <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://instagram.com/bookmyshot')}><Ionicons name="logo-instagram" size={16} color="#FF8C2B" /></TouchableOpacity>
-            <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://facebook.com/bookmyshot')}><Ionicons name="logo-facebook" size={16} color="#FF8C2B" /></TouchableOpacity>
-            <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://youtube.com/@bookmyshot')}><Ionicons name="logo-youtube" size={16} color="#FF8C2B" /></TouchableOpacity>
-            <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://linkedin.com/company/bookmyshot')}><Ionicons name="logo-linkedin" size={16} color="#FF8C2B" /></TouchableOpacity>
-            <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://twitter.com/bookmyshot')}><Ionicons name="logo-twitter" size={16} color="#FF8C2B" /></TouchableOpacity>
-            <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://wa.me/918492922173')}><Ionicons name="logo-whatsapp" size={16} color="#FF8C2B" /></TouchableOpacity>
+          <View style={s.fCenter}>
+            <Text style={s.fSocialTitle}>CONNECT WITH US</Text>
+            <View style={s.socialRow}>
+              <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://instagram.com/bookmyshot')}><Ionicons name="logo-instagram" size={16} color="#FF8C2B" /></TouchableOpacity>
+              <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://facebook.com/bookmyshot')}><Ionicons name="logo-facebook" size={16} color="#FF8C2B" /></TouchableOpacity>
+              <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://youtube.com/@bookmyshot')}><Ionicons name="logo-youtube" size={16} color="#FF8C2B" /></TouchableOpacity>
+              <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://linkedin.com/company/bookmyshot')}><Ionicons name="logo-linkedin" size={16} color="#FF8C2B" /></TouchableOpacity>
+              <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://twitter.com/bookmyshot')}><Ionicons name="logo-twitter" size={16} color="#FF8C2B" /></TouchableOpacity>
+              <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://wa.me/918492922173')}><Ionicons name="logo-whatsapp" size={16} color="#FF8C2B" /></TouchableOpacity>
+            </View>
           </View>
           <View style={s.fDivider} />
-          <TouchableOpacity style={s.fBottomRow} onPress={() => Linking.openURL('mailto:support@bookmyshot.in')}>
-            <Ionicons name="mail-outline" size={12} color="rgba(245,185,66,0.6)" />
-            <Text style={s.fEmail}>support@bookmyshot.in</Text>
-          </TouchableOpacity>
-          <Text style={s.fCopy}>© 2026 BookMyShot. All Rights Reserved.</Text>
-          <Text style={s.fVersion}>Made with ❤️ in India • v2.0.0</Text>
+          <View style={s.fCenter}>
+            <TouchableOpacity style={s.fBottomRow} onPress={() => Linking.openURL('mailto:support@bookmyshot.in')}>
+              <Ionicons name="mail-outline" size={12} color="rgba(245,185,66,0.6)" />
+              <Text style={s.fEmail}>support@bookmyshot.in</Text>
+            </TouchableOpacity>
+            <Text style={s.fCopy}>© 2026 BookMyShot. All Rights Reserved.</Text>
+            <Text style={s.fVersion}>Made with ❤️ in India • v2.0.0</Text>
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -648,21 +671,22 @@ const s = StyleSheet.create({
   ctaBtnText: { fontSize: 12, fontWeight: '700', color: '#000' },
   // Footer
   footer: { marginTop: 44, paddingHorizontal: 20, paddingTop: 28, paddingBottom: 20, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)', backgroundColor: 'rgba(8,6,4,0.98)' },
-  fLogo: { fontSize: 14, fontWeight: '300', color: '#FF8C2B', letterSpacing: 5 },
-  fTag: { fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 4 },
-  fAbout: { fontSize: 11, color: 'rgba(255,255,255,0.3)', lineHeight: 17, marginTop: 10 },
-  fGrid: { flexDirection: 'row', justifyContent: 'space-between' },
-  fCol: { flex: 1 },
-  fHead: { fontSize: 9, fontWeight: '700', color: '#FF8C2B', letterSpacing: 1.5, marginBottom: 8 },
-  fLink: { fontSize: 11, color: 'rgba(255,255,255,0.5)', paddingVertical: 4 },
+  fCenter: { alignItems: 'center' },
+  fLogo: { fontSize: 14, fontWeight: '300', color: '#FF8C2B', letterSpacing: 5, textAlign: 'center' },
+  fTag: { fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 4, textAlign: 'center' },
+  fAbout: { fontSize: 11, color: 'rgba(255,255,255,0.3)', lineHeight: 17, marginTop: 10, textAlign: 'center', paddingHorizontal: 10 },
+  fGrid: { flexDirection: 'row', justifyContent: 'space-around' },
+  fCol: { alignItems: 'center' },
+  fHead: { fontSize: 9, fontWeight: '700', color: '#FF8C2B', letterSpacing: 1.5, marginBottom: 8, textAlign: 'center' },
+  fLink: { fontSize: 11, color: 'rgba(255,255,255,0.5)', paddingVertical: 4, textAlign: 'center' },
   fDot: { fontSize: 8, color: 'rgba(255,255,255,0.2)', marginHorizontal: 6 },
-  fLegalRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', marginBottom: 4 },
+  fLegalRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', marginBottom: 4 },
   fDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.04)', marginVertical: 16 },
-  fSocialTitle: { fontSize: 9, fontWeight: '700', color: 'rgba(255,255,255,0.3)', letterSpacing: 1.5, marginBottom: 10 },
-  socialRow: { flexDirection: 'row', gap: 10 },
+  fSocialTitle: { fontSize: 9, fontWeight: '700', color: 'rgba(255,255,255,0.3)', letterSpacing: 1.5, marginBottom: 10, textAlign: 'center' },
+  socialRow: { flexDirection: 'row', justifyContent: 'center', gap: 10 },
   socialBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(245,185,66,0.06)', borderWidth: 1, borderColor: 'rgba(245,185,66,0.15)', alignItems: 'center', justifyContent: 'center' },
-  fBottomRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
+  fBottomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 8 },
   fEmail: { fontSize: 11, color: 'rgba(245,185,66,0.6)' },
-  fCopy: { fontSize: 9, color: 'rgba(255,255,255,0.2)' },
-  fVersion: { fontSize: 9, color: 'rgba(255,255,255,0.15)', marginTop: 4 },
+  fCopy: { fontSize: 9, color: 'rgba(255,255,255,0.2)', textAlign: 'center' },
+  fVersion: { fontSize: 9, color: 'rgba(255,255,255,0.15)', marginTop: 4, textAlign: 'center' },
 });

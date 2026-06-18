@@ -7,7 +7,19 @@ const router = express.Router();
 // PUBLIC: Get active featured moments (sorted)
 router.get("/", async (req, res, next) => {
   try {
-    const moments = await FeaturedMoment.find({ isActive: true }).sort("sortOrder").lean();
+    let moments = await FeaturedMoment.find({ isActive: true }).sort("sortOrder").lean();
+    // Auto-seed if empty
+    if (moments.length === 0) {
+      await FeaturedMoment.insertMany([
+        { title: "Royal Wedding", location: "Udaipur, India", imageUrl: "https://images.unsplash.com/photo-1519741497674-611481863552?w=600", sortOrder: 1 },
+        { title: "Bride Portrait", location: "Jaipur, India", imageUrl: "https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=600", sortOrder: 2 },
+        { title: "Mehndi Ceremony", location: "Delhi, India", imageUrl: "https://images.unsplash.com/photo-1606216794079-73f85bbd57d5?w=600", sortOrder: 3 },
+        { title: "Destination Wedding", location: "Goa, India", imageUrl: "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=600", sortOrder: 4 },
+        { title: "Cinematic Couple", location: "Kerala, India", imageUrl: "https://images.unsplash.com/photo-1537633552985-df8429e8048b?w=600", sortOrder: 5 },
+        { title: "Palace Wedding", location: "Jodhpur, India", imageUrl: "https://images.unsplash.com/photo-1591604466107-ec97de577aff?w=600", sortOrder: 6 },
+      ]);
+      moments = await FeaturedMoment.find({ isActive: true }).sort("sortOrder").lean();
+    }
     res.json({ success: true, data: moments });
   } catch (e) { next(e); }
 });
