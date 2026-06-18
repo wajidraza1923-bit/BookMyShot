@@ -69,6 +69,14 @@ export default function HomeScreen({ navigation }: any) {
   const slideAnim = useRef(new Animated.Value(50)).current;
   const shimmer = useRef(new Animated.Value(0)).current;
   const goldSweep = useRef(new Animated.Value(0)).current;
+  // Luxury animations
+  const lensRotate = useRef(new Animated.Value(0)).current;
+  const lensPulse = useRef(new Animated.Value(1)).current;
+  const particle1 = useRef(new Animated.Value(0)).current;
+  const particle2 = useRef(new Animated.Value(0)).current;
+  const particle3 = useRef(new Animated.Value(0)).current;
+  const activitySlide = useRef(new Animated.Value(40)).current;
+  const shutterAnim = useRef(new Animated.Value(0)).current;
 
   // Shimmer loop for header logo
   useEffect(() => {
@@ -87,6 +95,59 @@ export default function HomeScreen({ navigation }: any) {
       Animated.timing(goldSweep, { toValue: 1, duration: 1200, easing: Easing.bezier(0.4, 0, 0.2, 1), useNativeDriver: true }),
       Animated.timing(goldSweep, { toValue: 0, duration: 0, useNativeDriver: true }),
     ])).start();
+  }, []);
+
+  // Lens rotation + pulse (subtle breathing)
+  useEffect(() => {
+    Animated.loop(Animated.timing(lensRotate, { toValue: 1, duration: 25000, easing: Easing.linear, useNativeDriver: true })).start();
+    Animated.loop(Animated.sequence([
+      Animated.timing(lensPulse, { toValue: 1.04, duration: 2500, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      Animated.timing(lensPulse, { toValue: 1, duration: 2500, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+    ])).start();
+  }, []);
+
+  // Golden particles floating
+  useEffect(() => {
+    Animated.loop(Animated.sequence([
+      Animated.timing(particle1, { toValue: -10, duration: 3000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      Animated.timing(particle1, { toValue: 10, duration: 3000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+    ])).start();
+    Animated.loop(Animated.sequence([
+      Animated.timing(particle2, { toValue: 8, duration: 4000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      Animated.timing(particle2, { toValue: -8, duration: 4000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+    ])).start();
+    Animated.loop(Animated.sequence([
+      Animated.timing(particle3, { toValue: -6, duration: 3500, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      Animated.timing(particle3, { toValue: 6, duration: 3500, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+    ])).start();
+  }, []);
+
+  // Shutter opening on load
+  useEffect(() => {
+    Animated.sequence([
+      Animated.delay(200),
+      Animated.spring(shutterAnim, { toValue: 1, tension: 20, friction: 7, useNativeDriver: true }),
+    ]).start();
+  }, []);
+
+  // Activity feed animation
+  const [activityIdx, setActivityIdx] = useState(0);
+  const ACTIVITIES = [
+    { icon: '📸', text: 'New booking confirmed in Srinagar', time: '2m ago' },
+    { icon: '⭐', text: 'Creator rated 5 stars in Jammu', time: '5m ago' },
+    { icon: '💬', text: 'New inquiry from Rajouri', time: '8m ago' },
+    { icon: '🎬', text: 'Cinematographer booked in Poonch', time: '12m ago' },
+    { icon: '📷', text: 'Portfolio updated by creator', time: '15m ago' },
+  ];
+  useEffect(() => {
+    const t = setInterval(() => {
+      setActivityIdx(i => (i + 1) % ACTIVITIES.length);
+      Animated.sequence([
+        Animated.timing(activitySlide, { toValue: -20, duration: 0, useNativeDriver: true }),
+        Animated.spring(activitySlide, { toValue: 0, tension: 40, friction: 8, useNativeDriver: true }),
+      ]).start();
+    }, 4000);
+    return () => clearInterval(t);
   }, []);
 
   const loadData = useCallback(async () => {
@@ -187,6 +248,14 @@ export default function HomeScreen({ navigation }: any) {
           {/* Background gradient layers */}
           <View style={s.heroBgGrad1} />
           <View style={s.heroBgGrad2} />
+
+          {/* Gold particles */}
+          <Animated.View style={[s.goldParticle, { left: 30, top: 60, transform: [{ translateY: particle1 }] }]} />
+          <Animated.View style={[s.goldParticle, s.goldParticleSm, { right: 50, top: 100, transform: [{ translateY: particle2 }] }]} />
+          <Animated.View style={[s.goldParticle, { left: width * 0.6, top: 40, transform: [{ translateX: particle3 }] }]} />
+          <Animated.View style={[s.goldParticle, s.goldParticleLg, { right: 25, top: 180, transform: [{ translateY: particle1 }] }]} />
+          <Animated.View style={[s.goldParticle, s.goldParticleSm, { left: 60, top: 200, transform: [{ translateX: particle2 }] }]} />
+          <Animated.View style={[s.goldParticle, { left: width * 0.4, top: 160, transform: [{ translateY: particle3 }] }]} />
           
           {/* Floating wedding images (behind content) */}
           <Animated.View style={[s.floatingImg, s.floatImg1, { opacity: fadeAnim }]}>
@@ -201,12 +270,14 @@ export default function HomeScreen({ navigation }: any) {
 
           {/* Main hero content */}
           <Animated.View style={[s.heroInner, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-            {/* Small BMS lens mark */}
-            <View style={s.heroLensMark}>
+            {/* Animated BMS lens mark with shutter + rotation */}
+            <Animated.View style={[s.heroLensMark, { transform: [{ scale: lensPulse }, { rotate: lensRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }] }]}>
               <View style={s.lensMarkRing2} />
               <View style={s.lensMarkRing1} />
-              <View style={s.lensMarkCore}><Text style={s.lensMarkText}>BMS</Text></View>
-            </View>
+              <Animated.View style={[s.lensMarkCore, { transform: [{ scale: shutterAnim }] }]}>
+                <Text style={s.lensMarkText}>BMS</Text>
+              </Animated.View>
+            </Animated.View>
 
             <View style={s.tagRow}><View style={s.tagLine} /><Text style={s.tagText}>INDIA'S #1 WEDDING MARKETPLACE</Text><View style={s.tagLine} /></View>
             
@@ -218,6 +289,14 @@ export default function HomeScreen({ navigation }: any) {
 
             <Text style={s.heroDesc}>10,000+ verified photographers, filmmakers & artists. Book your dream team in minutes.</Text>
             
+            {/* Live Activity Feed */}
+            <Animated.View style={[s.activityFeed, { transform: [{ translateY: activitySlide }] }]}>
+              <View style={s.activityDot} />
+              <Text style={s.activityIcon}>{ACTIVITIES[activityIdx].icon}</Text>
+              <Text style={s.activityText} numberOfLines={1}>{ACTIVITIES[activityIdx].text}</Text>
+              <Text style={s.activityTime}>{ACTIVITIES[activityIdx].time}</Text>
+            </Animated.View>
+
             {/* Trust chips */}
             <View style={s.chipRow}>
               <View style={s.chip}><Ionicons name="checkmark-circle" size={13} color="#10B981" /><Text style={s.chipText}>Verified</Text></View>
@@ -479,6 +558,9 @@ const s = StyleSheet.create({
   heroWrap: { paddingTop: 10, paddingBottom: 10, position: 'relative', overflow: 'hidden' },
   heroBgGrad1: { position: 'absolute', top: 0, left: 0, right: 0, height: 300, backgroundColor: 'rgba(255,140,43,0.015)' },
   heroBgGrad2: { position: 'absolute', top: 80, left: -50, width: width + 100, height: 200, backgroundColor: 'rgba(255,100,20,0.008)', borderRadius: 100, transform: [{ rotate: '-5deg' }] },
+  goldParticle: { position: 'absolute', width: 4, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,160,40,0.35)' },
+  goldParticleSm: { width: 2.5, height: 2.5, borderRadius: 1.25, backgroundColor: 'rgba(255,180,60,0.25)' },
+  goldParticleLg: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: 'rgba(255,140,43,0.2)' },
   floatingImg: { position: 'absolute', borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
   floatImg1: { top: 30, right: -20, width: 80, height: 100, transform: [{ rotate: '8deg' }], opacity: 0.3 },
   floatImg2: { top: 140, left: -15, width: 70, height: 90, transform: [{ rotate: '-6deg' }], opacity: 0.25 },
@@ -490,6 +572,11 @@ const s = StyleSheet.create({
   lensMarkRing1: { position: 'absolute', width: 42, height: 42, borderRadius: 21, borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.2)' },
   lensMarkCore: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,140,43,0.06)', borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.3)', alignItems: 'center', justifyContent: 'center' },
   lensMarkText: { fontSize: 10, fontWeight: '800', color: '#FF8C2B', letterSpacing: 1.5 },
+  activityFeed: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.03)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7, marginTop: 14, marginBottom: 4 },
+  activityDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#10B981' },
+  activityIcon: { fontSize: 12 },
+  activityText: { flex: 1, fontSize: 10, color: 'rgba(255,255,255,0.5)' },
+  activityTime: { fontSize: 8, color: 'rgba(255,255,255,0.25)' },
   heroBg: { ...StyleSheet.absoluteFillObject, backgroundColor: '#030303' },
   // Content
   heroContent: { paddingHorizontal: 22, marginTop: 30, paddingBottom: 0 },
