@@ -43,7 +43,56 @@ export default function CreatorPromotions({ navigation }: any) {
   useEffect(() => { load(); }, []);
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
-  const handleApply = (planType: string) => { setApplyType(planType); setUtr(''); setShowApplyModal(true); };
+  const handleApply = async (planType: string) => {
+    setApplyType(planType);
+    try {
+      const { getRazorpayConfig, createPromotionOrder, openRazorpayOrder, verifyPromotionPayment, isNativeRazorpayAvailable } = require('../../services/payment');
+
+      // Get plan price
+      const plan = plans?.find((p: any) => p.id === planType);
+      const price = plan?.price || 999;
+
+      const rpConfig = await getRazorpayConfig();
+      if (!rpConfig.configured) {
+        // Fallback to UTR if Razorpay not configured
+        setUtr('');
+        setShowApplyModal(true);
+        return;
+      }
+
+      if (isNativeRazorpayAvailable()) {
+        // Use Razorpay (same as website)
+        const order = await createPromotionOrder(planType, price);
+        if (!order.id) { Alert.alert('Error', 'Failed to create payment order'); return; }
+
+        const meRes = await api.get('/auth/me');
+        const user = meRes.data?.user;
+        const result = await openRazorpayOrder(rpConfig.keyId, order.id, price, `Promotion: ${planType}`, user?.name || '');
+
+        // Verify payment (same as website POST /razorpay/verify-payment)
+        const verified = await verifyPromotionPayment(result.razorpay_order_id, result.razorpay_payment_id, result.razorpay_signature, price, planType);
+        if (verified) {
+          Alert.alert('Success! 🎉', 'Promotion activated for 30 days!');
+          await load();
+        } else {
+          Alert.alert('Verification Failed', 'Contact support if charged.');
+        }
+      } else {
+        // Development mode - show order info
+        Alert.alert('Development Mode', `Razorpay native SDK not available (Expo Go).\n\nPlan: ${planType}\nPrice: ₹${price}\n\nIn production APK, Razorpay checkout opens. For now, use UTR method.`);
+        setUtr('');
+        setShowApplyModal(true);
+      }
+    } catch (e: any) {
+      if (e.code === 'PAYMENT_CANCELLED') {
+        Alert.alert('Cancelled', 'Payment was cancelled.');
+      } else {
+        // Fallback to UTR modal
+        setUtr('');
+        setShowApplyModal(true);
+      }
+    }
+  };
 
   const submitApplication = async () => {
     if (!utr.trim()) { Alert.alert('Required', 'Enter UTR/Transaction ID after payment'); return; }
