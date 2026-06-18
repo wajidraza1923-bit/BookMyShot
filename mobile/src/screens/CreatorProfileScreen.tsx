@@ -227,12 +227,10 @@ export default function CreatorProfileScreen({ route, navigation }: any) {
               </View>
             )}
             {/* Write Review Button */}
-            {isAuthenticated && (
-              <TouchableOpacity style={s.writeReviewBtn} onPress={() => navigation.navigate('WriteReview', { creatorId: id, creatorName: name })}>
-                <Ionicons name="create-outline" size={15} color="#000" />
-                <Text style={s.writeReviewText}>Write a Review</Text>
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity style={s.writeReviewBtn} onPress={() => navigation.navigate('WriteReview', { creatorId: id, creatorName: name })}>
+              <Ionicons name="create-outline" size={15} color="#000" />
+              <Text style={s.writeReviewText}>Write a Review</Text>
+            </TouchableOpacity>
             {/* Review Cards */}
             {reviews.length > 0 ? reviews.filter(r => !r.hidden).map((r: any, i: number) => (
               <View key={r._id || i} style={s.reviewCard}>
