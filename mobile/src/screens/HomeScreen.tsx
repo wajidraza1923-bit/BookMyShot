@@ -243,53 +243,55 @@ export default function HomeScreen({ navigation }: any) {
           )}
         </View>
 
-        {/* ═══ HERO: Wedding Creator Marketplace ═══ */}
+        {/* ═══ CINEMATIC HERO ═══ */}
         <View style={s.heroWrap}>
-          {/* Background gradient layers */}
+          {/* Depth background layers */}
           <View style={s.heroBgGrad1} />
           <View style={s.heroBgGrad2} />
+          <View style={s.heroBgGrad3} />
 
           {/* Gold particles */}
-          <Animated.View style={[s.goldParticle, { left: 30, top: 60, transform: [{ translateY: particle1 }] }]} />
-          <Animated.View style={[s.goldParticle, s.goldParticleSm, { right: 50, top: 100, transform: [{ translateY: particle2 }] }]} />
-          <Animated.View style={[s.goldParticle, { left: width * 0.6, top: 40, transform: [{ translateX: particle3 }] }]} />
-          <Animated.View style={[s.goldParticle, s.goldParticleLg, { right: 25, top: 180, transform: [{ translateY: particle1 }] }]} />
-          <Animated.View style={[s.goldParticle, s.goldParticleSm, { left: 60, top: 200, transform: [{ translateX: particle2 }] }]} />
-          <Animated.View style={[s.goldParticle, { left: width * 0.4, top: 160, transform: [{ translateY: particle3 }] }]} />
-          
-          {/* Floating wedding images (behind content) */}
-          <Animated.View style={[s.floatingImg, s.floatImg1, { opacity: fadeAnim }]}>
-            <Image source={{ uri: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=200' }} style={s.floatImgInner} />
-          </Animated.View>
-          <Animated.View style={[s.floatingImg, s.floatImg2, { opacity: fadeAnim }]}>
-            <Image source={{ uri: 'https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=200' }} style={s.floatImgInner} />
-          </Animated.View>
-          <Animated.View style={[s.floatingImg, s.floatImg3, { opacity: fadeAnim }]}>
-            <Image source={{ uri: 'https://images.unsplash.com/photo-1606216794079-73f85bbd57d5?w=200' }} style={s.floatImgInner} />
-          </Animated.View>
+          <Animated.View style={[s.goldParticle, { left: 25, top: 80, transform: [{ translateY: particle1 }] }]} />
+          <Animated.View style={[s.goldParticle, s.goldParticleSm, { right: 40, top: 120, transform: [{ translateY: particle2 }] }]} />
+          <Animated.View style={[s.goldParticle, { left: width * 0.55, top: 50, transform: [{ translateX: particle3 }] }]} />
+          <Animated.View style={[s.goldParticle, s.goldParticleLg, { right: 20, top: 200, transform: [{ translateY: particle1 }] }]} />
+          <Animated.View style={[s.goldParticle, s.goldParticleSm, { left: 50, top: 240, transform: [{ translateX: particle2 }] }]} />
+          <Animated.View style={[s.goldParticle, { left: width * 0.35, top: 180, transform: [{ translateY: particle3 }] }]} />
+          <Animated.View style={[s.goldParticle, s.goldParticleSm, { right: 70, top: 60, transform: [{ translateY: particle2 }] }]} />
+          <Animated.View style={[s.goldParticle, { left: width * 0.75, top: 260, transform: [{ translateX: particle1 }] }]} />
 
-          {/* Main hero content */}
-          <Animated.View style={[s.heroInner, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-            {/* Animated BMS lens mark with shutter + rotation */}
-            <Animated.View style={[s.heroLensMark, { transform: [{ scale: lensPulse }, { rotate: lensRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }] }]}>
-              <View style={s.lensMarkRing2} />
-              <View style={s.lensMarkRing1} />
-              <Animated.View style={[s.lensMarkCore, { transform: [{ scale: shutterAnim }] }]}>
-                <Text style={s.lensMarkText}>BMS</Text>
-              </Animated.View>
+          {/* PREMIUM CAMERA LENS — Centerpiece */}
+          <Animated.View style={[s.lensArea, { opacity: fadeAnim, transform: [{ scale: shutterAnim.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }) }] }]}>
+            {/* Outer glow */}
+            <Animated.View style={[s.lensGlow, { opacity: lensPulse.interpolate({ inputRange: [1, 1.04], outputRange: [0.3, 0.6] }) }]} />
+            {/* Rotating rings */}
+            <Animated.View style={[s.lensRingOuter, { transform: [{ rotate: lensRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }] }]} />
+            <Animated.View style={[s.lensRing5, { transform: [{ rotate: lensRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '-180deg'] }) }, { scale: lensPulse }] }]} />
+            <Animated.View style={[s.lensRing4, { transform: [{ rotate: lensRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '120deg'] }) }] }]} />
+            <Animated.View style={[s.lensRing3, { transform: [{ rotate: lensRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '-240deg'] }) }] }]} />
+            <Animated.View style={[s.lensRing2, { transform: [{ rotate: lensRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '90deg'] }) }] }]} />
+            <View style={s.lensRing1} />
+            {/* Glass reflection sweep */}
+            <Animated.View style={[s.lensReflection, { transform: [{ translateX: goldSweep.interpolate({ inputRange: [0, 1], outputRange: [-80, 80] }) }, { rotate: '-20deg' }] }]} />
+            {/* Core with BMS */}
+            <Animated.View style={[s.lensCore, { transform: [{ scale: shutterAnim }] }]}>
+              <Text style={s.lensBMS}>BMS</Text>
             </Animated.View>
+            {/* Light flare */}
+            <Animated.View style={[s.lensFlare, { opacity: lensPulse.interpolate({ inputRange: [1, 1.04], outputRange: [0, 0.4] }) }]} />
+          </Animated.View>
 
-            <View style={s.tagRow}><View style={s.tagLine} /><Text style={s.tagText}>INDIA'S #1 WEDDING MARKETPLACE</Text><View style={s.tagLine} /></View>
-            
-            <Text style={s.h1White}>Find Your Perfect</Text>
+          {/* HEADLINE + CONTENT */}
+          <Animated.View style={[s.heroContent, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+            <Text style={s.heroEyebrow}>PREMIUM WEDDING MARKETPLACE</Text>
+            <Text style={s.h1Line1}>Find Your Perfect</Text>
             <View style={{ overflow: 'hidden' }}>
               <Text style={s.h1Gold}>Wedding Creator</Text>
               <Animated.View style={[s.goldSweepOverlay, { transform: [{ translateX: goldSweep.interpolate({ inputRange: [0, 1], outputRange: [-width, width] }) }] }]} />
             </View>
+            <Text style={s.heroSub}>Verified photographers, filmmakers & artists across India</Text>
 
-            <Text style={s.heroDesc}>10,000+ verified photographers, filmmakers & artists. Book your dream team in minutes.</Text>
-            
-            {/* Live Activity Feed */}
+            {/* Live Activity Ticker */}
             <Animated.View style={[s.activityFeed, { transform: [{ translateY: activitySlide }] }]}>
               <View style={s.activityDot} />
               <Text style={s.activityIcon}>{ACTIVITIES[activityIdx].icon}</Text>
@@ -297,14 +299,14 @@ export default function HomeScreen({ navigation }: any) {
               <Text style={s.activityTime}>{ACTIVITIES[activityIdx].time}</Text>
             </Animated.View>
 
-            {/* Trust chips */}
-            <View style={s.chipRow}>
-              <View style={s.chip}><Ionicons name="checkmark-circle" size={13} color="#10B981" /><Text style={s.chipText}>Verified</Text></View>
-              <View style={s.chip}><Ionicons name="star" size={13} color="#FFB347" /><Text style={s.chipText}>4.9 Rated</Text></View>
-              <View style={s.chip}><Ionicons name="shield-checkmark" size={13} color="#3B82F6" /><Text style={s.chipText}>Secure</Text></View>
+            {/* Trust Indicators */}
+            <View style={s.trustRow}>
+              <View style={s.trustItem}><Ionicons name="checkmark-circle" size={14} color="#10B981" /><Text style={s.trustText}>Verified Creators</Text></View>
+              <View style={s.trustItem}><Ionicons name="star" size={14} color="#FFB347" /><Text style={s.trustText}>Real Reviews</Text></View>
+              <View style={s.trustItem}><Ionicons name="lock-closed" size={14} color="#3B82F6" /><Text style={s.trustText}>Secure Bookings</Text></View>
             </View>
 
-            {/* CTA Buttons */}
+            {/* CTA */}
             <View style={s.btnRow}>
               <TouchableOpacity style={s.btnPrimary} onPress={() => navigation.navigate('Discover')} activeOpacity={0.85}>
                 <Ionicons name="search" size={15} color="#000" /><Text style={s.btnPrimaryText}>Find Creator</Text>
@@ -314,6 +316,23 @@ export default function HomeScreen({ navigation }: any) {
               </TouchableOpacity>
             </View>
           </Animated.View>
+
+          {/* PREMIUM CREATOR SHOWCASE CARD */}
+          {creators.length > 0 && (
+            <Animated.View style={[s.showcaseCard, { opacity: fadeAnim }]}>
+              <Image source={{ uri: creators[0]?.portfolio?.[0] || creators[0]?.user?.avatar || WEDDING_IMGS[0] }} style={s.showcaseImg} />
+              <View style={s.showcaseOverlay} />
+              <View style={s.showcaseInfo}>
+                <Text style={s.showcaseName} numberOfLines={1}>{creators[0]?.user?.name}</Text>
+                <View style={s.showcaseMeta}>
+                  <Ionicons name="star" size={10} color="#FF8C2B" /><Text style={s.showcaseRating}>{creators[0]?.rating || '5.0'}</Text>
+                  <Text style={s.showcaseCity}>{creators[0]?.city}</Text>
+                </View>
+                {creators[0]?.startingPrice > 0 && <Text style={s.showcasePrice}>₹{creators[0]?.startingPrice?.toLocaleString('en-IN')}</Text>}
+              </View>
+              <View style={s.showcaseBadge}><Text style={s.showcaseBadgeText}>TOP CREATOR</Text></View>
+            </Animated.View>
+          )}
         </View>
 
         {/* HERO CONTENT — below fold */}
@@ -555,31 +574,63 @@ const s = StyleSheet.create({
   signInPill: { paddingHorizontal: 14, paddingVertical: 6, backgroundColor: '#FF8C2B', borderRadius: 16 },
   signInText: { fontSize: 11, fontWeight: '700', color: '#000' },
   // Hero
-  heroWrap: { paddingTop: 10, paddingBottom: 10, position: 'relative', overflow: 'hidden' },
-  heroBgGrad1: { position: 'absolute', top: 0, left: 0, right: 0, height: 300, backgroundColor: 'rgba(255,140,43,0.015)' },
-  heroBgGrad2: { position: 'absolute', top: 80, left: -50, width: width + 100, height: 200, backgroundColor: 'rgba(255,100,20,0.008)', borderRadius: 100, transform: [{ rotate: '-5deg' }] },
-  goldParticle: { position: 'absolute', width: 4, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,160,40,0.35)' },
-  goldParticleSm: { width: 2.5, height: 2.5, borderRadius: 1.25, backgroundColor: 'rgba(255,180,60,0.25)' },
+  heroWrap: { paddingTop: 8, paddingBottom: 16, position: 'relative', overflow: 'hidden', minHeight: 560 },
+  heroBgGrad1: { position: 'absolute', top: 0, left: 0, right: 0, height: 350, backgroundColor: 'rgba(255,140,43,0.012)' },
+  heroBgGrad2: { position: 'absolute', top: 100, left: -60, width: width + 120, height: 250, backgroundColor: 'rgba(255,100,20,0.008)', borderRadius: 125, transform: [{ rotate: '-4deg' }] },
+  heroBgGrad3: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 200, backgroundColor: 'rgba(0,0,0,0.3)' },
+  goldParticle: { position: 'absolute', width: 3.5, height: 3.5, borderRadius: 1.75, backgroundColor: 'rgba(255,160,40,0.4)' },
+  goldParticleSm: { width: 2, height: 2, borderRadius: 1, backgroundColor: 'rgba(255,180,60,0.3)' },
   goldParticleLg: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: 'rgba(255,140,43,0.2)' },
-  floatingImg: { position: 'absolute', borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
-  floatImg1: { top: 30, right: -20, width: 80, height: 100, transform: [{ rotate: '8deg' }], opacity: 0.3 },
-  floatImg2: { top: 140, left: -15, width: 70, height: 90, transform: [{ rotate: '-6deg' }], opacity: 0.25 },
-  floatImg3: { bottom: 60, right: 10, width: 65, height: 85, transform: [{ rotate: '4deg' }], opacity: 0.2 },
-  floatImgInner: { width: '100%', height: '100%' },
-  heroInner: { paddingHorizontal: 22, paddingTop: 10 },
-  heroLensMark: { alignSelf: 'center', width: 52, height: 52, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
-  lensMarkRing2: { position: 'absolute', width: 52, height: 52, borderRadius: 26, borderWidth: 1, borderColor: 'rgba(255,140,43,0.12)' },
-  lensMarkRing1: { position: 'absolute', width: 42, height: 42, borderRadius: 21, borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.2)' },
-  lensMarkCore: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,140,43,0.06)', borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.3)', alignItems: 'center', justifyContent: 'center' },
-  lensMarkText: { fontSize: 10, fontWeight: '800', color: '#FF8C2B', letterSpacing: 1.5 },
-  activityFeed: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.03)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7, marginTop: 14, marginBottom: 4 },
+  // Camera Lens
+  lensArea: { alignSelf: 'center', width: 160, height: 160, alignItems: 'center', justifyContent: 'center', marginTop: 10, marginBottom: 20 },
+  lensGlow: { position: 'absolute', width: 180, height: 180, borderRadius: 90, backgroundColor: 'rgba(255,140,43,0.06)' },
+  lensRingOuter: { position: 'absolute', width: 155, height: 155, borderRadius: 77.5, borderWidth: 0.5, borderColor: 'rgba(255,140,43,0.06)' },
+  lensRing5: { position: 'absolute', width: 140, height: 140, borderRadius: 70, borderWidth: 1, borderColor: 'rgba(255,140,43,0.08)' },
+  lensRing4: { position: 'absolute', width: 125, height: 125, borderRadius: 62.5, borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.1)' },
+  lensRing3: { position: 'absolute', width: 108, height: 108, borderRadius: 54, borderWidth: 2, borderColor: 'rgba(255,140,43,0.13)' },
+  lensRing2: { position: 'absolute', width: 92, height: 92, borderRadius: 46, borderWidth: 2, borderColor: 'rgba(255,140,43,0.17)' },
+  lensRing1: { position: 'absolute', width: 78, height: 78, borderRadius: 39, borderWidth: 2.5, borderColor: 'rgba(255,140,43,0.22)' },
+  lensReflection: { position: 'absolute', width: 12, height: 140, backgroundColor: 'rgba(255,220,150,0.06)', borderRadius: 6 },
+  lensCore: { width: 62, height: 62, borderRadius: 31, backgroundColor: 'rgba(255,140,43,0.05)', borderWidth: 2, borderColor: 'rgba(255,140,43,0.35)', alignItems: 'center', justifyContent: 'center' },
+  lensBMS: { fontSize: 18, fontWeight: '900', color: '#FF8C2B', letterSpacing: 3 },
+  lensFlare: { position: 'absolute', top: -10, right: -10, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,200,100,0.15)' },
+  // Hero Content
+  heroContent: { paddingHorizontal: 22 },
+  heroEyebrow: { fontSize: 9, fontWeight: '700', color: '#FF8C2B', letterSpacing: 3, textAlign: 'center', marginBottom: 10 },
+  h1Line1: { fontSize: 28, fontWeight: '300', color: '#fff', textAlign: 'center', lineHeight: 36 },
+  h1Gold: { fontSize: 32, fontWeight: '700', color: '#FFB347', textAlign: 'center', lineHeight: 40, textShadowColor: 'rgba(255,140,43,0.25)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 12 },
+  goldSweepOverlay: { position: 'absolute', top: 0, left: 0, width: 60, height: '100%', backgroundColor: 'rgba(255,220,130,0.12)', transform: [{ skewX: '-15deg' }] },
+  heroSub: { fontSize: 13, color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginTop: 10, lineHeight: 19 },
+  // Activity feed
+  activityFeed: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.025)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7, marginTop: 14, alignSelf: 'center' },
   activityDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#10B981' },
   activityIcon: { fontSize: 12 },
-  activityText: { flex: 1, fontSize: 10, color: 'rgba(255,255,255,0.5)' },
+  activityText: { maxWidth: width * 0.5, fontSize: 10, color: 'rgba(255,255,255,0.5)' },
   activityTime: { fontSize: 8, color: 'rgba(255,255,255,0.25)' },
+  // Trust
+  trustRow: { flexDirection: 'row', justifyContent: 'center', gap: 12, marginTop: 16 },
+  trustItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  trustText: { fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: '500' },
+  // Buttons
+  btnRow: { flexDirection: 'row', gap: 12, marginTop: 18, justifyContent: 'center' },
+  btnPrimary: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: '#FF8C2B', paddingHorizontal: 22, paddingVertical: 13, borderRadius: 14 },
+  btnPrimaryText: { fontSize: 14, fontWeight: '700', color: '#000' },
+  btnGlass: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 18, paddingVertical: 13, borderRadius: 14, borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.3)', backgroundColor: 'rgba(255,255,255,0.02)' },
+  btnGlassText: { fontSize: 14, fontWeight: '600', color: '#FFB347' },
+  // Showcase creator card
+  showcaseCard: { position: 'absolute', bottom: 16, right: 16, width: 130, height: 170, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,140,43,0.12)' },
+  showcaseImg: { width: '100%', height: '100%' },
+  showcaseOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
+  showcaseInfo: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 8, backgroundColor: 'rgba(5,4,3,0.85)' },
+  showcaseName: { fontSize: 10, fontWeight: '700', color: '#fff' },
+  showcaseMeta: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 },
+  showcaseRating: { fontSize: 9, color: 'rgba(255,255,255,0.6)' },
+  showcaseCity: { fontSize: 9, color: 'rgba(255,255,255,0.4)', marginLeft: 4 },
+  showcasePrice: { fontSize: 9, fontWeight: '600', color: '#FF8C2B', marginTop: 2 },
+  showcaseBadge: { position: 'absolute', top: 6, left: 6, backgroundColor: 'rgba(255,140,43,0.9)', paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4 },
+  showcaseBadgeText: { fontSize: 6, fontWeight: '800', color: '#000', letterSpacing: 0.5 },
   heroBg: { ...StyleSheet.absoluteFillObject, backgroundColor: '#030303' },
   // Content
-  heroContent: { paddingHorizontal: 22, marginTop: 30, paddingBottom: 0 },
   tagRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 18 },
   tagLine: { height: 1, width: 28, backgroundColor: 'rgba(255,140,43,0.5)' },
   tagText: { fontSize: 11, fontWeight: '700', color: '#FF8C2B', letterSpacing: 4 },
