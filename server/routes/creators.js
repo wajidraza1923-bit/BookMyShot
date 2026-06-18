@@ -98,11 +98,19 @@ router.get("/profile", protect, authorize("creator"), async (req, res, next) => 
 // Creator: update own profile
 router.put("/profile", protect, authorize("creator"), async (req, res, next) => {
   try {
+    // Whitelist allowed fields — prevent creators from modifying sensitive fields
+    const ALLOWED_FIELDS = ['specialty', 'bio', 'experience', 'location', 'city', 'category', 'budgetMin', 'budgetMax', 'social', 'gear', 'team', 'darkMode'];
+    const update = {};
+    for (const key of ALLOWED_FIELDS) {
+      if (req.body[key] !== undefined) update[key] = req.body[key];
+    }
+
     const creator = await Creator.findOneAndUpdate(
       { user: req.user._id },
-      { $set: req.body },
+      { $set: update },
       { new: true, runValidators: true }
     );
+    // Also update user name/phone if provided
     if (req.body.name || req.body.phone) {
       await User.findByIdAndUpdate(req.user._id, {
         ...(req.body.name && { name: req.body.name }),
