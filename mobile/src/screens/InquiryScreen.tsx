@@ -34,9 +34,19 @@ export default function InquiryScreen({ route, navigation }: any) {
   const update = (key: string, val: string) => setForm(f => ({ ...f, [key]: val }));
 
   const handleSubmit = async () => {
-    if (!form.name || !form.phone || !form.eventType) {
-      Alert.alert('Required', 'Please fill Name, Phone, and Event Type');
-      return;
+    // Validate based on destination
+    if (selectedCreatorId) {
+      // Direct creator inquiry: requires name + email
+      if (!form.name || !form.email) {
+        Alert.alert('Required', 'Please fill Name and Email for direct inquiry');
+        return;
+      }
+    } else {
+      // General inquiry: requires name + phone
+      if (!form.name || !form.phone) {
+        Alert.alert('Required', 'Please fill Name and Phone');
+        return;
+      }
     }
 
     setLoading(true);
@@ -44,9 +54,9 @@ export default function InquiryScreen({ route, navigation }: any) {
       const API_BASE = 'https://site--bookmyshot--ykz2mr8mzlrv.code.run/api';
       const payload: any = {
         name: form.name,
-        email: form.email,
+        email: form.email || '',
         phone: form.phone,
-        eventType: form.eventType,
+        eventType: form.eventType || 'Wedding',
         eventDate: form.eventDate || undefined,
         city: form.city,
         budget: Number(form.budget) || 0,
@@ -55,17 +65,26 @@ export default function InquiryScreen({ route, navigation }: any) {
 
       let endpoint = '/general-inquiries'; // Default: goes to admin only
 
-      // If a creator was selected (direct or user-chosen), use inquiries endpoint
+      // If a creator was selected (direct or user-chosen), use /inquiries endpoint
+      // This is the SAME endpoint used by the website creator-portfolio.html
       if (selectedCreatorId) {
         endpoint = '/inquiries';
         payload.creatorId = selectedCreatorId;
       }
 
-      console.log('[Inquiry] Endpoint:', endpoint, 'Payload:', JSON.stringify(payload));
+      // Include auth token if user is logged in (optionalAuth on backend)
+      const headers: any = { 'Content-Type': 'application/json' };
+      try {
+        const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+        const token = await AsyncStorage.getItem('bms_token');
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+      } catch {}
+
+      console.log('[Inquiry] Endpoint:', endpoint, 'Creator:', selectedCreatorId || 'none');
 
       const response = await fetch(`${API_BASE}${endpoint}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(payload),
       });
       const text = await response.text();
