@@ -226,6 +226,13 @@ export default function CreatorProfileScreen({ route, navigation }: any) {
                 </View>
               </View>
             )}
+            {/* Write Review Button */}
+            {isAuthenticated && (
+              <TouchableOpacity style={s.writeReviewBtn} onPress={() => navigation.navigate('WriteReview', { creatorId: id, creatorName: name })}>
+                <Ionicons name="create-outline" size={15} color="#000" />
+                <Text style={s.writeReviewText}>Write a Review</Text>
+              </TouchableOpacity>
+            )}
             {/* Review Cards */}
             {reviews.length > 0 ? reviews.filter(r => !r.hidden).map((r: any, i: number) => (
               <View key={r._id || i} style={s.reviewCard}>
@@ -351,6 +358,8 @@ const s = StyleSheet.create({
   barFill: { height: '100%', backgroundColor: '#FF8C2B', borderRadius: 2 },
   barCount: { fontSize: 9, color: 'rgba(255,255,255,0.3)', width: 14, textAlign: 'right' },
   reviewCard: { backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)' },
+  writeReviewBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#FF8C2B', borderRadius: 10, paddingVertical: 11, marginBottom: 12 },
+  writeReviewText: { fontSize: 13, fontWeight: '700', color: '#000' },
   reviewHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
   reviewAvatar: { width: 32, height: 32, borderRadius: 16 },
   reviewName: { fontSize: 12, fontWeight: '600', color: '#fff' },

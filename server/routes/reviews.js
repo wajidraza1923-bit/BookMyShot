@@ -33,7 +33,7 @@ router.get("/platform", async (req, res, next) => {
 
 // ═══ USER ═══
 
-// Submit creator review (must have completed booking)
+// Submit creator review (must have completed booking or approved inquiry)
 router.post("/", protect, async (req, res, next) => {
   try {
     const { creatorId, rating, title, text } = req.body;
@@ -43,11 +43,21 @@ router.post("/", protect, async (req, res, next) => {
     const existing = await Review.findOne({ user: req.user._id, creator: creatorId });
     if (existing) return res.status(400).json({ success: false, message: "You have already reviewed this creator" });
 
-    // Verify completed booking exists
+    // Verify completed booking OR approved inquiry exists
     const booking = await Booking.findOne({ user: req.user._id, creator: creatorId, status: { $in: ["Completed", "Payment Approved"] } });
-    if (!booking) return res.status(403).json({ success: false, message: "You can only review creators after a completed booking" });
+    let inquiryExists = false;
+    if (!booking) {
+      // Check for approved/responded inquiry
+      const Inquiry = require("../models/Inquiry");
+      const inquiry = await Inquiry.findOne({ user: req.user._id, creator: creatorId, status: { $in: ["approved", "responded", "contacted", "completed"] } });
+      if (inquiry) inquiryExists = true;
+    }
 
-    const review = await Review.create({ user: req.user._id, creator: creatorId, booking: booking._id, rating, title, text });
+    if (!booking && !inquiryExists) {
+      return res.status(403).json({ success: false, message: "You can only review creators after a completed booking or approved inquiry" });
+    }
+
+    const review = await Review.create({ user: req.user._id, creator: creatorId, booking: booking?._id, rating, title, text });
 
     // Update creator average rating
     const avg = await Review.aggregate([

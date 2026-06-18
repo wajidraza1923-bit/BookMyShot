@@ -14,6 +14,7 @@ import AdminLoginScreen from '../screens/AdminLoginScreen';
 import InfoScreen from '../screens/InfoScreen';
 import VerifyEmailScreen from '../screens/VerifyEmailScreen';
 import InquiryScreen from '../screens/InquiryScreen';
+import WriteReviewScreen from '../screens/WriteReviewScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -51,6 +52,7 @@ export default function GuestNavigator() {
       <Stack.Screen name="Info" component={InfoScreen} />
       <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} />
       <Stack.Screen name="Inquiry" component={InquiryScreen} />
+      <Stack.Screen name="WriteReview" component={WriteReviewScreen} />
     </Stack.Navigator>
   );
 }
