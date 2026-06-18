@@ -73,11 +73,28 @@ router.post("/user", async (req, res, next) => {
     if (!bookingId || !amount) {
       return res.status(400).json({ success: false, message: "Booking ID and amount are required" });
     }
+    if (amount <= 0) {
+      return res.status(400).json({ success: false, message: "Amount must be greater than 0" });
+    }
 
     const booking = await Booking.findById(bookingId);
     if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
     if (booking.user.toString() !== req.user._id.toString()) {
       return res.status(403).json({ success: false, message: "Not your booking" });
+    }
+
+    // ═══ VALIDATION: Total received must NEVER exceed booking amount ═══
+    const bookingTotal = booking.amount || booking.budget || 0;
+    if (bookingTotal > 0) {
+      const existingRecords = await PaymentRecord.find({ booking: bookingId, status: { $in: ["approved", "pending"] } });
+      const totalAlreadyRecorded = existingRecords.reduce((s, r) => s + r.amount, 0);
+      if (totalAlreadyRecorded + amount > bookingTotal) {
+        const maxAllowed = Math.max(0, bookingTotal - totalAlreadyRecorded);
+        return res.status(400).json({
+          success: false,
+          message: `Payment exceeds booking amount. Booking total: ₹${bookingTotal}, Already recorded: ₹${totalAlreadyRecorded}, Maximum allowed: ₹${maxAllowed}`,
+        });
+      }
     }
 
     const record = await PaymentRecord.create({
@@ -123,6 +140,9 @@ router.post("/creator", async (req, res, next) => {
     if (!bookingId || !amount) {
       return res.status(400).json({ success: false, message: "Booking ID and amount are required" });
     }
+    if (amount <= 0) {
+      return res.status(400).json({ success: false, message: "Amount must be greater than 0" });
+    }
 
     const creator = await Creator.findOne({ user: req.user._id });
     if (!creator) return res.status(403).json({ success: false, message: "Creator not found" });
@@ -131,6 +151,21 @@ router.post("/creator", async (req, res, next) => {
     if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
     if (booking.creator.toString() !== creator._id.toString()) {
       return res.status(403).json({ success: false, message: "Not your booking" });
+    }
+
+    // ═══ VALIDATION: Total received must NEVER exceed booking amount ═══
+    const bookingTotal = booking.amount || booking.budget || 0;
+    if (bookingTotal <= 0) {
+      return res.status(400).json({ success: false, message: "Booking amount not set. Please set the deal amount first." });
+    }
+    const existingRecords = await PaymentRecord.find({ booking: bookingId, status: "approved" });
+    const totalAlreadyPaid = existingRecords.reduce((s, r) => s + r.amount, 0);
+    if (totalAlreadyPaid + amount > bookingTotal) {
+      const maxAllowed = bookingTotal - totalAlreadyPaid;
+      return res.status(400).json({
+        success: false,
+        message: `Payment exceeds booking amount. Booking total: ₹${bookingTotal}, Already received: ₹${totalAlreadyPaid}, Maximum you can add: ₹${maxAllowed}`,
+      });
     }
 
     // Creator-added records are auto-approved
