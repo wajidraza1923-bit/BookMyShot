@@ -243,40 +243,52 @@ export default function HomeScreen({ navigation }: any) {
           )}
         </View>
 
-        {/* ═══ CINEMATIC HERO ═══ */}
+        {/* ═══ CINEMATIC HERO — Full first screen ═══ */}
         <Animated.View style={[s.heroWrap, { opacity: fadeAnim }]}>
           {/* Depth layers */}
           <View style={s.heroBg1} />
           <View style={s.heroBg2} />
 
-          {/* Gold particles */}
-          <Animated.View style={[s.gp, { left: 20, top: 50, transform: [{ translateY: particle1 }] }]} />
-          <Animated.View style={[s.gp, s.gpSm, { right: 35, top: 80, transform: [{ translateY: particle2 }] }]} />
-          <Animated.View style={[s.gp, { left: width * 0.5, top: 30, transform: [{ translateX: particle3 }] }]} />
-          <Animated.View style={[s.gp, s.gpLg, { right: 15, top: 160, transform: [{ translateY: particle1 }] }]} />
-          <Animated.View style={[s.gp, s.gpSm, { left: 45, top: 190, transform: [{ translateX: particle2 }] }]} />
-          <Animated.View style={[s.gp, { left: width * 0.7, top: 120, transform: [{ translateY: particle3 }] }]} />
+          {/* Orange light streaks behind lens */}
+          <Animated.View style={[s.streak1, { opacity: lensPulse.interpolate({ inputRange: [1, 1.04], outputRange: [0.06, 0.12] }) }]} />
+          <Animated.View style={[s.streak2, { opacity: lensPulse.interpolate({ inputRange: [1, 1.04], outputRange: [0.04, 0.09] }) }]} />
+          <Animated.View style={[s.streak3, { opacity: lensPulse.interpolate({ inputRange: [1, 1.04], outputRange: [0.05, 0.1] }) }]} />
 
-          {/* CAMERA LENS */}
-          <Animated.View style={[s.lens, { transform: [{ scale: shutterAnim.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] }) }] }]}>
-            <Animated.View style={[s.lGlow, { opacity: lensPulse.interpolate({ inputRange: [1, 1.04], outputRange: [0.25, 0.55] }), transform: [{ scale: lensPulse }] }]} />
-            <Animated.View style={[s.lR6, { transform: [{ rotate: lensRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }] }]} />
-            <Animated.View style={[s.lR5, { transform: [{ rotate: lensRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '-180deg'] }) }] }]} />
-            <Animated.View style={[s.lR4, { transform: [{ rotate: lensRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '120deg'] }) }] }]} />
-            <Animated.View style={[s.lR3, { transform: [{ rotate: lensRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '-240deg'] }) }] }]} />
-            <Animated.View style={[s.lR2, { transform: [{ rotate: lensRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '90deg'] }) }] }]} />
-            <View style={s.lR1} />
-            {/* Glass reflection */}
-            <Animated.View style={[s.lRefl, { transform: [{ translateX: goldSweep.interpolate({ inputRange: [0, 1], outputRange: [-60, 60] }) }, { rotate: '-22deg' }] }]} />
-            {/* Core */}
-            <Animated.View style={[s.lCore, { transform: [{ scale: shutterAnim }] }]}>
-              <Text style={s.lBMS}>BMS</Text>
-            </Animated.View>
-            {/* Flare */}
-            <Animated.View style={[s.lFlare, { opacity: lensPulse.interpolate({ inputRange: [1, 1.04], outputRange: [0, 0.35] }) }]} />
+          {/* Cinematic glow behind lens */}
+          <Animated.View style={[s.lensBackGlow, { opacity: lensPulse.interpolate({ inputRange: [1, 1.04], outputRange: [0.3, 0.6] }), transform: [{ scale: lensPulse }] }]} />
+
+          {/* Gold particles */}
+          <Animated.View style={[s.gp, { left: 20, top: 60, transform: [{ translateY: particle1 }] }]} />
+          <Animated.View style={[s.gp, s.gpSm, { right: 30, top: 90, transform: [{ translateY: particle2 }] }]} />
+          <Animated.View style={[s.gp, { left: width * 0.55, top: 40, transform: [{ translateX: particle3 }] }]} />
+          <Animated.View style={[s.gp, s.gpLg, { right: 18, top: 200, transform: [{ translateY: particle1 }] }]} />
+          <Animated.View style={[s.gp, s.gpSm, { left: 50, top: 230, transform: [{ translateX: particle2 }] }]} />
+
+          {/* REALISTIC DSLR CAMERA LENS — PNG with slow rotation */}
+          <Animated.View style={[s.lensWrap, { transform: [
+            { scale: shutterAnim.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }) },
+            { rotate: lensRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '5deg'] }) },
+          ] }]}>
+            <Image source={{ uri: 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=400' }} style={s.lensImg} />
+            {/* Glow overlay on lens */}
+            <Animated.View style={[s.lensGlowOverlay, { opacity: lensPulse.interpolate({ inputRange: [1, 1.04], outputRange: [0, 0.15] }) }]} />
           </Animated.View>
 
-          {/* Content */}
+          {/* FLOATING WEDDING PHOTOS — 3D perspective with shadows */}
+          <Animated.View style={[s.floatPhoto, s.fp1, { transform: [{ translateY: particle1 }, { perspective: 600 }, { rotateY: '8deg' }, { rotateX: '-3deg' }] }]}>
+            <Image source={{ uri: 'https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=150' }} style={s.fpImg} />
+          </Animated.View>
+          <Animated.View style={[s.floatPhoto, s.fp2, { transform: [{ translateY: particle2 }, { perspective: 600 }, { rotateY: '-6deg' }, { rotateX: '4deg' }] }]}>
+            <Image source={{ uri: 'https://images.unsplash.com/photo-1606216794079-73f85bbd57d5?w=150' }} style={s.fpImg} />
+          </Animated.View>
+          <Animated.View style={[s.floatPhoto, s.fp3, { transform: [{ translateX: particle3 }, { perspective: 600 }, { rotateY: '5deg' }, { rotateX: '2deg' }] }]}>
+            <Image source={{ uri: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=150' }} style={s.fpImg} />
+          </Animated.View>
+          <Animated.View style={[s.floatPhoto, s.fp4, { transform: [{ translateY: particle3 }, { perspective: 600 }, { rotateY: '-4deg' }, { rotateX: '-5deg' }] }]}>
+            <Image source={{ uri: 'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=150' }} style={s.fpImg} />
+          </Animated.View>
+
+          {/* HERO TEXT + CTAs */}
           <Animated.View style={[s.heroContent, { transform: [{ translateY: slideAnim }] }]}>
             <Text style={s.heroEyebrow}>INDIA'S PREMIUM WEDDING MARKETPLACE</Text>
             <Text style={s.h1a}>Find Your Perfect</Text>
@@ -284,7 +296,7 @@ export default function HomeScreen({ navigation }: any) {
               <Text style={s.h1b}>Wedding Creator</Text>
               <Animated.View style={[s.goldSweep, { transform: [{ translateX: goldSweep.interpolate({ inputRange: [0, 1], outputRange: [-width, width] }) }] }]} />
             </View>
-            <Text style={s.heroSub}>10,000+ verified photographers, filmmakers & artists</Text>
+            <Text style={s.heroSub}>Verified photographers, filmmakers & artists across India</Text>
 
             {/* Activity ticker */}
             <Animated.View style={[s.ticker, { transform: [{ translateY: activitySlide }] }]}>
@@ -293,18 +305,15 @@ export default function HomeScreen({ navigation }: any) {
               <Text style={s.tickText} numberOfLines={1}>{ACTIVITIES[activityIdx].text}</Text>
             </Animated.View>
 
-            {/* Stat cards */}
-            <View style={s.statCards}>
-              <View style={s.statCard}><Text style={s.scNum}>10K+</Text><Text style={s.scLabel}>Creators</Text></View>
-              <View style={s.statCard}><Text style={s.scNum}>5K+</Text><Text style={s.scLabel}>Weddings</Text></View>
-              <View style={s.statCard}><Text style={s.scNum}>100+</Text><Text style={s.scLabel}>Cities</Text></View>
-            </View>
-
-            {/* Trust */}
-            <View style={s.trustRow}>
-              <View style={s.trustItem}><Ionicons name="checkmark-circle" size={12} color="#10B981" /><Text style={s.trustTxt}>Verified</Text></View>
-              <View style={s.trustItem}><Ionicons name="star" size={12} color="#FFB347" /><Text style={s.trustTxt}>4.9 Rated</Text></View>
-              <View style={s.trustItem}><Ionicons name="lock-closed" size={12} color="#3B82F6" /><Text style={s.trustTxt}>Secure</Text></View>
+            {/* Premium Glass Card */}
+            <View style={s.glassCard}>
+              <View style={s.glassRow}>
+                <View style={s.glassItem}><Ionicons name="star" size={14} color="#FF8C2B" /><Text style={s.glassNum}>4.9</Text><Text style={s.glassLabel}>Rating</Text></View>
+                <View style={s.glassDivider} />
+                <View style={s.glassItem}><Text style={s.glassNum}>10,000+</Text><Text style={s.glassLabel}>Creators</Text></View>
+                <View style={s.glassDivider} />
+                <View style={s.glassItem}><Text style={s.glassNum}>50,000+</Text><Text style={s.glassLabel}>Bookings</Text></View>
+              </View>
             </View>
 
             {/* CTAs */}
@@ -321,15 +330,6 @@ export default function HomeScreen({ navigation }: any) {
 
         {/* HERO CONTENT — below fold */}
         <Animated.View style={{ opacity: fadeAnim }}>
-
-        {/* STATS */}
-        <View style={s.statsBar}>
-          <View style={s.stat}><Counter end={10000} /><Text style={s.statLbl}>Creators</Text></View>
-          <View style={s.statDiv} />
-          <View style={s.stat}><Counter end={5000} /><Text style={s.statLbl}>Weddings</Text></View>
-          <View style={s.statDiv} />
-          <View style={s.stat}><Counter end={100} /><Text style={s.statLbl}>Cities</Text></View>
-        </View>
 
         {/* WEDDING MOMENTS CAROUSEL */}
         <View style={s.momentsSection}>
@@ -548,6 +548,10 @@ function PremiumCard({ item, onPress, badge }: any) {
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#050403' },
+  // Loading screen styles
+  logoCore: { width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(255,140,43,0.06)', borderWidth: 2, borderColor: 'rgba(255,140,43,0.3)', alignItems: 'center', justifyContent: 'center' },
+  logoBMS: { fontSize: 18, fontWeight: '800', color: '#FF8C2B', letterSpacing: 2 },
+  brandText: { fontSize: 14, fontWeight: '300', color: '#FF8C2B', letterSpacing: 5 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 56 : 46, paddingBottom: 8 },
   logo: { fontSize: 15, fontWeight: '300', color: '#FF8C2B', letterSpacing: 6 },
   logoIcon: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, borderColor: '#FF8C2B', alignItems: 'center', justifyContent: 'center' },
@@ -558,46 +562,49 @@ const s = StyleSheet.create({
   signInPill: { paddingHorizontal: 14, paddingVertical: 6, backgroundColor: '#FF8C2B', borderRadius: 16 },
   signInText: { fontSize: 11, fontWeight: '700', color: '#000' },
   // Hero
-  heroWrap: { paddingBottom: 10, position: 'relative', overflow: 'hidden' },
-  heroBg1: { position: 'absolute', top: 0, left: 0, right: 0, height: 300, backgroundColor: 'rgba(255,140,43,0.012)' },
-  heroBg2: { position: 'absolute', top: 60, left: -40, width: width + 80, height: 180, backgroundColor: 'rgba(255,100,20,0.008)', borderRadius: 90, transform: [{ rotate: '-4deg' }] },
+  heroWrap: { paddingBottom: 16, position: 'relative', overflow: 'hidden', minHeight: 580 },
+  heroBg1: { position: 'absolute', top: 0, left: 0, right: 0, height: 400, backgroundColor: 'rgba(255,140,43,0.01)' },
+  heroBg2: { position: 'absolute', top: 80, left: -40, width: width + 80, height: 200, backgroundColor: 'rgba(255,100,20,0.006)', borderRadius: 100, transform: [{ rotate: '-3deg' }] },
+  // Light streaks
+  streak1: { position: 'absolute', top: 80, left: width / 2 - 100, width: 200, height: 2, backgroundColor: '#FF8C2B', borderRadius: 1, transform: [{ rotate: '25deg' }] },
+  streak2: { position: 'absolute', top: 120, left: width / 2 - 80, width: 160, height: 1.5, backgroundColor: '#FF8C2B', borderRadius: 1, transform: [{ rotate: '-15deg' }] },
+  streak3: { position: 'absolute', top: 150, left: width / 2 - 60, width: 120, height: 1, backgroundColor: '#FFB347', borderRadius: 1, transform: [{ rotate: '40deg' }] },
+  // Cinematic glow
+  lensBackGlow: { position: 'absolute', top: 20, alignSelf: 'center', width: 220, height: 220, borderRadius: 110, backgroundColor: 'rgba(255,140,43,0.06)' },
+  // Particles
   gp: { position: 'absolute', width: 3.5, height: 3.5, borderRadius: 1.75, backgroundColor: 'rgba(255,160,40,0.4)' },
   gpSm: { width: 2, height: 2, borderRadius: 1, backgroundColor: 'rgba(255,180,60,0.3)' },
   gpLg: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: 'rgba(255,140,43,0.2)' },
-  // Lens
-  lens: { alignSelf: 'center', width: 150, height: 150, alignItems: 'center', justifyContent: 'center', marginTop: 8, marginBottom: 16 },
-  lGlow: { position: 'absolute', width: 170, height: 170, borderRadius: 85, backgroundColor: 'rgba(255,140,43,0.05)' },
-  lR6: { position: 'absolute', width: 148, height: 148, borderRadius: 74, borderWidth: 0.5, borderColor: 'rgba(255,140,43,0.06)' },
-  lR5: { position: 'absolute', width: 132, height: 132, borderRadius: 66, borderWidth: 1, borderColor: 'rgba(255,140,43,0.08)' },
-  lR4: { position: 'absolute', width: 116, height: 116, borderRadius: 58, borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.11)' },
-  lR3: { position: 'absolute', width: 100, height: 100, borderRadius: 50, borderWidth: 2, borderColor: 'rgba(255,140,43,0.14)' },
-  lR2: { position: 'absolute', width: 84, height: 84, borderRadius: 42, borderWidth: 2, borderColor: 'rgba(255,140,43,0.18)' },
-  lR1: { position: 'absolute', width: 70, height: 70, borderRadius: 35, borderWidth: 2.5, borderColor: 'rgba(255,140,43,0.24)' },
-  lRefl: { position: 'absolute', width: 10, height: 120, backgroundColor: 'rgba(255,220,150,0.06)', borderRadius: 5 },
-  lCore: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,140,43,0.05)', borderWidth: 2, borderColor: 'rgba(255,140,43,0.35)', alignItems: 'center', justifyContent: 'center' },
-  lBMS: { fontSize: 16, fontWeight: '900', color: '#FF8C2B', letterSpacing: 2.5 },
-  lFlare: { position: 'absolute', top: -8, right: -8, width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,200,100,0.15)' },
+  // Camera Lens PNG
+  lensWrap: { alignSelf: 'center', width: 200, height: 200, marginTop: 10, marginBottom: 10 },
+  lensImg: { width: 200, height: 200, borderRadius: 100, resizeMode: 'cover' },
+  lensGlowOverlay: { ...StyleSheet.absoluteFillObject, borderRadius: 100, backgroundColor: 'rgba(255,140,43,0.1)' },
+  // Floating photos
+  floatPhoto: { position: 'absolute', borderRadius: 10, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+  fp1: { top: 30, left: 10, width: 60, height: 75 },
+  fp2: { top: 60, right: 12, width: 55, height: 70 },
+  fp3: { top: 180, left: 15, width: 50, height: 65 },
+  fp4: { top: 170, right: 20, width: 52, height: 68 },
+  fpImg: { width: '100%', height: '100%' },
   // Content
-  heroContent: { paddingHorizontal: 20 },
+  heroContent: { paddingHorizontal: 20, marginTop: 4 },
   heroEyebrow: { fontSize: 8, fontWeight: '700', color: '#FF8C2B', letterSpacing: 3, textAlign: 'center', marginBottom: 8 },
   h1a: { fontSize: 26, fontWeight: '300', color: '#fff', textAlign: 'center', lineHeight: 32 },
   h1b: { fontSize: 30, fontWeight: '700', color: '#FFB347', textAlign: 'center', lineHeight: 38, textShadowColor: 'rgba(255,140,43,0.2)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 10 },
   goldSweep: { position: 'absolute', top: 0, left: 0, width: 50, height: '100%', backgroundColor: 'rgba(255,220,130,0.1)', transform: [{ skewX: '-15deg' }] },
-  heroSub: { fontSize: 12, color: 'rgba(255,255,255,0.45)', textAlign: 'center', marginTop: 8, lineHeight: 18 },
+  heroSub: { fontSize: 12, color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginTop: 6, lineHeight: 17 },
   // Ticker
-  ticker: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'center', backgroundColor: 'rgba(255,255,255,0.02)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, marginTop: 12 },
+  ticker: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'center', backgroundColor: 'rgba(255,255,255,0.02)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, marginTop: 10 },
   tickDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#10B981' },
   tickIcon: { fontSize: 11 },
   tickText: { fontSize: 9, color: 'rgba(255,255,255,0.4)', maxWidth: width * 0.55 },
-  // Stat cards
-  statCards: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginTop: 14 },
-  statCard: { backgroundColor: 'rgba(255,255,255,0.025)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', borderRadius: 12, paddingVertical: 10, paddingHorizontal: 14, alignItems: 'center', minWidth: 80 },
-  scNum: { fontSize: 16, fontWeight: '800', color: '#FF8C2B' },
-  scLabel: { fontSize: 8, color: 'rgba(255,255,255,0.4)', marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.5 },
-  // Trust
-  trustRow: { flexDirection: 'row', justifyContent: 'center', gap: 14, marginTop: 12 },
-  trustItem: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  trustTxt: { fontSize: 9, color: 'rgba(255,255,255,0.45)' },
+  // Glass card
+  glassCard: { marginTop: 14, backgroundColor: 'rgba(255,255,255,0.025)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', borderRadius: 16, paddingVertical: 14, paddingHorizontal: 10 },
+  glassRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' },
+  glassItem: { alignItems: 'center' },
+  glassNum: { fontSize: 15, fontWeight: '800', color: '#FF8C2B' },
+  glassLabel: { fontSize: 8, color: 'rgba(255,255,255,0.4)', marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.5 },
+  glassDivider: { width: 1, height: 28, backgroundColor: 'rgba(255,255,255,0.06)' },
   // Buttons
   btnRow: { flexDirection: 'row', gap: 10, marginTop: 16, justifyContent: 'center' },
   btnPrimary: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FF8C2B', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12 },
@@ -609,12 +616,6 @@ const s = StyleSheet.create({
   btnPrimaryText: { fontSize: 14, fontWeight: '700', color: '#000' },
   btnGlass: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 20, paddingVertical: 13, borderRadius: 14, borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.35)', backgroundColor: 'rgba(255,255,255,0.03)' },
   btnGlassText: { fontSize: 14, fontWeight: '600', color: '#FFB347' },
-  // Stats
-  statsBar: { flexDirection: 'row', marginHorizontal: 16, marginTop: 24, backgroundColor: 'rgba(15,12,8,0.96)', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: 'rgba(255,140,43,0.12)' },
-  stat: { flex: 1, alignItems: 'center' },
-  counterNum: { fontSize: 17, fontWeight: '700', color: '#FF8C2B' },
-  statLbl: { fontSize: 9, color: 'rgba(255,255,255,0.4)', marginTop: 2 },
-  statDiv: { width: 1, height: 26, backgroundColor: 'rgba(255,255,255,0.05)' },
   // Sections
   secTitle: { fontSize: 15, fontWeight: '700', color: '#fff', paddingHorizontal: 20, marginTop: 28, marginBottom: 12 },
   secRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', paddingHorizontal: 20, marginTop: 30, marginBottom: 12 },
