@@ -264,16 +264,40 @@ export default function HomeScreen({ navigation }: any) {
           <Animated.View style={[s.gp, s.gpLg, { right: 18, top: 200, transform: [{ translateY: particle1 }] }]} />
           <Animated.View style={[s.gp, s.gpSm, { left: 50, top: 230, transform: [{ translateX: particle2 }] }]} />
 
-          {/* REALISTIC DSLR CAMERA LENS — Dark-fit image with slow rotation */}
+          {/* REAL 3D CAMERA LENS — procedural geometry (not an image) */}
           <Animated.View style={[s.lensWrap, { transform: [
             { scale: shutterAnim.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }) },
             { rotate: lensRotate.interpolate({ inputRange: [0, 1], outputRange: ['-2deg', '3deg'] }) },
+            { perspective: 800 },
+            { rotateX: '8deg' },
           ] }]}>
-            <Image source={{ uri: 'https://images.unsplash.com/photo-1617005082133-548c4dd27f35?w=400' }} style={s.lensImg} />
+            {/* Outer shadow ring (depth) */}
+            <View style={s.l3dShadow} />
+            {/* Body barrel */}
+            <View style={s.l3dBarrel}>
+              {/* Metallic ring highlights */}
+              <View style={s.l3dRingTop} />
+              <View style={s.l3dRingMid} />
+              <View style={s.l3dRingBot} />
+            </View>
+            {/* Front glass element */}
+            <View style={s.l3dGlass}>
+              {/* Inner glass layers (depth) */}
+              <View style={s.l3dGlassInner1} />
+              <View style={s.l3dGlassInner2} />
+              {/* Gold accent ring */}
+              <View style={s.l3dGoldRing} />
+              {/* Core (dark center with gold BMS) */}
+              <Animated.View style={[s.l3dCore, { transform: [{ scale: shutterAnim }] }]}>
+                <Text style={s.l3dBMS}>BMS</Text>
+              </Animated.View>
+            </View>
+            {/* Specular highlight (top-left) */}
+            <Animated.View style={[s.l3dSpecular, { opacity: lensPulse.interpolate({ inputRange: [1, 1.04], outputRange: [0.15, 0.35] }) }]} />
             {/* Reflection sweep */}
-            <Animated.View style={[s.lensSweep, { transform: [{ translateX: goldSweep.interpolate({ inputRange: [0, 1], outputRange: [-100, 100] }) }, { rotate: '-20deg' }] }]} />
-            {/* Glow overlay on lens */}
-            <Animated.View style={[s.lensGlowOverlay, { opacity: lensPulse.interpolate({ inputRange: [1, 1.04], outputRange: [0, 0.12] }) }]} />
+            <Animated.View style={[s.l3dSweep, { transform: [{ translateX: goldSweep.interpolate({ inputRange: [0, 1], outputRange: [-90, 90] }) }, { rotate: '-18deg' }] }]} />
+            {/* Focus grip texture */}
+            <View style={s.l3dGrip} />
           </Animated.View>
 
           {/* FLOATING WEDDING PHOTOS — 3D perspective with shadows */}
@@ -577,11 +601,22 @@ const s = StyleSheet.create({
   gp: { position: 'absolute', width: 3, height: 3, borderRadius: 1.5, backgroundColor: 'rgba(249,115,22,0.45)' },
   gpSm: { width: 2, height: 2, borderRadius: 1, backgroundColor: 'rgba(255,180,60,0.3)' },
   gpLg: { width: 4.5, height: 4.5, borderRadius: 2.25, backgroundColor: 'rgba(249,115,22,0.2)' },
-  // Camera Lens
-  lensWrap: { alignSelf: 'center', width: 220, height: 220, marginTop: 6, marginBottom: 12, position: 'relative' },
-  lensImg: { width: 220, height: 220, borderRadius: 110, resizeMode: 'cover' },
-  lensSweep: { position: 'absolute', top: 10, left: '50%', marginLeft: -6, width: 12, height: 200, backgroundColor: 'rgba(255,220,150,0.07)', borderRadius: 6 },
-  lensGlowOverlay: { ...StyleSheet.absoluteFillObject, borderRadius: 110, backgroundColor: 'rgba(249,115,22,0.08)' },
+  // 3D Camera Lens (procedural — no image)
+  lensWrap: { alignSelf: 'center', width: 200, height: 200, marginTop: 6, marginBottom: 12, alignItems: 'center', justifyContent: 'center' },
+  l3dShadow: { position: 'absolute', width: 210, height: 210, borderRadius: 105, backgroundColor: 'rgba(0,0,0,0.6)', top: 8, left: -5 },
+  l3dBarrel: { width: 190, height: 190, borderRadius: 95, backgroundColor: '#1a1a1a', borderWidth: 3, borderColor: '#2a2a2a', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.7, shadowRadius: 20, elevation: 15 },
+  l3dRingTop: { position: 'absolute', top: 8, left: 8, right: 8, height: 3, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 2 },
+  l3dRingMid: { position: 'absolute', top: '50%', left: 4, right: 4, height: 2, backgroundColor: 'rgba(249,115,22,0.12)', borderRadius: 1, marginTop: -1 },
+  l3dRingBot: { position: 'absolute', bottom: 10, left: 10, right: 10, height: 2, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 1 },
+  l3dGlass: { width: 150, height: 150, borderRadius: 75, backgroundColor: '#0a0a14', borderWidth: 4, borderColor: '#333', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  l3dGlassInner1: { position: 'absolute', width: 130, height: 130, borderRadius: 65, borderWidth: 2, borderColor: 'rgba(249,115,22,0.12)' },
+  l3dGlassInner2: { position: 'absolute', width: 105, height: 105, borderRadius: 52.5, borderWidth: 1.5, borderColor: 'rgba(249,115,22,0.08)' },
+  l3dGoldRing: { position: 'absolute', width: 85, height: 85, borderRadius: 42.5, borderWidth: 2.5, borderColor: 'rgba(249,115,22,0.25)' },
+  l3dCore: { width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(5,4,3,0.95)', borderWidth: 2, borderColor: 'rgba(249,115,22,0.4)', alignItems: 'center', justifyContent: 'center' },
+  l3dBMS: { fontSize: 14, fontWeight: '900', color: '#F97316', letterSpacing: 2 },
+  l3dSpecular: { position: 'absolute', top: 18, left: 25, width: 50, height: 25, borderRadius: 25, backgroundColor: 'rgba(255,255,255,0.12)', transform: [{ rotate: '-30deg' }] },
+  l3dSweep: { position: 'absolute', width: 10, height: 160, backgroundColor: 'rgba(255,220,150,0.06)', borderRadius: 5 },
+  l3dGrip: { position: 'absolute', bottom: 0, left: 30, right: 30, height: 18, borderBottomLeftRadius: 95, borderBottomRightRadius: 95, backgroundColor: 'rgba(255,255,255,0.02)', borderTopWidth: 1, borderTopColor: 'rgba(249,115,22,0.08)' },
   // Floating photos
   floatPhoto: { position: 'absolute', borderRadius: 10, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 15, elevation: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
   fp1: { top: 20, left: 8, width: 62, height: 80 },
