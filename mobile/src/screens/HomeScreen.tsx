@@ -8,6 +8,7 @@ import { colors, spacing, typography, radius, shadows } from '../theme';
 import { creatorsAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import PremiumHero from '../components/PremiumHero';
 
 const { width } = Dimensions.get('window');
 const CARD_W = width * 0.8;
@@ -65,25 +66,12 @@ export default function HomeScreen({ navigation }: any) {
   const [moments, setMoments] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>(CATEGORIES_DEFAULT);
   const [testimonials, setTestimonials] = useState<any[]>(TESTIMONIALS);
-  const [heroIdx, setHeroIdx] = useState(0);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const shimmer = useRef(new Animated.Value(0)).current;
-  const ring1Rot = useRef(new Animated.Value(0)).current;
-  const ring2Rot = useRef(new Animated.Value(0)).current;
-  const ring3Rot = useRef(new Animated.Value(0)).current;
-  const glowPulse = useRef(new Animated.Value(0.4)).current;
-  const particle1Y = useRef(new Animated.Value(0)).current;
-  const particle2Y = useRef(new Animated.Value(0)).current;
-  const particle3X = useRef(new Animated.Value(0)).current;
   const goldSweep = useRef(new Animated.Value(0)).current;
-  const focusScale = useRef(new Animated.Value(1.15)).current;
-  const focusOpacity = useRef(new Animated.Value(0)).current;
-  const apertureRot = useRef(new Animated.Value(0)).current;
-  const lensFlare = useRef(new Animated.Value(0)).current;
-  const breathe = useRef(new Animated.Value(1)).current;
 
-  // Shimmer loop for logo
+  // Shimmer loop for header logo
   useEffect(() => {
     const loop = Animated.loop(Animated.sequence([
       Animated.delay(5000),
@@ -93,62 +81,6 @@ export default function HomeScreen({ navigation }: any) {
     loop.start(); return () => loop.stop();
   }, []);
 
-  // Rotating lens rings — different speeds for depth
-  useEffect(() => {
-    Animated.loop(Animated.timing(ring1Rot, { toValue: 1, duration: 20000, easing: Easing.linear, useNativeDriver: true })).start();
-    Animated.loop(Animated.timing(ring2Rot, { toValue: 1, duration: 30000, easing: Easing.linear, useNativeDriver: true })).start();
-    Animated.loop(Animated.timing(ring3Rot, { toValue: 1, duration: 45000, easing: Easing.linear, useNativeDriver: true })).start();
-    // Aperture blade rotation
-    Animated.loop(Animated.timing(apertureRot, { toValue: 1, duration: 60000, easing: Easing.linear, useNativeDriver: true })).start();
-  }, []);
-
-  // Glow pulse — breathing light
-  useEffect(() => {
-    Animated.loop(Animated.sequence([
-      Animated.timing(glowPulse, { toValue: 0.8, duration: 2000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-      Animated.timing(glowPulse, { toValue: 0.4, duration: 2000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-    ])).start();
-    // Gentle breathe scale
-    Animated.loop(Animated.sequence([
-      Animated.timing(breathe, { toValue: 1.02, duration: 3000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-      Animated.timing(breathe, { toValue: 1, duration: 3000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-    ])).start();
-  }, []);
-
-  // Floating particles — multiple axes
-  useEffect(() => {
-    Animated.loop(Animated.sequence([
-      Animated.timing(particle1Y, { toValue: -14, duration: 3000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-      Animated.timing(particle1Y, { toValue: 0, duration: 3000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-    ])).start();
-    Animated.loop(Animated.sequence([
-      Animated.timing(particle2Y, { toValue: 12, duration: 4000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-      Animated.timing(particle2Y, { toValue: 0, duration: 4000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-    ])).start();
-    Animated.loop(Animated.sequence([
-      Animated.timing(particle3X, { toValue: 8, duration: 5000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-      Animated.timing(particle3X, { toValue: -8, duration: 5000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-    ])).start();
-  }, []);
-
-  // Camera focus effect on load — scale down + sharpen
-  useEffect(() => {
-    // Lens focus animation
-    Animated.sequence([
-      Animated.delay(300),
-      Animated.parallel([
-        Animated.spring(focusScale, { toValue: 1, useNativeDriver: true, tension: 20, friction: 7 }),
-        Animated.timing(focusOpacity, { toValue: 1, duration: 800, easing: Easing.out(Easing.ease), useNativeDriver: true }),
-      ]),
-    ]).start();
-    // Periodic lens flare
-    Animated.loop(Animated.sequence([
-      Animated.delay(6000),
-      Animated.timing(lensFlare, { toValue: 1, duration: 800, easing: Easing.bezier(0.4, 0, 0.2, 1), useNativeDriver: true }),
-      Animated.timing(lensFlare, { toValue: 0, duration: 400, useNativeDriver: true }),
-    ])).start();
-  }, []);
-
   // Gold sweep on "Dream Wedding" every 4s
   useEffect(() => {
     Animated.loop(Animated.sequence([
@@ -156,12 +88,6 @@ export default function HomeScreen({ navigation }: any) {
       Animated.timing(goldSweep, { toValue: 1, duration: 1200, easing: Easing.bezier(0.4, 0, 0.2, 1), useNativeDriver: true }),
       Animated.timing(goldSweep, { toValue: 0, duration: 0, useNativeDriver: true }),
     ])).start();
-  }, []);
-
-  // Hero image rotation
-  useEffect(() => {
-    const t = setInterval(() => setHeroIdx(i => (i + 1) % WEDDING_IMGS.length), 5000);
-    return () => clearInterval(t);
   }, []);
 
   const loadData = useCallback(async () => {
@@ -257,89 +183,31 @@ export default function HomeScreen({ navigation }: any) {
           )}
         </View>
 
-        {/* HERO */}
-        <Animated.View style={[s.hero, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-          <View style={s.heroBg}>
-            {/* Multiple lens layers - LEFT */}
-            <View style={s.lensL1} /><View style={s.lensL2} /><View style={s.lensL3} />
-            {/* Multiple lens layers - RIGHT (larger, more visible) */}
-            <View style={s.lensR1} /><View style={s.lensR2} /><View style={s.lensR3} /><View style={s.lensR4} /><View style={s.lensR5} />
-            {/* Center glow */}
-            <View style={s.centerGlow} />
-            {/* Flare particles - animated golden dust */}
-            <Animated.View style={[s.particle1, { transform: [{ translateY: particle1Y }] }]} />
-            <Animated.View style={[s.particle2, { transform: [{ translateY: particle2Y }] }]} />
-            <Animated.View style={[s.particle3, { transform: [{ translateY: particle1Y }, { translateX: particle3X }] }]} />
-            <Animated.View style={[s.particle4, { transform: [{ translateY: particle2Y }] }]} />
-            <Animated.View style={[s.particle5, { transform: [{ translateY: particle1Y }] }]} />
-            <Animated.View style={[s.particle6, { transform: [{ translateY: particle2Y }, { translateX: particle3X }] }]} />
-            <Animated.View style={[s.particle7, { transform: [{ translateY: particle1Y }] }]} />
-            <Animated.View style={[s.particle8, { transform: [{ translateX: particle3X }] }]} />
-            {/* Light streaks */}
-            <Animated.View style={[s.streak1, { transform: [{ translateX: shimmer.interpolate({ inputRange: [0, 1], outputRange: [-250, width + 150] }) }] }]} />
-            <View style={s.streak2} />
+        {/* ═══ PREMIUM HERO ═══ */}
+        <PremiumHero />
+
+        {/* HERO CONTENT */}
+        <Animated.View style={[s.heroContent, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+          <View style={s.tagRow}><View style={s.tagLine} /><Text style={s.tagText}>PREMIUM WEDDING CINEMA</Text><View style={s.tagLine} /></View>
+          <Text style={s.h1White}>Capture Your</Text>
+          <View style={{ overflow: 'hidden' }}>
+            <Text style={s.h1Gold}>Dream Wedding</Text>
+            <Animated.View style={[s.goldSweepOverlay, { transform: [{ translateX: goldSweep.interpolate({ inputRange: [0, 1], outputRange: [-width, width] }) }] }]} />
           </View>
-
-          {/* BMS LENS SYSTEM — Premium camera lens with multiple glass elements */}
-          <Animated.View style={[s.logoArea, { transform: [{ scale: focusScale }], opacity: focusOpacity }]}>
-            {/* Outer glow */}
-            <Animated.View style={[s.logoGlow, { opacity: glowPulse, transform: [{ scale: breathe }] }]} />
-            {/* Outermost ring — slowest */}
-            <Animated.View style={[s.lensRing6, { transform: [{ rotate: ring3Rot.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }] }]} />
-            {/* Glass element 5 */}
-            <Animated.View style={[s.lensRing5, { transform: [{ rotate: apertureRot.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '-360deg'] }) }] }]} />
-            {/* Ring 4 */}
-            <Animated.View style={[s.logoRing4, { transform: [{ rotate: ring2Rot.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }] }]} />
-            {/* Ring 3 — counter-rotate */}
-            <Animated.View style={[s.logoRing3, { transform: [{ rotate: ring1Rot.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '-360deg'] }) }] }]} />
-            {/* Ring 2 */}
-            <Animated.View style={[s.logoRing2, { transform: [{ rotate: ring2Rot.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }] }]} />
-            {/* Inner solid ring */}
-            <View style={s.logoRing1} />
-            {/* Core lens element */}
-            <View style={s.logoCore}>
-              <Text style={s.logoBMS}>BMS</Text>
-            </View>
-            {/* Lens flare overlay */}
-            <Animated.View style={[s.lensFlareOverlay, { opacity: lensFlare }]} />
-            {/* Focus ring tick marks */}
-            <Animated.View style={[s.focusRing, { transform: [{ rotate: ring1Rot.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '90deg'] }) }] }]}>
-              {[0, 45, 90, 135, 180, 225, 270, 315].map(deg => (
-                <View key={deg} style={[s.focusTick, { transform: [{ rotate: `${deg}deg` }, { translateY: -72 }] }]} />
-              ))}
-            </Animated.View>
-          </Animated.View>
-
-          {/* Brand */}
-          <View style={s.brandArea}>
-            <Text style={s.brandText}>B O O K M Y S H O T</Text>
-            <View style={s.brandFlare} />
-            <Text style={s.brandSub}>India's Premium Wedding Creator Marketplace</Text>
+          <Text style={s.h1White}>Experience</Text>
+          <Text style={s.heroDesc}>Cinematic photographers, award-winning filmmakers & creative professionals — all verified.</Text>
+          <View style={s.chipRow}>
+            <View style={s.chip}><Ionicons name="checkmark-circle" size={13} color="#10B981" /><Text style={s.chipText}>Verified</Text></View>
+            <View style={s.chip}><Ionicons name="star" size={13} color="#FFB347" /><Text style={s.chipText}>Real Reviews</Text></View>
+            <View style={s.chip}><Ionicons name="flash" size={13} color="#A78BFA" /><Text style={s.chipText}>Fast Reply</Text></View>
           </View>
-
-          {/* Content */}
-          <View style={s.heroContent}>
-            <View style={s.tagRow}><View style={s.tagLine} /><Text style={s.tagText}>PREMIUM WEDDING CINEMA</Text><View style={s.tagLine} /></View>
-            <Text style={s.h1White}>Capture Your</Text>
-            <View style={{ overflow: 'hidden' }}>
-              <Text style={s.h1Gold}>Dream Wedding</Text>
-              <Animated.View style={[s.goldSweepOverlay, { transform: [{ translateX: goldSweep.interpolate({ inputRange: [0, 1], outputRange: [-width, width] }) }] }]} />
-            </View>
-            <Text style={s.h1White}>Experience</Text>
-            <Text style={s.heroDesc}>Cinematic photographers, award-winning filmmakers & creative professionals — all verified.</Text>
-            <View style={s.chipRow}>
-              <View style={s.chip}><Ionicons name="checkmark-circle" size={13} color="#10B981" /><Text style={s.chipText}>Verified</Text></View>
-              <View style={s.chip}><Ionicons name="star" size={13} color="#FFB347" /><Text style={s.chipText}>Real Reviews</Text></View>
-              <View style={s.chip}><Ionicons name="flash" size={13} color="#A78BFA" /><Text style={s.chipText}>Fast Reply</Text></View>
-            </View>
-            <View style={s.btnRow}>
-              <TouchableOpacity style={s.btnPrimary} onPress={() => navigation.navigate('Discover')} activeOpacity={0.85}>
-                <Ionicons name="search" size={15} color="#000" /><Text style={s.btnPrimaryText}>Find Creator</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={s.btnGlass} onPress={() => navigation.navigate('Discover')} activeOpacity={0.85}>
-                <Text style={s.btnGlassText}>Explore</Text><Ionicons name="arrow-forward" size={13} color="#FFB347" />
-              </TouchableOpacity>
-            </View>
+          <View style={s.btnRow}>
+            <TouchableOpacity style={s.btnPrimary} onPress={() => navigation.navigate('Discover')} activeOpacity={0.85}>
+              <Ionicons name="search" size={15} color="#000" /><Text style={s.btnPrimaryText}>Find Creator</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={s.btnGlass} onPress={() => navigation.navigate('Discover')} activeOpacity={0.85}>
+              <Text style={s.btnGlassText}>Explore</Text><Ionicons name="arrow-forward" size={13} color="#FFB347" />
+            </TouchableOpacity>
           </View>
         </Animated.View>
 
@@ -579,49 +447,6 @@ const s = StyleSheet.create({
   // Hero
   hero: { overflow: 'hidden' },
   heroBg: { ...StyleSheet.absoluteFillObject, backgroundColor: '#030303' },
-  // Left lens layers
-  lensL1: { position: 'absolute', left: -100, top: 20, width: 280, height: 280, borderRadius: 140, borderWidth: 2.5, borderColor: 'rgba(255,140,43,0.09)' },
-  lensL2: { position: 'absolute', left: -80, top: 40, width: 240, height: 240, borderRadius: 120, borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.06)' },
-  lensL3: { position: 'absolute', left: -60, top: 60, width: 200, height: 200, borderRadius: 100, borderWidth: 1, borderColor: 'rgba(255,140,43,0.04)' },
-  // Right lens layers (larger, more prominent)
-  lensR1: { position: 'absolute', right: -80, top: 10, width: 300, height: 300, borderRadius: 150, borderWidth: 3, borderColor: 'rgba(255,140,43,0.08)' },
-  lensR2: { position: 'absolute', right: -60, top: 30, width: 260, height: 260, borderRadius: 130, borderWidth: 2, borderColor: 'rgba(255,140,43,0.06)' },
-  lensR3: { position: 'absolute', right: -40, top: 50, width: 220, height: 220, borderRadius: 110, borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.05)' },
-  lensR4: { position: 'absolute', right: -20, top: 70, width: 180, height: 180, borderRadius: 90, borderWidth: 1, borderColor: 'rgba(255,140,43,0.04)' },
-  lensR5: { position: 'absolute', right: 0, top: 90, width: 140, height: 140, borderRadius: 70, borderWidth: 1, borderColor: 'rgba(255,255,255,0.025)' },
-  // Center glow
-  centerGlow: { position: 'absolute', top: 60, left: width / 2 - 100, width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(255,140,43,0.04)' },
-  // Particles — golden dust
-  particle1: { position: 'absolute', left: 40, top: 80, width: 5, height: 5, borderRadius: 2.5, backgroundColor: 'rgba(255,140,43,0.4)' },
-  particle2: { position: 'absolute', right: 60, top: 140, width: 3, height: 3, borderRadius: 1.5, backgroundColor: 'rgba(255,180,71,0.35)' },
-  particle3: { position: 'absolute', left: width * 0.3, top: 180, width: 4, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,200,100,0.25)' },
-  particle4: { position: 'absolute', right: 100, top: 60, width: 3, height: 3, borderRadius: 1.5, backgroundColor: 'rgba(255,160,50,0.3)' },
-  particle5: { position: 'absolute', left: 80, top: 200, width: 2, height: 2, borderRadius: 1, backgroundColor: 'rgba(255,140,43,0.4)' },
-  particle6: { position: 'absolute', right: 30, top: 190, width: 4, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,200,80,0.2)' },
-  particle7: { position: 'absolute', left: width * 0.6, top: 50, width: 3, height: 3, borderRadius: 1.5, backgroundColor: 'rgba(255,180,60,0.25)' },
-  particle8: { position: 'absolute', left: width * 0.45, top: 220, width: 2.5, height: 2.5, borderRadius: 1.25, backgroundColor: 'rgba(255,160,40,0.3)' },
-  // Streaks
-  streak1: { position: 'absolute', top: 160, width: 160, height: 1.5, backgroundColor: 'rgba(255,180,71,0.12)', transform: [{ rotate: '-8deg' }] },
-  streak2: { position: 'absolute', top: 100, left: 60, width: 80, height: 0.5, backgroundColor: 'rgba(255,200,100,0.08)', transform: [{ rotate: '15deg' }] },
-  // Premium Camera Lens System
-  logoArea: { alignItems: 'center', justifyContent: 'center', marginTop: 36, height: 190 },
-  logoGlow: { position: 'absolute', width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(255,140,43,0.05)' },
-  lensRing6: { position: 'absolute', width: 180, height: 180, borderRadius: 90, borderWidth: 0.5, borderColor: 'rgba(255,140,43,0.04)', borderStyle: 'dashed' },
-  lensRing5: { position: 'absolute', width: 165, height: 165, borderRadius: 82.5, borderWidth: 1, borderColor: 'rgba(255,140,43,0.05)' },
-  logoRing4: { position: 'absolute', width: 150, height: 150, borderRadius: 75, borderWidth: 1, borderColor: 'rgba(255,140,43,0.07)' },
-  logoRing3: { position: 'absolute', width: 130, height: 130, borderRadius: 65, borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.1)' },
-  logoRing2: { position: 'absolute', width: 110, height: 110, borderRadius: 55, borderWidth: 2, borderColor: 'rgba(255,140,43,0.15)' },
-  logoRing1: { position: 'absolute', width: 95, height: 95, borderRadius: 47.5, borderWidth: 2.5, borderColor: 'rgba(255,140,43,0.22)' },
-  logoCore: { width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255,140,43,0.06)', borderWidth: 2, borderColor: 'rgba(255,140,43,0.35)', alignItems: 'center', justifyContent: 'center' },
-  logoBMS: { fontSize: 26, fontWeight: '800', color: '#FF8C2B', letterSpacing: 3 },
-  lensFlareOverlay: { position: 'absolute', width: 160, height: 160, borderRadius: 80, backgroundColor: 'rgba(255,200,100,0.08)' },
-  focusRing: { position: 'absolute', width: 160, height: 160, alignItems: 'center', justifyContent: 'center' },
-  focusTick: { position: 'absolute', width: 1, height: 6, backgroundColor: 'rgba(255,140,43,0.15)', borderRadius: 0.5 },
-  // Brand
-  brandArea: { alignItems: 'center', marginTop: 18 },
-  brandText: { fontSize: 18, fontWeight: '300', color: '#fff', letterSpacing: 5 },
-  brandFlare: { width: 60, height: 2, backgroundColor: 'rgba(255,140,43,0.3)', marginVertical: 8, borderRadius: 1 },
-  brandSub: { fontSize: 11, color: 'rgba(255,255,255,0.5)', letterSpacing: 0.5 },
   // Content
   heroContent: { paddingHorizontal: 22, marginTop: 30, paddingBottom: 0 },
   tagRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 18 },
