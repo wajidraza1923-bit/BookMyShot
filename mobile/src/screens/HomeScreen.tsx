@@ -8,8 +8,6 @@ import { colors, spacing, typography, radius, shadows } from '../theme';
 import { creatorsAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-import PremiumHero from '../components/PremiumHero';
-import ThreeHero from '../components/ThreeHero';
 
 const { width } = Dimensions.get('window');
 const CARD_W = width * 0.8;
@@ -184,33 +182,63 @@ export default function HomeScreen({ navigation }: any) {
           )}
         </View>
 
-        {/* ═══ PREMIUM 3D HERO ═══ */}
-        <ThreeHero />
+        {/* ═══ HERO: Wedding Creator Marketplace ═══ */}
+        <View style={s.heroWrap}>
+          {/* Background gradient layers */}
+          <View style={s.heroBgGrad1} />
+          <View style={s.heroBgGrad2} />
+          
+          {/* Floating wedding images (behind content) */}
+          <Animated.View style={[s.floatingImg, s.floatImg1, { opacity: fadeAnim }]}>
+            <Image source={{ uri: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=200' }} style={s.floatImgInner} />
+          </Animated.View>
+          <Animated.View style={[s.floatingImg, s.floatImg2, { opacity: fadeAnim }]}>
+            <Image source={{ uri: 'https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=200' }} style={s.floatImgInner} />
+          </Animated.View>
+          <Animated.View style={[s.floatingImg, s.floatImg3, { opacity: fadeAnim }]}>
+            <Image source={{ uri: 'https://images.unsplash.com/photo-1606216794079-73f85bbd57d5?w=200' }} style={s.floatImgInner} />
+          </Animated.View>
 
-        {/* HERO CONTENT */}
-        <Animated.View style={[s.heroContent, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-          <View style={s.tagRow}><View style={s.tagLine} /><Text style={s.tagText}>PREMIUM WEDDING CINEMA</Text><View style={s.tagLine} /></View>
-          <Text style={s.h1White}>Capture Your</Text>
-          <View style={{ overflow: 'hidden' }}>
-            <Text style={s.h1Gold}>Dream Wedding</Text>
-            <Animated.View style={[s.goldSweepOverlay, { transform: [{ translateX: goldSweep.interpolate({ inputRange: [0, 1], outputRange: [-width, width] }) }] }]} />
-          </View>
-          <Text style={s.h1White}>Experience</Text>
-          <Text style={s.heroDesc}>Cinematic photographers, award-winning filmmakers & creative professionals — all verified.</Text>
-          <View style={s.chipRow}>
-            <View style={s.chip}><Ionicons name="checkmark-circle" size={13} color="#10B981" /><Text style={s.chipText}>Verified</Text></View>
-            <View style={s.chip}><Ionicons name="star" size={13} color="#FFB347" /><Text style={s.chipText}>Real Reviews</Text></View>
-            <View style={s.chip}><Ionicons name="flash" size={13} color="#A78BFA" /><Text style={s.chipText}>Fast Reply</Text></View>
-          </View>
-          <View style={s.btnRow}>
-            <TouchableOpacity style={s.btnPrimary} onPress={() => navigation.navigate('Discover')} activeOpacity={0.85}>
-              <Ionicons name="search" size={15} color="#000" /><Text style={s.btnPrimaryText}>Find Creator</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={s.btnGlass} onPress={() => navigation.navigate('Discover')} activeOpacity={0.85}>
-              <Text style={s.btnGlassText}>Explore</Text><Ionicons name="arrow-forward" size={13} color="#FFB347" />
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
+          {/* Main hero content */}
+          <Animated.View style={[s.heroInner, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+            {/* Small BMS lens mark */}
+            <View style={s.heroLensMark}>
+              <View style={s.lensMarkRing2} />
+              <View style={s.lensMarkRing1} />
+              <View style={s.lensMarkCore}><Text style={s.lensMarkText}>BMS</Text></View>
+            </View>
+
+            <View style={s.tagRow}><View style={s.tagLine} /><Text style={s.tagText}>INDIA'S #1 WEDDING MARKETPLACE</Text><View style={s.tagLine} /></View>
+            
+            <Text style={s.h1White}>Find Your Perfect</Text>
+            <View style={{ overflow: 'hidden' }}>
+              <Text style={s.h1Gold}>Wedding Creator</Text>
+              <Animated.View style={[s.goldSweepOverlay, { transform: [{ translateX: goldSweep.interpolate({ inputRange: [0, 1], outputRange: [-width, width] }) }] }]} />
+            </View>
+
+            <Text style={s.heroDesc}>10,000+ verified photographers, filmmakers & artists. Book your dream team in minutes.</Text>
+            
+            {/* Trust chips */}
+            <View style={s.chipRow}>
+              <View style={s.chip}><Ionicons name="checkmark-circle" size={13} color="#10B981" /><Text style={s.chipText}>Verified</Text></View>
+              <View style={s.chip}><Ionicons name="star" size={13} color="#FFB347" /><Text style={s.chipText}>4.9 Rated</Text></View>
+              <View style={s.chip}><Ionicons name="shield-checkmark" size={13} color="#3B82F6" /><Text style={s.chipText}>Secure</Text></View>
+            </View>
+
+            {/* CTA Buttons */}
+            <View style={s.btnRow}>
+              <TouchableOpacity style={s.btnPrimary} onPress={() => navigation.navigate('Discover')} activeOpacity={0.85}>
+                <Ionicons name="search" size={15} color="#000" /><Text style={s.btnPrimaryText}>Find Creator</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={s.btnGlass} onPress={() => navigation.navigate('Inquiry')} activeOpacity={0.85}>
+                <Ionicons name="chatbubble-ellipses-outline" size={13} color="#FFB347" /><Text style={s.btnGlassText}>Get Quote</Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        </View>
+
+        {/* HERO CONTENT — below fold */}
+        <Animated.View style={{ opacity: fadeAnim }}>
 
         {/* STATS */}
         <View style={s.statsBar}>
@@ -323,6 +351,8 @@ export default function HomeScreen({ navigation }: any) {
           <View style={s.cta}><Text style={s.ctaIcon}>📸</Text><Text style={s.ctaTitle}>Are you a wedding creator?</Text><Text style={s.ctaSub}>Join 10,000+ verified professionals. Get discovered by couples.</Text>
             <TouchableOpacity style={s.ctaBtn} onPress={() => navigation.navigate('Account')}><Text style={s.ctaBtnText}>Join as Creator</Text><Ionicons name="arrow-forward" size={13} color="#000" /></TouchableOpacity></View>
         )}
+
+        </Animated.View>
 
         {/* FOOTER */}
         <View style={s.footer}>
@@ -446,7 +476,20 @@ const s = StyleSheet.create({
   signInPill: { paddingHorizontal: 14, paddingVertical: 6, backgroundColor: '#FF8C2B', borderRadius: 16 },
   signInText: { fontSize: 11, fontWeight: '700', color: '#000' },
   // Hero
-  hero: { overflow: 'hidden' },
+  heroWrap: { paddingTop: 10, paddingBottom: 10, position: 'relative', overflow: 'hidden' },
+  heroBgGrad1: { position: 'absolute', top: 0, left: 0, right: 0, height: 300, backgroundColor: 'rgba(255,140,43,0.015)' },
+  heroBgGrad2: { position: 'absolute', top: 80, left: -50, width: width + 100, height: 200, backgroundColor: 'rgba(255,100,20,0.008)', borderRadius: 100, transform: [{ rotate: '-5deg' }] },
+  floatingImg: { position: 'absolute', borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
+  floatImg1: { top: 30, right: -20, width: 80, height: 100, transform: [{ rotate: '8deg' }], opacity: 0.3 },
+  floatImg2: { top: 140, left: -15, width: 70, height: 90, transform: [{ rotate: '-6deg' }], opacity: 0.25 },
+  floatImg3: { bottom: 60, right: 10, width: 65, height: 85, transform: [{ rotate: '4deg' }], opacity: 0.2 },
+  floatImgInner: { width: '100%', height: '100%' },
+  heroInner: { paddingHorizontal: 22, paddingTop: 10 },
+  heroLensMark: { alignSelf: 'center', width: 52, height: 52, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
+  lensMarkRing2: { position: 'absolute', width: 52, height: 52, borderRadius: 26, borderWidth: 1, borderColor: 'rgba(255,140,43,0.12)' },
+  lensMarkRing1: { position: 'absolute', width: 42, height: 42, borderRadius: 21, borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.2)' },
+  lensMarkCore: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,140,43,0.06)', borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.3)', alignItems: 'center', justifyContent: 'center' },
+  lensMarkText: { fontSize: 10, fontWeight: '800', color: '#FF8C2B', letterSpacing: 1.5 },
   heroBg: { ...StyleSheet.absoluteFillObject, backgroundColor: '#030303' },
   // Content
   heroContent: { paddingHorizontal: 22, marginTop: 30, paddingBottom: 0 },
