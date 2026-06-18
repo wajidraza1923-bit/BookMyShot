@@ -18,6 +18,7 @@ config.resolver.blockList = [
 ];
 
 // Prevent Metro from following symlinks to parent
-config.resolver.disableHierarchicalLookup = true;
+// Note: disableHierarchicalLookup breaks module resolution in some cases
+// Instead rely on projectRoot + watchFolders + blockList
 
 module.exports = config;
