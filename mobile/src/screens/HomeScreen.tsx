@@ -8,6 +8,7 @@ import { colors, spacing, typography, radius, shadows } from '../theme';
 import { creatorsAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import ThreeHero from '../components/ThreeHero';
 
 const { width } = Dimensions.get('window');
 const CARD_W = width * 0.8;
@@ -243,97 +244,11 @@ export default function HomeScreen({ navigation }: any) {
           )}
         </View>
 
-        {/* ═══ CINEMATIC HERO ═══ */}
-        <View style={s.heroWrap}>
-          {/* Depth background layers */}
-          <View style={s.heroBgGrad1} />
-          <View style={s.heroBgGrad2} />
-          <View style={s.heroBgGrad3} />
-
-          {/* Gold particles */}
-          <Animated.View style={[s.goldParticle, { left: 25, top: 80, transform: [{ translateY: particle1 }] }]} />
-          <Animated.View style={[s.goldParticle, s.goldParticleSm, { right: 40, top: 120, transform: [{ translateY: particle2 }] }]} />
-          <Animated.View style={[s.goldParticle, { left: width * 0.55, top: 50, transform: [{ translateX: particle3 }] }]} />
-          <Animated.View style={[s.goldParticle, s.goldParticleLg, { right: 20, top: 200, transform: [{ translateY: particle1 }] }]} />
-          <Animated.View style={[s.goldParticle, s.goldParticleSm, { left: 50, top: 240, transform: [{ translateX: particle2 }] }]} />
-          <Animated.View style={[s.goldParticle, { left: width * 0.35, top: 180, transform: [{ translateY: particle3 }] }]} />
-          <Animated.View style={[s.goldParticle, s.goldParticleSm, { right: 70, top: 60, transform: [{ translateY: particle2 }] }]} />
-          <Animated.View style={[s.goldParticle, { left: width * 0.75, top: 260, transform: [{ translateX: particle1 }] }]} />
-
-          {/* PREMIUM CAMERA LENS — Centerpiece */}
-          <Animated.View style={[s.lensArea, { opacity: fadeAnim, transform: [{ scale: shutterAnim.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }) }] }]}>
-            {/* Outer glow */}
-            <Animated.View style={[s.lensGlow, { opacity: lensPulse.interpolate({ inputRange: [1, 1.04], outputRange: [0.3, 0.6] }) }]} />
-            {/* Rotating rings */}
-            <Animated.View style={[s.lensRingOuter, { transform: [{ rotate: lensRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }] }]} />
-            <Animated.View style={[s.lensRing5, { transform: [{ rotate: lensRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '-180deg'] }) }, { scale: lensPulse }] }]} />
-            <Animated.View style={[s.lensRing4, { transform: [{ rotate: lensRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '120deg'] }) }] }]} />
-            <Animated.View style={[s.lensRing3, { transform: [{ rotate: lensRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '-240deg'] }) }] }]} />
-            <Animated.View style={[s.lensRing2, { transform: [{ rotate: lensRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '90deg'] }) }] }]} />
-            <View style={s.lensRing1} />
-            {/* Glass reflection sweep */}
-            <Animated.View style={[s.lensReflection, { transform: [{ translateX: goldSweep.interpolate({ inputRange: [0, 1], outputRange: [-80, 80] }) }, { rotate: '-20deg' }] }]} />
-            {/* Core with BMS */}
-            <Animated.View style={[s.lensCore, { transform: [{ scale: shutterAnim }] }]}>
-              <Text style={s.lensBMS}>BMS</Text>
-            </Animated.View>
-            {/* Light flare */}
-            <Animated.View style={[s.lensFlare, { opacity: lensPulse.interpolate({ inputRange: [1, 1.04], outputRange: [0, 0.4] }) }]} />
-          </Animated.View>
-
-          {/* HEADLINE + CONTENT */}
-          <Animated.View style={[s.heroContent, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-            <Text style={s.heroEyebrow}>PREMIUM WEDDING MARKETPLACE</Text>
-            <Text style={s.h1Line1}>Find Your Perfect</Text>
-            <View style={{ overflow: 'hidden' }}>
-              <Text style={s.h1Gold}>Wedding Creator</Text>
-              <Animated.View style={[s.goldSweepOverlay, { transform: [{ translateX: goldSweep.interpolate({ inputRange: [0, 1], outputRange: [-width, width] }) }] }]} />
-            </View>
-            <Text style={s.heroSub}>Verified photographers, filmmakers & artists across India</Text>
-
-            {/* Live Activity Ticker */}
-            <Animated.View style={[s.activityFeed, { transform: [{ translateY: activitySlide }] }]}>
-              <View style={s.activityDot} />
-              <Text style={s.activityIcon}>{ACTIVITIES[activityIdx].icon}</Text>
-              <Text style={s.activityText} numberOfLines={1}>{ACTIVITIES[activityIdx].text}</Text>
-              <Text style={s.activityTime}>{ACTIVITIES[activityIdx].time}</Text>
-            </Animated.View>
-
-            {/* Trust Indicators */}
-            <View style={s.trustRow}>
-              <View style={s.trustItem}><Ionicons name="checkmark-circle" size={14} color="#10B981" /><Text style={s.trustText}>Verified Creators</Text></View>
-              <View style={s.trustItem}><Ionicons name="star" size={14} color="#FFB347" /><Text style={s.trustText}>Real Reviews</Text></View>
-              <View style={s.trustItem}><Ionicons name="lock-closed" size={14} color="#3B82F6" /><Text style={s.trustText}>Secure Bookings</Text></View>
-            </View>
-
-            {/* CTA */}
-            <View style={s.btnRow}>
-              <TouchableOpacity style={s.btnPrimary} onPress={() => navigation.navigate('Discover')} activeOpacity={0.85}>
-                <Ionicons name="search" size={15} color="#000" /><Text style={s.btnPrimaryText}>Find Creator</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={s.btnGlass} onPress={() => navigation.navigate('Inquiry')} activeOpacity={0.85}>
-                <Ionicons name="chatbubble-ellipses-outline" size={13} color="#FFB347" /><Text style={s.btnGlassText}>Get Quote</Text>
-              </TouchableOpacity>
-            </View>
-          </Animated.View>
-
-          {/* PREMIUM CREATOR SHOWCASE CARD */}
-          {creators.length > 0 && (
-            <Animated.View style={[s.showcaseCard, { opacity: fadeAnim }]}>
-              <Image source={{ uri: creators[0]?.portfolio?.[0] || creators[0]?.user?.avatar || WEDDING_IMGS[0] }} style={s.showcaseImg} />
-              <View style={s.showcaseOverlay} />
-              <View style={s.showcaseInfo}>
-                <Text style={s.showcaseName} numberOfLines={1}>{creators[0]?.user?.name}</Text>
-                <View style={s.showcaseMeta}>
-                  <Ionicons name="star" size={10} color="#FF8C2B" /><Text style={s.showcaseRating}>{creators[0]?.rating || '5.0'}</Text>
-                  <Text style={s.showcaseCity}>{creators[0]?.city}</Text>
-                </View>
-                {creators[0]?.startingPrice > 0 && <Text style={s.showcasePrice}>₹{creators[0]?.startingPrice?.toLocaleString('en-IN')}</Text>}
-              </View>
-              <View style={s.showcaseBadge}><Text style={s.showcaseBadgeText}>TOP CREATOR</Text></View>
-            </Animated.View>
-          )}
-        </View>
+        {/* ═══ 3D CINEMATIC HERO ═══ */}
+        <ThreeHero onNavigate={(screen) => {
+          if (screen === 'discover') navigation.navigate('Discover');
+          else if (screen === 'inquiry') navigation.navigate('Inquiry');
+        }} />
 
         {/* HERO CONTENT — below fold */}
         <Animated.View style={{ opacity: fadeAnim }}>
