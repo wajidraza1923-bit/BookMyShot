@@ -40,32 +40,60 @@ export default function BookingDetail({ route, navigation }: any) {
 
   // ═══ SET AMOUNT (same as website: highest-amount-wins commission logic) ═══
   const setProjectAmount = async () => {
-    const amount = parseInt(amountInput);
-    if (!amount || amount <= 0) { Alert.alert('Error', 'Invalid amount'); return; }
+    const amount = Number(amountInput);
+    if (!amount || amount <= 0 || isNaN(amount)) { Alert.alert('Invalid Amount', 'Please enter a valid amount'); return; }
     try {
-      await api.patch(`/payment-records/booking/${bookingId}/amount`, { amount });
+      console.log('[Payment] Setting amount:', { bookingId, amount });
+      const res = await api.patch(`/payment-records/booking/${bookingId}/amount`, { amount });
+      console.log('[Payment] Amount set response:', res.data?.booking?.amount);
       setShowAmountModal(false);
       await load();
       Alert.alert('Amount Set', `Project amount set to ₹${amount.toLocaleString('en-IN')}`);
-    } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed to set amount'); }
+    } catch (e: any) {
+      console.log('[Payment] Set amount error:', e.response?.status, e.response?.data);
+      Alert.alert('Failed', e.response?.data?.message || 'Failed to set amount');
+    }
   };
 
   // ═══ RECORD PAYMENT (same as website: advance/partial/final) ═══
   const recordPayment = async () => {
-    const amount = parseInt(payForm.amount);
-    if (!amount || amount <= 0) { Alert.alert('Error', 'Enter a valid amount'); return; }
+    const amount = Number(payForm.amount);
+    if (!amount || amount <= 0 || isNaN(amount)) { Alert.alert('Invalid Amount', 'Please enter a valid amount greater than 0'); return; }
+    
+    // Client-side validation: check against remaining
+    const bookingTotal = booking.amount || 0;
+    if (bookingTotal > 0) {
+      const alreadyPaid = paymentRecords.filter(r => r.status === 'approved').reduce((sum: number, r: any) => sum + (r.amount || 0), 0);
+      if (alreadyPaid + amount > bookingTotal) {
+        const maxAllowed = Math.max(0, bookingTotal - alreadyPaid);
+        Alert.alert('Amount Exceeds Limit', `Booking total: ₹${bookingTotal.toLocaleString('en-IN')}\nAlready paid: ₹${alreadyPaid.toLocaleString('en-IN')}\nMaximum allowed: ₹${maxAllowed.toLocaleString('en-IN')}`);
+        return;
+      }
+    }
+    
+    if (bookingTotal <= 0) {
+      Alert.alert('Set Amount First', 'Please set the booking deal amount before recording payments.');
+      return;
+    }
+
     try {
-      await api.post('/payment-records/creator', {
+      console.log('[Payment] Recording:', { bookingId, amount, type: payForm.type, notes: payForm.notes });
+      const res = await api.post('/payment-records/creator', {
         bookingId,
         amount,
         paymentType: payForm.type,
         notes: payForm.notes,
       });
+      console.log('[Payment] Success:', res.data);
       setShowPaymentModal(false);
       setPayForm({ amount: '', type: 'advance', notes: '' });
       await load();
-      Alert.alert('Recorded', `₹${amount.toLocaleString('en-IN')} ${payForm.type} payment recorded`);
-    } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed to record payment'); }
+      Alert.alert('Recorded', `₹${amount.toLocaleString('en-IN')} ${payForm.type} payment recorded successfully`);
+    } catch (e: any) {
+      console.log('[Payment] Error:', e.response?.status, e.response?.data);
+      const msg = e.response?.data?.message || e.message || 'Network error';
+      Alert.alert('Payment Failed', msg);
+    }
   };
 
   // ═══ MARK PAID (same as website) ═══
@@ -78,14 +106,18 @@ export default function BookingDetail({ route, navigation }: any) {
 
   // ═══ ACCEPT (with amount) ═══
   const acceptBooking = async () => {
-    const amount = parseInt(amountInput);
-    if (!amount || amount <= 0) { Alert.alert('Error', 'Enter booking amount'); return; }
+    const amount = Number(amountInput);
+    if (!amount || amount <= 0 || isNaN(amount)) { Alert.alert('Invalid Amount', 'Please enter the booking amount'); return; }
     try {
+      console.log('[Booking] Accepting:', { bookingId, amount });
       await api.patch(`/creator/booking-requests/${bookingId}`, { status: 'Creator Accepted', amount });
       setShowAmountModal(false);
       await load();
       Alert.alert('Accepted', `Booking accepted for ₹${amount.toLocaleString('en-IN')}`);
-    } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
+    } catch (e: any) {
+      console.log('[Booking] Accept error:', e.response?.status, e.response?.data);
+      Alert.alert('Failed', e.response?.data?.message || 'Failed to accept booking');
+    }
   };
 
   // ═══ REJECT ═══
