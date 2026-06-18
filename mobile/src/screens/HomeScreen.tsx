@@ -264,14 +264,16 @@ export default function HomeScreen({ navigation }: any) {
           <Animated.View style={[s.gp, s.gpLg, { right: 18, top: 200, transform: [{ translateY: particle1 }] }]} />
           <Animated.View style={[s.gp, s.gpSm, { left: 50, top: 230, transform: [{ translateX: particle2 }] }]} />
 
-          {/* REALISTIC DSLR CAMERA LENS — PNG with slow rotation */}
+          {/* REALISTIC DSLR CAMERA LENS — Dark-fit image with slow rotation */}
           <Animated.View style={[s.lensWrap, { transform: [
             { scale: shutterAnim.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }) },
-            { rotate: lensRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '5deg'] }) },
+            { rotate: lensRotate.interpolate({ inputRange: [0, 1], outputRange: ['-2deg', '3deg'] }) },
           ] }]}>
-            <Image source={{ uri: 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=400' }} style={s.lensImg} />
+            <Image source={{ uri: 'https://images.unsplash.com/photo-1617005082133-548c4dd27f35?w=400' }} style={s.lensImg} />
+            {/* Reflection sweep */}
+            <Animated.View style={[s.lensSweep, { transform: [{ translateX: goldSweep.interpolate({ inputRange: [0, 1], outputRange: [-100, 100] }) }, { rotate: '-20deg' }] }]} />
             {/* Glow overlay on lens */}
-            <Animated.View style={[s.lensGlowOverlay, { opacity: lensPulse.interpolate({ inputRange: [1, 1.04], outputRange: [0, 0.15] }) }]} />
+            <Animated.View style={[s.lensGlowOverlay, { opacity: lensPulse.interpolate({ inputRange: [1, 1.04], outputRange: [0, 0.12] }) }]} />
           </Animated.View>
 
           {/* FLOATING WEDDING PHOTOS — 3D perspective with shadows */}
@@ -562,54 +564,55 @@ const s = StyleSheet.create({
   signInPill: { paddingHorizontal: 14, paddingVertical: 6, backgroundColor: '#FF8C2B', borderRadius: 16 },
   signInText: { fontSize: 11, fontWeight: '700', color: '#000' },
   // Hero
-  heroWrap: { paddingBottom: 16, position: 'relative', overflow: 'hidden', minHeight: 580 },
-  heroBg1: { position: 'absolute', top: 0, left: 0, right: 0, height: 400, backgroundColor: 'rgba(255,140,43,0.01)' },
-  heroBg2: { position: 'absolute', top: 80, left: -40, width: width + 80, height: 200, backgroundColor: 'rgba(255,100,20,0.006)', borderRadius: 100, transform: [{ rotate: '-3deg' }] },
+  heroWrap: { paddingBottom: 20, position: 'relative', overflow: 'hidden', minHeight: 620 },
+  heroBg1: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(255,140,43,0.008)' },
+  heroBg2: { position: 'absolute', top: 40, left: -50, width: width + 100, height: 260, backgroundColor: 'rgba(255,100,20,0.005)', borderRadius: 130, transform: [{ rotate: '-3deg' }] },
   // Light streaks
-  streak1: { position: 'absolute', top: 80, left: width / 2 - 100, width: 200, height: 2, backgroundColor: '#FF8C2B', borderRadius: 1, transform: [{ rotate: '25deg' }] },
-  streak2: { position: 'absolute', top: 120, left: width / 2 - 80, width: 160, height: 1.5, backgroundColor: '#FF8C2B', borderRadius: 1, transform: [{ rotate: '-15deg' }] },
-  streak3: { position: 'absolute', top: 150, left: width / 2 - 60, width: 120, height: 1, backgroundColor: '#FFB347', borderRadius: 1, transform: [{ rotate: '40deg' }] },
+  streak1: { position: 'absolute', top: 100, left: width / 2 - 120, width: 240, height: 2, backgroundColor: '#F97316', borderRadius: 1, transform: [{ rotate: '22deg' }] },
+  streak2: { position: 'absolute', top: 140, left: width / 2 - 90, width: 180, height: 1.5, backgroundColor: '#F97316', borderRadius: 1, transform: [{ rotate: '-18deg' }] },
+  streak3: { position: 'absolute', top: 170, left: width / 2 - 70, width: 140, height: 1, backgroundColor: '#FFB347', borderRadius: 1, transform: [{ rotate: '35deg' }] },
   // Cinematic glow
-  lensBackGlow: { position: 'absolute', top: 20, alignSelf: 'center', width: 220, height: 220, borderRadius: 110, backgroundColor: 'rgba(255,140,43,0.06)' },
+  lensBackGlow: { position: 'absolute', top: 30, alignSelf: 'center', width: 250, height: 250, borderRadius: 125, backgroundColor: 'rgba(249,115,22,0.04)' },
   // Particles
-  gp: { position: 'absolute', width: 3.5, height: 3.5, borderRadius: 1.75, backgroundColor: 'rgba(255,160,40,0.4)' },
+  gp: { position: 'absolute', width: 3, height: 3, borderRadius: 1.5, backgroundColor: 'rgba(249,115,22,0.45)' },
   gpSm: { width: 2, height: 2, borderRadius: 1, backgroundColor: 'rgba(255,180,60,0.3)' },
-  gpLg: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: 'rgba(255,140,43,0.2)' },
-  // Camera Lens PNG
-  lensWrap: { alignSelf: 'center', width: 200, height: 200, marginTop: 10, marginBottom: 10 },
-  lensImg: { width: 200, height: 200, borderRadius: 100, resizeMode: 'cover' },
-  lensGlowOverlay: { ...StyleSheet.absoluteFillObject, borderRadius: 100, backgroundColor: 'rgba(255,140,43,0.1)' },
+  gpLg: { width: 4.5, height: 4.5, borderRadius: 2.25, backgroundColor: 'rgba(249,115,22,0.2)' },
+  // Camera Lens
+  lensWrap: { alignSelf: 'center', width: 220, height: 220, marginTop: 6, marginBottom: 12, position: 'relative' },
+  lensImg: { width: 220, height: 220, borderRadius: 110, resizeMode: 'cover' },
+  lensSweep: { position: 'absolute', top: 10, left: '50%', marginLeft: -6, width: 12, height: 200, backgroundColor: 'rgba(255,220,150,0.07)', borderRadius: 6 },
+  lensGlowOverlay: { ...StyleSheet.absoluteFillObject, borderRadius: 110, backgroundColor: 'rgba(249,115,22,0.08)' },
   // Floating photos
-  floatPhoto: { position: 'absolute', borderRadius: 10, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
-  fp1: { top: 30, left: 10, width: 60, height: 75 },
-  fp2: { top: 60, right: 12, width: 55, height: 70 },
-  fp3: { top: 180, left: 15, width: 50, height: 65 },
-  fp4: { top: 170, right: 20, width: 52, height: 68 },
+  floatPhoto: { position: 'absolute', borderRadius: 10, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 15, elevation: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
+  fp1: { top: 20, left: 8, width: 62, height: 80 },
+  fp2: { top: 25, right: 10, width: 58, height: 75 },
+  fp3: { top: 195, left: 12, width: 55, height: 70 },
+  fp4: { top: 190, right: 14, width: 56, height: 72 },
   fpImg: { width: '100%', height: '100%' },
   // Content
-  heroContent: { paddingHorizontal: 20, marginTop: 4 },
-  heroEyebrow: { fontSize: 8, fontWeight: '700', color: '#FF8C2B', letterSpacing: 3, textAlign: 'center', marginBottom: 8 },
-  h1a: { fontSize: 26, fontWeight: '300', color: '#fff', textAlign: 'center', lineHeight: 32 },
-  h1b: { fontSize: 30, fontWeight: '700', color: '#FFB347', textAlign: 'center', lineHeight: 38, textShadowColor: 'rgba(255,140,43,0.2)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 10 },
-  goldSweep: { position: 'absolute', top: 0, left: 0, width: 50, height: '100%', backgroundColor: 'rgba(255,220,130,0.1)', transform: [{ skewX: '-15deg' }] },
-  heroSub: { fontSize: 12, color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginTop: 6, lineHeight: 17 },
+  heroContent: { paddingHorizontal: 20, marginTop: 2 },
+  heroEyebrow: { fontSize: 8, fontWeight: '700', color: '#F97316', letterSpacing: 3.5, textAlign: 'center', marginBottom: 10 },
+  h1a: { fontSize: 28, fontWeight: '200', color: '#fff', textAlign: 'center', lineHeight: 34 },
+  h1b: { fontSize: 32, fontWeight: '700', color: '#FFB347', textAlign: 'center', lineHeight: 40, textShadowColor: 'rgba(249,115,22,0.25)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 14 },
+  goldSweep: { position: 'absolute', top: 0, left: 0, width: 60, height: '100%', backgroundColor: 'rgba(255,220,130,0.08)', transform: [{ skewX: '-15deg' }] },
+  heroSub: { fontSize: 12, color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginTop: 8, lineHeight: 17 },
   // Ticker
-  ticker: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'center', backgroundColor: 'rgba(255,255,255,0.02)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, marginTop: 10 },
+  ticker: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'center', backgroundColor: 'rgba(255,255,255,0.02)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, marginTop: 12 },
   tickDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#10B981' },
   tickIcon: { fontSize: 11 },
   tickText: { fontSize: 9, color: 'rgba(255,255,255,0.4)', maxWidth: width * 0.55 },
   // Glass card
-  glassCard: { marginTop: 14, backgroundColor: 'rgba(255,255,255,0.025)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', borderRadius: 16, paddingVertical: 14, paddingHorizontal: 10 },
+  glassCard: { marginTop: 14, backgroundColor: 'rgba(255,255,255,0.02)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', borderRadius: 16, paddingVertical: 14, paddingHorizontal: 8, shadowColor: '#F97316', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 12 },
   glassRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' },
   glassItem: { alignItems: 'center' },
-  glassNum: { fontSize: 15, fontWeight: '800', color: '#FF8C2B' },
-  glassLabel: { fontSize: 8, color: 'rgba(255,255,255,0.4)', marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.5 },
-  glassDivider: { width: 1, height: 28, backgroundColor: 'rgba(255,255,255,0.06)' },
+  glassNum: { fontSize: 16, fontWeight: '800', color: '#F97316' },
+  glassLabel: { fontSize: 8, color: 'rgba(255,255,255,0.35)', marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.5 },
+  glassDivider: { width: 1, height: 30, backgroundColor: 'rgba(255,255,255,0.05)' },
   // Buttons
   btnRow: { flexDirection: 'row', gap: 10, marginTop: 16, justifyContent: 'center' },
-  btnPrimary: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FF8C2B', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12 },
+  btnPrimary: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#F97316', paddingHorizontal: 22, paddingVertical: 13, borderRadius: 12, shadowColor: '#F97316', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 },
   btnPrimaryText: { fontSize: 13, fontWeight: '700', color: '#000' },
-  btnGlass: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.3)', backgroundColor: 'rgba(255,255,255,0.02)' },
+  btnGlass: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 18, paddingVertical: 13, borderRadius: 12, borderWidth: 1.5, borderColor: 'rgba(249,115,22,0.35)', backgroundColor: 'rgba(255,255,255,0.02)' },
   btnGlassText: { fontSize: 13, fontWeight: '600', color: '#FFB347' },
   btnRow: { flexDirection: 'row', gap: 12, marginTop: 22 },
   btnPrimary: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: '#FF8C2B', paddingHorizontal: 22, paddingVertical: 13, borderRadius: 14 },
