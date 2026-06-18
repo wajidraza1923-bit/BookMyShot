@@ -91,13 +91,19 @@ export default function HomeScreen({ navigation }: any) {
     ])).start();
   }, []);
 
+  const [liveStats, setLiveStats] = useState<any>({ creators: 0, bookings: 0, cities: 0, reviews: 0, avgRating: 0 });
+
   const loadData = useCallback(async () => {
     try {
-      const [creatorsRes, featuredRes, catsRes] = await Promise.all([
+      const [creatorsRes, featuredRes, catsRes, statsRes] = await Promise.all([
         creatorsAPI.getAll(),
         api.get('/promotions/featured-status').catch(() => ({ data: { slots: {} } })),
         api.get('/discover/categories').catch(() => ({ data: { data: [] } })),
+        api.get('/live-stats').catch(() => ({ data: { stats: {} } })),
       ]);
+
+      // Live stats from DB
+      if (statsRes.data?.stats) setLiveStats(statsRes.data.stats);
 
       // Load categories from DB (fallback to defaults)
       const dbCats = catsRes.data?.data || [];
@@ -192,8 +198,21 @@ export default function HomeScreen({ navigation }: any) {
         {/* ═══ FULL-SCREEN CINEMATIC HERO ═══ */}
         <CinematicHero scrollY={scrollY} onNavigate={(screen) => navigation.navigate(screen)} />
 
-        {/* HERO CONTENT — below fold */}
+        {/* BELOW HERO — Real stats from database */}
         <Animated.View style={{ opacity: fadeAnim }}>
+
+        {/* LIVE STATS GLASS CARD */}
+        <View style={s.liveStatsCard}>
+          <View style={s.lsRow}>
+            <View style={s.lsItem}><Text style={s.lsNum}>{liveStats.creators > 0 ? `${liveStats.creators.toLocaleString('en-IN')}+` : '—'}</Text><Text style={s.lsLabel}>Creators</Text></View>
+            <View style={s.lsDivider} />
+            <View style={s.lsItem}><Text style={s.lsNum}>{liveStats.bookings > 0 ? `${liveStats.bookings.toLocaleString('en-IN')}+` : '—'}</Text><Text style={s.lsLabel}>Bookings</Text></View>
+            <View style={s.lsDivider} />
+            <View style={s.lsItem}><Text style={s.lsNum}>{liveStats.cities > 0 ? `${liveStats.cities}+` : '—'}</Text><Text style={s.lsLabel}>Cities</Text></View>
+            <View style={s.lsDivider} />
+            <View style={s.lsItem}><Text style={s.lsNum}>{liveStats.avgRating > 0 ? `${liveStats.avgRating}` : '—'}</Text><Text style={s.lsLabel}>Rating</Text></View>
+          </View>
+        </View>
 
         {/* WEDDING MOMENTS CAROUSEL */}
         <View style={s.momentsSection}>
@@ -425,6 +444,13 @@ const s = StyleSheet.create({
   headerBtn: { padding: 4 },
   signInPill: { paddingHorizontal: 14, paddingVertical: 6, backgroundColor: '#FF8C2B', borderRadius: 16 },
   signInText: { fontSize: 11, fontWeight: '700', color: '#000' },
+  // Live Stats Card
+  liveStatsCard: { marginHorizontal: 16, marginTop: 16, marginBottom: 8, backgroundColor: 'rgba(255,255,255,0.02)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', borderRadius: 14, paddingVertical: 12, paddingHorizontal: 8 },
+  lsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' },
+  lsItem: { alignItems: 'center' },
+  lsNum: { fontSize: 15, fontWeight: '800', color: '#F97316' },
+  lsLabel: { fontSize: 7, color: 'rgba(255,255,255,0.3)', marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.5 },
+  lsDivider: { width: 1, height: 24, backgroundColor: 'rgba(255,255,255,0.04)' },
   // Hero
   heroWrap: { paddingBottom: 20, position: 'relative', overflow: 'hidden', minHeight: 620 },
   // Ambient glow

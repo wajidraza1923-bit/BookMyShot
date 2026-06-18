@@ -491,6 +491,7 @@ app.use("/api/featured-wedding-moments", featuredMomentsRoutes);
 app.use("/api/testimonials", testimonialRoutes);
 app.use("/api/general-inquiries", generalInquiryRoutes);
 app.use("/api/discover", discoverRoutes);
+app.use("/api/live-stats", require("./routes/liveStats"));
 app.use("/api/homepage-enquiries", homepageEnquiryRoutes);
 
 // Clean URL routes for static pages (legal, info)

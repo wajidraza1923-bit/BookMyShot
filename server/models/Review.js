@@ -5,25 +5,39 @@ const reviewSchema = new mongoose.Schema(
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     creator: { type: mongoose.Schema.Types.ObjectId, ref: "Creator", required: true },
     booking: { type: mongoose.Schema.Types.ObjectId, ref: "Booking" },
-    phone: { type: String, default: "" }, // For guest reviews (10-digit)
-    name: { type: String, default: "" }, // Guest reviewer name
+    phone: { type: String, default: "" },
+    name: { type: String, default: "" },
+    // Overall rating
     rating: { type: Number, min: 1, max: 5, required: true },
     title: { type: String, default: "" },
     text: { type: String, default: "" },
+    // Detailed ratings
+    professionalism: { type: Number, min: 1, max: 5, default: 0 },
+    qualityOfWork: { type: Number, min: 1, max: 5, default: 0 },
+    communication: { type: Number, min: 1, max: 5, default: 0 },
+    valueForMoney: { type: Number, min: 1, max: 5, default: 0 },
+    wouldRecommend: { type: Boolean, default: true },
+    // Event info
+    eventType: { type: String, default: "" },
+    // Media
+    photos: [{ type: String }],
+    videos: [{ type: String }],
+    // Moderation
     approved: { type: Boolean, default: true },
     hidden: { type: Boolean, default: false },
     hiddenBy: { type: String, enum: ["admin", "creator", ""], default: "" },
+    featured: { type: Boolean, default: false },
     reported: { type: Boolean, default: false },
     reportReason: { type: String, default: "" },
+    // Creator reply
+    reply: { type: String, default: "" },
+    repliedAt: { type: Date },
   },
   { timestamps: true }
 );
 
-// One review per user per creator (for logged-in users)
 reviewSchema.index({ user: 1, creator: 1 }, { unique: true, sparse: true });
-// One review per phone per creator (for guest users)
 reviewSchema.index({ phone: 1, creator: 1 }, { unique: true, sparse: true });
-// Query index
 reviewSchema.index({ creator: 1, approved: 1, hidden: 1 });
 
 module.exports = mongoose.model("Review", reviewSchema);

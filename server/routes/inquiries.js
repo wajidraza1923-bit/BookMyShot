@@ -62,6 +62,12 @@ router.post("/", optionalAuth, async (req, res, next) => {
       type: "inquiry",
     });
 
+    // Log live activity
+    try {
+      const LiveActivity = require("../models/LiveActivity");
+      await LiveActivity.create({ type: "inquiry", text: `New inquiry from ${city || 'India'}`, icon: "💬", city: city || "" });
+    } catch {}
+
     // Return creator contact details since inquiry was submitted
     const creatorUser = await require("../models/User").findById(creator.user).select("name email phone avatar");
 

@@ -69,7 +69,7 @@ router.get("/platform", async (req, res, next) => {
 // ═══ SUBMIT CREATOR REVIEW (Logged-in OR Guest with phone) ═══
 router.post("/", optionalAuth, async (req, res, next) => {
   try {
-    const { creatorId, rating, title, text, phone, name } = req.body;
+    const { creatorId, rating, title, text, phone, name, professionalism, qualityOfWork, communication, valueForMoney, wouldRecommend, eventType } = req.body;
 
     if (!creatorId) return res.status(400).json({ success: false, message: "Creator is required" });
     if (!rating || rating < 1 || rating > 5) return res.status(400).json({ success: false, message: "Rating must be between 1 and 5" });
@@ -79,21 +79,27 @@ router.post("/", optionalAuth, async (req, res, next) => {
     const creator = await Creator.findById(creatorId);
     if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
 
+    // Shared review fields
+    const reviewFields = {
+      rating, title: title || "", text: text.trim(),
+      professionalism: professionalism || 0,
+      qualityOfWork: qualityOfWork || 0,
+      communication: communication || 0,
+      valueForMoney: valueForMoney || 0,
+      wouldRecommend: wouldRecommend !== false,
+      eventType: eventType || "",
+    };
+
     // MODE A: Logged-in user
     if (req.user) {
       const existing = await Review.findOne({ user: req.user._id, creator: creatorId });
       if (existing) return res.status(400).json({ success: false, message: "You have already reviewed this creator. You can edit your existing review." });
 
-      const review = await Review.create({
-        user: req.user._id,
-        creator: creatorId,
-        name: req.user.name,
-        rating,
-        title: title || "",
-        text: text.trim(),
-      });
+      const review = await Review.create({ user: req.user._id, creator: creatorId, name: req.user.name, ...reviewFields });
 
       await recalcCreatorRating(creatorId);
+      // Log activity
+      try { const LA = require("../models/LiveActivity"); await LA.create({ type: "review", text: `New ${rating}★ review in ${creator.city || 'India'}`, icon: "⭐", city: creator.city }); } catch {}
       return res.status(201).json({ success: true, data: review });
     }
 
@@ -102,20 +108,13 @@ router.post("/", optionalAuth, async (req, res, next) => {
     if (!isValidPhone(phone)) return res.status(400).json({ success: false, message: "Phone must be exactly 10 digits (numbers only, no letters)" });
     if (!name || name.trim().length < 2) return res.status(400).json({ success: false, message: "Name is required (at least 2 characters)" });
 
-    // Check if this phone already reviewed this creator
     const existingByPhone = await Review.findOne({ phone, creator: creatorId });
     if (existingByPhone) return res.status(400).json({ success: false, message: "This phone number has already submitted a review for this creator" });
 
-    const review = await Review.create({
-      creator: creatorId,
-      phone,
-      name: name.trim(),
-      rating,
-      title: title || "",
-      text: text.trim(),
-    });
+    const review = await Review.create({ creator: creatorId, phone, name: name.trim(), ...reviewFields });
 
     await recalcCreatorRating(creatorId);
+    try { const LA = require("../models/LiveActivity"); await LA.create({ type: "review", text: `New ${rating}★ review in ${creator.city || 'India'}`, icon: "⭐", city: creator.city }); } catch {}
     res.status(201).json({ success: true, data: review });
   } catch (e) {
     if (e.code === 11000) return res.status(400).json({ success: false, message: "You have already reviewed this creator" });
@@ -208,6 +207,19 @@ router.patch("/creator/:id/hide", protect, authorize("creator"), async (req, res
     review.hiddenBy = review.hidden ? "creator" : "";
     await review.save();
     await recalcCreatorRating(creator._id);
+    res.json({ success: true, data: review });
+  } catch (e) { next(e); }
+});
+
+// Creator reply to review
+router.patch("/creator/:id/reply", protect, authorize("creator"), async (req, res, next) => {
+  try {
+    const creator = await Creator.findOne({ user: req.user._id });
+    const review = await Review.findOne({ _id: req.params.id, creator: creator._id });
+    if (!review) return res.status(404).json({ success: false, message: "Review not found" });
+    review.reply = req.body.reply || "";
+    review.repliedAt = review.reply ? new Date() : undefined;
+    await review.save();
     res.json({ success: true, data: review });
   } catch (e) { next(e); }
 });
