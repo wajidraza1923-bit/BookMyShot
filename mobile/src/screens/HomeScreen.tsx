@@ -9,6 +9,7 @@ import { creatorsAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import PremiumHero from '../components/PremiumHero';
+import ThreeHero from '../components/ThreeHero';
 
 const { width } = Dimensions.get('window');
 const CARD_W = width * 0.8;
@@ -183,8 +184,8 @@ export default function HomeScreen({ navigation }: any) {
           )}
         </View>
 
-        {/* ═══ PREMIUM HERO ═══ */}
-        <PremiumHero />
+        {/* ═══ PREMIUM 3D HERO ═══ */}
+        <ThreeHero />
 
         {/* HERO CONTENT */}
         <Animated.View style={[s.heroContent, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
