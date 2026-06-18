@@ -63,6 +63,51 @@ router.post("/", protect, async (req, res, next) => {
   }
 });
 
+// User edit own review
+router.put("/:id", protect, async (req, res, next) => {
+  try {
+    const review = await Review.findOne({ _id: req.params.id, user: req.user._id });
+    if (!review) return res.status(404).json({ success: false, message: "Review not found" });
+    const { rating, title, text } = req.body;
+    if (rating) review.rating = rating;
+    if (title !== undefined) review.title = title;
+    if (text !== undefined) review.text = text;
+    await review.save();
+
+    // Recalculate creator rating
+    const avg = await Review.aggregate([
+      { $match: { creator: review.creator, approved: true, hidden: false } },
+      { $group: { _id: null, avg: { $avg: "$rating" }, count: { $sum: 1 } } },
+    ]);
+    if (avg[0]) await Creator.findByIdAndUpdate(review.creator, { rating: Math.round(avg[0].avg * 10) / 10, reviewCount: avg[0].count });
+
+    res.json({ success: true, data: review });
+  } catch (e) { next(e); }
+});
+
+// User delete own review
+router.delete("/:id", protect, async (req, res, next) => {
+  try {
+    const review = await Review.findOne({ _id: req.params.id, user: req.user._id });
+    if (!review) return res.status(404).json({ success: false, message: "Review not found" });
+    const creatorId = review.creator;
+    await Review.findByIdAndDelete(req.params.id);
+
+    // Recalculate creator rating
+    const avg = await Review.aggregate([
+      { $match: { creator: creatorId, approved: true, hidden: false } },
+      { $group: { _id: null, avg: { $avg: "$rating" }, count: { $sum: 1 } } },
+    ]);
+    if (avg[0]) {
+      await Creator.findByIdAndUpdate(creatorId, { rating: Math.round(avg[0].avg * 10) / 10, reviewCount: avg[0].count });
+    } else {
+      await Creator.findByIdAndUpdate(creatorId, { rating: 5.0, reviewCount: 0 });
+    }
+
+    res.json({ success: true });
+  } catch (e) { next(e); }
+});
+
 // Submit platform review (one per user)
 router.post("/platform", protect, async (req, res, next) => {
   try {

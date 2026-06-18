@@ -5,6 +5,7 @@ const InspirationGallery = require("../models/InspirationGallery");
 const Category = require("../models/Category");
 const Creator = require("../models/Creator");
 const { protect, authorize } = require("../middleware/auth");
+const { upload } = require("../middleware/upload");
 
 const router = express.Router();
 
@@ -124,18 +125,66 @@ router.get("/trending", async (req, res, next) => {
 
 // ═══ ADMIN ENDPOINTS ═══
 
+// CMS Image Upload — returns URL for any content type
+router.post("/admin/upload-image", protect, authorize("admin"), upload.single("image"), async (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, message: "No image file provided" });
+    
+    const { uploadBuffer, isConfigured } = require("../services/cloudinaryService");
+    let url = "";
+    
+    if (isConfigured()) {
+      const result = await uploadBuffer(req.file.buffer, {
+        folder: "bookmyshot/cms",
+        resourceType: "image",
+      });
+      url = result.url;
+    } else {
+      // Fallback: save locally
+      const fs = require("fs");
+      const path = require("path");
+      const uploadDir = path.join(__dirname, "../../public/uploads/cms");
+      if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+      const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(req.file.originalname)}`;
+      fs.writeFileSync(path.join(uploadDir, filename), req.file.buffer);
+      url = `/uploads/cms/${filename}`;
+    }
+    
+    res.json({ success: true, url });
+  } catch (e) { next(e); }
+});
+
 // Districts CRUD
 router.get("/admin/districts", protect, authorize("admin"), async (req, res, next) => {
   try { res.json({ success: true, data: await District.find().sort("sortOrder") }); } catch (e) { next(e); }
 });
 router.post("/admin/districts", protect, authorize("admin"), async (req, res, next) => {
   try {
-    const d = await District.create(req.body);
+    const { name, state, imageUrl, sortOrder, isActive } = req.body;
+    if (!name) return res.status(400).json({ success: false, message: "District name is required" });
+    const d = await District.create({ name, state: state || "Jammu & Kashmir", imageUrl: imageUrl || "", sortOrder: sortOrder || 0, isActive: isActive !== false });
     res.status(201).json({ success: true, data: d });
-  } catch (e) { next(e); }
+  } catch (e) {
+    if (e.code === 11000) return res.status(400).json({ success: false, message: "District with this name already exists" });
+    next(e);
+  }
 });
 router.put("/admin/districts/:id", protect, authorize("admin"), async (req, res, next) => {
-  try { res.json({ success: true, data: await District.findByIdAndUpdate(req.params.id, req.body, { new: true }) }); } catch (e) { next(e); }
+  try {
+    const { name, state, imageUrl, sortOrder, isActive } = req.body;
+    const update = {};
+    if (name !== undefined) update.name = name;
+    if (state !== undefined) update.state = state;
+    if (imageUrl !== undefined) update.imageUrl = imageUrl;
+    if (sortOrder !== undefined) update.sortOrder = Number(sortOrder) || 0;
+    if (isActive !== undefined) update.isActive = isActive;
+    const d = await District.findByIdAndUpdate(req.params.id, { $set: update }, { new: true, runValidators: true });
+    if (!d) return res.status(404).json({ success: false, message: "District not found" });
+    res.json({ success: true, data: d });
+  } catch (e) {
+    if (e.code === 11000) return res.status(400).json({ success: false, message: "District with this name already exists" });
+    next(e);
+  }
 });
 router.delete("/admin/districts/:id", protect, authorize("admin"), async (req, res, next) => {
   try { await District.findByIdAndDelete(req.params.id); res.json({ success: true }); } catch (e) { next(e); }
@@ -146,10 +195,23 @@ router.get("/admin/trending-searches", protect, authorize("admin"), async (req, 
   try { res.json({ success: true, data: await TrendingSearch.find().sort("sortOrder") }); } catch (e) { next(e); }
 });
 router.post("/admin/trending-searches", protect, authorize("admin"), async (req, res, next) => {
-  try { res.status(201).json({ success: true, data: await TrendingSearch.create(req.body) }); } catch (e) { next(e); }
+  try {
+    const { title, icon, sortOrder, isActive } = req.body;
+    if (!title) return res.status(400).json({ success: false, message: "Title is required" });
+    res.status(201).json({ success: true, data: await TrendingSearch.create({ title, icon: icon || "search", sortOrder: sortOrder || 0, isActive: isActive !== false }) });
+  } catch (e) { next(e); }
 });
 router.put("/admin/trending-searches/:id", protect, authorize("admin"), async (req, res, next) => {
-  try { res.json({ success: true, data: await TrendingSearch.findByIdAndUpdate(req.params.id, req.body, { new: true }) }); } catch (e) { next(e); }
+  try {
+    const update = {};
+    if (req.body.title !== undefined) update.title = req.body.title;
+    if (req.body.icon !== undefined) update.icon = req.body.icon;
+    if (req.body.sortOrder !== undefined) update.sortOrder = Number(req.body.sortOrder) || 0;
+    if (req.body.isActive !== undefined) update.isActive = req.body.isActive;
+    const item = await TrendingSearch.findByIdAndUpdate(req.params.id, { $set: update }, { new: true });
+    if (!item) return res.status(404).json({ success: false, message: "Not found" });
+    res.json({ success: true, data: item });
+  } catch (e) { next(e); }
 });
 router.delete("/admin/trending-searches/:id", protect, authorize("admin"), async (req, res, next) => {
   try { await TrendingSearch.findByIdAndDelete(req.params.id); res.json({ success: true }); } catch (e) { next(e); }
@@ -160,10 +222,24 @@ router.get("/admin/inspiration", protect, authorize("admin"), async (req, res, n
   try { res.json({ success: true, data: await InspirationGallery.find().sort("sortOrder") }); } catch (e) { next(e); }
 });
 router.post("/admin/inspiration", protect, authorize("admin"), async (req, res, next) => {
-  try { res.status(201).json({ success: true, data: await InspirationGallery.create(req.body) }); } catch (e) { next(e); }
+  try {
+    const { title, imageUrl, category, sortOrder, isActive } = req.body;
+    if (!title || !imageUrl) return res.status(400).json({ success: false, message: "Title and image are required" });
+    res.status(201).json({ success: true, data: await InspirationGallery.create({ title, imageUrl, category: category || "", sortOrder: sortOrder || 0, isActive: isActive !== false }) });
+  } catch (e) { next(e); }
 });
 router.put("/admin/inspiration/:id", protect, authorize("admin"), async (req, res, next) => {
-  try { res.json({ success: true, data: await InspirationGallery.findByIdAndUpdate(req.params.id, req.body, { new: true }) }); } catch (e) { next(e); }
+  try {
+    const update = {};
+    if (req.body.title !== undefined) update.title = req.body.title;
+    if (req.body.imageUrl !== undefined) update.imageUrl = req.body.imageUrl;
+    if (req.body.category !== undefined) update.category = req.body.category;
+    if (req.body.sortOrder !== undefined) update.sortOrder = Number(req.body.sortOrder) || 0;
+    if (req.body.isActive !== undefined) update.isActive = req.body.isActive;
+    const item = await InspirationGallery.findByIdAndUpdate(req.params.id, { $set: update }, { new: true });
+    if (!item) return res.status(404).json({ success: false, message: "Not found" });
+    res.json({ success: true, data: item });
+  } catch (e) { next(e); }
 });
 router.delete("/admin/inspiration/:id", protect, authorize("admin"), async (req, res, next) => {
   try { await InspirationGallery.findByIdAndDelete(req.params.id); res.json({ success: true }); } catch (e) { next(e); }
@@ -175,13 +251,33 @@ router.get("/admin/categories", protect, authorize("admin"), async (req, res, ne
 });
 router.post("/admin/categories", protect, authorize("admin"), async (req, res, next) => {
   try {
-    const { name, icon, imageUrl, sortOrder } = req.body;
+    const { name, icon, imageUrl, sortOrder, isActive } = req.body;
+    if (!name) return res.status(400).json({ success: false, message: "Category name is required" });
     const slug = (name || '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-    res.status(201).json({ success: true, data: await Category.create({ name, slug, icon, imageUrl, sortOrder }) });
-  } catch (e) { next(e); }
+    res.status(201).json({ success: true, data: await Category.create({ name, slug, icon: icon || "camera-outline", imageUrl: imageUrl || "", sortOrder: sortOrder || 0, isActive: isActive !== false }) });
+  } catch (e) {
+    if (e.code === 11000) return res.status(400).json({ success: false, message: "Category with this slug already exists" });
+    next(e);
+  }
 });
 router.put("/admin/categories/:id", protect, authorize("admin"), async (req, res, next) => {
-  try { res.json({ success: true, data: await Category.findByIdAndUpdate(req.params.id, req.body, { new: true }) }); } catch (e) { next(e); }
+  try {
+    const update = {};
+    if (req.body.name !== undefined) {
+      update.name = req.body.name;
+      update.slug = req.body.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    }
+    if (req.body.icon !== undefined) update.icon = req.body.icon;
+    if (req.body.imageUrl !== undefined) update.imageUrl = req.body.imageUrl;
+    if (req.body.sortOrder !== undefined) update.sortOrder = Number(req.body.sortOrder) || 0;
+    if (req.body.isActive !== undefined) update.isActive = req.body.isActive;
+    const item = await Category.findByIdAndUpdate(req.params.id, { $set: update }, { new: true });
+    if (!item) return res.status(404).json({ success: false, message: "Not found" });
+    res.json({ success: true, data: item });
+  } catch (e) {
+    if (e.code === 11000) return res.status(400).json({ success: false, message: "Category with this name already exists" });
+    next(e);
+  }
 });
 router.delete("/admin/categories/:id", protect, authorize("admin"), async (req, res, next) => {
   try { await Category.findByIdAndDelete(req.params.id); res.json({ success: true }); } catch (e) { next(e); }

@@ -10,6 +10,7 @@ import {
   TextInput, Alert, ActivityIndicator, RefreshControl, Platform, Image, Modal, Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import api from '../../services/api';
 
 const { width } = Dimensions.get('window');
@@ -177,8 +178,40 @@ export default function AdminContentManager({ navigation }: any) {
       await load();
       Alert.alert('Success', editingItem ? 'Item updated' : 'Item created');
     } catch (e: any) {
+      console.log('[CMS] Save error:', e.response?.status, e.response?.data);
       Alert.alert('Error', e.response?.data?.message || 'Failed to save');
     } finally { setSaving(false); }
+  };
+
+  // Upload image from gallery
+  const pickImage = async (fieldKey: string) => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) { Alert.alert('Permission Required', 'Allow photo library access.'); return; }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      quality: 0.85,
+    });
+    if (result.canceled || !result.assets?.length) return;
+
+    const asset = result.assets[0];
+    Alert.alert('Uploading...', 'Please wait while the image uploads.');
+
+    try {
+      const fd = new FormData();
+      fd.append('image', { uri: asset.uri, name: 'image.jpg', type: asset.mimeType || 'image/jpeg' } as any);
+      const res = await api.post('/discover/admin/upload-image', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 30000,
+      });
+      if (res.data?.url) {
+        setFormData({ ...formData, [fieldKey]: res.data.url });
+        Alert.alert('Uploaded', 'Image uploaded successfully');
+      }
+    } catch (e: any) {
+      Alert.alert('Upload Failed', e.response?.data?.message || 'Could not upload image');
+    }
   };
 
   // Delete
@@ -404,11 +437,17 @@ export default function AdminContentManager({ navigation }: any) {
                     </TouchableOpacity>
                   ) : field.type === 'image' ? (
                     <View>
+                      {/* Upload from Gallery Button */}
+                      <TouchableOpacity style={s.uploadImgBtn} onPress={() => pickImage(field.key)}>
+                        <Ionicons name="cloud-upload-outline" size={16} color="#FF8C2B" />
+                        <Text style={s.uploadImgText}>Upload from Gallery</Text>
+                      </TouchableOpacity>
+                      {/* OR manual URL input */}
                       <TextInput
-                        style={s.fieldInput}
+                        style={[s.fieldInput, { marginTop: 8 }]}
                         value={String(formData[field.key] || '')}
                         onChangeText={v => setFormData({ ...formData, [field.key]: v })}
-                        placeholder={field.placeholder}
+                        placeholder="Or paste image URL..."
                         placeholderTextColor="rgba(255,255,255,0.2)"
                         selectionColor="#FF8C2B"
                         autoCapitalize="none"
@@ -416,7 +455,10 @@ export default function AdminContentManager({ navigation }: any) {
                       {formData[field.key] ? (
                         <View style={s.previewWrap}>
                           <Image source={{ uri: formData[field.key] }} style={s.previewImg} />
-                          <Text style={s.previewLabel}>Preview</Text>
+                          <TouchableOpacity style={s.removeImgBtn} onPress={() => setFormData({ ...formData, [field.key]: '' })}>
+                            <Ionicons name="trash-outline" size={12} color="#EF4444" />
+                            <Text style={s.removeImgText}>Remove</Text>
+                          </TouchableOpacity>
                         </View>
                       ) : null}
                     </View>
@@ -572,6 +614,10 @@ const s = StyleSheet.create({
   previewWrap: { marginTop: 8, alignItems: 'center' },
   previewImg: { width: width - 80, height: 120, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.05)' },
   previewLabel: { fontSize: 9, color: 'rgba(255,255,255,0.25)', marginTop: 4 },
+  uploadImgBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: 'rgba(255,140,43,0.06)', borderWidth: 1, borderColor: 'rgba(255,140,43,0.2)', borderRadius: 10, paddingVertical: 12, borderStyle: 'dashed' },
+  uploadImgText: { fontSize: 12, fontWeight: '600', color: '#FF8C2B' },
+  removeImgBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
+  removeImgText: { fontSize: 10, color: '#EF4444' },
   iconPreview: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6, backgroundColor: 'rgba(255,140,43,0.06)', borderRadius: 8, padding: 8 },
   iconPreviewText: { fontSize: 11, color: 'rgba(255,255,255,0.5)' },
   // Modal buttons
