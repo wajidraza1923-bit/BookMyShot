@@ -8,7 +8,6 @@ import { colors, spacing, typography, radius, shadows } from '../theme';
 import { creatorsAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-import ThreeHero from '../components/ThreeHero';
 
 const { width } = Dimensions.get('window');
 const CARD_W = width * 0.8;
@@ -244,11 +243,81 @@ export default function HomeScreen({ navigation }: any) {
           )}
         </View>
 
-        {/* ═══ 3D CINEMATIC HERO ═══ */}
-        <ThreeHero onNavigate={(screen) => {
-          if (screen === 'discover') navigation.navigate('Discover');
-          else if (screen === 'inquiry') navigation.navigate('Inquiry');
-        }} />
+        {/* ═══ CINEMATIC HERO ═══ */}
+        <Animated.View style={[s.heroWrap, { opacity: fadeAnim }]}>
+          {/* Depth layers */}
+          <View style={s.heroBg1} />
+          <View style={s.heroBg2} />
+
+          {/* Gold particles */}
+          <Animated.View style={[s.gp, { left: 20, top: 50, transform: [{ translateY: particle1 }] }]} />
+          <Animated.View style={[s.gp, s.gpSm, { right: 35, top: 80, transform: [{ translateY: particle2 }] }]} />
+          <Animated.View style={[s.gp, { left: width * 0.5, top: 30, transform: [{ translateX: particle3 }] }]} />
+          <Animated.View style={[s.gp, s.gpLg, { right: 15, top: 160, transform: [{ translateY: particle1 }] }]} />
+          <Animated.View style={[s.gp, s.gpSm, { left: 45, top: 190, transform: [{ translateX: particle2 }] }]} />
+          <Animated.View style={[s.gp, { left: width * 0.7, top: 120, transform: [{ translateY: particle3 }] }]} />
+
+          {/* CAMERA LENS */}
+          <Animated.View style={[s.lens, { transform: [{ scale: shutterAnim.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] }) }] }]}>
+            <Animated.View style={[s.lGlow, { opacity: lensPulse.interpolate({ inputRange: [1, 1.04], outputRange: [0.25, 0.55] }), transform: [{ scale: lensPulse }] }]} />
+            <Animated.View style={[s.lR6, { transform: [{ rotate: lensRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }] }]} />
+            <Animated.View style={[s.lR5, { transform: [{ rotate: lensRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '-180deg'] }) }] }]} />
+            <Animated.View style={[s.lR4, { transform: [{ rotate: lensRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '120deg'] }) }] }]} />
+            <Animated.View style={[s.lR3, { transform: [{ rotate: lensRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '-240deg'] }) }] }]} />
+            <Animated.View style={[s.lR2, { transform: [{ rotate: lensRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '90deg'] }) }] }]} />
+            <View style={s.lR1} />
+            {/* Glass reflection */}
+            <Animated.View style={[s.lRefl, { transform: [{ translateX: goldSweep.interpolate({ inputRange: [0, 1], outputRange: [-60, 60] }) }, { rotate: '-22deg' }] }]} />
+            {/* Core */}
+            <Animated.View style={[s.lCore, { transform: [{ scale: shutterAnim }] }]}>
+              <Text style={s.lBMS}>BMS</Text>
+            </Animated.View>
+            {/* Flare */}
+            <Animated.View style={[s.lFlare, { opacity: lensPulse.interpolate({ inputRange: [1, 1.04], outputRange: [0, 0.35] }) }]} />
+          </Animated.View>
+
+          {/* Content */}
+          <Animated.View style={[s.heroContent, { transform: [{ translateY: slideAnim }] }]}>
+            <Text style={s.heroEyebrow}>INDIA'S PREMIUM WEDDING MARKETPLACE</Text>
+            <Text style={s.h1a}>Find Your Perfect</Text>
+            <View style={{ overflow: 'hidden' }}>
+              <Text style={s.h1b}>Wedding Creator</Text>
+              <Animated.View style={[s.goldSweep, { transform: [{ translateX: goldSweep.interpolate({ inputRange: [0, 1], outputRange: [-width, width] }) }] }]} />
+            </View>
+            <Text style={s.heroSub}>10,000+ verified photographers, filmmakers & artists</Text>
+
+            {/* Activity ticker */}
+            <Animated.View style={[s.ticker, { transform: [{ translateY: activitySlide }] }]}>
+              <View style={s.tickDot} />
+              <Text style={s.tickIcon}>{ACTIVITIES[activityIdx].icon}</Text>
+              <Text style={s.tickText} numberOfLines={1}>{ACTIVITIES[activityIdx].text}</Text>
+            </Animated.View>
+
+            {/* Stat cards */}
+            <View style={s.statCards}>
+              <View style={s.statCard}><Text style={s.scNum}>10K+</Text><Text style={s.scLabel}>Creators</Text></View>
+              <View style={s.statCard}><Text style={s.scNum}>5K+</Text><Text style={s.scLabel}>Weddings</Text></View>
+              <View style={s.statCard}><Text style={s.scNum}>100+</Text><Text style={s.scLabel}>Cities</Text></View>
+            </View>
+
+            {/* Trust */}
+            <View style={s.trustRow}>
+              <View style={s.trustItem}><Ionicons name="checkmark-circle" size={12} color="#10B981" /><Text style={s.trustTxt}>Verified</Text></View>
+              <View style={s.trustItem}><Ionicons name="star" size={12} color="#FFB347" /><Text style={s.trustTxt}>4.9 Rated</Text></View>
+              <View style={s.trustItem}><Ionicons name="lock-closed" size={12} color="#3B82F6" /><Text style={s.trustTxt}>Secure</Text></View>
+            </View>
+
+            {/* CTAs */}
+            <View style={s.btnRow}>
+              <TouchableOpacity style={s.btnPrimary} onPress={() => navigation.navigate('Discover')} activeOpacity={0.85}>
+                <Ionicons name="search" size={14} color="#000" /><Text style={s.btnPrimaryText}>Find Creator</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={s.btnGlass} onPress={() => navigation.navigate('Inquiry')} activeOpacity={0.85}>
+                <Ionicons name="chatbubble-ellipses-outline" size={13} color="#FFB347" /><Text style={s.btnGlassText}>Get Quote</Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        </Animated.View>
 
         {/* HERO CONTENT — below fold */}
         <Animated.View style={{ opacity: fadeAnim }}>
@@ -489,73 +558,52 @@ const s = StyleSheet.create({
   signInPill: { paddingHorizontal: 14, paddingVertical: 6, backgroundColor: '#FF8C2B', borderRadius: 16 },
   signInText: { fontSize: 11, fontWeight: '700', color: '#000' },
   // Hero
-  heroWrap: { paddingTop: 8, paddingBottom: 16, position: 'relative', overflow: 'hidden', minHeight: 560 },
-  heroBgGrad1: { position: 'absolute', top: 0, left: 0, right: 0, height: 350, backgroundColor: 'rgba(255,140,43,0.012)' },
-  heroBgGrad2: { position: 'absolute', top: 100, left: -60, width: width + 120, height: 250, backgroundColor: 'rgba(255,100,20,0.008)', borderRadius: 125, transform: [{ rotate: '-4deg' }] },
-  heroBgGrad3: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 200, backgroundColor: 'rgba(0,0,0,0.3)' },
-  goldParticle: { position: 'absolute', width: 3.5, height: 3.5, borderRadius: 1.75, backgroundColor: 'rgba(255,160,40,0.4)' },
-  goldParticleSm: { width: 2, height: 2, borderRadius: 1, backgroundColor: 'rgba(255,180,60,0.3)' },
-  goldParticleLg: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: 'rgba(255,140,43,0.2)' },
-  // Camera Lens
-  lensArea: { alignSelf: 'center', width: 160, height: 160, alignItems: 'center', justifyContent: 'center', marginTop: 10, marginBottom: 20 },
-  lensGlow: { position: 'absolute', width: 180, height: 180, borderRadius: 90, backgroundColor: 'rgba(255,140,43,0.06)' },
-  lensRingOuter: { position: 'absolute', width: 155, height: 155, borderRadius: 77.5, borderWidth: 0.5, borderColor: 'rgba(255,140,43,0.06)' },
-  lensRing5: { position: 'absolute', width: 140, height: 140, borderRadius: 70, borderWidth: 1, borderColor: 'rgba(255,140,43,0.08)' },
-  lensRing4: { position: 'absolute', width: 125, height: 125, borderRadius: 62.5, borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.1)' },
-  lensRing3: { position: 'absolute', width: 108, height: 108, borderRadius: 54, borderWidth: 2, borderColor: 'rgba(255,140,43,0.13)' },
-  lensRing2: { position: 'absolute', width: 92, height: 92, borderRadius: 46, borderWidth: 2, borderColor: 'rgba(255,140,43,0.17)' },
-  lensRing1: { position: 'absolute', width: 78, height: 78, borderRadius: 39, borderWidth: 2.5, borderColor: 'rgba(255,140,43,0.22)' },
-  lensReflection: { position: 'absolute', width: 12, height: 140, backgroundColor: 'rgba(255,220,150,0.06)', borderRadius: 6 },
-  lensCore: { width: 62, height: 62, borderRadius: 31, backgroundColor: 'rgba(255,140,43,0.05)', borderWidth: 2, borderColor: 'rgba(255,140,43,0.35)', alignItems: 'center', justifyContent: 'center' },
-  lensBMS: { fontSize: 18, fontWeight: '900', color: '#FF8C2B', letterSpacing: 3 },
-  lensFlare: { position: 'absolute', top: -10, right: -10, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,200,100,0.15)' },
-  // Hero Content
-  heroContent: { paddingHorizontal: 22 },
-  heroEyebrow: { fontSize: 9, fontWeight: '700', color: '#FF8C2B', letterSpacing: 3, textAlign: 'center', marginBottom: 10 },
-  h1Line1: { fontSize: 28, fontWeight: '300', color: '#fff', textAlign: 'center', lineHeight: 36 },
-  h1Gold: { fontSize: 32, fontWeight: '700', color: '#FFB347', textAlign: 'center', lineHeight: 40, textShadowColor: 'rgba(255,140,43,0.25)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 12 },
-  goldSweepOverlay: { position: 'absolute', top: 0, left: 0, width: 60, height: '100%', backgroundColor: 'rgba(255,220,130,0.12)', transform: [{ skewX: '-15deg' }] },
-  heroSub: { fontSize: 13, color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginTop: 10, lineHeight: 19 },
-  // Activity feed
-  activityFeed: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.025)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7, marginTop: 14, alignSelf: 'center' },
-  activityDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#10B981' },
-  activityIcon: { fontSize: 12 },
-  activityText: { maxWidth: width * 0.5, fontSize: 10, color: 'rgba(255,255,255,0.5)' },
-  activityTime: { fontSize: 8, color: 'rgba(255,255,255,0.25)' },
-  // Trust
-  trustRow: { flexDirection: 'row', justifyContent: 'center', gap: 12, marginTop: 16 },
-  trustItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  trustText: { fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: '500' },
-  // Buttons
-  btnRow: { flexDirection: 'row', gap: 12, marginTop: 18, justifyContent: 'center' },
-  btnPrimary: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: '#FF8C2B', paddingHorizontal: 22, paddingVertical: 13, borderRadius: 14 },
-  btnPrimaryText: { fontSize: 14, fontWeight: '700', color: '#000' },
-  btnGlass: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 18, paddingVertical: 13, borderRadius: 14, borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.3)', backgroundColor: 'rgba(255,255,255,0.02)' },
-  btnGlassText: { fontSize: 14, fontWeight: '600', color: '#FFB347' },
-  // Showcase creator card
-  showcaseCard: { position: 'absolute', bottom: 16, right: 16, width: 130, height: 170, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,140,43,0.12)' },
-  showcaseImg: { width: '100%', height: '100%' },
-  showcaseOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
-  showcaseInfo: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 8, backgroundColor: 'rgba(5,4,3,0.85)' },
-  showcaseName: { fontSize: 10, fontWeight: '700', color: '#fff' },
-  showcaseMeta: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 },
-  showcaseRating: { fontSize: 9, color: 'rgba(255,255,255,0.6)' },
-  showcaseCity: { fontSize: 9, color: 'rgba(255,255,255,0.4)', marginLeft: 4 },
-  showcasePrice: { fontSize: 9, fontWeight: '600', color: '#FF8C2B', marginTop: 2 },
-  showcaseBadge: { position: 'absolute', top: 6, left: 6, backgroundColor: 'rgba(255,140,43,0.9)', paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4 },
-  showcaseBadgeText: { fontSize: 6, fontWeight: '800', color: '#000', letterSpacing: 0.5 },
-  heroBg: { ...StyleSheet.absoluteFillObject, backgroundColor: '#030303' },
+  heroWrap: { paddingBottom: 10, position: 'relative', overflow: 'hidden' },
+  heroBg1: { position: 'absolute', top: 0, left: 0, right: 0, height: 300, backgroundColor: 'rgba(255,140,43,0.012)' },
+  heroBg2: { position: 'absolute', top: 60, left: -40, width: width + 80, height: 180, backgroundColor: 'rgba(255,100,20,0.008)', borderRadius: 90, transform: [{ rotate: '-4deg' }] },
+  gp: { position: 'absolute', width: 3.5, height: 3.5, borderRadius: 1.75, backgroundColor: 'rgba(255,160,40,0.4)' },
+  gpSm: { width: 2, height: 2, borderRadius: 1, backgroundColor: 'rgba(255,180,60,0.3)' },
+  gpLg: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: 'rgba(255,140,43,0.2)' },
+  // Lens
+  lens: { alignSelf: 'center', width: 150, height: 150, alignItems: 'center', justifyContent: 'center', marginTop: 8, marginBottom: 16 },
+  lGlow: { position: 'absolute', width: 170, height: 170, borderRadius: 85, backgroundColor: 'rgba(255,140,43,0.05)' },
+  lR6: { position: 'absolute', width: 148, height: 148, borderRadius: 74, borderWidth: 0.5, borderColor: 'rgba(255,140,43,0.06)' },
+  lR5: { position: 'absolute', width: 132, height: 132, borderRadius: 66, borderWidth: 1, borderColor: 'rgba(255,140,43,0.08)' },
+  lR4: { position: 'absolute', width: 116, height: 116, borderRadius: 58, borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.11)' },
+  lR3: { position: 'absolute', width: 100, height: 100, borderRadius: 50, borderWidth: 2, borderColor: 'rgba(255,140,43,0.14)' },
+  lR2: { position: 'absolute', width: 84, height: 84, borderRadius: 42, borderWidth: 2, borderColor: 'rgba(255,140,43,0.18)' },
+  lR1: { position: 'absolute', width: 70, height: 70, borderRadius: 35, borderWidth: 2.5, borderColor: 'rgba(255,140,43,0.24)' },
+  lRefl: { position: 'absolute', width: 10, height: 120, backgroundColor: 'rgba(255,220,150,0.06)', borderRadius: 5 },
+  lCore: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,140,43,0.05)', borderWidth: 2, borderColor: 'rgba(255,140,43,0.35)', alignItems: 'center', justifyContent: 'center' },
+  lBMS: { fontSize: 16, fontWeight: '900', color: '#FF8C2B', letterSpacing: 2.5 },
+  lFlare: { position: 'absolute', top: -8, right: -8, width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,200,100,0.15)' },
   // Content
-  tagRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 18 },
-  tagLine: { height: 1, width: 28, backgroundColor: 'rgba(255,140,43,0.5)' },
-  tagText: { fontSize: 11, fontWeight: '700', color: '#FF8C2B', letterSpacing: 4 },
-  h1White: { fontSize: 32, fontWeight: '300', color: '#fff', lineHeight: 40 },
-  h1Gold: { fontSize: 36, fontWeight: '700', color: '#FFB347', lineHeight: 44, textShadowColor: 'rgba(255,140,43,0.3)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 16 },
-  goldSweepOverlay: { position: 'absolute', top: 0, left: 0, width: 80, height: '100%', backgroundColor: 'rgba(255,220,130,0.15)', transform: [{ skewX: '-15deg' }] },
-  heroDesc: { fontSize: 14, color: 'rgba(255,255,255,0.65)', marginTop: 16, lineHeight: 21 },
-  chipRow: { flexDirection: 'row', gap: 8, marginTop: 18 },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.06)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
-  chipText: { fontSize: 11, color: '#fff', fontWeight: '500' },
+  heroContent: { paddingHorizontal: 20 },
+  heroEyebrow: { fontSize: 8, fontWeight: '700', color: '#FF8C2B', letterSpacing: 3, textAlign: 'center', marginBottom: 8 },
+  h1a: { fontSize: 26, fontWeight: '300', color: '#fff', textAlign: 'center', lineHeight: 32 },
+  h1b: { fontSize: 30, fontWeight: '700', color: '#FFB347', textAlign: 'center', lineHeight: 38, textShadowColor: 'rgba(255,140,43,0.2)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 10 },
+  goldSweep: { position: 'absolute', top: 0, left: 0, width: 50, height: '100%', backgroundColor: 'rgba(255,220,130,0.1)', transform: [{ skewX: '-15deg' }] },
+  heroSub: { fontSize: 12, color: 'rgba(255,255,255,0.45)', textAlign: 'center', marginTop: 8, lineHeight: 18 },
+  // Ticker
+  ticker: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'center', backgroundColor: 'rgba(255,255,255,0.02)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, marginTop: 12 },
+  tickDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#10B981' },
+  tickIcon: { fontSize: 11 },
+  tickText: { fontSize: 9, color: 'rgba(255,255,255,0.4)', maxWidth: width * 0.55 },
+  // Stat cards
+  statCards: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginTop: 14 },
+  statCard: { backgroundColor: 'rgba(255,255,255,0.025)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', borderRadius: 12, paddingVertical: 10, paddingHorizontal: 14, alignItems: 'center', minWidth: 80 },
+  scNum: { fontSize: 16, fontWeight: '800', color: '#FF8C2B' },
+  scLabel: { fontSize: 8, color: 'rgba(255,255,255,0.4)', marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.5 },
+  // Trust
+  trustRow: { flexDirection: 'row', justifyContent: 'center', gap: 14, marginTop: 12 },
+  trustItem: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  trustTxt: { fontSize: 9, color: 'rgba(255,255,255,0.45)' },
+  // Buttons
+  btnRow: { flexDirection: 'row', gap: 10, marginTop: 16, justifyContent: 'center' },
+  btnPrimary: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FF8C2B', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12 },
+  btnPrimaryText: { fontSize: 13, fontWeight: '700', color: '#000' },
+  btnGlass: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.3)', backgroundColor: 'rgba(255,255,255,0.02)' },
+  btnGlassText: { fontSize: 13, fontWeight: '600', color: '#FFB347' },
   btnRow: { flexDirection: 'row', gap: 12, marginTop: 22 },
   btnPrimary: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: '#FF8C2B', paddingHorizontal: 22, paddingVertical: 13, borderRadius: 14 },
   btnPrimaryText: { fontSize: 14, fontWeight: '700', color: '#000' },
