@@ -243,104 +243,68 @@ export default function HomeScreen({ navigation }: any) {
           )}
         </View>
 
-        {/* ═══ CINEMATIC HERO — Full first screen ═══ */}
+        {/* ═══ LUXURY HERO — Typography + Motion + Glass ═══ */}
         <Animated.View style={[s.heroWrap, { opacity: fadeAnim }]}>
-          {/* Depth layers */}
-          <View style={s.heroBg1} />
-          <View style={s.heroBg2} />
+          {/* Ambient glow */}
+          <Animated.View style={[s.ambientGlow, { opacity: lensPulse.interpolate({ inputRange: [1, 1.04], outputRange: [0.4, 0.7] }), transform: [{ scale: lensPulse }] }]} />
+          <View style={s.ambientGlow2} />
 
-          {/* Orange light streaks behind lens */}
-          <Animated.View style={[s.streak1, { opacity: lensPulse.interpolate({ inputRange: [1, 1.04], outputRange: [0.06, 0.12] }) }]} />
-          <Animated.View style={[s.streak2, { opacity: lensPulse.interpolate({ inputRange: [1, 1.04], outputRange: [0.04, 0.09] }) }]} />
-          <Animated.View style={[s.streak3, { opacity: lensPulse.interpolate({ inputRange: [1, 1.04], outputRange: [0.05, 0.1] }) }]} />
-
-          {/* Cinematic glow behind lens */}
-          <Animated.View style={[s.lensBackGlow, { opacity: lensPulse.interpolate({ inputRange: [1, 1.04], outputRange: [0.3, 0.6] }), transform: [{ scale: lensPulse }] }]} />
+          {/* Volumetric light beams */}
+          <Animated.View style={[s.beam1, { opacity: lensPulse.interpolate({ inputRange: [1, 1.04], outputRange: [0.03, 0.07] }) }]} />
+          <Animated.View style={[s.beam2, { opacity: lensPulse.interpolate({ inputRange: [1, 1.04], outputRange: [0.02, 0.05] }) }]} />
+          <Animated.View style={[s.beam3, { opacity: lensPulse.interpolate({ inputRange: [1, 1.04], outputRange: [0.025, 0.06] }) }]} />
 
           {/* Gold particles */}
-          <Animated.View style={[s.gp, { left: 20, top: 60, transform: [{ translateY: particle1 }] }]} />
-          <Animated.View style={[s.gp, s.gpSm, { right: 30, top: 90, transform: [{ translateY: particle2 }] }]} />
-          <Animated.View style={[s.gp, { left: width * 0.55, top: 40, transform: [{ translateX: particle3 }] }]} />
-          <Animated.View style={[s.gp, s.gpLg, { right: 18, top: 200, transform: [{ translateY: particle1 }] }]} />
-          <Animated.View style={[s.gp, s.gpSm, { left: 50, top: 230, transform: [{ translateX: particle2 }] }]} />
+          <Animated.View style={[s.gp, { left: 25, top: 80, transform: [{ translateY: particle1 }] }]} />
+          <Animated.View style={[s.gp, s.gpSm, { right: 40, top: 120, transform: [{ translateY: particle2 }] }]} />
+          <Animated.View style={[s.gp, { left: width * 0.6, top: 60, transform: [{ translateX: particle3 }] }]} />
+          <Animated.View style={[s.gp, s.gpLg, { right: 20, top: 250, transform: [{ translateY: particle1 }] }]} />
+          <Animated.View style={[s.gp, s.gpSm, { left: 55, top: 300, transform: [{ translateX: particle2 }] }]} />
+          <Animated.View style={[s.gp, { left: width * 0.3, top: 200, transform: [{ translateY: particle3 }] }]} />
+          <Animated.View style={[s.gp, s.gpSm, { right: 65, top: 350, transform: [{ translateX: particle3 }] }]} />
 
-          {/* REAL 3D CAMERA LENS — procedural geometry (not an image) */}
-          <Animated.View style={[s.lensWrap, { transform: [
-            { scale: shutterAnim.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }) },
-            { rotate: lensRotate.interpolate({ inputRange: [0, 1], outputRange: ['-2deg', '3deg'] }) },
-            { perspective: 800 },
-            { rotateX: '8deg' },
-          ] }]}>
-            {/* Outer shadow ring (depth) */}
-            <View style={s.l3dShadow} />
-            {/* Body barrel */}
-            <View style={s.l3dBarrel}>
-              {/* Metallic ring highlights */}
-              <View style={s.l3dRingTop} />
-              <View style={s.l3dRingMid} />
-              <View style={s.l3dRingBot} />
-            </View>
-            {/* Front glass element */}
-            <View style={s.l3dGlass}>
-              {/* Inner glass layers (depth) */}
-              <View style={s.l3dGlassInner1} />
-              <View style={s.l3dGlassInner2} />
-              {/* Gold accent ring */}
-              <View style={s.l3dGoldRing} />
-              {/* Core (dark center with gold BMS) */}
-              <Animated.View style={[s.l3dCore, { transform: [{ scale: shutterAnim }] }]}>
-                <Text style={s.l3dBMS}>BMS</Text>
-              </Animated.View>
-            </View>
-            {/* Specular highlight (top-left) */}
-            <Animated.View style={[s.l3dSpecular, { opacity: lensPulse.interpolate({ inputRange: [1, 1.04], outputRange: [0.15, 0.35] }) }]} />
-            {/* Reflection sweep */}
-            <Animated.View style={[s.l3dSweep, { transform: [{ translateX: goldSweep.interpolate({ inputRange: [0, 1], outputRange: [-90, 90] }) }, { rotate: '-18deg' }] }]} />
-            {/* Focus grip texture */}
-            <View style={s.l3dGrip} />
-          </Animated.View>
-
-          {/* FLOATING WEDDING PHOTOS — 3D perspective with shadows */}
-          <Animated.View style={[s.floatPhoto, s.fp1, { transform: [{ translateY: particle1 }, { perspective: 600 }, { rotateY: '8deg' }, { rotateX: '-3deg' }] }]}>
-            <Image source={{ uri: 'https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=150' }} style={s.fpImg} />
-          </Animated.View>
-          <Animated.View style={[s.floatPhoto, s.fp2, { transform: [{ translateY: particle2 }, { perspective: 600 }, { rotateY: '-6deg' }, { rotateX: '4deg' }] }]}>
-            <Image source={{ uri: 'https://images.unsplash.com/photo-1606216794079-73f85bbd57d5?w=150' }} style={s.fpImg} />
-          </Animated.View>
-          <Animated.View style={[s.floatPhoto, s.fp3, { transform: [{ translateX: particle3 }, { perspective: 600 }, { rotateY: '5deg' }, { rotateX: '2deg' }] }]}>
-            <Image source={{ uri: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=150' }} style={s.fpImg} />
-          </Animated.View>
-          <Animated.View style={[s.floatPhoto, s.fp4, { transform: [{ translateY: particle3 }, { perspective: 600 }, { rotateY: '-4deg' }, { rotateX: '-5deg' }] }]}>
-            <Image source={{ uri: 'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=150' }} style={s.fpImg} />
-          </Animated.View>
-
-          {/* HERO TEXT + CTAs */}
-          <Animated.View style={[s.heroContent, { transform: [{ translateY: slideAnim }] }]}>
-            <Text style={s.heroEyebrow}>INDIA'S PREMIUM WEDDING MARKETPLACE</Text>
-            <Text style={s.h1a}>Find Your Perfect</Text>
+          {/* ═══ MASSIVE TYPOGRAPHY ═══ */}
+          <Animated.View style={[s.heroTextBlock, { transform: [{ translateY: slideAnim }] }]}>
+            <Text style={s.heroMini}>BOOKMYSHOT</Text>
+            <Text style={s.heroH1Light}>Find Your</Text>
+            <Text style={s.heroH1Light}>Perfect</Text>
             <View style={{ overflow: 'hidden' }}>
-              <Text style={s.h1b}>Wedding Creator</Text>
+              <Text style={s.heroH1Bold}>Wedding</Text>
               <Animated.View style={[s.goldSweep, { transform: [{ translateX: goldSweep.interpolate({ inputRange: [0, 1], outputRange: [-width, width] }) }] }]} />
             </View>
-            <Text style={s.heroSub}>Verified photographers, filmmakers & artists across India</Text>
+            <Text style={s.heroH1Bold}>Creator</Text>
+            <Text style={s.heroDesc}>India's premium marketplace for verified photographers, filmmakers and wedding artists.</Text>
+          </Animated.View>
 
+          {/* ═══ FLOATING GLASS CARDS ═══ */}
+          <Animated.View style={[s.glassCardFloat, s.gcf1, { transform: [{ translateY: particle1 }, { perspective: 600 }, { rotateX: '-3deg' }, { rotateY: '5deg' }] }]}>
+            <Ionicons name="star" size={14} color="#F97316" />
+            <View><Text style={s.gcfNum}>4.9</Text><Text style={s.gcfLabel}>Rating</Text></View>
+          </Animated.View>
+
+          <Animated.View style={[s.glassCardFloat, s.gcf2, { transform: [{ translateY: particle2 }, { perspective: 600 }, { rotateX: '2deg' }, { rotateY: '-4deg' }] }]}>
+            <Ionicons name="people" size={14} color="#F97316" />
+            <View><Text style={s.gcfNum}>10K+</Text><Text style={s.gcfLabel}>Creators</Text></View>
+          </Animated.View>
+
+          <Animated.View style={[s.glassCardFloat, s.gcf3, { transform: [{ translateX: particle3 }, { perspective: 600 }, { rotateX: '4deg' }, { rotateY: '3deg' }] }]}>
+            <Ionicons name="calendar" size={14} color="#F97316" />
+            <View><Text style={s.gcfNum}>50K+</Text><Text style={s.gcfLabel}>Bookings</Text></View>
+          </Animated.View>
+
+          <Animated.View style={[s.glassCardFloat, s.gcf4, { transform: [{ translateY: particle3 }, { perspective: 600 }, { rotateX: '-2deg' }, { rotateY: '-5deg' }] }]}>
+            <Ionicons name="checkmark-shield" size={14} color="#10B981" />
+            <View><Text style={s.gcfNum}>Verified</Text><Text style={s.gcfLabel}>Creators</Text></View>
+          </Animated.View>
+
+          {/* ═══ BOTTOM SECTION ═══ */}
+          <Animated.View style={[s.heroBottom, { transform: [{ translateY: slideAnim }] }]}>
             {/* Activity ticker */}
             <Animated.View style={[s.ticker, { transform: [{ translateY: activitySlide }] }]}>
               <View style={s.tickDot} />
               <Text style={s.tickIcon}>{ACTIVITIES[activityIdx].icon}</Text>
               <Text style={s.tickText} numberOfLines={1}>{ACTIVITIES[activityIdx].text}</Text>
             </Animated.View>
-
-            {/* Premium Glass Card */}
-            <View style={s.glassCard}>
-              <View style={s.glassRow}>
-                <View style={s.glassItem}><Ionicons name="star" size={14} color="#FF8C2B" /><Text style={s.glassNum}>4.9</Text><Text style={s.glassLabel}>Rating</Text></View>
-                <View style={s.glassDivider} />
-                <View style={s.glassItem}><Text style={s.glassNum}>10,000+</Text><Text style={s.glassLabel}>Creators</Text></View>
-                <View style={s.glassDivider} />
-                <View style={s.glassItem}><Text style={s.glassNum}>50,000+</Text><Text style={s.glassLabel}>Bookings</Text></View>
-              </View>
-            </View>
 
             {/* CTAs */}
             <View style={s.btnRow}>
@@ -589,66 +553,45 @@ const s = StyleSheet.create({
   signInText: { fontSize: 11, fontWeight: '700', color: '#000' },
   // Hero
   heroWrap: { paddingBottom: 20, position: 'relative', overflow: 'hidden', minHeight: 620 },
-  heroBg1: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(255,140,43,0.008)' },
-  heroBg2: { position: 'absolute', top: 40, left: -50, width: width + 100, height: 260, backgroundColor: 'rgba(255,100,20,0.005)', borderRadius: 130, transform: [{ rotate: '-3deg' }] },
-  // Light streaks
-  streak1: { position: 'absolute', top: 100, left: width / 2 - 120, width: 240, height: 2, backgroundColor: '#F97316', borderRadius: 1, transform: [{ rotate: '22deg' }] },
-  streak2: { position: 'absolute', top: 140, left: width / 2 - 90, width: 180, height: 1.5, backgroundColor: '#F97316', borderRadius: 1, transform: [{ rotate: '-18deg' }] },
-  streak3: { position: 'absolute', top: 170, left: width / 2 - 70, width: 140, height: 1, backgroundColor: '#FFB347', borderRadius: 1, transform: [{ rotate: '35deg' }] },
-  // Cinematic glow
-  lensBackGlow: { position: 'absolute', top: 30, alignSelf: 'center', width: 250, height: 250, borderRadius: 125, backgroundColor: 'rgba(249,115,22,0.04)' },
+  // Ambient glow
+  ambientGlow: { position: 'absolute', top: 60, alignSelf: 'center', width: 280, height: 280, borderRadius: 140, backgroundColor: 'rgba(249,115,22,0.04)' },
+  ambientGlow2: { position: 'absolute', top: 180, left: -50, width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(249,115,22,0.015)' },
+  // Light beams
+  beam1: { position: 'absolute', top: 50, left: width * 0.3, width: 2, height: 300, backgroundColor: '#F97316', transform: [{ rotate: '15deg' }] },
+  beam2: { position: 'absolute', top: 30, right: width * 0.25, width: 1.5, height: 350, backgroundColor: '#F97316', transform: [{ rotate: '-12deg' }] },
+  beam3: { position: 'absolute', top: 100, left: width * 0.5, width: 1, height: 250, backgroundColor: '#FFB347', transform: [{ rotate: '25deg' }] },
   // Particles
-  gp: { position: 'absolute', width: 3, height: 3, borderRadius: 1.5, backgroundColor: 'rgba(249,115,22,0.45)' },
-  gpSm: { width: 2, height: 2, borderRadius: 1, backgroundColor: 'rgba(255,180,60,0.3)' },
-  gpLg: { width: 4.5, height: 4.5, borderRadius: 2.25, backgroundColor: 'rgba(249,115,22,0.2)' },
-  // 3D Camera Lens (procedural — no image)
-  lensWrap: { alignSelf: 'center', width: 200, height: 200, marginTop: 6, marginBottom: 12, alignItems: 'center', justifyContent: 'center' },
-  l3dShadow: { position: 'absolute', width: 210, height: 210, borderRadius: 105, backgroundColor: 'rgba(0,0,0,0.6)', top: 8, left: -5 },
-  l3dBarrel: { width: 190, height: 190, borderRadius: 95, backgroundColor: '#1a1a1a', borderWidth: 3, borderColor: '#2a2a2a', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.7, shadowRadius: 20, elevation: 15 },
-  l3dRingTop: { position: 'absolute', top: 8, left: 8, right: 8, height: 3, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 2 },
-  l3dRingMid: { position: 'absolute', top: '50%', left: 4, right: 4, height: 2, backgroundColor: 'rgba(249,115,22,0.12)', borderRadius: 1, marginTop: -1 },
-  l3dRingBot: { position: 'absolute', bottom: 10, left: 10, right: 10, height: 2, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 1 },
-  l3dGlass: { width: 150, height: 150, borderRadius: 75, backgroundColor: '#0a0a14', borderWidth: 4, borderColor: '#333', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  l3dGlassInner1: { position: 'absolute', width: 130, height: 130, borderRadius: 65, borderWidth: 2, borderColor: 'rgba(249,115,22,0.12)' },
-  l3dGlassInner2: { position: 'absolute', width: 105, height: 105, borderRadius: 52.5, borderWidth: 1.5, borderColor: 'rgba(249,115,22,0.08)' },
-  l3dGoldRing: { position: 'absolute', width: 85, height: 85, borderRadius: 42.5, borderWidth: 2.5, borderColor: 'rgba(249,115,22,0.25)' },
-  l3dCore: { width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(5,4,3,0.95)', borderWidth: 2, borderColor: 'rgba(249,115,22,0.4)', alignItems: 'center', justifyContent: 'center' },
-  l3dBMS: { fontSize: 14, fontWeight: '900', color: '#F97316', letterSpacing: 2 },
-  l3dSpecular: { position: 'absolute', top: 18, left: 25, width: 50, height: 25, borderRadius: 25, backgroundColor: 'rgba(255,255,255,0.12)', transform: [{ rotate: '-30deg' }] },
-  l3dSweep: { position: 'absolute', width: 10, height: 160, backgroundColor: 'rgba(255,220,150,0.06)', borderRadius: 5 },
-  l3dGrip: { position: 'absolute', bottom: 0, left: 30, right: 30, height: 18, borderBottomLeftRadius: 95, borderBottomRightRadius: 95, backgroundColor: 'rgba(255,255,255,0.02)', borderTopWidth: 1, borderTopColor: 'rgba(249,115,22,0.08)' },
-  // Floating photos
-  floatPhoto: { position: 'absolute', borderRadius: 10, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 15, elevation: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
-  fp1: { top: 20, left: 8, width: 62, height: 80 },
-  fp2: { top: 25, right: 10, width: 58, height: 75 },
-  fp3: { top: 195, left: 12, width: 55, height: 70 },
-  fp4: { top: 190, right: 14, width: 56, height: 72 },
-  fpImg: { width: '100%', height: '100%' },
-  // Content
-  heroContent: { paddingHorizontal: 20, marginTop: 2 },
-  heroEyebrow: { fontSize: 8, fontWeight: '700', color: '#F97316', letterSpacing: 3.5, textAlign: 'center', marginBottom: 10 },
-  h1a: { fontSize: 28, fontWeight: '200', color: '#fff', textAlign: 'center', lineHeight: 34 },
-  h1b: { fontSize: 32, fontWeight: '700', color: '#FFB347', textAlign: 'center', lineHeight: 40, textShadowColor: 'rgba(249,115,22,0.25)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 14 },
-  goldSweep: { position: 'absolute', top: 0, left: 0, width: 60, height: '100%', backgroundColor: 'rgba(255,220,130,0.08)', transform: [{ skewX: '-15deg' }] },
-  heroSub: { fontSize: 12, color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginTop: 8, lineHeight: 17 },
+  gp: { position: 'absolute', width: 3, height: 3, borderRadius: 1.5, backgroundColor: 'rgba(249,115,22,0.5)' },
+  gpSm: { width: 2, height: 2, borderRadius: 1, backgroundColor: 'rgba(249,115,22,0.35)' },
+  gpLg: { width: 4, height: 4, borderRadius: 2, backgroundColor: 'rgba(249,115,22,0.25)' },
+  // Typography
+  heroTextBlock: { paddingHorizontal: 20, marginTop: 30 },
+  heroMini: { fontSize: 9, fontWeight: '700', color: '#F97316', letterSpacing: 4, marginBottom: 16 },
+  heroH1Light: { fontSize: 36, fontWeight: '200', color: '#fff', lineHeight: 42, letterSpacing: -0.5 },
+  heroH1Bold: { fontSize: 42, fontWeight: '800', color: '#FFB347', lineHeight: 48, letterSpacing: -1, textShadowColor: 'rgba(249,115,22,0.2)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 20 },
+  goldSweep: { position: 'absolute', top: 0, left: 0, width: 80, height: '100%', backgroundColor: 'rgba(255,220,130,0.06)', transform: [{ skewX: '-15deg' }] },
+  heroDesc: { fontSize: 13, color: 'rgba(255,255,255,0.4)', marginTop: 14, lineHeight: 20, maxWidth: width * 0.75 },
+  // Glass cards
+  glassCardFloat: { position: 'absolute', flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(255,255,255,0.03)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', borderRadius: 12, paddingVertical: 8, paddingHorizontal: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 8 },
+  gcf1: { top: 90, right: 16 },
+  gcf2: { top: 180, right: 20 },
+  gcf3: { top: 290, right: 14 },
+  gcf4: { top: 370, right: 18 },
+  gcfNum: { fontSize: 13, fontWeight: '800', color: '#fff' },
+  gcfLabel: { fontSize: 7, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  // Bottom
+  heroBottom: { paddingHorizontal: 20, marginTop: 20 },
   // Ticker
-  ticker: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'center', backgroundColor: 'rgba(255,255,255,0.02)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, marginTop: 12 },
+  ticker: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.02)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, marginBottom: 16 },
   tickDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#10B981' },
   tickIcon: { fontSize: 11 },
-  tickText: { fontSize: 9, color: 'rgba(255,255,255,0.4)', maxWidth: width * 0.55 },
-  // Glass card
-  glassCard: { marginTop: 14, backgroundColor: 'rgba(255,255,255,0.02)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', borderRadius: 16, paddingVertical: 14, paddingHorizontal: 8, shadowColor: '#F97316', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 12 },
-  glassRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' },
-  glassItem: { alignItems: 'center' },
-  glassNum: { fontSize: 16, fontWeight: '800', color: '#F97316' },
-  glassLabel: { fontSize: 8, color: 'rgba(255,255,255,0.35)', marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.5 },
-  glassDivider: { width: 1, height: 30, backgroundColor: 'rgba(255,255,255,0.05)' },
+  tickText: { fontSize: 9, color: 'rgba(255,255,255,0.4)', maxWidth: width * 0.5 },
   // Buttons
-  btnRow: { flexDirection: 'row', gap: 10, marginTop: 16, justifyContent: 'center' },
-  btnPrimary: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#F97316', paddingHorizontal: 22, paddingVertical: 13, borderRadius: 12, shadowColor: '#F97316', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 },
-  btnPrimaryText: { fontSize: 13, fontWeight: '700', color: '#000' },
-  btnGlass: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 18, paddingVertical: 13, borderRadius: 12, borderWidth: 1.5, borderColor: 'rgba(249,115,22,0.35)', backgroundColor: 'rgba(255,255,255,0.02)' },
-  btnGlassText: { fontSize: 13, fontWeight: '600', color: '#FFB347' },
+  btnRow: { flexDirection: 'row', gap: 10 },
+  btnPrimary: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#F97316', paddingHorizontal: 22, paddingVertical: 14, borderRadius: 12, shadowColor: '#F97316', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 10 },
+  btnPrimaryText: { fontSize: 14, fontWeight: '700', color: '#000' },
+  btnGlass: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 18, paddingVertical: 14, borderRadius: 12, borderWidth: 1.5, borderColor: 'rgba(249,115,22,0.3)', backgroundColor: 'rgba(255,255,255,0.02)' },
+  btnGlassText: { fontSize: 14, fontWeight: '600', color: '#FFB347' },
   btnRow: { flexDirection: 'row', gap: 12, marginTop: 22 },
   btnPrimary: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: '#FF8C2B', paddingHorizontal: 22, paddingVertical: 13, borderRadius: 14 },
   btnPrimaryText: { fontSize: 14, fontWeight: '700', color: '#000' },
