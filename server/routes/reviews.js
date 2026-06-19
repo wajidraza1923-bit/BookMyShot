@@ -193,7 +193,10 @@ router.get("/my-reviews", protect, authorize("creator"), async (req, res, next) 
       { $match: { creator: creator._id, approved: true, hidden: false } },
       { $group: { _id: null, avg: { $avg: "$rating" }, count: { $sum: 1 }, r1: { $sum: { $cond: [{ $eq: ["$rating", 1] }, 1, 0] } }, r2: { $sum: { $cond: [{ $eq: ["$rating", 2] }, 1, 0] } }, r3: { $sum: { $cond: [{ $eq: ["$rating", 3] }, 1, 0] } }, r4: { $sum: { $cond: [{ $eq: ["$rating", 4] }, 1, 0] } }, r5: { $sum: { $cond: [{ $eq: ["$rating", 5] }, 1, 0] } } } },
     ]);
-    res.json({ success: true, reviews, stats: stats[0] || {} });
+    const totalReviews = reviews.length;
+    const hiddenCount = reviews.filter(r => r.hidden).length;
+    const visibleCount = totalReviews - hiddenCount;
+    res.json({ success: true, reviews, stats: stats[0] || {}, counts: { total: totalReviews, visible: visibleCount, hidden: hiddenCount } });
   } catch (e) { next(e); }
 });
 
@@ -203,6 +206,12 @@ router.patch("/creator/:id/hide", protect, authorize("creator"), async (req, res
     const creator = await Creator.findOne({ user: req.user._id });
     const review = await Review.findOne({ _id: req.params.id, creator: creator._id });
     if (!review) return res.status(404).json({ success: false, message: "Review not found" });
+    
+    // If admin hid it, creator cannot unhide
+    if (review.hiddenBy === "admin" && review.hidden) {
+      return res.status(403).json({ success: false, message: "This review was hidden by admin and cannot be changed" });
+    }
+    
     review.hidden = !review.hidden;
     review.hiddenBy = review.hidden ? "creator" : "";
     await review.save();
