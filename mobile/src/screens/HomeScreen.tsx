@@ -285,7 +285,39 @@ export default function HomeScreen({ navigation }: any) {
             renderItem={({ item }) => <PremiumCard item={item} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })} />} />
         </>)}
 
-        {/* ALL CREATORS GRID */}
+        {/* ═══ TRENDING WEDDING STYLES ═══ */}
+        <View style={s.weddingStylesSec}>
+          <View style={s.secRow}><View><Text style={s.secLabel}>TRENDING</Text><Text style={s.secTitle2}>Wedding Styles</Text></View></View>
+          <FlatList horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}
+            data={[
+              { label: 'Royal Wedding', icon: 'crown-outline', color: '#FFB347' },
+              { label: 'Kashmiri Wedding', icon: 'snow-outline', color: '#60A5FA' },
+              { label: 'Traditional', icon: 'flame-outline', color: '#F87171' },
+              { label: 'Destination', icon: 'airplane-outline', color: '#34D399' },
+              { label: 'Pre-Wedding', icon: 'heart-outline', color: '#F472B6' },
+              { label: 'Cinematic Film', icon: 'film-outline', color: '#A78BFA' },
+            ]}
+            keyExtractor={i => i.label}
+            renderItem={({ item }) => (
+              <TouchableOpacity style={s.styleCard} onPress={() => navigation.navigate('Discover', { category: item.label.toLowerCase() })} activeOpacity={0.8}>
+                <View style={[s.styleIcon, { backgroundColor: item.color + '15' }]}><Ionicons name={item.icon as any} size={20} color={item.color} /></View>
+                <Text style={s.styleLabel}>{item.label}</Text>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+
+        {/* ═══ WHY COUPLES CHOOSE BOOKMYSHOT ═══ */}
+        <View style={s.whySec}>
+          <Text style={s.whyTitle}>Why Couples Choose BookMyShot</Text>
+          <View style={s.whyGrid}>
+            {[{i:'shield-checkmark',t:'Verified Creators',d:'Every creator is quality-checked and verified',c:'#10B981'},{i:'lock-closed',t:'Secure Booking',d:'Your data and payments are fully protected',c:'#3B82F6'},{i:'star',t:'Real Reviews',d:'Genuine feedback from real couples',c:'#F59E0B'},{i:'flash',t:'Fast Response',d:'Creators reply within 2 hours',c:'#8B5CF6'}].map((w,idx) => (
+              <View key={idx} style={s.whyCard}><View style={[s.whyIc,{backgroundColor:w.c+'15'}]}><Ionicons name={w.i as any} size={20} color={w.c} /></View><Text style={s.whyT}>{w.t}</Text><Text style={s.whyD}>{w.d}</Text></View>
+            ))}
+          </View>
+        </View>
+
+        {/* ═══ ALL CREATORS GRID ═══ */}
         {creators.length > 0 && (<>
           <View style={s.secRow}><View><Text style={s.secLabel}>DISCOVER</Text><Text style={s.secTitle2}>All Creators</Text></View><TouchableOpacity onPress={() => navigation.navigate('Discover')}><Text style={s.viewAll}>Browse →</Text></TouchableOpacity></View>
           <View style={s.grid}>{creators.slice(0, 4).map(item => (
@@ -296,16 +328,6 @@ export default function HomeScreen({ navigation }: any) {
             </TouchableOpacity>
           ))}</View>
         </>)}
-
-        {/* WHY BOOKMYSHOT */}
-        <View style={s.whySec}>
-          <Text style={s.whyTitle}>Why Choose BookMyShot?</Text>
-          <View style={s.whyGrid}>
-            {[{i:'shield-checkmark',t:'Verified Pros',d:'Quality checked',c:'#10B981'},{i:'lock-closed',t:'Secure',d:'Data protected',c:'#3B82F6'},{i:'star',t:'Real Reviews',d:'Genuine feedback',c:'#F59E0B'},{i:'flash',t:'Fast Response',d:'Reply in 2hrs',c:'#8B5CF6'}].map((w,idx) => (
-              <View key={idx} style={s.whyCard}><View style={[s.whyIc,{backgroundColor:w.c+'18'}]}><Ionicons name={w.i as any} size={18} color={w.c} /></View><Text style={s.whyT}>{w.t}</Text><Text style={s.whyD}>{w.d}</Text></View>
-            ))}
-          </View>
-        </View>
 
         {/* TESTIMONIALS — Real reviews from database */}
         <View style={{ marginTop: 32 }}>
@@ -537,7 +559,7 @@ const s = StyleSheet.create({
   btnGlassText: { fontSize: 14, fontWeight: '600', color: '#FFB347' },
   // Sections
   secTitle: { fontSize: 15, fontWeight: '700', color: '#fff', paddingHorizontal: 20, marginTop: 28, marginBottom: 12 },
-  secRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', paddingHorizontal: 20, marginTop: 30, marginBottom: 12 },
+  secRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', paddingHorizontal: 20, marginTop: 36, marginBottom: 14 },
   secLabel: { fontSize: 8, fontWeight: '700', color: '#FF8C2B', letterSpacing: 2 },
   secTitle2: { fontSize: 15, fontWeight: '700', color: '#fff', marginTop: 2 },
   viewAll: { fontSize: 11, fontWeight: '600', color: '#FF8C2B' },
@@ -603,6 +625,11 @@ const s = StyleSheet.create({
   whyIc: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
   whyT: { fontSize: 11, fontWeight: '600', color: '#fff' },
   whyD: { fontSize: 9, color: 'rgba(255,255,255,0.4)', marginTop: 3 },
+  // Wedding Styles
+  weddingStylesSec: { marginTop: 36 },
+  styleCard: { alignItems: 'center', marginRight: 14, width: 85 },
+  styleIcon: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', marginBottom: 6, borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)' },
+  styleLabel: { fontSize: 9, fontWeight: '500', color: 'rgba(255,255,255,0.6)', textAlign: 'center' },
   // Testimonials
   writeRevBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,140,43,0.06)', borderWidth: 1, borderColor: 'rgba(255,140,43,0.15)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
   writeRevText: { fontSize: 10, fontWeight: '600', color: '#FF8C2B' },
