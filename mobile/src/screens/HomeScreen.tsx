@@ -280,11 +280,25 @@ export default function HomeScreen({ navigation }: any) {
             renderItem={({ item }) => <PremiumCard item={item} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })} badge="⭐ FEATURED" />} />
         </>)}
 
-        {/* TOP RATED */}
+        {/* TOP RATED — 2-column grid matching All Creators style */}
         {topRated.length > 0 && (<>
           <View style={s.secRow}><View><Text style={s.secLabel}>TOP RATED</Text><Text style={s.secTitle2}>Best Reviewed</Text></View><TouchableOpacity onPress={() => navigation.navigate('Discover')}><Text style={s.viewAll}>See All →</Text></TouchableOpacity></View>
-          <FlatList horizontal showsHorizontalScrollIndicator={false} data={topRated} contentContainerStyle={{ paddingHorizontal: 20 }} keyExtractor={i => i._id}
-            renderItem={({ item }) => <PremiumCard item={item} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })} />} />
+          <View style={s.grid}>{topRated.slice(0, 4).map((item, idx) => (
+            <TouchableOpacity key={item._id} style={s.gCard} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })} activeOpacity={0.85}>
+              <Image source={{ uri: item.portfolio?.[0] || item.user?.avatar || WEDDING_IMGS[0] }} style={s.gImg} />
+              <View style={s.rankBadge}><Text style={s.rankText}>#{idx + 1}</Text></View>
+              <View style={s.gInfo}>
+                <Text style={s.gName} numberOfLines={1}>{item.user?.name}</Text>
+                <Text style={s.gMeta}>{item.specialty || 'Photographer'}</Text>
+                <View style={s.gRow}>
+                  <Ionicons name="star" size={10} color="#FF8C2B" />
+                  <Text style={s.gRating}>{item.rating || '5.0'}</Text>
+                  <Text style={s.gReviewCount}>({item.reviewCount || 0})</Text>
+                  {item.startingPrice > 0 && <Text style={s.gPrice}>₹{item.startingPrice?.toLocaleString('en-IN')}</Text>}
+                </View>
+              </View>
+            </TouchableOpacity>
+          ))}</View>
         </>)}
 
         {/* ═══ TRENDING WEDDING STYLES ═══ */}
@@ -613,11 +627,14 @@ const s = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 20, gap: 10 },
   gCard: { width: HALF, borderRadius: 14, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.03)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
   gImg: { width: '100%', height: 100, resizeMode: 'cover' },
+  rankBadge: { position: 'absolute', top: 6, left: 6, backgroundColor: '#FF8C2B', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
+  rankText: { fontSize: 8, fontWeight: '800', color: '#000' },
   gInfo: { padding: 10 },
   gName: { fontSize: 12, fontWeight: '600', color: '#fff' },
   gMeta: { fontSize: 9, color: 'rgba(255,255,255,0.4)', marginTop: 2 },
   gRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
   gRating: { fontSize: 10, color: 'rgba(255,255,255,0.7)' },
+  gReviewCount: { fontSize: 9, color: 'rgba(255,255,255,0.35)' },
   gPrice: { fontSize: 10, fontWeight: '600', color: '#FF8C2B', marginLeft: 'auto' },
   // Why
   whySec: { paddingHorizontal: 20, marginTop: 36 },
