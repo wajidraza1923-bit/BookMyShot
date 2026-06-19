@@ -87,7 +87,7 @@ export default function HomeScreen({ navigation }: any) {
     ])).start();
   }, []);
 
-  const [liveStats, setLiveStats] = useState<any>({ creators: 0, bookings: 0, cities: 0, reviews: 0, avgRating: 0 });
+  const [liveStats, setLiveStats] = useState<any>(null);
 
   const loadData = useCallback(async () => {
     try {
@@ -220,17 +220,19 @@ export default function HomeScreen({ navigation }: any) {
         <Animated.View style={{ opacity: fadeAnim }}>
 
         {/* LIVE STATS GLASS CARD */}
-        <View style={s.liveStatsCard}>
-          <View style={s.lsRow}>
-            <View style={s.lsItem}><Text style={s.lsNum}>{liveStats.creators > 0 ? `${liveStats.creators.toLocaleString('en-IN')}+` : '—'}</Text><Text style={s.lsLabel}>Creators</Text></View>
-            <View style={s.lsDivider} />
-            <View style={s.lsItem}><Text style={s.lsNum}>{liveStats.bookings > 0 ? `${liveStats.bookings.toLocaleString('en-IN')}+` : '—'}</Text><Text style={s.lsLabel}>Bookings</Text></View>
-            <View style={s.lsDivider} />
-            <View style={s.lsItem}><Text style={s.lsNum}>{liveStats.cities > 0 ? `${liveStats.cities}+` : '—'}</Text><Text style={s.lsLabel}>Cities</Text></View>
-            <View style={s.lsDivider} />
-            <View style={s.lsItem}><Text style={s.lsNum}>{liveStats.avgRating > 0 ? `${liveStats.avgRating}` : '—'}</Text><Text style={s.lsLabel}>Rating</Text></View>
+        {liveStats && (
+          <View style={s.liveStatsCard}>
+            <View style={s.lsRow}>
+              <View style={s.lsItem}><Text style={s.lsNum}>{liveStats.creators.toLocaleString('en-IN')}+</Text><Text style={s.lsLabel}>Creators</Text></View>
+              <View style={s.lsDivider} />
+              <View style={s.lsItem}><Text style={s.lsNum}>{liveStats.bookings.toLocaleString('en-IN')}+</Text><Text style={s.lsLabel}>Bookings</Text></View>
+              <View style={s.lsDivider} />
+              <View style={s.lsItem}><Text style={s.lsNum}>{liveStats.cities}+</Text><Text style={s.lsLabel}>Cities</Text></View>
+              <View style={s.lsDivider} />
+              <View style={s.lsItem}><Text style={s.lsNum}>{liveStats.avgRating > 0 ? `${liveStats.avgRating}★` : '—'}</Text><Text style={s.lsLabel}>Rating</Text></View>
+            </View>
           </View>
-        </View>
+        )}
 
         {/* WEDDING MOMENTS CAROUSEL */}
         <View style={s.momentsSection}>
@@ -290,7 +292,7 @@ export default function HomeScreen({ navigation }: any) {
           <View style={s.secRow}><View><Text style={s.secLabel}>TRENDING</Text><Text style={s.secTitle2}>Wedding Styles</Text></View></View>
           <FlatList horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}
             data={[
-              { label: 'Royal Wedding', icon: 'crown-outline', color: '#FFB347' },
+              { label: 'Royal Wedding', icon: 'diamond-outline', color: '#FFB347' },
               { label: 'Kashmiri Wedding', icon: 'snow-outline', color: '#60A5FA' },
               { label: 'Traditional', icon: 'flame-outline', color: '#F87171' },
               { label: 'Destination', icon: 'airplane-outline', color: '#34D399' },
@@ -334,7 +336,7 @@ export default function HomeScreen({ navigation }: any) {
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 12 }}>
             <View>
               <Text style={s.secTitle}>What Couples Say</Text>
-              {liveStats.avgRating > 0 && <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', paddingHorizontal: 20 }}>★ {liveStats.avgRating} average from {liveStats.reviews} reviews</Text>}
+              {liveStats && liveStats.avgRating > 0 && <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', paddingHorizontal: 20 }}>★ {liveStats.avgRating} average from {liveStats.reviews} reviews</Text>}
             </View>
             <TouchableOpacity style={s.writeRevBtn} onPress={() => navigation.navigate('PlatformReview')}>
               <Ionicons name="create-outline" size={12} color="#FF8C2B" /><Text style={s.writeRevText}>Write Review</Text>
