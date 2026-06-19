@@ -41,11 +41,7 @@ const WEDDING_MOMENTS = [
   { img: 'https://images.unsplash.com/photo-1460978812857-470ed1c77af0?w=500', label: 'Wedding Film', city: 'Bangalore, India' },
 ];
 
-const TESTIMONIALS = [
-  { name: 'Priya & Rahul', city: 'Mumbai', text: 'Found our dream photographer in minutes. The quality was beyond expectations!', rating: 5, event: 'Wedding' },
-  { name: 'Ankit & Meera', city: 'Delhi', text: 'BookMyShot made our pre-wedding shoot magical. Highly recommend!', rating: 5, event: 'Pre Wedding' },
-  { name: 'Sneha & Varun', city: 'Bangalore', text: 'Professional, verified creators. Our wedding film is absolutely stunning.', rating: 5, event: 'Cinematography' },
-];
+const TESTIMONIALS: any[] = [];
 
 function Counter({ end, suffix = '+' }: { end: number; suffix?: string }) {
   const [val, setVal] = useState(0);
@@ -125,11 +121,33 @@ export default function HomeScreen({ navigation }: any) {
       } catch {}
       setMoments(momentsData.length > 0 ? momentsData : WEDDING_MOMENTS);
 
-      // Fetch testimonials
+      // Fetch testimonials — prefer REAL reviews from users, fallback to admin testimonials
       try {
-        const testRes = await api.get('/testimonials');
-        const testData = testRes.data?.data || [];
-        if (testData.length > 0) setTestimonials(testData);
+        // First try to get real platform reviews
+        const revRes = await api.get('/reviews/platform');
+        const realReviews = revRes.data?.data || [];
+        if (realReviews.length > 0) {
+          setTestimonials(realReviews.map((r: any) => ({
+            name: r.name || r.user?.name || 'User',
+            city: r.city || '',
+            text: r.text || r.review || '',
+            rating: r.rating || 5,
+            event: r.eventType || 'Wedding',
+            verified: true,
+          })));
+        } else {
+          // Fallback to admin-managed testimonials
+          const testRes = await api.get('/testimonials');
+          const testData = testRes.data?.data || [];
+          if (testData.length > 0) setTestimonials(testData.map((t: any) => ({
+            name: t.name,
+            city: t.city || '',
+            text: t.review || t.text || '',
+            rating: t.rating || 5,
+            event: t.eventType || 'Wedding',
+            verified: t.verifiedBooking || false,
+          })));
+        }
       } catch {}
       const all = creatorsRes.data?.creators || creatorsRes.data?.data || [];
       const slots = featuredRes.data?.slots || {};
@@ -289,17 +307,32 @@ export default function HomeScreen({ navigation }: any) {
           </View>
         </View>
 
-        {/* TESTIMONIALS */}
-        <Text style={[s.secTitle, {marginTop: 32}]}>What Couples Say</Text>
-        <FlatList horizontal showsHorizontalScrollIndicator={false} data={testimonials} contentContainerStyle={{ paddingHorizontal: 20 }} keyExtractor={(_, i) => String(i)}
-          renderItem={({ item }) => (
-            <View style={s.testCard}>
-              <View style={s.testStars}>{[1,2,3,4,5].map(i => <Ionicons key={i} name="star" size={12} color={i <= (item.rating || 5) ? '#FF8C2B' : 'rgba(255,255,255,0.15)'} />)}</View>
-              <Text style={s.testText}>"{item.review || item.text}"</Text>
-              <View style={s.testBottom}><Text style={s.testName}>{item.name}</Text><Text style={s.testMeta}>{item.city} • {item.eventType || item.event}</Text></View>
-              {(item.verifiedBooking || item.verified) && <View style={s.testBadge}><Ionicons name="checkmark-circle" size={10} color="#10B981" /><Text style={s.testBadgeText}>Verified Booking</Text></View>}
+        {/* TESTIMONIALS — Real reviews from database */}
+        <View style={{ marginTop: 32 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 12 }}>
+            <View>
+              <Text style={s.secTitle}>What Couples Say</Text>
+              {liveStats.avgRating > 0 && <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', paddingHorizontal: 20 }}>★ {liveStats.avgRating} average from {liveStats.reviews} reviews</Text>}
             </View>
-          )} />
+          </View>
+          {testimonials.length > 0 ? (
+            <FlatList horizontal showsHorizontalScrollIndicator={false} data={testimonials} contentContainerStyle={{ paddingHorizontal: 20 }} keyExtractor={(_, i) => String(i)}
+              renderItem={({ item }) => (
+                <View style={s.testCard}>
+                  <View style={s.testStars}>{[1,2,3,4,5].map(i => <Ionicons key={i} name="star" size={12} color={i <= (item.rating || 5) ? '#FF8C2B' : 'rgba(255,255,255,0.15)'} />)}</View>
+                  <Text style={s.testText}>"{item.review || item.text}"</Text>
+                  <View style={s.testBottom}><Text style={s.testName}>{item.name}</Text><Text style={s.testMeta}>{item.city} • {item.eventType || item.event}</Text></View>
+                  {(item.verifiedBooking || item.verified) && <View style={s.testBadge}><Ionicons name="checkmark-circle" size={10} color="#10B981" /><Text style={s.testBadgeText}>Verified</Text></View>}
+                </View>
+              )} />
+          ) : (
+            <View style={{ alignItems: 'center', paddingVertical: 30 }}>
+              <Ionicons name="chatbubble-outline" size={28} color="rgba(255,255,255,0.1)" />
+              <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', marginTop: 8 }}>No reviews yet</Text>
+              <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', marginTop: 4 }}>Be the first to share your experience</Text>
+            </View>
+          )}
+        </View>
 
         {/* GENERAL INQUIRY */}
         <View style={s.inquirySection}>
