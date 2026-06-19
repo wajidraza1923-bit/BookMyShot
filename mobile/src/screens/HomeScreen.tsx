@@ -314,6 +314,9 @@ export default function HomeScreen({ navigation }: any) {
               <Text style={s.secTitle}>What Couples Say</Text>
               {liveStats.avgRating > 0 && <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', paddingHorizontal: 20 }}>★ {liveStats.avgRating} average from {liveStats.reviews} reviews</Text>}
             </View>
+            <TouchableOpacity style={s.writeRevBtn} onPress={() => navigation.navigate('PlatformReview')}>
+              <Ionicons name="create-outline" size={12} color="#FF8C2B" /><Text style={s.writeRevText}>Write Review</Text>
+            </TouchableOpacity>
           </View>
           {testimonials.length > 0 ? (
             <FlatList horizontal showsHorizontalScrollIndicator={false} data={testimonials} contentContainerStyle={{ paddingHorizontal: 20 }} keyExtractor={(_, i) => String(i)}
@@ -329,7 +332,9 @@ export default function HomeScreen({ navigation }: any) {
             <View style={{ alignItems: 'center', paddingVertical: 30 }}>
               <Ionicons name="chatbubble-outline" size={28} color="rgba(255,255,255,0.1)" />
               <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', marginTop: 8 }}>No reviews yet</Text>
-              <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', marginTop: 4 }}>Be the first to share your experience</Text>
+              <TouchableOpacity style={[s.writeRevBtn, { marginTop: 12 }]} onPress={() => navigation.navigate('PlatformReview')}>
+                <Ionicons name="create-outline" size={12} color="#FF8C2B" /><Text style={s.writeRevText}>Be the first to review</Text>
+              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -599,6 +604,8 @@ const s = StyleSheet.create({
   whyT: { fontSize: 11, fontWeight: '600', color: '#fff' },
   whyD: { fontSize: 9, color: 'rgba(255,255,255,0.4)', marginTop: 3 },
   // Testimonials
+  writeRevBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,140,43,0.06)', borderWidth: 1, borderColor: 'rgba(255,140,43,0.15)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
+  writeRevText: { fontSize: 10, fontWeight: '600', color: '#FF8C2B' },
   testCard: { width: width * 0.72, backgroundColor: 'rgba(245,185,66,0.03)', borderRadius: 16, padding: 16, marginRight: 12, borderWidth: 1, borderColor: 'rgba(245,185,66,0.1)' },
   testStars: { flexDirection: 'row', gap: 2, marginBottom: 8 },
   testText: { fontSize: 12, color: 'rgba(255,255,255,0.7)', fontStyle: 'italic', lineHeight: 18 },
