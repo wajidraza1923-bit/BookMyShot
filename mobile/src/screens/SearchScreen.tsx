@@ -42,7 +42,7 @@ export default function SearchScreen({ navigation, route }: any) {
   const [loading, setLoading] = useState(false);
   const [selectedCity, setSelectedCity] = useState(route?.params?.city || '');
   const [selectedCategory, setSelectedCategory] = useState(route?.params?.category || '');
-  const [showResults, setShowResults] = useState(!!route?.params?.city || !!route?.params?.category);
+  const [showResults, setShowResults] = useState(!!route?.params?.city || !!route?.params?.category || !!route?.params?.showAll);
   const [districts, setDistricts] = useState<any[]>([]);
   const [trendingSearches, setTrendingSearches] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -122,7 +122,7 @@ export default function SearchScreen({ navigation, route }: any) {
       )}
 
       {loading ? <ActivityIndicator size="large" color="#FF8C2B" style={{ marginTop: 50 }} /> :
-        showResults ? <ResultsList creators={creators} navigation={navigation} /> :
+        showResults ? <ResultsList creators={creators} navigation={navigation} districts={districts} selectedCity={selectedCity} setSelectedCity={setSelectedCity} setShowResults={setShowResults} /> :
         <DiscoverContent districts={districts} trendingSearches={trendingSearches} categories={categories} inspiration={inspiration} trendingCreators={trendingCreators} featuredCreators={featuredCreators} navigation={navigation} setQuery={setQuery} setSelectedCity={setSelectedCity} setSelectedCategory={setSelectedCategory} setShowResults={setShowResults} />
       }
     </View>
@@ -222,19 +222,42 @@ function DiscoverContent({ districts, trendingSearches, categories, inspiration,
 }
 
 // ═══ RESULTS ═══
-function ResultsList({ creators, navigation }: any) {
+function ResultsList({ creators, navigation, districts, selectedCity, setSelectedCity, setShowResults }: any) {
   return (
-    <FlatList data={creators} showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
-      ListHeaderComponent={<Text style={s.resCount}>{creators.length} creators found</Text>}
-      ListEmptyComponent={<View style={s.empty}><Ionicons name="search-outline" size={36} color="rgba(255,255,255,0.1)" /><Text style={s.emptyTitle}>No creators found</Text></View>}
+    <FlatList data={creators} showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+      ListHeaderComponent={
+        <View>
+          {/* District filter bar */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }} contentContainerStyle={{ gap: 8 }}>
+            <TouchableOpacity style={[s.distChip, !selectedCity && s.distChipActive]} onPress={() => { setSelectedCity(''); }}>
+              <Text style={[s.distChipText, !selectedCity && s.distChipTextActive]}>All</Text>
+            </TouchableOpacity>
+            {(districts || []).slice(0, 8).map((d: any) => (
+              <TouchableOpacity key={d.name} style={[s.distChip, selectedCity === d.name && s.distChipActive]} onPress={() => { setSelectedCity(d.name); }}>
+                <Text style={[s.distChipText, selectedCity === d.name && s.distChipTextActive]}>{d.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+          <Text style={s.resCount}>{creators.length} creator{creators.length !== 1 ? 's' : ''} found{selectedCity ? ` in ${selectedCity}` : ''}</Text>
+        </View>
+      }
+      ListEmptyComponent={<View style={s.empty}><Ionicons name="search-outline" size={36} color="rgba(255,255,255,0.1)" /><Text style={s.emptyTitle}>No creators found{selectedCity ? ` in ${selectedCity}` : ''}</Text><Text style={s.emptySubTitle}>Try a different location or category</Text></View>}
       keyExtractor={(i: any) => i._id}
       renderItem={({ item }: any) => (
-        <TouchableOpacity style={s.resCard} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })}>
-          <Image source={{ uri: item.portfolio?.[0] || item.user?.avatar || 'https://via.placeholder.com/200' }} style={s.resImg} />
+        <TouchableOpacity style={s.resCard} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })} activeOpacity={0.85}>
+          <Image source={{ uri: item.portfolio?.[0] || item.user?.avatar || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=300' }} style={s.resImg} />
           <View style={s.resInfo}>
-            <Text style={s.resName} numberOfLines={1}>{item.user?.name}</Text>
-            <Text style={s.resMeta}>{item.specialty} • {item.city}</Text>
-            <View style={s.resRow}><Ionicons name="star" size={10} color="#FF8C2B" /><Text style={s.resRating}>{item.rating || '5.0'}</Text>{item.startingPrice > 0 && <Text style={s.resPrice}>₹{item.startingPrice?.toLocaleString('en-IN')}</Text>}</View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Text style={s.resName} numberOfLines={1}>{item.user?.name || 'Creator'}</Text>
+              {item.verified && <Ionicons name="checkmark-circle" size={12} color="#10B981" />}
+            </View>
+            <Text style={s.resMeta}>{item.specialty || 'Photographer'} • {item.city || 'J&K'}</Text>
+            {item.bio && <Text style={s.resBio} numberOfLines={2}>{item.bio}</Text>}
+            <View style={s.resRow}>
+              <Ionicons name="star" size={10} color="#FF8C2B" /><Text style={s.resRating}>{item.rating || '5.0'}</Text>
+              <Text style={s.resReviews}>({item.reviewCount || 0})</Text>
+              {item.startingPrice > 0 && <Text style={s.resPrice}>₹{item.startingPrice?.toLocaleString('en-IN')}</Text>}
+            </View>
           </View>
         </TouchableOpacity>
       )} />
@@ -314,14 +337,22 @@ const s = StyleSheet.create({
   aiBtnText: { fontSize: 12, fontWeight: '700', color: '#000' },
   // Results
   resCount: { fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 12 },
-  resCard: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 10, marginBottom: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)' },
-  resImg: { width: 60, height: 60, borderRadius: 10 },
-  resInfo: { flex: 1, marginLeft: 10, justifyContent: 'center' },
+  resCard: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 14, padding: 10, marginBottom: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)' },
+  resImg: { width: 70, height: 70, borderRadius: 12 },
+  resInfo: { flex: 1, marginLeft: 12, justifyContent: 'center' },
   resName: { fontSize: 13, fontWeight: '600', color: '#fff' },
   resMeta: { fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 2 },
+  resBio: { fontSize: 9, color: 'rgba(255,255,255,0.3)', marginTop: 3, lineHeight: 13 },
   resRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 5 },
-  resRating: { fontSize: 10, color: 'rgba(255,255,255,0.6)', marginRight: 6 },
-  resPrice: { fontSize: 10, fontWeight: '600', color: '#FF8C2B' },
+  resRating: { fontSize: 10, color: 'rgba(255,255,255,0.6)', marginRight: 2 },
+  resReviews: { fontSize: 9, color: 'rgba(255,255,255,0.3)' },
+  resPrice: { fontSize: 10, fontWeight: '600', color: '#FF8C2B', marginLeft: 'auto' },
+  // District filter chips
+  distChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', backgroundColor: 'rgba(255,255,255,0.02)' },
+  distChipActive: { backgroundColor: 'rgba(255,140,43,0.1)', borderColor: 'rgba(255,140,43,0.3)' },
+  distChipText: { fontSize: 11, color: 'rgba(255,255,255,0.5)' },
+  distChipTextActive: { color: '#FF8C2B', fontWeight: '600' },
+  emptySubTitle: { fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 4 },
   empty: { alignItems: 'center', paddingTop: 50 },
   emptyTitle: { fontSize: 14, color: 'rgba(255,255,255,0.4)', marginTop: 10 },
 });
