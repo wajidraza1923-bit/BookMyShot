@@ -339,7 +339,7 @@ export default function HomeScreen({ navigation }: any) {
             </TouchableOpacity>
           ))}</View>
           {/* View All Creators Button */}
-          <TouchableOpacity style={s.viewAllBtn} onPress={() => navigation.navigate('Discover')} activeOpacity={0.85}>
+          <TouchableOpacity style={s.viewAllBtn} onPress={() => navigation.navigate('AllCreators')} activeOpacity={0.85}>
             <Text style={s.viewAllBtnText}>View All Creators</Text>
             <Ionicons name="arrow-forward" size={16} color="#fff" />
           </TouchableOpacity>

@@ -16,6 +16,7 @@ import VerifyEmailScreen from '../screens/VerifyEmailScreen';
 import InquiryScreen from '../screens/InquiryScreen';
 import WriteReviewScreen from '../screens/WriteReviewScreen';
 import PlatformReviewScreen from '../screens/PlatformReviewScreen';
+import AllCreatorsScreen from '../screens/AllCreatorsScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -55,6 +56,7 @@ export default function GuestNavigator() {
       <Stack.Screen name="Inquiry" component={InquiryScreen} />
       <Stack.Screen name="WriteReview" component={WriteReviewScreen} />
       <Stack.Screen name="PlatformReview" component={PlatformReviewScreen} />
+      <Stack.Screen name="AllCreators" component={AllCreatorsScreen} />
     </Stack.Navigator>
   );
 }
