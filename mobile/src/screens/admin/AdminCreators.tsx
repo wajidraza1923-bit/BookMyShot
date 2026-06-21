@@ -45,8 +45,21 @@ export default function AdminCreators({ navigation }: any) {
   const updateStatus = (id: string, status: string, label: string) => {
     Alert.alert(label, `${label} this creator?`, [
       { text: 'Cancel' },
-      { text: label, style: status === 'rejected' ? 'destructive' : 'default', onPress: async () => {
-        try { await api.patch(`/admin/creator-accounts/${id}`, { status }); await load(); Alert.alert('Done', `Creator ${status}`); } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
+      { text: label, style: status === 'rejected' || status === 'suspended' ? 'destructive' : 'default', onPress: async () => {
+        try {
+          // Use correct backend endpoints
+          let endpoint = '';
+          if (status === 'approved') endpoint = `/admin/creator-accounts/${id}/activate`;
+          else if (status === 'rejected') endpoint = `/admin/creator-accounts/${id}/deactivate`;
+          else if (status === 'suspended') endpoint = `/admin/creator-accounts/${id}/suspend`;
+          else endpoint = `/admin/creator-accounts/${id}/activate`;
+          
+          await api.patch(endpoint, { reason: `${label} by admin` });
+          await load();
+          Alert.alert('Success', `Creator ${label.toLowerCase()}d successfully`);
+        } catch (e: any) {
+          Alert.alert('Error', e.response?.data?.message || 'Failed to update creator');
+        }
       }}
     ]);
   };

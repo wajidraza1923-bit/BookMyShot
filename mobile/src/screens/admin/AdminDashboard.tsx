@@ -13,9 +13,11 @@ export default function AdminDashboard({ navigation }: any) {
 
   const load = useCallback(async () => {
     try {
-      const res = await api.get('/admin/dashboard');
+      const res = await api.get('/admin/dashboard-overview');
       setData(res.data?.data || res.data);
-    } catch {} finally { setLoading(false); }
+    } catch (e: any) {
+      console.log('[AdminDash] Error:', e.response?.status, e.message);
+    } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { load(); }, []);
