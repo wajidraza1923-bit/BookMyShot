@@ -42,7 +42,7 @@ export default function SearchScreen({ navigation, route }: any) {
   const [loading, setLoading] = useState(false);
   const [selectedCity, setSelectedCity] = useState(route?.params?.city || '');
   const [selectedCategory, setSelectedCategory] = useState(route?.params?.category || '');
-  const [showResults, setShowResults] = useState(!!route?.params?.city || !!route?.params?.category || !!route?.params?.showAll);
+  const [showResults, setShowResults] = useState(!!route?.params?.city || !!route?.params?.category);
   const [districts, setDistricts] = useState<any[]>([]);
   const [trendingSearches, setTrendingSearches] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
