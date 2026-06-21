@@ -3,22 +3,28 @@ const path = require('path');
 
 const config = getDefaultConfig(__dirname);
 
-// Ensure Metro only resolves within the mobile directory
+// CRITICAL: Ensure Metro ONLY resolves within the mobile directory
+// This prevents it from finding the root package.json which has "main": "server/index.js"
 config.projectRoot = __dirname;
 config.watchFolders = [__dirname];
 
-// Block resolution to parent directories and server files
-// Use platform-independent patterns that work on Windows and Unix
+// Force module resolution to ONLY look in mobile/node_modules
+config.resolver.nodeModulesPaths = [path.resolve(__dirname, 'node_modules')];
+
+// Block all parent directory content from being bundled
 const parentDir = path.resolve(__dirname, '..');
+const escParent = parentDir.replace(/[\\\/]/g, '[\\\\\\\/]');
 config.resolver.blockList = [
-  new RegExp(parentDir.replace(/[\\\/]/g, '[\\\\\\\/]') + '[\\\\\\\/]server[\\\\\\\/].*'),
-  new RegExp(parentDir.replace(/[\\\/]/g, '[\\\\\\\/]') + '[\\\\\\\/]public[\\\\\\\/].*'),
-  new RegExp(parentDir.replace(/[\\\/]/g, '[\\\\\\\/]') + '[\\\\\\\/]android[\\\\\\\/].*'),
+  new RegExp(escParent + '[\\\\\\\/]server[\\\\\\\/].*'),
+  new RegExp(escParent + '[\\\\\\\/]public[\\\\\\\/].*'),
+  new RegExp(escParent + '[\\\\\\\/]android[\\\\\\\/].*'),
+  new RegExp(escParent + '[\\\\\\\/]node_modules[\\\\\\\/].*'),
+  new RegExp(escParent + '[\\\\\\\/]package\\.json$'),
   /node_modules\/.*\/node_modules/,
 ];
 
-// Prevent Metro from following symlinks to parent
-// Note: disableHierarchicalLookup breaks module resolution in some cases
-// Instead rely on projectRoot + watchFolders + blockList
+// Prevent Metro from resolving to parent package.json
+// Note: disableHierarchicalLookup can break some module resolution
+// Instead, nodeModulesPaths + blockList handles it
 
 module.exports = config;
