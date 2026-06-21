@@ -330,44 +330,72 @@ export default function HomeScreen({ navigation }: any) {
 
         {/* ═══ ALL CREATORS GRID ═══ */}
         {creators.length > 0 && (<>
-          <View style={s.secRow}><View><Text style={s.secLabel}>DISCOVER</Text><Text style={s.secTitle2}>All Creators</Text></View><TouchableOpacity onPress={() => navigation.navigate('Discover')}><Text style={s.viewAll}>Browse →</Text></TouchableOpacity></View>
+          <View style={{ paddingHorizontal: 20, marginTop: 36, marginBottom: 14 }}><Text style={s.secLabel}>DISCOVER</Text><Text style={s.secTitle2}>All Creators</Text></View>
           <View style={s.grid}>{creators.slice(0, 4).map(item => (
             <TouchableOpacity key={item._id} style={s.gCard} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })} activeOpacity={0.85}>
-              <Image source={{ uri: item.portfolio?.[0] || item.user?.avatar || WEDDING_IMGS[0] }} style={s.gImg} />
-              <View style={s.gInfo}><Text style={s.gName} numberOfLines={1}>{item.user?.name}</Text><Text style={s.gMeta}>{item.specialty} • {item.city}</Text>
+              <Image source={{ uri: item.portfolio?.[0] || item.user?.avatar || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=300' }} style={s.gImg} />
+              <View style={s.gInfo}><Text style={s.gName} numberOfLines={1}>{item.user?.name || 'Creator'}</Text><Text style={s.gMeta}>{item.specialty} • {item.city}</Text>
               <View style={s.gRow}><Ionicons name="star" size={10} color="#FF8C2B" /><Text style={s.gRating}>{item.rating || '5.0'}</Text>{item.startingPrice > 0 && <Text style={s.gPrice}>₹{item.startingPrice?.toLocaleString('en-IN')}</Text>}</View></View>
             </TouchableOpacity>
           ))}</View>
+          {/* View All Creators Button */}
+          <TouchableOpacity style={s.viewAllBtn} onPress={() => navigation.navigate('Discover')} activeOpacity={0.85}>
+            <Text style={s.viewAllBtnText}>View All Creators</Text>
+            <Ionicons name="arrow-forward" size={16} color="#fff" />
+          </TouchableOpacity>
         </>)}
 
-        {/* TESTIMONIALS — Real reviews from database */}
-        <View style={{ marginTop: 32 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 12 }}>
-            <View>
-              <Text style={s.secTitle}>What Couples Say</Text>
-              {liveStats && liveStats.avgRating > 0 && <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', paddingHorizontal: 20 }}>★ {liveStats.avgRating} average from {liveStats.reviews} reviews</Text>}
-            </View>
-            <TouchableOpacity style={s.writeRevBtn} onPress={() => navigation.navigate('PlatformReview')}>
-              <Ionicons name="create-outline" size={12} color="#FF8C2B" /><Text style={s.writeRevText}>Write Review</Text>
-            </TouchableOpacity>
+        {/* ═══ WHAT COUPLES SAY — Premium Review Section ═══ */}
+        <View style={s.reviewSection}>
+          {/* Header */}
+          <View style={s.revHeader}>
+            <Text style={s.revIcon}>⭐</Text>
+            <Text style={s.revTitle}>What Couples Say</Text>
           </View>
+
+          {/* Rating Summary */}
+          {liveStats && liveStats.avgRating > 0 ? (
+            <View style={s.revSummary}>
+              <View style={s.revSummaryLeft}>
+                <Text style={s.revBigRating}>{liveStats.avgRating}</Text>
+                <View style={s.revStarsRow}>{[1,2,3,4,5].map(i => <Ionicons key={i} name="star" size={14} color={i <= Math.round(liveStats.avgRating) ? '#FF8C2B' : 'rgba(255,255,255,0.12)'} />)}</View>
+                <Text style={s.revCount}>Based on {liveStats.reviews} reviews</Text>
+              </View>
+              <View style={s.revBars}>
+                {[5,4,3,2,1].map(star => (
+                  <View key={star} style={s.revBarRow}>
+                    <Text style={s.revBarLabel}>{star}★</Text>
+                    <View style={s.revBarBg}><View style={[s.revBarFill, { width: '0%' }]} /></View>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ) : null}
+
+          {/* Write Review Button */}
+          <TouchableOpacity style={s.writeRevBtnLarge} onPress={() => navigation.navigate('PlatformReview')}>
+            <Ionicons name="create-outline" size={14} color="#000" /><Text style={s.writeRevBtnLargeText}>Write a Review</Text>
+          </TouchableOpacity>
+
+          {/* Review Cards */}
           {testimonials.length > 0 ? (
-            <FlatList horizontal showsHorizontalScrollIndicator={false} data={testimonials} contentContainerStyle={{ paddingHorizontal: 20 }} keyExtractor={(_, i) => String(i)}
+            <FlatList horizontal showsHorizontalScrollIndicator={false} data={testimonials} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 12 }} keyExtractor={(_, i) => String(i)}
               renderItem={({ item }) => (
-                <View style={s.testCard}>
-                  <View style={s.testStars}>{[1,2,3,4,5].map(i => <Ionicons key={i} name="star" size={12} color={i <= (item.rating || 5) ? '#FF8C2B' : 'rgba(255,255,255,0.15)'} />)}</View>
-                  <Text style={s.testText}>"{item.review || item.text}"</Text>
-                  <View style={s.testBottom}><Text style={s.testName}>{item.name}</Text><Text style={s.testMeta}>{item.city} • {item.eventType || item.event}</Text></View>
-                  {(item.verifiedBooking || item.verified) && <View style={s.testBadge}><Ionicons name="checkmark-circle" size={10} color="#10B981" /><Text style={s.testBadgeText}>Verified</Text></View>}
+                <View style={s.revCard}>
+                  <View style={s.revCardHeader}>
+                    <View style={s.revAvatar}><Ionicons name="person" size={14} color="rgba(255,255,255,0.3)" /></View>
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><Text style={s.revCardName}>{item.name}</Text>{item.verified && <Ionicons name="checkmark-circle" size={10} color="#10B981" />}</View>
+                      <Text style={s.revCardDate}>{item.city} • {item.eventType || item.event}</Text>
+                    </View>
+                  </View>
+                  <View style={s.revCardStars}>{[1,2,3,4,5].map(i => <Ionicons key={i} name="star" size={11} color={i <= (item.rating || 5) ? '#FF8C2B' : 'rgba(255,255,255,0.1)'} />)}</View>
+                  <Text style={s.revCardText}>"{item.review || item.text}"</Text>
                 </View>
               )} />
           ) : (
-            <View style={{ alignItems: 'center', paddingVertical: 30 }}>
-              <Ionicons name="chatbubble-outline" size={28} color="rgba(255,255,255,0.1)" />
-              <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', marginTop: 8 }}>No reviews yet</Text>
-              <TouchableOpacity style={[s.writeRevBtn, { marginTop: 12 }]} onPress={() => navigation.navigate('PlatformReview')}>
-                <Ionicons name="create-outline" size={12} color="#FF8C2B" /><Text style={s.writeRevText}>Be the first to review</Text>
-              </TouchableOpacity>
+            <View style={{ alignItems: 'center', paddingVertical: 24 }}>
+              <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>No reviews yet. Be the first!</Text>
             </View>
           )}
         </View>
@@ -656,14 +684,34 @@ const s = StyleSheet.create({
   // Testimonials
   writeRevBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,140,43,0.06)', borderWidth: 1, borderColor: 'rgba(255,140,43,0.15)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
   writeRevText: { fontSize: 10, fontWeight: '600', color: '#FF8C2B' },
-  testCard: { width: width * 0.72, backgroundColor: 'rgba(245,185,66,0.03)', borderRadius: 16, padding: 16, marginRight: 12, borderWidth: 1, borderColor: 'rgba(245,185,66,0.1)' },
-  testStars: { flexDirection: 'row', gap: 2, marginBottom: 8 },
-  testText: { fontSize: 12, color: 'rgba(255,255,255,0.7)', fontStyle: 'italic', lineHeight: 18 },
-  testBottom: { marginTop: 10 },
-  testName: { fontSize: 12, fontWeight: '600', color: '#fff' },
-  testMeta: { fontSize: 9, color: 'rgba(255,255,255,0.4)', marginTop: 2 },
-  testBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8 },
-  testBadgeText: { fontSize: 9, color: '#10B981' },
+  // View All Creators Button
+  viewAllBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginHorizontal: 20, marginTop: 16, paddingVertical: 14, borderRadius: 14, backgroundColor: '#FF8C2B', shadowColor: '#FF8C2B', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 },
+  viewAllBtnText: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  // Review Section
+  reviewSection: { marginTop: 36, paddingHorizontal: 20 },
+  revHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 },
+  revIcon: { fontSize: 16 },
+  revTitle: { fontSize: 16, fontWeight: '700', color: '#fff' },
+  revSummary: { flexDirection: 'row', gap: 14, marginBottom: 12, backgroundColor: 'rgba(255,255,255,0.02)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)', borderRadius: 14, padding: 14 },
+  revSummaryLeft: { alignItems: 'center', width: 70 },
+  revBigRating: { fontSize: 28, fontWeight: '800', color: '#FF8C2B' },
+  revStarsRow: { flexDirection: 'row', gap: 1, marginTop: 3 },
+  revCount: { fontSize: 8, color: 'rgba(255,255,255,0.35)', marginTop: 4, textAlign: 'center' },
+  revBars: { flex: 1, justifyContent: 'center', gap: 4 },
+  revBarRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  revBarLabel: { fontSize: 8, color: 'rgba(255,255,255,0.3)', width: 16 },
+  revBarBg: { flex: 1, height: 4, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' },
+  revBarFill: { height: '100%', backgroundColor: '#FF8C2B', borderRadius: 2 },
+  writeRevBtnLarge: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#FF8C2B', borderRadius: 10, paddingVertical: 10, marginBottom: 4 },
+  writeRevBtnLargeText: { fontSize: 12, fontWeight: '700', color: '#000' },
+  // Review Cards
+  revCard: { width: width * 0.72, backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 16, padding: 14, marginRight: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+  revCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  revAvatar: { width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.04)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
+  revCardName: { fontSize: 11, fontWeight: '600', color: '#fff' },
+  revCardDate: { fontSize: 8, color: 'rgba(255,255,255,0.3)', marginTop: 1 },
+  revCardStars: { flexDirection: 'row', gap: 1, marginBottom: 6 },
+  revCardText: { fontSize: 11, color: 'rgba(255,255,255,0.5)', lineHeight: 16, fontStyle: 'italic' },
   // Inquiry
   inquirySection: { marginHorizontal: 16, marginTop: 32, padding: 22, backgroundColor: 'rgba(255,140,43,0.03)', borderWidth: 1, borderColor: 'rgba(255,140,43,0.12)', borderRadius: 20, alignItems: 'center' },
   inquiryTitle: { fontSize: 15, fontWeight: '700', color: '#fff', textAlign: 'center' },
