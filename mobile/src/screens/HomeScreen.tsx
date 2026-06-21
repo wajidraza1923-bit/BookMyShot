@@ -280,25 +280,20 @@ export default function HomeScreen({ navigation }: any) {
             renderItem={({ item }) => <PremiumCard item={item} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })} badge="⭐ FEATURED" />} />
         </>)}
 
-        {/* TOP RATED — 2x2 Grid, no See All */}
+        {/* TOP RATED — horizontal scroll, all 4 in one row */}
         {topRated.length > 0 && (<>
           <View style={{ paddingHorizontal: 20, marginTop: 36, marginBottom: 14 }}><Text style={s.secLabel}>TOP RATED</Text><Text style={s.secTitle2}>Best Reviewed</Text></View>
-          <View style={s.grid}>{topRated.slice(0, 4).map((item, idx) => (
-            <TouchableOpacity key={item._id} style={s.gCard} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })} activeOpacity={0.85}>
-              <Image source={{ uri: item.portfolio?.[0] || item.user?.avatar || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=300' }} style={s.gImg} />
-              <View style={s.rankBadge}><Text style={s.rankText}>#{idx + 1}</Text></View>
-              <View style={s.gInfo}>
-                <Text style={s.gName} numberOfLines={1}>{item.user?.name || 'Creator'}</Text>
-                <Text style={s.gMeta}>{item.specialty || 'Photographer'}</Text>
-                <View style={s.gRow}>
-                  <Ionicons name="star" size={10} color="#FF8C2B" />
-                  <Text style={s.gRating}>{item.rating || '5.0'}</Text>
-                  <Text style={s.gReviewCount}>({item.reviewCount || 0})</Text>
-                  {item.startingPrice > 0 && <Text style={s.gPrice}>₹{item.startingPrice?.toLocaleString('en-IN')}</Text>}
+          <FlatList horizontal showsHorizontalScrollIndicator={false} data={topRated.slice(0, 4)} contentContainerStyle={{ paddingHorizontal: 20 }} keyExtractor={i => i._id}
+            renderItem={({ item, index }) => (
+              <TouchableOpacity style={s.brCard} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })} activeOpacity={0.85}>
+                <Image source={{ uri: item.portfolio?.[0] || item.user?.avatar || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=300' }} style={s.brImg} />
+                <View style={s.brRank}><Text style={s.brRankText}>#{index + 1}</Text></View>
+                <View style={s.brInfo}>
+                  <Text style={s.brName} numberOfLines={1}>{item.user?.name || 'Creator'}</Text>
+                  <View style={s.brRow}><Ionicons name="star" size={9} color="#FF8C2B" /><Text style={s.brRating}>{item.rating || '5.0'}</Text></View>
                 </View>
-              </View>
-            </TouchableOpacity>
-          ))}</View>
+              </TouchableOpacity>
+            )} />
         </>)}
 
         {/* ═══ TRENDING WEDDING STYLES ═══ */}
@@ -629,6 +624,15 @@ const s = StyleSheet.create({
   gImg: { width: '100%', height: 110, resizeMode: 'cover' },
   rankBadge: { position: 'absolute', top: 6, left: 6, backgroundColor: '#FF8C2B', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
   rankText: { fontSize: 8, fontWeight: '800', color: '#000' },
+  // Best Reviewed horizontal cards
+  brCard: { width: 100, marginRight: 10, borderRadius: 12, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.03)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+  brImg: { width: 100, height: 100, resizeMode: 'cover' },
+  brRank: { position: 'absolute', top: 5, left: 5, backgroundColor: '#FF8C2B', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5 },
+  brRankText: { fontSize: 7, fontWeight: '800', color: '#000' },
+  brInfo: { padding: 6 },
+  brName: { fontSize: 10, fontWeight: '600', color: '#fff' },
+  brRow: { flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 2 },
+  brRating: { fontSize: 9, color: 'rgba(255,255,255,0.6)' },
   gInfo: { padding: 10 },
   gName: { fontSize: 12, fontWeight: '600', color: '#fff' },
   gMeta: { fontSize: 9, color: 'rgba(255,255,255,0.4)', marginTop: 2 },
