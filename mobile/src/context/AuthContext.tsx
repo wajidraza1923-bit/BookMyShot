@@ -56,9 +56,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const restoreSession = async () => {
     console.log('[Auth] Restoring session...');
     try {
-      // Test API connectivity first
+      // Test API connectivity with timeout (don't block app startup)
       const { testApiConnection } = require('../services/api');
-      const connTest = await testApiConnection();
+      const connPromise = testApiConnection();
+      const timeoutPromise = new Promise(resolve => setTimeout(() => resolve({ ok: false, message: 'Timeout' }), 5000));
+      const connTest: any = await Promise.race([connPromise, timeoutPromise]);
       console.log('[Auth] API connectivity:', connTest.ok ? 'OK' : 'FAILED -', connTest.message);
 
       const storedToken = await AsyncStorage.getItem('bms_token');
@@ -71,21 +73,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setToken(storedToken);
         setUser(normalizeUser(parsedUser));
 
-        // Validate token is still valid
+        // Validate token with timeout (don't block if server is slow)
         try {
-          const res = await authAPI.me();
+          const mePromise = authAPI.me();
+          const meTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 8000));
+          const res: any = await Promise.race([mePromise, meTimeout]);
           const freshUser = res.data?.user;
           if (freshUser) {
             const normalized = normalizeUser(freshUser);
             setUser(normalized);
             await AsyncStorage.setItem('bms_user', JSON.stringify(normalized));
             console.log('[Auth] Session valid, user:', normalized.name, 'role:', normalized.role);
-            // Register push token after successful auth
             registerPush();
           }
         } catch (e: any) {
-          console.log('[Auth] Token validation failed:', e.response?.status, '- clearing session');
-          await clearSession();
+          console.log('[Auth] Token validation failed:', e.message, '- using cached session');
+          // Don't clear session on timeout — use cached data
+          if (e.message !== 'Timeout' && e.response?.status === 401) {
+            await clearSession();
+          }
         }
       }
     } catch (e) {
