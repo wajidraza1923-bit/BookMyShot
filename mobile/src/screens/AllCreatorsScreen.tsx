@@ -60,8 +60,9 @@ export default function AllCreatorsScreen({ navigation }: any) {
         </TouchableOpacity>
         {districts.map((d: any) => (
           <TouchableOpacity key={d.name} style={[st.distCard, selectedDistrict === d.name && st.distCardActive]} onPress={() => setSelectedDistrict(selectedDistrict === d.name ? '' : d.name)}>
-            {d.imageUrl ? <Image source={{ uri: d.imageUrl }} style={st.distImg} /> : <View style={st.distImgPlaceholder}><Ionicons name="location" size={16} color="#FF8C2B" /></View>}
+            {d.imageUrl ? <Image source={{ uri: d.imageUrl }} style={[st.distImg, selectedDistrict === d.name && st.distImgActive]} /> : <View style={st.distImgPlaceholder}><Ionicons name="location" size={16} color="#FF8C2B" /></View>}
             <Text style={[st.distName, selectedDistrict === d.name && st.distNameActive]}>{d.name}</Text>
+            <Text style={st.distCount}>{d.creatorCount || 0} Creators</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -119,6 +120,8 @@ const st = StyleSheet.create({
   distImgPlaceholder: { width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,140,43,0.06)', borderWidth: 1, borderColor: 'rgba(255,140,43,0.12)', alignItems: 'center', justifyContent: 'center' },
   distName: { fontSize: 9, color: 'rgba(255,255,255,0.5)', marginTop: 4, textAlign: 'center' },
   distNameActive: { color: '#FF8C2B', fontWeight: '700' },
+  distCount: { fontSize: 7, color: 'rgba(255,255,255,0.3)', textAlign: 'center', marginTop: 1 },
+  distImgActive: { borderColor: '#FF8C2B' },
   // Cards
   card: { backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 16, overflow: 'hidden', marginBottom: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)' },
   cardImg: { width: '100%', height: 140, resizeMode: 'cover' },
