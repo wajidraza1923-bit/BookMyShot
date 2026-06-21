@@ -14,6 +14,7 @@ router.get("/", async (req, res, next) => {
     const totalCreators = await Creator.countDocuments();
     const activeCreators = await Creator.countDocuments({ status: "approved" });
     const featuredCreators = await Creator.countDocuments({ featured: true });
+    const suspendedCreators = await Creator.countDocuments({ status: "suspended" });
 
     // Revenue calculations
     const subscriptionSettings = await configService.getSubscriptionSettings();
@@ -66,6 +67,7 @@ router.get("/", async (req, res, next) => {
         totalCreators,
         activeCreators,
         featuredCreators,
+        suspendedCreators,
         subscriptionRevenue,
         commissionRevenue,
         featuredRevenue,

@@ -38,7 +38,8 @@ export default function AdminCreators({ navigation }: any) {
     if (tab === 'all') return true;
     if (tab === 'pending') return c.status === 'pending';
     if (tab === 'approved') return c.status === 'approved';
-    if (tab === 'rejected') return c.status === 'rejected' || c.status === 'suspended';
+    if (tab === 'rejected') return c.status === 'rejected';
+    if (tab === 'suspended') return c.status === 'suspended' || c.subscriptionStatus === 'suspended';
     return true;
   });
 
@@ -75,9 +76,9 @@ export default function AdminCreators({ navigation }: any) {
       </View>
 
       <View style={s.tabs}>
-        {['all', 'pending', 'approved', 'rejected'].map(t => (
+        {['all', 'pending', 'approved', 'rejected', 'suspended'].map(t => (
           <TouchableOpacity key={t} style={[s.tab, tab === t && s.tabActive]} onPress={() => setTab(t)}>
-            <Text style={[s.tabText, tab === t && s.tabTextActive]}>{t.charAt(0).toUpperCase() + t.slice(1)}</Text>
+            <Text style={[s.tabText, tab === t && s.tabTextActive]}>{t === 'suspended' ? 'Susp.' : t.charAt(0).toUpperCase() + t.slice(1)}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -106,6 +107,7 @@ export default function AdminCreators({ navigation }: any) {
               <View style={s.cardMeta2}>
                 <Text style={s.metaItem}>Sub: {item.subscriptionStatus || 'none'}</Text>
                 <Text style={s.metaItem}>ID: {item.creatorId || '—'}</Text>
+                {item.subscriptionEndDate && <Text style={s.metaItem}>Exp: {new Date(item.subscriptionEndDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</Text>}
               </View>
               <View style={s.actions}>
                 {item.status === 'pending' && <>
@@ -113,7 +115,8 @@ export default function AdminCreators({ navigation }: any) {
                   <TouchableOpacity style={s.approveBtn} onPress={() => updateStatus(item._id, 'approved', 'Approve')}><Text style={s.approveText}>Approve</Text></TouchableOpacity>
                 </>}
                 {item.status === 'approved' && <TouchableOpacity style={s.suspendBtn} onPress={() => updateStatus(item._id, 'suspended', 'Suspend')}><Text style={s.suspendText}>Suspend</Text></TouchableOpacity>}
-                {(item.status === 'rejected' || item.status === 'suspended') && <TouchableOpacity style={s.approveBtn} onPress={() => updateStatus(item._id, 'approved', 'Reactivate')}><Text style={s.approveText}>Reactivate</Text></TouchableOpacity>}
+                {item.status === 'suspended' && <TouchableOpacity style={s.approveBtn} onPress={() => updateStatus(item._id, 'approved', 'Unsuspend')}><Text style={s.approveText}>Unsuspend</Text></TouchableOpacity>}
+                {item.status === 'rejected' && <TouchableOpacity style={s.approveBtn} onPress={() => updateStatus(item._id, 'approved', 'Reactivate')}><Text style={s.approveText}>Reactivate</Text></TouchableOpacity>}
               </View>
             </View>
           )}

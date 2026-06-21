@@ -28,12 +28,12 @@ export default function AdminDashboard({ navigation }: any) {
   const stats = data || {};
 
   const statCards = [
-    { label: 'Total Creators', value: stats.totalCreators || stats.activeCreators || 0, icon: 'camera', color: colors.primary },
+    { label: 'Total Creators', value: stats.totalCreators || 0, icon: 'camera', color: colors.primary },
     { label: 'Active', value: stats.activeCreators || 0, icon: 'checkmark-circle', color: colors.success },
-    { label: 'Featured', value: stats.featuredCreators || 0, icon: 'star', color: colors.warning },
+    { label: 'Pending', value: stats.pendingApprovals || 0, icon: 'hourglass', color: colors.warning },
+    { label: 'Suspended', value: stats.suspendedCreators || 0, icon: 'ban', color: colors.error },
+    { label: 'Featured', value: stats.featuredCreators || 0, icon: 'star', color: '#F59E0B' },
     { label: 'Revenue', value: `₹${(stats.totalRevenue || 0).toLocaleString('en-IN')}`, icon: 'wallet', color: colors.primary },
-    { label: 'Pending', value: stats.pendingApprovals || 0, icon: 'hourglass', color: colors.error },
-    { label: 'Payments', value: stats.pendingPayments || 0, icon: 'card', color: colors.info },
   ];
 
   const menuItems = [
