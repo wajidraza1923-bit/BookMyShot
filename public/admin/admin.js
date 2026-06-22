@@ -99,10 +99,14 @@ window.toggleFeatured = async (id, featured) => {
   loadCreators();
 };
 window.deleteCreator = async (id) => {
-  if (!confirm("Delete creator and user account? This action cannot be undone.")) return;
-  await API.delete(`/admin/creators/${id}`);
-  toast("Creator permanently deleted", "success");
-  loadCreators();
+  if (!confirm("⚠️ PERMANENT DELETE\n\nThis will permanently remove the creator and ALL associated data:\n• Profile & portfolio\n• Bookings & inquiries\n• Reviews & payments\n• User account\n\nThis action CANNOT be undone. Continue?")) return;
+  try {
+    await API.delete(`/admin/creators/${id}`);
+    toast("Creator permanently deleted", "success");
+    loadCreators();
+  } catch (e) {
+    toast("Failed to delete creator: " + (e.message || "Unknown error"), "error");
+  }
 };
 window.suspendCreator = async (id) => {
   const reason = prompt("Reason for suspension:", "Account suspended by admin.");

@@ -64,6 +64,25 @@ export default function AdminCreators({ navigation }: any) {
     ]);
   };
 
+  const deleteCreator = (id: string, name: string) => {
+    Alert.alert(
+      '⚠️ Permanent Delete',
+      `Are you sure you want to PERMANENTLY delete "${name}"?\n\nThis will remove:\n• Creator profile & portfolio\n• All bookings & inquiries\n• Reviews & payment records\n• User account\n\nThis action CANNOT be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'DELETE PERMANENTLY', style: 'destructive', onPress: async () => {
+          try {
+            await api.delete(`/admin/creators/${id}`);
+            await load();
+            Alert.alert('Deleted', 'Creator and all associated data permanently removed.');
+          } catch (e: any) {
+            Alert.alert('Error', e.response?.data?.message || 'Failed to delete creator');
+          }
+        }}
+      ]
+    );
+  };
+
   const setRank = (id: string, currentRank: number) => {
     Alert.alert('Set Rank', 'Choose ranking position for Best Reviewed section:', [
       { text: '#1', onPress: () => applyRank(id, 1) },
@@ -141,6 +160,7 @@ export default function AdminCreators({ navigation }: any) {
                 </>}
                 {(item.status === 'suspended' || item.subscriptionStatus === 'suspended') && <TouchableOpacity style={s.approveBtn} onPress={() => updateStatus(item._id, 'approved', 'Unsuspend')}><Text style={s.approveText}>Unsuspend</Text></TouchableOpacity>}
                 {item.status === 'rejected' && <TouchableOpacity style={s.approveBtn} onPress={() => updateStatus(item._id, 'approved', 'Reactivate')}><Text style={s.approveText}>Reactivate</Text></TouchableOpacity>}
+                <TouchableOpacity style={s.deleteBtn} onPress={() => deleteCreator(item._id, item.user?.name || 'Creator')}><Ionicons name="trash-outline" size={14} color={colors.error} /><Text style={s.deleteText}>Delete</Text></TouchableOpacity>
               </View>
             </View>
           )}
@@ -181,6 +201,8 @@ const s = StyleSheet.create({
   suspendText: { ...typography.labelMd, color: colors.warning },
   rankBtn: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md, alignItems: 'center', borderRadius: radius.sm, backgroundColor: 'rgba(249,115,22,0.08)', borderWidth: 1, borderColor: 'rgba(249,115,22,0.2)' },
   rankBtnText: { ...typography.labelMd, color: colors.primary, fontWeight: '700' },
+  deleteBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.sm, backgroundColor: 'rgba(239,68,68,0.06)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.2)' },
+  deleteText: { ...typography.labelSm, color: colors.error, fontWeight: '600' },
   empty: { alignItems: 'center', paddingTop: spacing['4xl'] },
   emptyText: { ...typography.bodyMd, color: colors.textMuted },
 });

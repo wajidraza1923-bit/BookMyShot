@@ -105,11 +105,57 @@ router.patch("/creators/:id/featured", async (req, res, next) => {
 router.delete("/creators/:id", async (req, res, next) => {
   try {
     const creator = await Creator.findById(req.params.id);
-    if (creator) {
-      await User.findByIdAndDelete(creator.user);
-      await Creator.findByIdAndDelete(req.params.id);
+    if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
+
+    const creatorId = creator._id;
+    const userId = creator.user;
+
+    // Delete all associated data
+    const mongoose = require("mongoose");
+    const models = {
+      Booking: mongoose.models.Booking,
+      Inquiry: mongoose.models.Inquiry,
+      Review: mongoose.models.Review,
+      Commission: mongoose.models.Commission,
+      PaymentProof: mongoose.models.PaymentProof,
+      PaymentRecord: mongoose.models.PaymentRecord,
+      BookingEvent: mongoose.models.BookingEvent,
+      CalendarEvent: mongoose.models.CalendarEvent,
+      Availability: mongoose.models.Availability,
+      Planning: mongoose.models.Planning,
+      SearchBoost: mongoose.models.SearchBoost,
+      WeddingPackage: mongoose.models.WeddingPackage,
+      Invoice: mongoose.models.Invoice,
+      PromotionRequest: mongoose.models.PromotionRequest,
+    };
+
+    // Delete related records (ignore errors for models that may not exist)
+    for (const [name, Model] of Object.entries(models)) {
+      if (Model) {
+        try { await Model.deleteMany({ creator: creatorId }); } catch {}
+      }
     }
-    res.json({ success: true, message: "Creator deleted" });
+
+    // Remove creator from favorites in User documents
+    try { await User.updateMany({ favorites: creatorId }, { $pull: { favorites: creatorId } }); } catch {}
+
+    // Delete notifications for this user
+    if (mongoose.models.Notification) {
+      try { await mongoose.models.Notification.deleteMany({ $or: [{ user: userId }, { fromUser: userId }] }); } catch {}
+    }
+
+    // Delete messages
+    if (mongoose.models.Message) {
+      try { await mongoose.models.Message.deleteMany({ $or: [{ sender: userId }, { recipient: userId }] }); } catch {}
+    }
+
+    // Delete the Creator document
+    await Creator.findByIdAndDelete(creatorId);
+
+    // Delete the User document
+    if (userId) await User.findByIdAndDelete(userId);
+
+    res.json({ success: true, message: "Creator and all associated data permanently deleted" });
   } catch (e) {
     next(e);
   }
