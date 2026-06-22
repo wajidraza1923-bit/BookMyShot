@@ -11,7 +11,7 @@ const creatorSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, unique: true },
     creatorId: { type: String, unique: true, sparse: true, default: null },
-    status: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
+    status: { type: String, enum: ["pending", "approved", "rejected", "suspended"], default: "pending" },
     specialty: { type: String, default: "" },
     bio: { type: String, default: "" },
     experience: { type: String, default: "" },
