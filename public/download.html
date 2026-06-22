@@ -24,7 +24,7 @@ h1{font-size:2rem;font-weight:700;margin-bottom:0.5rem}
 <div class="logo">BOOKMYSHOT</div>
 <h1>Download the App</h1>
 <p class="sub">India's premium wedding creator marketplace. Book photographers, filmmakers & artists.</p>
-<a href="#" class="download-btn" id="downloadBtn">📱 Download APK (Android)</a>
+<a href="/api/app-version/download" class="download-btn" id="downloadBtn">📱 Download APK (Android)</a>
 <p class="version">Version 2.0.0 • 25 MB • Android 8.0+</p>
 <div class="features">
 <div class="feature"><span>✓</span> Verified Creators</div>
@@ -34,18 +34,21 @@ h1{font-size:2rem;font-weight:700;margin-bottom:0.5rem}
 </div>
 </div>
 <script>
-// Fetch latest version info
+// Fetch latest version info and set download button
 fetch('/api/app-version').then(r=>r.json()).then(d=>{
   if(d.success){
     document.querySelector('.version').textContent='Version '+d.version+' • Android';
+    // Use the API download redirect endpoint for direct download
+    document.getElementById('downloadBtn').href='/api/app-version/download';
     if(d.playStoreUrl){
       document.getElementById('downloadBtn').href=d.playStoreUrl;
       document.getElementById('downloadBtn').textContent='📱 Get on Google Play';
-    }else if(d.downloadUrl){
-      document.getElementById('downloadBtn').href=d.downloadUrl;
     }
   }
-}).catch(()=>{});
+}).catch(()=>{
+  // Fallback: use direct API redirect
+  document.getElementById('downloadBtn').href='/api/app-version/download';
+});
 </script>
 </body>
 </html>

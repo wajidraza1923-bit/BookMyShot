@@ -495,6 +495,13 @@ app.use("/api/live-stats", require("./routes/liveStats"));
 app.use("/api/app-version", require("./routes/appVersion"));
 app.use("/api/homepage-enquiries", homepageEnquiryRoutes);
 
+// APK download redirect — always redirects to latest build URL
+app.get("/releases/bookmyshot-latest.apk", (req, res) => {
+  const appVersion = require("./routes/appVersion");
+  // Redirect to the API download endpoint which handles the actual redirect
+  res.redirect(302, "/api/app-version/download");
+});
+
 // Clean URL routes for static pages (legal, info)
 const staticPages = ['about', 'contact', 'terms', 'privacy', 'refund-policy', 'booking-cancellation', 'cookie-policy', 'creator-guidelines', 'how-bookmyshot-works', 'pricing', 'enquiry', 'faq'];
 staticPages.forEach(page => {
