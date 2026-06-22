@@ -48,7 +48,6 @@ export default function AdminCreators({ navigation }: any) {
       { text: 'Cancel' },
       { text: label, style: status === 'rejected' || status === 'suspended' ? 'destructive' : 'default', onPress: async () => {
         try {
-          // Use correct backend endpoints
           let endpoint = '';
           if (status === 'approved') endpoint = `/admin/creator-accounts/${id}/activate`;
           else if (status === 'rejected') endpoint = `/admin/creator-accounts/${id}/deactivate`;
@@ -63,6 +62,28 @@ export default function AdminCreators({ navigation }: any) {
         }
       }}
     ]);
+  };
+
+  const setRank = (id: string, currentRank: number) => {
+    Alert.alert('Set Rank', 'Choose ranking position for Best Reviewed section:', [
+      { text: '#1', onPress: () => applyRank(id, 1) },
+      { text: '#2', onPress: () => applyRank(id, 2) },
+      { text: '#3', onPress: () => applyRank(id, 3) },
+      { text: '#4', onPress: () => applyRank(id, 4) },
+      { text: currentRank ? 'Remove Rank' : 'Cancel', style: 'cancel', onPress: () => { if (currentRank) applyRank(id, 0); } },
+    ]);
+  };
+
+  const applyRank = async (id: string, rank: number) => {
+    try {
+      await api.patch(`/admin/creator-accounts/${id}/rank`, { rank });
+      const badge = rank > 0 ? `rank_${rank}` : '';
+      await api.patch(`/admin/creator-accounts/${id}/badge`, { badge });
+      await load();
+      Alert.alert('Done', rank > 0 ? `Creator set as #${rank} in Best Reviewed` : 'Rank removed');
+    } catch (e: any) {
+      Alert.alert('Error', e.response?.data?.message || 'Failed to set rank');
+    }
   };
 
   const getStatusColor = (s: string) => s === 'approved' ? colors.success : s === 'pending' ? colors.warning : colors.error;
@@ -114,7 +135,10 @@ export default function AdminCreators({ navigation }: any) {
                   <TouchableOpacity style={s.rejectBtn} onPress={() => updateStatus(item._id, 'rejected', 'Reject')}><Text style={s.rejectText}>Reject</Text></TouchableOpacity>
                   <TouchableOpacity style={s.approveBtn} onPress={() => updateStatus(item._id, 'approved', 'Approve')}><Text style={s.approveText}>Approve</Text></TouchableOpacity>
                 </>}
-                {item.status === 'approved' && item.subscriptionStatus !== 'suspended' && <TouchableOpacity style={s.suspendBtn} onPress={() => updateStatus(item._id, 'suspended', 'Suspend')}><Text style={s.suspendText}>Suspend</Text></TouchableOpacity>}
+                {item.status === 'approved' && item.subscriptionStatus !== 'suspended' && <>
+                  <TouchableOpacity style={s.suspendBtn} onPress={() => updateStatus(item._id, 'suspended', 'Suspend')}><Text style={s.suspendText}>Suspend</Text></TouchableOpacity>
+                  <TouchableOpacity style={s.rankBtn} onPress={() => setRank(item._id, item.rank)}><Text style={s.rankBtnText}>{item.rank ? `#${item.rank}` : 'Set Rank'}</Text></TouchableOpacity>
+                </>}
                 {(item.status === 'suspended' || item.subscriptionStatus === 'suspended') && <TouchableOpacity style={s.approveBtn} onPress={() => updateStatus(item._id, 'approved', 'Unsuspend')}><Text style={s.approveText}>Unsuspend</Text></TouchableOpacity>}
                 {item.status === 'rejected' && <TouchableOpacity style={s.approveBtn} onPress={() => updateStatus(item._id, 'approved', 'Reactivate')}><Text style={s.approveText}>Reactivate</Text></TouchableOpacity>}
               </View>
@@ -155,6 +179,8 @@ const s = StyleSheet.create({
   approveText: { ...typography.labelMd, color: colors.textInverse, fontWeight: '600' },
   suspendBtn: { flex: 1, paddingVertical: spacing.sm, alignItems: 'center', borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border },
   suspendText: { ...typography.labelMd, color: colors.warning },
+  rankBtn: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md, alignItems: 'center', borderRadius: radius.sm, backgroundColor: 'rgba(249,115,22,0.08)', borderWidth: 1, borderColor: 'rgba(249,115,22,0.2)' },
+  rankBtnText: { ...typography.labelMd, color: colors.primary, fontWeight: '700' },
   empty: { alignItems: 'center', paddingTop: spacing['4xl'] },
   emptyText: { ...typography.bodyMd, color: colors.textMuted },
 });

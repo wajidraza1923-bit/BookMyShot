@@ -173,7 +173,13 @@ export default function HomeScreen({ navigation }: any) {
 
   useEffect(() => { loadData(); }, []);
   const onRefresh = async () => { setRefreshing(true); await loadData(); setRefreshing(false); };
-  const topRated = [...creators].sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 8);
+  // Best Reviewed: admin-ranked first (rank 1-4), then by rating
+  const topRated = [...creators, ...featured].sort((a, b) => {
+    if (a.rank && b.rank) return a.rank - b.rank;
+    if (a.rank) return -1;
+    if (b.rank) return 1;
+    return (b.rating || 0) - (a.rating || 0);
+  }).slice(0, 8);
 
   // Show loading screen until data arrives
   if (loading) {
