@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthProvider } from './src/context/AuthContext';
 import RootNavigator from './src/navigation/RootNavigator';
 import OnboardingScreen from './src/screens/OnboardingScreen';
+import UpdateChecker from './src/components/UpdateChecker';
 import { colors, typography, spacing } from './src/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -70,7 +71,9 @@ export default function App() {
     <View style={styles.root}>
       <StatusBar barStyle="light-content" backgroundColor={colors.background} />
       <AuthProvider>
-        <RootNavigator />
+        <UpdateChecker>
+          <RootNavigator />
+        </UpdateChecker>
       </AuthProvider>
 
       {showBrandSplash && (

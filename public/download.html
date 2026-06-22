@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Download BookMyShot App</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#050505;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center}
+.container{text-align:center;padding:2rem}
+.logo{font-size:1.5rem;font-weight:300;color:#F97316;letter-spacing:4px;margin-bottom:2rem}
+h1{font-size:2rem;font-weight:700;margin-bottom:0.5rem}
+.sub{color:rgba(255,255,255,0.5);font-size:1rem;margin-bottom:2rem;max-width:400px;margin-left:auto;margin-right:auto}
+.download-btn{display:inline-flex;align-items:center;gap:10px;background:#F97316;color:#000;font-weight:700;font-size:1rem;padding:14px 28px;border-radius:12px;text-decoration:none;transition:transform 0.2s}
+.download-btn:hover{transform:translateY(-2px)}
+.version{margin-top:1.5rem;font-size:0.8rem;color:rgba(255,255,255,0.3)}
+.features{margin-top:2rem;display:flex;gap:1.5rem;justify-content:center;flex-wrap:wrap}
+.feature{font-size:0.85rem;color:rgba(255,255,255,0.5);display:flex;align-items:center;gap:6px}
+.feature span{color:#10B981}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="logo">BOOKMYSHOT</div>
+<h1>Download the App</h1>
+<p class="sub">India's premium wedding creator marketplace. Book photographers, filmmakers & artists.</p>
+<a href="#" class="download-btn" id="downloadBtn">📱 Download APK (Android)</a>
+<p class="version">Version 2.0.0 • 25 MB • Android 8.0+</p>
+<div class="features">
+<div class="feature"><span>✓</span> Verified Creators</div>
+<div class="feature"><span>✓</span> Real Reviews</div>
+<div class="feature"><span>✓</span> Secure Bookings</div>
+<div class="feature"><span>✓</span> Instant Chat</div>
+</div>
+</div>
+<script>
+// Fetch latest version info
+fetch('/api/app-version').then(r=>r.json()).then(d=>{
+  if(d.success){
+    document.querySelector('.version').textContent='Version '+d.version+' • Android';
+    if(d.playStoreUrl){
+      document.getElementById('downloadBtn').href=d.playStoreUrl;
+      document.getElementById('downloadBtn').textContent='📱 Get on Google Play';
+    }else if(d.downloadUrl){
+      document.getElementById('downloadBtn').href=d.downloadUrl;
+    }
+  }
+}).catch(()=>{});
+</script>
+</body>
+</html>
