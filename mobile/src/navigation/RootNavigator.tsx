@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { ActivityIndicator, View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
@@ -42,8 +42,13 @@ export default function RootNavigator() {
   const getNavigator = () => {
     if (!isAuthenticated) return <GuestNavigator />;
     
-    // Check if creator is pending approval
+    // Check if creator needs to complete payment or is pending approval
     if (role === 'creator' && user?.creatorStatus && user.creatorStatus !== 'approved') {
+      // If subscription not paid yet, show payment required screen
+      if (user.subscriptionStatus === 'pending_payment') {
+        return <PaymentRequiredScreen />;
+      }
+      // Otherwise show pending approval / rejected / suspended screen
       return <PendingApprovalScreen status={user.creatorStatus} />;
     }
     
@@ -58,6 +63,73 @@ export default function RootNavigator() {
     <NavigationContainer theme={navTheme}>
       {getNavigator()}
     </NavigationContainer>
+  );
+}
+
+// Payment required screen for creators who haven't paid subscription
+function PaymentRequiredScreen() {
+  const { logout, refreshUser } = useAuth();
+  const [loading, setLoading] = React.useState(false);
+
+  const handlePayment = async () => {
+    setLoading(true);
+    try {
+      const { getRazorpayConfig, createSubscription, isNativeRazorpayAvailable, openRazorpaySubscription, verifySubscription } = require('../services/payment');
+      const rpConfig = await getRazorpayConfig();
+
+      if (!rpConfig.configured) {
+        // In dev mode or if Razorpay not configured, simulate payment for testing
+        const api = require('../services/api').default;
+        await api.post('/razorpay/simulate-payment');
+        await refreshUser();
+        return;
+      }
+
+      const subRes = await createSubscription();
+      if (subRes.status === 'active') {
+        await refreshUser();
+        return;
+      }
+
+      if (!subRes.subscriptionId) {
+        Alert.alert('Error', 'Failed to create subscription. Try again.');
+        return;
+      }
+
+      if (isNativeRazorpayAvailable()) {
+        const api = require('../services/api').default;
+        const meRes = await api.get('/auth/me');
+        const user = meRes.data?.user;
+        const paymentResult = await openRazorpaySubscription(rpConfig.keyId, subRes.subscriptionId, user?.name || '', user?.email || '');
+        const verified = await verifySubscription(paymentResult.razorpay_subscription_id, paymentResult.razorpay_payment_id, paymentResult.razorpay_signature);
+        if (verified) {
+          Alert.alert('Success! 🎉', 'Subscription activated! Your account is now pending admin approval.');
+          await refreshUser();
+        }
+      } else {
+        Alert.alert('Payment', `Razorpay checkout is only available in the production APK.\n\nSubscription ID: ${subRes.subscriptionId}\n\nPlease use the website to complete payment, or install the production APK.`);
+      }
+    } catch (e: any) {
+      if (e.code === 'PAYMENT_CANCELLED') {
+        Alert.alert('Cancelled', 'Payment was cancelled.');
+      } else {
+        Alert.alert('Error', e.message || 'Payment failed. Try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <View style={styles.pending}>
+      <View style={[styles.pendingIcon, { backgroundColor: 'rgba(249,115,22,0.08)' }]}><Ionicons name="card-outline" size={40} color="#F97316" /></View>
+      <Text style={styles.pendingTitle}>Subscription Required</Text>
+      <Text style={styles.pendingSub}>Complete your subscription payment to activate your creator account. After payment, your account will be reviewed by our team.</Text>
+      <TouchableOpacity style={[styles.pendingBtn, { backgroundColor: '#F97316', borderColor: '#F97316' }]} onPress={handlePayment} disabled={loading}>
+        <Text style={[styles.pendingBtnText, { color: '#000', fontWeight: '700' }]}>{loading ? 'Processing...' : 'Pay & Subscribe'}</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={[styles.pendingBtn, { marginTop: 12 }]} onPress={logout}><Text style={styles.pendingBtnText}>Logout</Text></TouchableOpacity>
+    </View>
   );
 }
 

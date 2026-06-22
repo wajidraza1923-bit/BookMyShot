@@ -142,8 +142,11 @@ router.post("/login", async (req, res, next) => {
             avatar: user.avatar,
             emailVerified: user.emailVerified,
             creatorStatus: creator.status,
+            subscriptionStatus: creator.subscriptionStatus,
           },
-          message: `Your account is ${creator.status}. Please wait for admin approval.`,
+          message: creator.subscriptionStatus === 'pending_payment'
+            ? 'Please complete your subscription payment to continue.'
+            : `Your account is ${creator.status}. Please wait for admin approval.`,
         });
       }
     }

@@ -17,6 +17,7 @@ interface User {
   phone?: string;
   emailVerified?: boolean;
   creatorStatus?: string;
+  subscriptionStatus?: string;
 }
 
 interface AuthState {
@@ -82,13 +83,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const freshCreator = res.data?.creator;
           if (freshUser) {
             const normalized = normalizeUser(freshUser);
-            // Include creatorStatus from creator document
+            // Include creatorStatus and subscriptionStatus from creator document
             if (freshCreator && freshCreator.status) {
               normalized.creatorStatus = freshCreator.status;
+              normalized.subscriptionStatus = freshCreator.subscriptionStatus;
             }
             setUser(normalized);
             await AsyncStorage.setItem('bms_user', JSON.stringify(normalized));
-            console.log('[Auth] Session valid, user:', normalized.name, 'role:', normalized.role, 'creatorStatus:', normalized.creatorStatus);
+            console.log('[Auth] Session valid, user:', normalized.name, 'role:', normalized.role, 'creatorStatus:', normalized.creatorStatus, 'subStatus:', normalized.subscriptionStatus);
             registerPush();
           }
         } catch (e: any) {
@@ -126,6 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     phone: u.phone || '',
     emailVerified: u.emailVerified,
     creatorStatus: u.creatorStatus,
+    subscriptionStatus: u.subscriptionStatus,
   });
 
   const clearSession = async () => {
