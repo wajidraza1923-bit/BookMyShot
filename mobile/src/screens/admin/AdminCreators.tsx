@@ -39,7 +39,7 @@ export default function AdminCreators({ navigation }: any) {
     if (tab === 'pending') return c.status === 'pending';
     if (tab === 'approved') return c.status === 'approved';
     if (tab === 'rejected') return c.status === 'rejected';
-    if (tab === 'suspended') return c.status === 'suspended' || c.subscriptionStatus === 'suspended';
+    if (tab === 'suspended') return c.status === 'suspended' || (c.subscriptionStatus === 'suspended' && c.status !== 'rejected');
     return true;
   });
 
@@ -114,8 +114,8 @@ export default function AdminCreators({ navigation }: any) {
                   <TouchableOpacity style={s.rejectBtn} onPress={() => updateStatus(item._id, 'rejected', 'Reject')}><Text style={s.rejectText}>Reject</Text></TouchableOpacity>
                   <TouchableOpacity style={s.approveBtn} onPress={() => updateStatus(item._id, 'approved', 'Approve')}><Text style={s.approveText}>Approve</Text></TouchableOpacity>
                 </>}
-                {item.status === 'approved' && <TouchableOpacity style={s.suspendBtn} onPress={() => updateStatus(item._id, 'suspended', 'Suspend')}><Text style={s.suspendText}>Suspend</Text></TouchableOpacity>}
-                {item.status === 'suspended' && <TouchableOpacity style={s.approveBtn} onPress={() => updateStatus(item._id, 'approved', 'Unsuspend')}><Text style={s.approveText}>Unsuspend</Text></TouchableOpacity>}
+                {item.status === 'approved' && item.subscriptionStatus !== 'suspended' && <TouchableOpacity style={s.suspendBtn} onPress={() => updateStatus(item._id, 'suspended', 'Suspend')}><Text style={s.suspendText}>Suspend</Text></TouchableOpacity>}
+                {(item.status === 'suspended' || item.subscriptionStatus === 'suspended') && <TouchableOpacity style={s.approveBtn} onPress={() => updateStatus(item._id, 'approved', 'Unsuspend')}><Text style={s.approveText}>Unsuspend</Text></TouchableOpacity>}
                 {item.status === 'rejected' && <TouchableOpacity style={s.approveBtn} onPress={() => updateStatus(item._id, 'approved', 'Reactivate')}><Text style={s.approveText}>Reactivate</Text></TouchableOpacity>}
               </View>
             </View>

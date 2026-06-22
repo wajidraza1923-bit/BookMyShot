@@ -58,9 +58,13 @@ router.patch("/:id/activate", async (req, res, next) => {
         .json({ success: false, message: "Creator not found" });
     }
 
-    const previousValues = { status: creator.status };
+    const previousValues = { status: creator.status, subscriptionStatus: creator.subscriptionStatus };
 
     creator.status = "approved";
+    // If subscription was suspended by admin, restore to active
+    if (creator.subscriptionStatus === "suspended") {
+      creator.subscriptionStatus = "active";
+    }
     await creator.save();
 
     // Notify creator
@@ -132,8 +136,9 @@ router.patch("/:id/suspend", async (req, res, next) => {
         .json({ success: false, message: "Creator not found" });
     }
 
-    const previousValues = { subscriptionStatus: creator.subscriptionStatus };
+    const previousValues = { status: creator.status, subscriptionStatus: creator.subscriptionStatus };
 
+    creator.status = "suspended";
     creator.subscriptionStatus = "suspended";
     await creator.save();
 
@@ -152,7 +157,7 @@ router.patch("/:id/suspend", async (req, res, next) => {
       target: "creator",
       targetId: creator._id.toString(),
       previousValues,
-      newValues: { subscriptionStatus: "suspended" },
+      newValues: { status: "suspended", subscriptionStatus: "suspended" },
       ip: req.ip,
     });
 
