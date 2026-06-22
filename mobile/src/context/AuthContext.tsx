@@ -79,11 +79,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const meTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 8000));
           const res: any = await Promise.race([mePromise, meTimeout]);
           const freshUser = res.data?.user;
+          const freshCreator = res.data?.creator;
           if (freshUser) {
             const normalized = normalizeUser(freshUser);
+            // Include creatorStatus from creator document
+            if (freshCreator && freshCreator.status) {
+              normalized.creatorStatus = freshCreator.status;
+            }
             setUser(normalized);
             await AsyncStorage.setItem('bms_user', JSON.stringify(normalized));
-            console.log('[Auth] Session valid, user:', normalized.name, 'role:', normalized.role);
+            console.log('[Auth] Session valid, user:', normalized.name, 'role:', normalized.role, 'creatorStatus:', normalized.creatorStatus);
             registerPush();
           }
         } catch (e: any) {
