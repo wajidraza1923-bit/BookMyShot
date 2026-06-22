@@ -7,13 +7,13 @@ const router = express.Router();
 
 // Current app version — update this when you deploy a new APK
 const CURRENT_VERSION = {
-  version: "2.0.1",
-  versionCode: 2,
-  minVersion: "2.0.0", // Force update below this
+  version: "2.0.0",
+  versionCode: 1,
+  minVersion: "2.0.0",
   minVersionCode: 1,
-  releaseNotes: "Performance improvements, bug fixes, new features",
-  downloadUrl: "https://bookmyshot.in/download", // APK download page
-  playStoreUrl: "", // Add when published
+  releaseNotes: "Initial release — Book verified wedding creators across India",
+  downloadUrl: "https://bookmyshot.in/releases/bookmyshot-latest.apk",
+  playStoreUrl: "",
   forceUpdate: false,
   updateMessage: "A new version of BookMyShot is available with exciting new features!",
 };
