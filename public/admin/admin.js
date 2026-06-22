@@ -71,9 +71,11 @@ async function loadCreators() {
       <td>
         ${c.status === "pending" ? `<button class="btn btn-sm btn-primary" onclick="approveCreator('${c._id}')">Approve</button>
         <button class="btn btn-sm btn-danger" onclick="rejectCreator('${c._id}')">Reject</button>` : ""}
+        ${c.status === "approved" ? `<button class="btn btn-sm btn-warning" onclick="suspendCreator('${c._id}')">Suspend</button>` : ""}
+        ${c.status === "suspended" ? `<button class="btn btn-sm btn-primary" onclick="unsuspendCreator('${c._id}')">Unsuspend</button>` : ""}
+        ${c.status === "rejected" ? `<button class="btn btn-sm btn-primary" onclick="unsuspendCreator('${c._id}')">Reactivate</button>` : ""}
         <button class="btn btn-sm btn-outline" onclick="toggleFeatured('${c._id}',${!c.featured})">${c.featured ? "Unfeature" : "Feature"}</button>
         <button class="btn btn-sm btn-danger" onclick="deleteCreator('${c._id}')">Delete</button>
-        <button class="btn btn-sm btn-outline" onclick="viewCalendar('${c._id}')">Calendar</button>
       </td></tr>`
     )
     .join("");
@@ -97,8 +99,22 @@ window.toggleFeatured = async (id, featured) => {
   loadCreators();
 };
 window.deleteCreator = async (id) => {
-  if (!confirm("Delete creator and user account?")) return;
+  if (!confirm("Delete creator and user account? This action cannot be undone.")) return;
   await API.delete(`/admin/creators/${id}`);
+  toast("Creator permanently deleted", "success");
+  loadCreators();
+};
+window.suspendCreator = async (id) => {
+  const reason = prompt("Reason for suspension:", "Account suspended by admin.");
+  if (!reason) return;
+  await API.patch(`/admin/creator-accounts/${id}/suspend`, { reason });
+  toast("Creator suspended", "success");
+  loadCreators();
+};
+window.unsuspendCreator = async (id) => {
+  if (!confirm("Reactivate this creator account?")) return;
+  await API.patch(`/admin/creator-accounts/${id}/activate`, {});
+  toast("Creator reactivated", "success");
   loadCreators();
 };
 window.viewCalendar = async (id) => {
