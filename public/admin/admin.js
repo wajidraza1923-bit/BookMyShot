@@ -17,6 +17,8 @@ const titles = {
   homepage: "Homepage CMS",
   contacts: "Contact Forms",
   notifications: "Notifications",
+  promotions: "Promotions & Featured",
+  subscriptions: "Subscription Settings",
 };
 
 document.querySelectorAll(".nav-item").forEach((item) => {
@@ -40,6 +42,8 @@ async function loadPanel(panel) {
     if (panel === "payments") await loadPayments();
     if (panel === "inquiries") await loadInquiries();
     if (panel === "commissions") await loadCommissions();
+    if (panel === "promotions") await loadPromotions();
+    if (panel === "subscriptions") await loadSubscriptions();
   } catch (e) {
     toast(e.message, "error");
   }
@@ -68,6 +72,7 @@ async function loadCreators() {
       <td>${c.user?.name}</td><td>${c.user?.email}</td>
       <td><span class="badge badge-${c.status}">${c.status}</span></td>
       <td>${c.featured ? "★" : "—"}</td>
+      <td>${c.rank ? '#' + c.rank : '—'}</td>
       <td>
         ${c.status === "pending" ? `<button class="btn btn-sm btn-primary" onclick="approveCreator('${c._id}')">Approve</button>
         <button class="btn btn-sm btn-danger" onclick="rejectCreator('${c._id}')">Reject</button>` : ""}
@@ -75,6 +80,8 @@ async function loadCreators() {
         ${c.status === "suspended" ? `<button class="btn btn-sm btn-primary" onclick="unsuspendCreator('${c._id}')">Unsuspend</button>` : ""}
         ${c.status === "rejected" ? `<button class="btn btn-sm btn-primary" onclick="unsuspendCreator('${c._id}')">Reactivate</button>` : ""}
         <button class="btn btn-sm btn-outline" onclick="toggleFeatured('${c._id}',${!c.featured})">${c.featured ? "Unfeature" : "Feature"}</button>
+        <button class="btn btn-sm btn-outline" onclick="setCreatorRank('${c._id}', ${c.rank || 0})">Rank</button>
+        <button class="btn btn-sm btn-outline" onclick="extendSub('${c._id}')">+Days</button>
         <button class="btn btn-sm btn-danger" onclick="deleteCreator('${c._id}')">Delete</button>
       </td></tr>`
     )
@@ -120,6 +127,30 @@ window.unsuspendCreator = async (id) => {
   await API.patch(`/admin/creator-accounts/${id}/activate`, {});
   toast("Creator reactivated", "success");
   loadCreators();
+};
+window.setCreatorRank = async (id, currentRank) => {
+  const rank = prompt(`Set rank for Best Reviewed section (1-4, or 0 to remove).\nCurrent: ${currentRank || 'none'}`, currentRank || '0');
+  if (rank === null) return;
+  const rankNum = parseInt(rank, 10);
+  if (isNaN(rankNum) || rankNum < 0 || rankNum > 4) { toast("Invalid rank (must be 0-4)", "error"); return; }
+  try {
+    await API.patch(`/admin/creator-accounts/${id}/rank`, { rank: rankNum });
+    if (rankNum > 0) await API.patch(`/admin/creator-accounts/${id}/badge`, { badge: `rank_${rankNum}` });
+    else await API.patch(`/admin/creator-accounts/${id}/badge`, { badge: '' });
+    toast(rankNum > 0 ? `Creator set as #${rankNum}` : "Rank removed", "success");
+    loadCreators();
+  } catch (e) { toast(e.message, "error"); }
+};
+window.extendSub = async (id) => {
+  const days = prompt("Extend subscription by how many days?", "30");
+  if (!days) return;
+  const daysNum = parseInt(days, 10);
+  if (isNaN(daysNum) || daysNum <= 0) { toast("Enter a valid number of days", "error"); return; }
+  try {
+    await API.patch(`/admin/creator-accounts/${id}/extend-subscription`, { days: daysNum });
+    toast(`Subscription extended by ${daysNum} days`, "success");
+    loadCreators();
+  } catch (e) { toast(e.message, "error"); }
 };
 window.viewCalendar = async (id) => {
   try {
@@ -302,6 +333,104 @@ async function loadNotifications() {
   document.getElementById("notificationsList").innerHTML = notifications
     .map((n) => `<div class="card" style="margin-bottom:0.5rem"><strong>${n.title}</strong><p>${n.message}</p><small>${Utils.formatDate(n.createdAt)}</small></div>`)
     .join("") || "<p>No notifications</p>";
+}
+
+// ═══ PROMOTIONS MANAGEMENT ═══
+async function loadPromotions() {
+  try {
+    const { data } = await API.get("/promotions/admin/all");
+    const container = document.getElementById("promotionsContainer") || document.getElementById("adminStats");
+    if (!container) return;
+    const pending = data.filter(p => p.status === "pending");
+    const approved = data.filter(p => p.status === "approved");
+    const expired = data.filter(p => p.status === "expired" || p.status === "rejected");
+    container.innerHTML = `
+      <div class="card" style="margin-bottom:1rem;padding:1rem">
+        <h3 style="color:var(--gold-light);margin-bottom:1rem">📊 Promotion Overview</h3>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap">
+          <div class="stat-card"><div class="value">${pending.length}</div><div class="label">Pending</div></div>
+          <div class="stat-card"><div class="value">${approved.length}</div><div class="label">Active</div></div>
+          <div class="stat-card"><div class="value">${expired.length}</div><div class="label">Expired/Rejected</div></div>
+        </div>
+      </div>
+      ${pending.length ? `<h4 style="color:var(--gold);margin:1rem 0 .5rem">⏳ Pending Requests</h4>` : ''}
+      ${pending.map(p => `<div class="card" style="margin-bottom:.5rem;padding:.75rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+        <div style="flex:1;min-width:150px"><strong>${p.creatorName || '—'}</strong><br><span style="font-size:.75rem;color:var(--text-muted)">${p.planType} • ₹${p.price}</span></div>
+        <div style="font-size:.75rem;color:var(--text-muted)">UTR: ${p.utr || '—'}</div>
+        ${p.screenshot ? `<a href="${p.screenshot}" target="_blank" style="font-size:.7rem;color:var(--gold)">View Proof</a>` : ''}
+        <button class="btn btn-sm btn-primary" onclick="approvePromo('${p._id}')">Approve</button>
+        <button class="btn btn-sm btn-danger" onclick="rejectPromo('${p._id}')">Reject</button>
+      </div>`).join('')}
+      ${approved.length ? `<h4 style="color:var(--gold);margin:1rem 0 .5rem">✅ Active Promotions</h4>` : ''}
+      ${approved.map(p => {
+        const days = p.expiryDate ? Math.max(0, Math.ceil((new Date(p.expiryDate) - new Date()) / 86400000)) : 0;
+        return `<div class="card" style="margin-bottom:.5rem;padding:.75rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+          <div style="flex:1;min-width:150px"><strong>${p.creatorName || '—'}</strong><br><span style="font-size:.75rem;color:var(--text-muted)">${p.planType} • ${days} days left</span></div>
+          <button class="btn btn-sm btn-outline" onclick="extendPromo('${p._id}')">+Extend</button>
+          <button class="btn btn-sm btn-danger" onclick="expirePromo('${p._id}')">Expire</button>
+        </div>`;
+      }).join('')}
+    `;
+  } catch (e) { toast("Failed to load promotions: " + e.message, "error"); }
+}
+window.approvePromo = async (id) => {
+  if (!confirm("Approve this promotion request?")) return;
+  try { await API.patch(`/promotions/admin/${id}/approve`); toast("Promotion approved", "success"); loadPromotions(); } catch (e) { toast(e.message, "error"); }
+};
+window.rejectPromo = async (id) => {
+  const reason = prompt("Reason for rejection:", "Payment not verified.");
+  if (!reason) return;
+  try { await API.patch(`/promotions/admin/${id}/reject`, { reason }); toast("Promotion rejected", "success"); loadPromotions(); } catch (e) { toast(e.message, "error"); }
+};
+window.extendPromo = async (id) => {
+  const days = prompt("Extend by how many days?", "30");
+  if (!days) return;
+  try { await API.patch(`/promotions/admin/${id}/extend`, { days: parseInt(days) }); toast(`Extended by ${days} days`, "success"); loadPromotions(); } catch (e) { toast(e.message, "error"); }
+};
+window.expirePromo = async (id) => {
+  if (!confirm("Force expire this promotion?")) return;
+  try { await API.patch(`/promotions/admin/${id}/expire`); toast("Promotion expired", "success"); loadPromotions(); } catch (e) { toast(e.message, "error"); }
+};
+
+// ═══ SUBSCRIPTION SETTINGS ═══
+async function loadSubscriptions() {
+  try {
+    const { data } = await API.get("/admin/subscription-settings");
+    const container = document.getElementById("promotionsContainer") || document.getElementById("adminStats");
+    if (!container) return;
+    container.innerHTML = `
+      <div class="card" style="padding:1.5rem">
+        <h3 style="color:var(--gold-light);margin-bottom:1rem">💳 Subscription Settings</h3>
+        <form id="subSettingsForm" style="display:grid;gap:.75rem;max-width:400px">
+          <label style="font-size:.8rem;color:var(--text-muted)">Monthly Plan Price (₹)
+            <input type="number" id="subPrice" value="${data.monthlyPlanPrice || 299}" style="width:100%;padding:.5rem;background:#1a1a1a;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;margin-top:4px">
+          </label>
+          <label style="font-size:.8rem;color:var(--text-muted)">Trial Days
+            <input type="number" id="subTrial" value="${data.trialDays || 0}" style="width:100%;padding:.5rem;background:#1a1a1a;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;margin-top:4px">
+          </label>
+          <label style="font-size:.8rem;color:var(--text-muted)">Featured Portfolio Price (₹)
+            <input type="number" id="subFeatured" value="${data.featuredPortfolioPrice || 999}" style="width:100%;padding:.5rem;background:#1a1a1a;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;margin-top:4px">
+          </label>
+          <label style="font-size:.8rem;color:var(--text-muted)">Grace Period Days
+            <input type="number" id="subGrace" value="${data.gracePeriodDays || 3}" style="width:100%;padding:.5rem;background:#1a1a1a;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#fff;margin-top:4px">
+          </label>
+          <button type="submit" class="btn btn-primary" style="margin-top:.5rem">Save Settings</button>
+        </form>
+      </div>
+    `;
+    document.getElementById("subSettingsForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      try {
+        await API.put("/admin/subscription-settings", {
+          monthlyPlanPrice: parseInt(document.getElementById("subPrice").value),
+          trialDays: parseInt(document.getElementById("subTrial").value),
+          featuredPortfolioPrice: parseInt(document.getElementById("subFeatured").value),
+          gracePeriodDays: parseInt(document.getElementById("subGrace").value),
+        });
+        toast("Subscription settings saved", "success");
+      } catch (e) { toast(e.message, "error"); }
+    });
+  } catch (e) { toast("Failed to load subscription settings: " + e.message, "error"); }
 }
 
 loadPanel("overview");

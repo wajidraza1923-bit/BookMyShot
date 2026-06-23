@@ -64,6 +64,16 @@ export default function AdminCreators({ navigation }: any) {
     ]);
   };
 
+  const toggleFeatured = async (id: string, featured: boolean) => {
+    try {
+      await api.patch(`/admin/creators/${id}/featured`, { featured });
+      await load();
+      Alert.alert('Done', featured ? 'Creator is now featured' : 'Creator unfeatured');
+    } catch (e: any) {
+      Alert.alert('Error', e.response?.data?.message || 'Failed to update featured status');
+    }
+  };
+
   const deleteCreator = (id: string, name: string) => {
     Alert.alert(
       '⚠️ Permanent Delete',
@@ -156,7 +166,8 @@ export default function AdminCreators({ navigation }: any) {
                 </>}
                 {item.status === 'approved' && item.subscriptionStatus !== 'suspended' && <>
                   <TouchableOpacity style={s.suspendBtn} onPress={() => updateStatus(item._id, 'suspended', 'Suspend')}><Text style={s.suspendText}>Suspend</Text></TouchableOpacity>
-                  <TouchableOpacity style={s.rankBtn} onPress={() => setRank(item._id, item.rank)}><Text style={s.rankBtnText}>{item.rank ? `#${item.rank}` : 'Set Rank'}</Text></TouchableOpacity>
+                  <TouchableOpacity style={s.rankBtn} onPress={() => setRank(item._id, item.rank)}><Text style={s.rankBtnText}>{item.rank ? `#${item.rank}` : 'Rank'}</Text></TouchableOpacity>
+                  <TouchableOpacity style={[s.rankBtn, item.featured && { backgroundColor: 'rgba(249,115,22,0.2)' }]} onPress={() => toggleFeatured(item._id, !item.featured)}><Text style={s.rankBtnText}>{item.featured ? '★' : 'Feature'}</Text></TouchableOpacity>
                 </>}
                 {(item.status === 'suspended' || item.subscriptionStatus === 'suspended') && <TouchableOpacity style={s.approveBtn} onPress={() => updateStatus(item._id, 'approved', 'Unsuspend')}><Text style={s.approveText}>Unsuspend</Text></TouchableOpacity>}
                 {item.status === 'rejected' && <TouchableOpacity style={s.approveBtn} onPress={() => updateStatus(item._id, 'approved', 'Reactivate')}><Text style={s.approveText}>Reactivate</Text></TouchableOpacity>}
