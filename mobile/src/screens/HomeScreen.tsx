@@ -88,18 +88,23 @@ export default function HomeScreen({ navigation }: any) {
   }, []);
 
   const [liveStats, setLiveStats] = useState<any>(null);
+  const [socialLinks, setSocialLinks] = useState<any>({});
 
   const loadData = useCallback(async () => {
     try {
-      const [creatorsRes, featuredRes, catsRes, statsRes] = await Promise.all([
+      const [creatorsRes, featuredRes, catsRes, statsRes, socialRes] = await Promise.all([
         creatorsAPI.getAll(),
         api.get('/promotions/featured-status').catch(() => ({ data: { slots: {} } })),
         api.get('/discover/categories').catch(() => ({ data: { data: [] } })),
         api.get('/live-stats').catch(() => ({ data: { stats: {} } })),
+        api.get('/social-links').catch(() => ({ data: { data: {} } })),
       ]);
 
       // Live stats from DB
       if (statsRes.data?.stats) setLiveStats(statsRes.data.stats);
+
+      // Social links from DB
+      if (socialRes.data?.data) setSocialLinks(socialRes.data.data);
 
       // Load categories from DB (fallback to defaults)
       const dbCats = catsRes.data?.data || [];
@@ -472,12 +477,13 @@ export default function HomeScreen({ navigation }: any) {
           <View style={s.fCenter}>
             <Text style={s.fSocialTitle}>CONNECT WITH US</Text>
             <View style={s.socialRow}>
-              <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://instagram.com/bookmyshot')}><Ionicons name="logo-instagram" size={16} color="#FF8C2B" /></TouchableOpacity>
-              <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://facebook.com/bookmyshot')}><Ionicons name="logo-facebook" size={16} color="#FF8C2B" /></TouchableOpacity>
-              <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://youtube.com/@bookmyshot')}><Ionicons name="logo-youtube" size={16} color="#FF8C2B" /></TouchableOpacity>
-              <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://linkedin.com/company/bookmyshot')}><Ionicons name="logo-linkedin" size={16} color="#FF8C2B" /></TouchableOpacity>
-              <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://twitter.com/bookmyshot')}><Ionicons name="logo-twitter" size={16} color="#FF8C2B" /></TouchableOpacity>
-              <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL('https://wa.me/918492922173')}><Ionicons name="logo-whatsapp" size={16} color="#FF8C2B" /></TouchableOpacity>
+              {socialLinks.instagram ? <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL(socialLinks.instagram)}><Ionicons name="logo-instagram" size={16} color="#FF8C2B" /></TouchableOpacity> : null}
+              {socialLinks.facebook ? <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL(socialLinks.facebook)}><Ionicons name="logo-facebook" size={16} color="#FF8C2B" /></TouchableOpacity> : null}
+              {socialLinks.youtube ? <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL(socialLinks.youtube)}><Ionicons name="logo-youtube" size={16} color="#FF8C2B" /></TouchableOpacity> : null}
+              {socialLinks.linkedin ? <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL(socialLinks.linkedin)}><Ionicons name="logo-linkedin" size={16} color="#FF8C2B" /></TouchableOpacity> : null}
+              {socialLinks.twitter ? <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL(socialLinks.twitter)}><Ionicons name="logo-twitter" size={16} color="#FF8C2B" /></TouchableOpacity> : null}
+              {socialLinks.whatsapp ? <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL(socialLinks.whatsapp)}><Ionicons name="logo-whatsapp" size={16} color="#FF8C2B" /></TouchableOpacity> : null}
+              {socialLinks.telegram ? <TouchableOpacity style={s.socialBtn} onPress={() => Linking.openURL(socialLinks.telegram)}><Ionicons name="logo-telegram" size={16} color="#FF8C2B" /></TouchableOpacity> : null}
             </View>
           </View>
           <View style={s.fDivider} />
