@@ -156,21 +156,35 @@ async function loadFeaturedCreators() {
   const section = container.closest('section') || document.getElementById('creators');
   container.innerHTML = '';
   try {
-    const res = await API.get('/creators?featured=true');
+    // Get all approved creators - we'll filter for featured OR ranked (promoted)
+    const res = await API.get('/creators');
     const now = new Date();
-    const creators = (res.creators || []).filter(c => c.status === 'approved' && c.featured === true && (!c.featuredEndDate || new Date(c.featuredEndDate) > now));
-    if (!creators.length) {
+    const allCreators = (res.creators || []).filter(c => c.status === 'approved');
+    // Featured = explicitly featured (admin/promotion) OR has a rank assigned (promoted via admin panel)
+    const featured = allCreators.filter(c => 
+      (c.featured === true && (!c.featuredEndDate || new Date(c.featuredEndDate) > now)) ||
+      (c.rank && c.rank > 0)
+    );
+    // Sort: ranked first (by rank asc), then featured
+    featured.sort((a, b) => {
+      const ra = a.rank || 999;
+      const rb = b.rank || 999;
+      return ra - rb;
+    });
+    if (!featured.length) {
       if (section) section.style.display = 'none';
       return;
     }
     if (section) section.style.display = '';
-    creators.slice(0, 4).forEach((c) => {
+    featured.slice(0, 4).forEach((c) => {
       const card = document.createElement('article');
       card.className = 'cinematic-card';
       card.style.position = 'relative';
       const thumb = c.portfolio?.[0] || c.user?.avatar || 'https://images.unsplash.com/photo-1554048612-b6a482b17f70?w=400';
+      const label = c.rank ? `#${c.rank} CREATOR` : '★ FEATURED';
+      const labelBg = c.rank ? 'rgba(212,175,55,.9)' : 'rgba(255,140,39,.9)';
       card.innerHTML = `
-        <div style="position:absolute;top:10px;right:10px;z-index:2;background:rgba(255,140,39,.9);color:#fff;font-size:.6rem;font-weight:700;padding:.25rem .5rem;border-radius:6px;letter-spacing:.03em">★ FEATURED</div>
+        <div style="position:absolute;top:10px;right:10px;z-index:2;background:${labelBg};color:#fff;font-size:.6rem;font-weight:700;padding:.25rem .5rem;border-radius:6px;letter-spacing:.03em">${label}</div>
         <div class="cinematic-thumb" style="background-image:url('${thumb}')"></div>
         <div class="cinematic-body"><span>${c.specialty || c.category || 'Creator'}</span><h3>${c.user?.name || 'Creator'}</h3><div class="meta-row"><span>★ ${c.rating || 4.9}</span><span>${c.city || ''}</span></div></div>`;
       card.addEventListener('click', () => {
