@@ -254,7 +254,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // HTTP errors
       if (!response.ok) {
+        // Check if it's an incomplete registration (OTP not verified)
+        if (data.incomplete && data.requiresVerification) {
+          return {
+            success: false,
+            requiresVerification: true,
+            email: data.email || email,
+            message: data.message || 'Your registration is incomplete. Verify OTP to continue.',
+          };
+        }
         return { success: false, message: data.message || `Error ${response.status}` };
+      }
+
+      // Success response but with requiresVerification (incomplete from 200 status)
+      if (data.requiresVerification || data.incomplete) {
+        return {
+          success: false,
+          requiresVerification: true,
+          email: data.email || email,
+          message: data.message || 'Please verify your email to continue.',
+        };
       }
 
       // Success but no token (requires email verification)

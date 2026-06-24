@@ -23,8 +23,31 @@ router.post("/register", async (req, res, next) => {
     // Support registration with phone only (no email)
     let user;
     if (email) {
-      if (await User.findOne({ email })) {
-        return res.status(400).json({ success: false, message: "Email already registered" });
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        // If user exists but hasn't verified email → treat as incomplete registration
+        if (!existingUser.emailVerified) {
+          // Resend OTP and let them continue verification
+          const otp = generateOTP();
+          existingUser.emailVerificationOtp = otp;
+          existingUser.emailVerificationOtpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+          existingUser.otpLastSent = new Date();
+          existingUser.otpAttempts = 0;
+          // Update name/password if provided (they might have changed)
+          if (name) existingUser.name = name;
+          if (password) existingUser.password = password;
+          await existingUser.save();
+          sendVerificationOTP(email, otp, existingUser.name).catch(() => {});
+          return res.status(200).json({
+            success: false,
+            message: "Your registration is incomplete. Verify OTP to continue.",
+            requiresVerification: true,
+            email: existingUser.email,
+            incomplete: true,
+          });
+        }
+        // Fully verified user → actually already registered
+        return res.status(400).json({ success: false, message: "This account already exists. Please login.", alreadyVerified: true });
       }
       const verificationToken = crypto.randomBytes(20).toString("hex");
       user = await User.create({
@@ -35,8 +58,13 @@ router.post("/register", async (req, res, next) => {
         emailVerified: false,
       });
     } else if (phone) {
-      if (await User.findOne({ phone })) {
-        return res.status(400).json({ success: false, message: "Phone already registered" });
+      const existingPhone = await User.findOne({ phone });
+      if (existingPhone) {
+        if (!existingPhone.emailVerified && existingPhone.email.endsWith("@bookmyshot.app")) {
+          // Phone-only user already verified instantly, so this is truly duplicate
+          return res.status(400).json({ success: false, message: "This phone number is already registered. Please login.", alreadyVerified: true });
+        }
+        return res.status(400).json({ success: false, message: "Phone already registered. Please login.", alreadyVerified: true });
       }
       user = await User.create({
         name, email: `user_${phone}@bookmyshot.app`,
@@ -239,9 +267,19 @@ router.post("/send-otp", async (req, res, next) => {
 
     if (user.emailVerified) return res.json({ success: true, message: "Email already verified" });
 
-    // Rate limiting: 60 seconds between OTP sends
-    if (user.otpLastSent && (Date.now() - new Date(user.otpLastSent).getTime()) < 60000) {
-      const wait = Math.ceil((60000 - (Date.now() - new Date(user.otpLastSent).getTime())) / 1000);
+    // Rate limiting: progressive cooldown + max 3 per 15 minutes
+    const otpAttempts = user.otpAttempts || 0;
+    const cooldown = otpAttempts === 0 ? 0 : otpAttempts === 1 ? 30000 : 60000; // 0s, 30s, 60s
+    if (otpAttempts >= 3) {
+      const fifteenMinsAgo = Date.now() - 15 * 60 * 1000;
+      if (user.otpLastSent && new Date(user.otpLastSent).getTime() > fifteenMinsAgo) {
+        return res.status(429).json({ success: false, message: "Too many OTP requests. Please try again after 15 minutes." });
+      }
+      // Reset after 15 minutes
+      user.otpAttempts = 0;
+    }
+    if (cooldown > 0 && user.otpLastSent && (Date.now() - new Date(user.otpLastSent).getTime()) < cooldown) {
+      const wait = Math.ceil((cooldown - (Date.now() - new Date(user.otpLastSent).getTime())) / 1000);
       return res.status(429).json({ success: false, message: `Please wait ${wait} seconds before requesting again` });
     }
 
@@ -249,7 +287,7 @@ router.post("/send-otp", async (req, res, next) => {
     user.emailVerificationOtp = otp;
     user.emailVerificationOtpExpiry = new Date(Date.now() + 10 * 60 * 1000);
     user.otpLastSent = new Date();
-    user.otpAttempts = 0;
+    user.otpAttempts = (user.otpAttempts || 0) + 1;
     await user.save();
 
     const result = await sendVerificationOTP(email, otp, user.name);
