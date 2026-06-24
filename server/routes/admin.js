@@ -225,7 +225,6 @@ router.get("/creators-deleted", async (req, res, next) => {
     next(e);
   }
 });
-});
 
 // Badge and Rank routes (also in creatorAccounts.js sub-router - duplicated here for hot-reload compatibility)
 router.patch("/creator-accounts/:id/badge", async (req, res, next) => {
