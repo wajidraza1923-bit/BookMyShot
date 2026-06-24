@@ -13,6 +13,7 @@ import QADashboard from '../screens/admin/QADashboard';
 import AdminContentManager from '../screens/admin/AdminContentManager';
 import AdminReviews from '../screens/admin/AdminReviews';
 import AdminSocialLinks from '../screens/admin/AdminSocialLinks';
+import AdminUsers from '../screens/admin/AdminUsers';
 
 const Stack = createNativeStackNavigator();
 
@@ -31,6 +32,7 @@ export default function AdminNavigator() {
       <Stack.Screen name="ContentManager" component={AdminContentManager} />
       <Stack.Screen name="AdminReviews" component={AdminReviews} />
       <Stack.Screen name="AdminSocialLinks" component={AdminSocialLinks} />
+      <Stack.Screen name="AdminUsers" component={AdminUsers} />
     </Stack.Navigator>
   );
 }
