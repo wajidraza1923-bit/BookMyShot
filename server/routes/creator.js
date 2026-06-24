@@ -88,10 +88,11 @@ router.get("/suspension-details", async (req, res, next) => {
       }
     }
 
-    // If no financial reason found, it's manual admin suspension
+    // If no financial reason found, it's manual admin suspension — still show subscription as due for reactivation
     if (subscriptionDue === 0 && commissionDue === 0) {
       suspensionType = "manual";
-      reason = "Your account has been suspended by the admin. Contact support for details.";
+      subscriptionDue = monthlyPrice; // Require subscription payment to reactivate
+      reason = "Your account has been suspended. Pay subscription to reactivate instantly.";
     }
 
     res.json({

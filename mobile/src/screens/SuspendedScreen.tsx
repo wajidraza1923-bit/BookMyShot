@@ -170,11 +170,20 @@ export default function SuspendedScreen() {
         </View>
       )}
 
-      {/* Manual suspension - no payment option */}
+      {/* Manual suspension - still show Pay to reactivate */}
       {isManual && totalDue === 0 && (
         <View style={s.manualCard}>
           <Ionicons name="information-circle-outline" size={16} color="rgba(255,255,255,0.4)" />
-          <Text style={s.manualText}>Your account was suspended by admin. Please contact support for assistance.</Text>
+          <Text style={s.manualText}>Your account was suspended by admin. Pay the reactivation fee to restore your account instantly.</Text>
+        </View>
+      )}
+
+      {/* Always show a Pay/Reactivate button - even for manual suspension */}
+      {totalDue === 0 && (
+        <View style={s.paySection}>
+          <TouchableOpacity style={s.payBtnFull} onPress={() => handlePay('subscription')} disabled={paying}>
+            {paying ? <ActivityIndicator size="small" color="#000" /> : <><Ionicons name="wallet-outline" size={16} color="#000" /><Text style={s.payBtnFullText}>Pay & Reactivate Account</Text></>}
+          </TouchableOpacity>
         </View>
       )}
 
