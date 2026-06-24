@@ -24,23 +24,27 @@ export default function AdminRankings({ navigation }: any) {
     try {
       const [rankRes, creatorsRes] = await Promise.all([
         api.get('/admin/rankings'),
-        api.get('/admin/creators'),
+        api.get('/admin/creator-accounts'),
       ]);
       setRankings(rankRes.data?.data || {});
-      const all = creatorsRes.data?.creators || [];
+      // Handle both response formats
+      const responseData = creatorsRes.data?.data;
+      const all = Array.isArray(responseData?.creators)
+        ? responseData.creators
+        : Array.isArray(creatorsRes.data?.creators)
+          ? creatorsRes.data.creators
+          : [];
       setCreators(all.filter((c: any) => c.status === 'approved'));
-    } catch {} finally { setLoading(false); }
+    } catch (e: any) {
+      console.log('[Rankings] Load error:', e.message);
+    } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { load(); }, []);
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
   const setRank = (creatorId: string, name: string) => {
-    Alert.prompt ? Alert.prompt('Set Position', `Set position # for "${name}" in ${SECTIONS.find(s=>s.key===activeSection)?.label}:`, [
-      { text: 'Cancel' },
-      { text: 'Set', onPress: (pos: string) => applyRank(creatorId, parseInt(pos)) },
-    ], 'plain-text', '1') :
-    Alert.alert('Set Position', `Choose position for "${name}":`, [
+    Alert.alert('Set Position', `Choose position for "${name}" in ${SECTIONS.find(s2=>s2.key===activeSection)?.label}:`, [
       { text: '#1', onPress: () => applyRank(creatorId, 1) },
       { text: '#2', onPress: () => applyRank(creatorId, 2) },
       { text: '#3', onPress: () => applyRank(creatorId, 3) },
@@ -111,7 +115,7 @@ export default function AdminRankings({ navigation }: any) {
             )}
           </View>
         )) : (
-          <View style={s.emptyCard}><Text style={s.emptyText}>No manual rankings set. Using automatic (rating-based) order.</Text></View>
+          <View style={s.emptyCard}><Text style={s.emptyText}>No manual rankings set yet. Tap any creator below to assign a position. ({creators.length} creators available)</Text></View>
         )}
 
         {/* Add Creator */}
