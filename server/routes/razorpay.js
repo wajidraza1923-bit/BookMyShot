@@ -65,6 +65,61 @@ router.get("/autopay-status", protect, authorize("creator"), async (req, res, ne
   } catch (e) { next(e); }
 });
 
+// ═══════════════════════════════════════════════════════════════
+// CREATOR: Get AutoPay status (checks Razorpay API in real-time)
+// ═══════════════════════════════════════════════════════════════
+router.get("/autopay-status", protect, authorize("creator"), async (req, res, next) => {
+  try {
+    const creator = await Creator.findOne({ user: req.user._id });
+    if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
+
+    // If no Razorpay subscription ID stored, AutoPay is inactive
+    if (!creator.razorpaySubscriptionId) {
+      return res.json({
+        success: true,
+        data: {
+          autoPayActive: false,
+          razorpayStatus: "none",
+          subscriptionId: null,
+          nextBillingDate: null,
+          message: "No AutoPay subscription linked. Set up AutoPay to enable automatic renewal.",
+        },
+      });
+    }
+
+    // Check Razorpay API for real status
+    let razorpayStatus = "unknown";
+    let currentPeriodEnd = null;
+    try {
+      if (razorpayService.isConfigured()) {
+        const rpSub = await razorpayService.fetchSubscription(creator.razorpaySubscriptionId);
+        razorpayStatus = rpSub.status || "unknown"; // active, authenticated, pending, halted, cancelled, completed
+        currentPeriodEnd = rpSub.current_end ? new Date(rpSub.current_end * 1000) : null;
+      }
+    } catch (e) {
+      // If fetch fails, use DB status
+      razorpayStatus = creator.subscriptionStatus === "active" ? "active" : "inactive";
+    }
+
+    const isActive = ["active", "authenticated"].includes(razorpayStatus);
+
+    res.json({
+      success: true,
+      data: {
+        autoPayActive: isActive,
+        razorpayStatus,
+        subscriptionId: creator.razorpaySubscriptionId,
+        nextBillingDate: currentPeriodEnd || creator.nextBillingDate || creator.subscriptionEndDate,
+        lastPaymentDate: creator.lastPaymentDate,
+        autoRenew: creator.autoRenew !== false,
+        message: isActive
+          ? "AutoPay is active. Your subscription renews automatically."
+          : `AutoPay is ${razorpayStatus}. Your subscription will NOT renew automatically.`,
+      },
+    });
+  } catch (e) { next(e); }
+});
+
 router.post("/create-subscription", protect, authorize("creator"), async (req, res, next) => {
   try {
     if (!razorpayService.isConfigured()) {
