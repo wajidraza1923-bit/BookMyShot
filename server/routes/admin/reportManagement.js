@@ -76,9 +76,12 @@ router.post("/send/:creatorId", async (req, res, next) => {
     const now = new Date();
     const thirtyDaysAgo = new Date(now - 30 * 86400000);
 
-    const bookings = await Booking.find({ creator: creator._id }).sort("-createdAt").lean();
+    let bookings = [];
+    let commissions = [];
+    try { bookings = await Booking.find({ creator: creator._id }).sort("-createdAt").lean(); } catch {}
+    try { commissions = await Commission.find({ creator: creator._id }).lean(); } catch {}
+
     const recentBookings = bookings.filter(b => new Date(b.createdAt) >= thirtyDaysAgo);
-    const commissions = await Commission.find({ creator: creator._id }).lean();
     const recentCommissions = commissions.filter(c => new Date(c.createdAt) >= thirtyDaysAgo);
 
     const stats = {
@@ -132,17 +135,54 @@ router.post("/resend/:logId", async (req, res, next) => {
     const log = await EmailLog.findById(req.params.logId);
     if (!log) return res.status(404).json({ success: false, message: "Report log not found" });
 
-    // Re-trigger a fresh report to the same creator
-    if (log.creator) {
-      const creator = await Creator.findById(log.creator).populate("user", "name email");
-      if (creator?.user?.email) {
-        // Redirect to the send/:creatorId handler logic
-        req.params.creatorId = log.creator.toString();
-        return router.handle(req, res, next);
-      }
-    }
+    if (!log.creator) return res.status(400).json({ success: false, message: "No creator linked to this report" });
 
-    res.status(400).json({ success: false, message: "Cannot resend — creator not found" });
+    const creator = await Creator.findById(log.creator).populate("user", "name email");
+    if (!creator?.user?.email) return res.status(400).json({ success: false, message: "Creator email not found" });
+
+    // Resend — generate fresh report with live data
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now - 30 * 86400000);
+    let bookings = [];
+    let commissions = [];
+    try { bookings = await Booking.find({ creator: creator._id }).sort("-createdAt").lean(); } catch {}
+    try { commissions = await Commission.find({ creator: creator._id }).lean(); } catch {}
+
+    const recentBookings = bookings.filter(b => new Date(b.createdAt) >= thirtyDaysAgo);
+    const stats = {
+      totalBookings: bookings.length,
+      recentBookings: recentBookings.length,
+      completedBookings: bookings.filter(b => b.status === "Completed").length,
+      cancelledBookings: bookings.filter(b => ["Cancelled", "cancelled"].includes(b.status)).length,
+      pendingBookings: bookings.filter(b => ["Pending", "Creator Accepted"].includes(b.status)).length,
+      totalEarnings: commissions.filter(c => c.status === "paid").reduce((s, c) => s + (c.creatorEarning || 0), 0),
+      totalCommissionPaid: commissions.filter(c => c.status === "paid").reduce((s, c) => s + (c.commissionAmount || 0), 0),
+      pendingCommission: commissions.filter(c => c.status === "pending").reduce((s, c) => s + (c.commissionAmount || 0), 0),
+      totalRevenue: bookings.reduce((s, b) => s + (b.amount || b.budget || 0), 0),
+    };
+
+    const html = buildLiveReportEmail({
+      name: creator.user.name,
+      creatorId: creator.creatorId,
+      stats,
+      subscriptionStatus: creator.subscriptionStatus,
+      subscriptionEndDate: creator.subscriptionEndDate,
+      rank: creator.rank,
+      featured: creator.featured,
+      recentBookings: recentBookings.slice(0, 10),
+    });
+
+    const result = await emailService.sendEmail({
+      to: creator.user.email,
+      subject: `📊 Your Live Performance Report | BookMyShot`,
+      html,
+      type: "statement",
+      userId: creator.user._id,
+      creatorId: creator._id,
+      meta: { triggeredBy: req.user._id, type: "resend" },
+    });
+
+    res.json({ success: true, message: `Report resent to ${creator.user.email}`, emailResult: result });
   } catch (e) { next(e); }
 });
 
