@@ -150,6 +150,97 @@ function initScheduler() {
   }, { timezone: "Asia/Kolkata" });
 
   console.log("[Scheduler] ✅ All cron jobs registered (9AM/10AM/11AM IST daily)");
+
+  // ═══════════════════════════════════════════════════════════════
+  // DATA RETENTION POLICY — Daily cleanup at 3:00 AM IST
+  // ═══════════════════════════════════════════════════════════════
+  cron.schedule("0 3 * * *", async () => {
+    console.log("[Scheduler] Running data retention cleanup...");
+    try {
+      const User = require("../models/User");
+      const Creator = require("../models/Creator");
+      const Notification = require("../models/Notification");
+      const AuditLog = require("../models/AuditLog");
+      const Booking = require("../models/Booking");
+      const now = new Date();
+      let cleaned = {};
+
+      // 1. Purge soft-deleted user accounts after 30 days
+      const softDeleteCutoff = new Date(now - 30 * 86400000);
+      const softDeleted = await User.find({ accountDeleteRequested: true, accountDeletedAt: { $lte: softDeleteCutoff } });
+      for (const u of softDeleted) {
+        // If creator, delete creator record + cloud files
+        const creator = await Creator.findOne({ user: u._id });
+        if (creator) {
+          try {
+            const { deleteFile, isConfigured } = require("./cloudinaryService");
+            if (isConfigured()) {
+              for (const item of (creator.portfolio || [])) {
+                const pid = typeof item === 'string' ? '' : (item?.publicId || '');
+                if (pid) try { await deleteFile(pid, 'image'); } catch {}
+              }
+              for (const item of (creator.videos || [])) {
+                const pid = typeof item === 'string' ? '' : (item?.publicId || '');
+                if (pid) try { await deleteFile(pid, 'video'); } catch {}
+              }
+              if (u.avatarPublicId) try { await deleteFile(u.avatarPublicId, 'image'); } catch {}
+            }
+          } catch {}
+          await Creator.findByIdAndDelete(creator._id);
+        }
+        await User.findByIdAndDelete(u._id);
+      }
+      cleaned.softDeletedUsers = softDeleted.length;
+
+      // 2. Delete rejected creator applications after 30 days
+      const rejectCutoff = new Date(now - 30 * 86400000);
+      const rejectedCreators = await Creator.find({ status: "rejected", updatedAt: { $lte: rejectCutoff } });
+      for (const rc of rejectedCreators) {
+        await User.findByIdAndDelete(rc.user);
+        await Creator.findByIdAndDelete(rc._id);
+      }
+      cleaned.rejectedApps = rejectedCreators.length;
+
+      // 3. Clear expired OTPs and verification tokens older than 7 days
+      const otpCutoff = new Date(now - 7 * 86400000);
+      const otpResult = await User.updateMany(
+        { $or: [
+          { emailVerificationOtpExpiry: { $lte: otpCutoff } },
+          { resetPasswordOtpExpiry: { $lte: otpCutoff } },
+        ]},
+        { $unset: { emailVerificationOtp: "", emailVerificationOtpExpiry: "", resetPasswordOtp: "", resetPasswordOtpExpiry: "", resetPasswordToken: "", resetPasswordExpire: "" } }
+      );
+      cleaned.expiredOTPs = otpResult.modifiedCount || 0;
+
+      // 4. Delete old notifications (>90 days)
+      const notifCutoff = new Date(now - 90 * 86400000);
+      const notifResult = await Notification.deleteMany({ createdAt: { $lte: notifCutoff } });
+      cleaned.oldNotifications = notifResult.deletedCount || 0;
+
+      // 5. Delete audit logs older than 6 months
+      try {
+        const auditCutoff = new Date(now - 180 * 86400000);
+        const auditResult = await AuditLog.deleteMany({ createdAt: { $lte: auditCutoff } });
+        cleaned.oldAuditLogs = auditResult.deletedCount || 0;
+      } catch { cleaned.oldAuditLogs = 0; }
+
+      // 6. Delete cancelled bookings older than 6 months
+      const cancelCutoff = new Date(now - 180 * 86400000);
+      const cancelResult = await Booking.deleteMany({ status: { $in: ["Cancelled", "cancelled", "Rejected"] }, createdAt: { $lte: cancelCutoff } });
+      cleaned.cancelledBookings = cancelResult.deletedCount || 0;
+
+      // 7. Delete completed bookings older than 12 months
+      const completeCutoff = new Date(now - 365 * 86400000);
+      const completeResult = await Booking.deleteMany({ status: "Completed", createdAt: { $lte: completeCutoff } });
+      cleaned.oldCompletedBookings = completeResult.deletedCount || 0;
+
+      console.log("[Scheduler] Data retention cleanup complete:", JSON.stringify(cleaned));
+    } catch (e) {
+      console.error("[Scheduler] Data retention error:", e.message);
+    }
+  }, { timezone: "Asia/Kolkata" });
+
+  console.log("[Scheduler] ✅ Data retention job registered (3AM IST daily)");
 }
 
 module.exports = { initScheduler };
