@@ -27,6 +27,44 @@ router.get("/config", (req, res) => {
 // Uses Razorpay Subscriptions API (not Orders API).
 // Creator authorizes AutoPay once, then gets charged automatically.
 // ═══════════════════════════════════════════════════════════════
+
+// GET /autopay-status — Check real Razorpay subscription status
+router.get("/autopay-status", protect, authorize("creator"), async (req, res, next) => {
+  try {
+    const creator = await Creator.findOne({ user: req.user._id });
+    if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
+
+    // Default: no active AutoPay
+    const result = {
+      autopayActive: false,
+      razorpayStatus: "none",
+      razorpaySubscriptionId: creator.razorpaySubscriptionId || null,
+      nextBillingDate: creator.nextBillingDate,
+      lastPaymentDate: creator.lastPaymentDate,
+      subscriptionStatus: creator.subscriptionStatus,
+      autoRenew: creator.autoRenew !== false,
+    };
+
+    // If we have a Razorpay subscription ID, check its real status
+    if (creator.razorpaySubscriptionId && razorpayService.isConfigured()) {
+      try {
+        const rpSub = await razorpayService.fetchSubscription(creator.razorpaySubscriptionId);
+        result.razorpayStatus = rpSub.status; // active, authenticated, pending, halted, cancelled, completed
+        result.autopayActive = rpSub.status === "active" || rpSub.status === "authenticated";
+        result.currentStart = rpSub.current_start;
+        result.currentEnd = rpSub.current_end;
+        result.chargeAt = rpSub.charge_at;
+      } catch (rpErr) {
+        // Razorpay fetch failed — subscription might be invalid/deleted
+        result.razorpayStatus = "error";
+        result.autopayActive = false;
+      }
+    }
+
+    res.json({ success: true, data: result });
+  } catch (e) { next(e); }
+});
+
 router.post("/create-subscription", protect, authorize("creator"), async (req, res, next) => {
   try {
     if (!razorpayService.isConfigured()) {

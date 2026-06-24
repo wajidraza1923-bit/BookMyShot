@@ -13,13 +13,17 @@ export default function CreatorSubscription({ navigation }: any) {
 
   const load = useCallback(async () => {
     try {
-      const [dashRes, configRes] = await Promise.all([
+      const [dashRes, configRes, autopayRes] = await Promise.all([
         api.get('/creator/dashboard'),
         api.get('/config/public'),
+        api.get('/razorpay/autopay-status').catch(() => ({ data: { data: {} } })),
       ]);
       setCreator(dashRes.data);
-      // configRes.data is the parsed response body (axios auto-parses)
       setConfig(configRes.data);
+      // Store autopay status in creator state
+      if (autopayRes.data?.data) {
+        setCreator((prev: any) => ({ ...prev, _autopay: autopayRes.data.data }));
+      }
     } catch (e: any) {
       console.log('[Subscription] Load error:', e.message);
     } finally {
@@ -240,13 +244,35 @@ export default function CreatorSubscription({ navigation }: any) {
           </View>
         </View>
 
-        {/* AutoPay Info */}
-        {isActive && (
-          <View style={s.infoCard}>
-            <Ionicons name="shield-checkmark-outline" size={16} color={colors.success} />
-            <Text style={s.infoText}>AutoPay is active. Your subscription renews automatically each month via Razorpay.</Text>
-          </View>
-        )}
+        {/* AutoPay Info — shows REAL Razorpay status */}
+        {(() => {
+          const ap = creator?._autopay;
+          const rpActive = ap?.autopayActive === true;
+          const rpStatus = ap?.razorpayStatus || 'none';
+          if (rpActive) {
+            return (
+              <View style={s.infoCard}>
+                <Ionicons name="shield-checkmark-outline" size={16} color={colors.success} />
+                <Text style={s.infoText}>AutoPay Active ({rpStatus}). Your subscription renews automatically each month via Razorpay.</Text>
+              </View>
+            );
+          } else if (rpStatus !== 'none' && rpStatus !== 'error') {
+            return (
+              <View style={[s.infoCard, { borderColor: 'rgba(245,158,11,0.15)', backgroundColor: 'rgba(245,158,11,0.04)' }]}>
+                <Ionicons name="alert-circle-outline" size={16} color={colors.warning} />
+                <Text style={[s.infoText, { color: colors.warning }]}>AutoPay is NOT active (status: {rpStatus}). Your subscription will NOT renew automatically. Tap "Pay Subscription" to re-enable.</Text>
+              </View>
+            );
+          } else if (isActive) {
+            return (
+              <View style={[s.infoCard, { borderColor: 'rgba(255,255,255,0.06)', backgroundColor: 'rgba(255,255,255,0.02)' }]}>
+                <Ionicons name="information-circle-outline" size={16} color={colors.textMuted} />
+                <Text style={[s.infoText, { color: colors.textMuted }]}>AutoPay status unknown. If your subscription doesn't renew automatically, use the Pay button below.</Text>
+              </View>
+            );
+          }
+          return null;
+        })()}
 
         {isExpired && (
           <View style={[s.infoCard, { borderColor: 'rgba(239,68,68,0.15)', backgroundColor: 'rgba(239,68,68,0.04)' }]}>
