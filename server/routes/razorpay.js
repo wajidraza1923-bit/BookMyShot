@@ -131,6 +131,11 @@ router.post("/verify-subscription", protect, async (req, res, next) => {
     creator.razorpayCustomerId = razorpay_payment_id;
     if (!creator.subscriptionStartDate) creator.subscriptionStartDate = now;
     
+    // AUTO-UNSUSPEND: If creator was suspended, reactivate on successful payment
+    if (creator.status === "suspended" || creator.status === "pending") {
+      creator.status = "approved";
+    }
+    
     // Set end date based on trial
     const endDate = new Date(now);
     if (trialDays > 0) {
@@ -544,6 +549,10 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
         const creator = await Creator.findOne({ razorpaySubscriptionId: subId }).populate("user");
         if (creator) {
           creator.subscriptionStatus = "active";
+          // AUTO-UNSUSPEND on subscription activation
+          if (creator.status === "suspended" || creator.status === "pending") {
+            creator.status = "approved";
+          }
           if (!creator.subscriptionStartDate) creator.subscriptionStartDate = new Date();
           const end = new Date();
           end.setMonth(end.getMonth() + 1);
@@ -585,6 +594,10 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
         const creator = await Creator.findOne({ razorpaySubscriptionId: subId }).populate("user");
         if (creator) {
           creator.subscriptionStatus = "active";
+          // AUTO-UNSUSPEND on successful recurring payment
+          if (creator.status === "suspended") {
+            creator.status = "approved";
+          }
           creator.lastPaymentDate = new Date();
           creator.paymentFailCount = 0; // Reset fail count on success
           const end = new Date();
