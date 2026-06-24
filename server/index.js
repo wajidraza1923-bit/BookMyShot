@@ -303,6 +303,7 @@ app.use("/api/admin/homepage-enquiries", protect, authorize("admin"), adminHomep
 // Backup & Reports routes
 app.use("/api/admin/backups", protect, authorize("admin"), require("./routes/admin/backups"));
 app.use("/api/admin/reports", protect, authorize("admin"), require("./routes/admin/reports"));
+app.use("/api/admin/report-management", protect, authorize("admin"), require("./routes/admin/reportManagement"));
 
 // Admin: general-purpose image upload to Cloudinary
 const { upload: adminUpload } = require("./middleware/upload");
