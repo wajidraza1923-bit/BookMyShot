@@ -89,9 +89,8 @@ export default function SuspendedScreen() {
   const commDue = details?.commissionDue || 0;
   const totalDue = subDue + commDue;
   const reason = details?.reason || 'Account suspended';
-  const isExpired = details?.suspensionType === 'subscription_expired' || subDue > 0;
+  const isExpired = details?.suspensionType === 'subscription_expired' || details?.suspensionType === 'manual' || subDue > 0;
   const isCommission = details?.suspensionType === 'commission_due' || commDue > 0;
-  const isManual = !isExpired && !isCommission;
 
   // Determine the suspension reason display
   let reasonTitle = 'Account Suspended';
@@ -123,69 +122,57 @@ export default function SuspendedScreen() {
       <Text style={s.subtitle}>{reason}</Text>
 
       {/* Outstanding Amounts */}
-      {totalDue > 0 && (
+      {subDue > 0 && (
         <View style={s.amountsCard}>
           <Text style={s.amountsTitle}>Outstanding Dues</Text>
           {subDue > 0 && (
             <View style={s.amountRow}>
-              <View style={s.amountLeft}><Ionicons name="card-outline" size={14} color="#F59E0B" /><Text style={s.amountLabel}>Subscription Due</Text></View>
-              <Text style={s.amountValue}>₹{subDue.toLocaleString('en-IN')}</Text>
+              <View style={s.amountLeft}><Ionicons name="card-outline" size={14} color="#F97316" /><Text style={s.amountLabel}>Subscription</Text></View>
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={s.amountValue}>₹{subDue.toLocaleString('en-IN')}</Text>
+                <Text style={{ fontSize: 9, color: '#F97316', fontWeight: '700' }}>REQUIRED FOR ACTIVATION</Text>
+              </View>
             </View>
           )}
           {commDue > 0 && (
             <View style={s.amountRow}>
-              <View style={s.amountLeft}><Ionicons name="cash-outline" size={14} color="#F59E0B" /><Text style={s.amountLabel}>Commission Due</Text></View>
-              <Text style={s.amountValue}>₹{commDue.toLocaleString('en-IN')}</Text>
+              <View style={s.amountLeft}><Ionicons name="cash-outline" size={14} color="rgba(255,255,255,0.4)" /><Text style={s.amountLabel}>Commission Balance</Text></View>
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={s.amountValue}>₹{commDue.toLocaleString('en-IN')}</Text>
+                <Text style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)' }}>Optional (pay later)</Text>
+              </View>
             </View>
           )}
           <View style={[s.amountRow, s.totalRow]}>
-            <Text style={s.totalLabel}>Total Payable</Text>
+            <Text style={s.totalLabel}>Total</Text>
             <Text style={s.totalValue}>₹{totalDue.toLocaleString('en-IN')}</Text>
           </View>
         </View>
       )}
 
+      {/* What happens after payment */}
+      <View style={s.rulesCard}>
+        <Text style={s.rulesTitle}>What happens after payment?</Text>
+        <View style={s.ruleRow}><Ionicons name="checkmark-circle" size={12} color="#10B981" /><Text style={s.ruleText}>Pay Subscription → Account reactivated immediately</Text></View>
+        <View style={s.ruleRow}><Ionicons name="checkmark-circle" size={12} color="#10B981" /><Text style={s.ruleText}>Full access to dashboard, bookings & portfolio</Text></View>
+        {commDue > 0 && <View style={s.ruleRow}><Ionicons name="information-circle" size={12} color="#F59E0B" /><Text style={s.ruleText}>Commission balance shown as reminder on dashboard</Text></View>}
+        <View style={s.ruleRow}><Ionicons name="flash" size={12} color="#3B82F6" /><Text style={s.ruleText}>No admin approval needed — instant reactivation</Text></View>
+      </View>
+
       {/* Pay Buttons */}
-      {totalDue > 0 && (
-        <View style={s.paySection}>
-          {subDue > 0 && commDue > 0 ? (
-            <>
-              <TouchableOpacity style={s.payBtnFull} onPress={() => handlePay('both')} disabled={paying}>
-                {paying ? <ActivityIndicator size="small" color="#000" /> : <><Ionicons name="wallet-outline" size={16} color="#000" /><Text style={s.payBtnFullText}>Pay Full Amount (₹{totalDue.toLocaleString('en-IN')})</Text></>}
-              </TouchableOpacity>
-              <View style={s.payRow}>
-                <TouchableOpacity style={s.payBtnHalf} onPress={() => handlePay('subscription')} disabled={paying}>
-                  <Text style={s.payBtnHalfText}>Pay Subscription Only</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={s.payBtnHalf} onPress={() => handlePay('commission')} disabled={paying}>
-                  <Text style={s.payBtnHalfText}>Pay Commission Only</Text>
-                </TouchableOpacity>
-              </View>
-            </>
-          ) : (
-            <TouchableOpacity style={s.payBtnFull} onPress={() => handlePay(isExpired ? 'subscription' : 'commission')} disabled={paying}>
-              {paying ? <ActivityIndicator size="small" color="#000" /> : <><Ionicons name="wallet-outline" size={16} color="#000" /><Text style={s.payBtnFullText}>Pay Now (₹{totalDue.toLocaleString('en-IN')})</Text></>}
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
+      <View style={s.paySection}>
+        {/* Primary: Pay Subscription (REQUIRED) */}
+        <TouchableOpacity style={s.payBtnFull} onPress={() => handlePay('subscription')} disabled={paying}>
+          {paying ? <ActivityIndicator size="small" color="#000" /> : <><Ionicons name="wallet-outline" size={16} color="#000" /><Text style={s.payBtnFullText}>Pay Subscription & Reactivate (₹{subDue.toLocaleString('en-IN')})</Text></>}
+        </TouchableOpacity>
 
-      {/* Manual suspension - still show Pay to reactivate */}
-      {isManual && totalDue === 0 && (
-        <View style={s.manualCard}>
-          <Ionicons name="information-circle-outline" size={16} color="rgba(255,255,255,0.4)" />
-          <Text style={s.manualText}>Your account was suspended by admin. Pay the reactivation fee to restore your account instantly.</Text>
-        </View>
-      )}
-
-      {/* Always show a Pay/Reactivate button - even for manual suspension */}
-      {totalDue === 0 && (
-        <View style={s.paySection}>
-          <TouchableOpacity style={s.payBtnFull} onPress={() => handlePay('subscription')} disabled={paying}>
-            {paying ? <ActivityIndicator size="small" color="#000" /> : <><Ionicons name="wallet-outline" size={16} color="#000" /><Text style={s.payBtnFullText}>Pay & Reactivate Account</Text></>}
+        {/* Secondary: Pay Full (if commission also due) */}
+        {commDue > 0 && (
+          <TouchableOpacity style={s.payBtnOutline} onPress={() => handlePay('both')} disabled={paying}>
+            <Text style={s.payBtnOutlineText}>Pay Full Amount (₹{totalDue.toLocaleString('en-IN')})</Text>
           </TouchableOpacity>
-        </View>
-      )}
+        )}
+      </View>
 
       {/* Info */}
       <View style={s.infoCard}>
@@ -218,9 +205,15 @@ const s = StyleSheet.create({
   paySection: { width: '100%', marginTop: 20 },
   payBtnFull: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#F97316', borderRadius: 12, paddingVertical: 14, width: '100%' },
   payBtnFullText: { fontSize: 14, fontWeight: '700', color: '#000' },
+  payBtnOutline: { alignItems: 'center', paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(249,115,22,0.3)', backgroundColor: 'rgba(249,115,22,0.06)', marginTop: 10, width: '100%' },
+  payBtnOutlineText: { fontSize: 12, fontWeight: '600', color: '#F97316' },
   payRow: { flexDirection: 'row', gap: 10, marginTop: 10 },
   payBtnHalf: { flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(249,115,22,0.3)', backgroundColor: 'rgba(249,115,22,0.06)' },
   payBtnHalfText: { fontSize: 11, fontWeight: '600', color: '#F97316' },
+  rulesCard: { width: '100%', padding: 14, marginTop: 16, backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+  rulesTitle: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.5)', marginBottom: 8 },
+  ruleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
+  ruleText: { fontSize: 11, color: 'rgba(255,255,255,0.5)', flex: 1 },
   manualCard: { flexDirection: 'row', alignItems: 'center', gap: 10, width: '100%', padding: 14, marginTop: 24, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
   manualText: { flex: 1, fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 17 },
   infoCard: { width: '100%', padding: 12, marginTop: 16, borderRadius: 8, backgroundColor: 'rgba(16,185,129,0.04)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.1)' },
