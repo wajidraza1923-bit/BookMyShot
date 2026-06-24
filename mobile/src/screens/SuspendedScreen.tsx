@@ -125,7 +125,7 @@ export default function SuspendedScreen() {
       {subDue > 0 && (
         <View style={s.amountsCard}>
           <Text style={s.amountsTitle}>Outstanding Dues</Text>
-          {subDue > 0 && (
+          {subDue > 0 && !details?.commissionRequired && (
             <View style={s.amountRow}>
               <View style={s.amountLeft}><Ionicons name="card-outline" size={14} color="#F97316" /><Text style={s.amountLabel}>Subscription</Text></View>
               <View style={{ alignItems: 'flex-end' }}>
@@ -136,10 +136,19 @@ export default function SuspendedScreen() {
           )}
           {commDue > 0 && (
             <View style={s.amountRow}>
-              <View style={s.amountLeft}><Ionicons name="cash-outline" size={14} color="rgba(255,255,255,0.4)" /><Text style={s.amountLabel}>Commission Balance</Text></View>
+              <View style={s.amountLeft}><Ionicons name="cash-outline" size={14} color={details?.commissionRequired ? '#EF4444' : 'rgba(255,255,255,0.4)'} /><Text style={s.amountLabel}>Commission Balance</Text></View>
               <View style={{ alignItems: 'flex-end' }}>
                 <Text style={s.amountValue}>₹{commDue.toLocaleString('en-IN')}</Text>
-                <Text style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)' }}>Optional (pay later)</Text>
+                <Text style={{ fontSize: 9, color: details?.commissionRequired ? '#EF4444' : 'rgba(255,255,255,0.3)', fontWeight: details?.commissionRequired ? '700' : '400' }}>{details?.commissionRequired ? `REQUIRED (${details.commissionOverdueDays}+ days overdue)` : 'Optional (pay later)'}</Text>
+              </View>
+            </View>
+          )}
+          {subDue > 0 && details?.commissionRequired && (
+            <View style={s.amountRow}>
+              <View style={s.amountLeft}><Ionicons name="card-outline" size={14} color="#F97316" /><Text style={s.amountLabel}>Subscription</Text></View>
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={s.amountValue}>₹{subDue.toLocaleString('en-IN')}</Text>
+                <Text style={{ fontSize: 9, color: '#F97316', fontWeight: '700' }}>REQUIRED</Text>
               </View>
             </View>
           )}
@@ -153,24 +162,41 @@ export default function SuspendedScreen() {
       {/* What happens after payment */}
       <View style={s.rulesCard}>
         <Text style={s.rulesTitle}>What happens after payment?</Text>
-        <View style={s.ruleRow}><Ionicons name="checkmark-circle" size={12} color="#10B981" /><Text style={s.ruleText}>Pay Subscription → Account reactivated immediately</Text></View>
-        <View style={s.ruleRow}><Ionicons name="checkmark-circle" size={12} color="#10B981" /><Text style={s.ruleText}>Full access to dashboard, bookings & portfolio</Text></View>
-        {commDue > 0 && <View style={s.ruleRow}><Ionicons name="information-circle" size={12} color="#F59E0B" /><Text style={s.ruleText}>Commission balance shown as reminder on dashboard</Text></View>}
+        {details?.commissionRequired ? (
+          <>
+            <View style={s.ruleRow}><Ionicons name="alert-circle" size={12} color="#EF4444" /><Text style={s.ruleText}>Commission must be paid first (overdue {details.commissionOverdueDays}+ days)</Text></View>
+            <View style={s.ruleRow}><Ionicons name="checkmark-circle" size={12} color="#10B981" /><Text style={s.ruleText}>Pay full amount → Account reactivated immediately</Text></View>
+            <View style={s.ruleRow}><Ionicons name="close-circle" size={12} color="#EF4444" /><Text style={s.ruleText}>Subscription-only payment will NOT reactivate</Text></View>
+          </>
+        ) : (
+          <>
+            <View style={s.ruleRow}><Ionicons name="checkmark-circle" size={12} color="#10B981" /><Text style={s.ruleText}>Pay Subscription → Account reactivated immediately</Text></View>
+            <View style={s.ruleRow}><Ionicons name="checkmark-circle" size={12} color="#10B981" /><Text style={s.ruleText}>Full access to dashboard, bookings & portfolio</Text></View>
+            {commDue > 0 && <View style={s.ruleRow}><Ionicons name="information-circle" size={12} color="#F59E0B" /><Text style={s.ruleText}>Commission balance shown as reminder on dashboard</Text></View>}
+          </>
+        )}
         <View style={s.ruleRow}><Ionicons name="flash" size={12} color="#3B82F6" /><Text style={s.ruleText}>No admin approval needed — instant reactivation</Text></View>
       </View>
 
       {/* Pay Buttons */}
       <View style={s.paySection}>
-        {/* Primary: Pay Subscription (REQUIRED) */}
-        <TouchableOpacity style={s.payBtnFull} onPress={() => handlePay('subscription')} disabled={paying}>
-          {paying ? <ActivityIndicator size="small" color="#000" /> : <><Ionicons name="wallet-outline" size={16} color="#000" /><Text style={s.payBtnFullText}>Pay Subscription & Reactivate (₹{subDue.toLocaleString('en-IN')})</Text></>}
-        </TouchableOpacity>
-
-        {/* Secondary: Pay Full (if commission also due) */}
-        {commDue > 0 && (
-          <TouchableOpacity style={s.payBtnOutline} onPress={() => handlePay('both')} disabled={paying}>
-            <Text style={s.payBtnOutlineText}>Pay Full Amount (₹{totalDue.toLocaleString('en-IN')})</Text>
+        {details?.commissionRequired ? (
+          /* Commission is REQUIRED — must pay full amount */
+          <TouchableOpacity style={s.payBtnFull} onPress={() => handlePay('both')} disabled={paying}>
+            {paying ? <ActivityIndicator size="small" color="#000" /> : <><Ionicons name="wallet-outline" size={16} color="#000" /><Text style={s.payBtnFullText}>Pay Full Amount & Reactivate (₹{totalDue.toLocaleString('en-IN')})</Text></>}
           </TouchableOpacity>
+        ) : (
+          /* Commission is optional — subscription alone reactivates */
+          <>
+            <TouchableOpacity style={s.payBtnFull} onPress={() => handlePay('subscription')} disabled={paying}>
+              {paying ? <ActivityIndicator size="small" color="#000" /> : <><Ionicons name="wallet-outline" size={16} color="#000" /><Text style={s.payBtnFullText}>Pay Subscription & Reactivate (₹{subDue.toLocaleString('en-IN')})</Text></>}
+            </TouchableOpacity>
+            {commDue > 0 && (
+              <TouchableOpacity style={s.payBtnOutline} onPress={() => handlePay('both')} disabled={paying}>
+                <Text style={s.payBtnOutlineText}>Pay Full Amount (₹{totalDue.toLocaleString('en-IN')})</Text>
+              </TouchableOpacity>
+            )}
+          </>
         )}
       </View>
 

@@ -95,6 +95,22 @@ router.get("/suspension-details", async (req, res, next) => {
       reason = "Your account has been suspended. Pay subscription to reactivate instantly.";
     }
 
+    // Check how many days commission is overdue
+    let commissionOverdueDays = 0;
+    if (commissionDue > 0) {
+      const oldestOverdue = await Commission.findOne({ creator: creator._id, status: { $in: ["pending", "overdue"] } }).sort("dueDate").lean();
+      if (oldestOverdue?.dueDate) {
+        commissionOverdueDays = Math.max(0, Math.floor((Date.now() - new Date(oldestOverdue.dueDate).getTime()) / 86400000));
+      }
+    }
+
+    // Business rule: if commission >30 days overdue, it becomes REQUIRED
+    const commissionRequired = commissionOverdueDays >= 30;
+    if (commissionRequired && commissionDue > 0) {
+      reason = `Commission overdue by ${commissionOverdueDays} days. Must be paid before account can be reactivated.`;
+      suspensionType = "commission_critical";
+    }
+
     res.json({
       success: true,
       data: {
@@ -102,6 +118,8 @@ router.get("/suspension-details", async (req, res, next) => {
         suspensionType,
         subscriptionDue,
         commissionDue,
+        commissionOverdueDays,
+        commissionRequired,
         totalDue: subscriptionDue + commissionDue,
         subscriptionStatus: creator.subscriptionStatus,
         subscriptionEndDate: creator.subscriptionEndDate,

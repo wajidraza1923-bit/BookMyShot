@@ -418,6 +418,43 @@ router.patch("/commissions/:id", async (req, res, next) => {
   }
 });
 
+// Waive/write-off commission (admin only, with audit)
+router.patch("/commissions/:id/waive", async (req, res, next) => {
+  try {
+    const commission = await Commission.findById(req.params.id);
+    if (!commission) return res.status(404).json({ success: false, message: "Commission not found" });
+    const previousStatus = commission.status;
+    commission.status = "waived";
+    commission.adminNote = req.body.reason || "Waived by admin";
+    commission.paidAt = new Date();
+    await commission.save();
+    // Audit log
+    const auditService = require("../services/auditService");
+    await auditService.logAction({ adminId: req.user._id, adminName: req.user.name || "", action: "waive_commission", target: "commission", targetId: commission._id.toString(), previousValues: { status: previousStatus }, newValues: { status: "waived", reason: req.body.reason || "" }, ip: req.ip });
+    res.json({ success: true, message: "Commission waived", commission });
+  } catch (e) { next(e); }
+});
+
+// Commission overdue report (30+, 60+, 90+ days)
+router.get("/commissions/overdue-report", async (req, res, next) => {
+  try {
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now - 30 * 86400000);
+    const sixtyDaysAgo = new Date(now - 60 * 86400000);
+    const ninetyDaysAgo = new Date(now - 90 * 86400000);
+    const overdue = await Commission.find({ status: { $in: ["pending", "overdue"] } })
+      .populate({ path: "creator", populate: { path: "user", select: "name email" } })
+      .sort("dueDate").lean();
+    const report = {
+      over30: overdue.filter(c => c.dueDate && new Date(c.dueDate) <= thirtyDaysAgo).map(c => ({ _id: c._id, creator: c.creator?.user?.name || "—", email: c.creator?.user?.email || "—", amount: c.commissionAmount, dueDate: c.dueDate, daysOverdue: Math.floor((now - new Date(c.dueDate)) / 86400000) })),
+      over60: overdue.filter(c => c.dueDate && new Date(c.dueDate) <= sixtyDaysAgo).map(c => ({ _id: c._id, creator: c.creator?.user?.name || "—", email: c.creator?.user?.email || "—", amount: c.commissionAmount, dueDate: c.dueDate, daysOverdue: Math.floor((now - new Date(c.dueDate)) / 86400000) })),
+      over90: overdue.filter(c => c.dueDate && new Date(c.dueDate) <= ninetyDaysAgo).map(c => ({ _id: c._id, creator: c.creator?.user?.name || "—", email: c.creator?.user?.email || "—", amount: c.commissionAmount, dueDate: c.dueDate, daysOverdue: Math.floor((now - new Date(c.dueDate)) / 86400000) })),
+      totalOverdue: overdue.reduce((s, c) => s + (c.commissionAmount || 0), 0),
+    };
+    res.json({ success: true, data: report });
+  } catch (e) { next(e); }
+});
+
 // Payment proofs management
 router.get("/payment-proofs", async (req, res, next) => {
   try {

@@ -131,9 +131,20 @@ router.post("/verify-subscription", protect, async (req, res, next) => {
     creator.razorpayCustomerId = razorpay_payment_id;
     if (!creator.subscriptionStartDate) creator.subscriptionStartDate = now;
     
-    // AUTO-UNSUSPEND: If creator was suspended, reactivate on successful payment
+    // AUTO-UNSUSPEND LOGIC:
+    // If commission is overdue >30 days, subscription alone does NOT reactivate.
+    // Only reactivate if no critical overdue commission exists.
     if (creator.status === "suspended" || creator.status === "pending") {
-      creator.status = "approved";
+      const thirtyDaysAgo = new Date(now - 30 * 86400000);
+      const criticalComm = await Commission.countDocuments({
+        creator: creator._id,
+        status: { $in: ["pending", "overdue"] },
+        dueDate: { $lte: thirtyDaysAgo },
+      });
+      if (criticalComm === 0) {
+        creator.status = "approved";
+      }
+      // If critical commission exists, account stays suspended — they must pay commission first
     }
     
     // Set end date based on trial
@@ -549,9 +560,11 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
         const creator = await Creator.findOne({ razorpaySubscriptionId: subId }).populate("user");
         if (creator) {
           creator.subscriptionStatus = "active";
-          // AUTO-UNSUSPEND on subscription activation
+          // AUTO-UNSUSPEND only if no critical overdue commission (>30 days)
           if (creator.status === "suspended" || creator.status === "pending") {
-            creator.status = "approved";
+            const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
+            const criticalComm = await Commission.countDocuments({ creator: creator._id, status: { $in: ["pending", "overdue"] }, dueDate: { $lte: thirtyDaysAgo } });
+            if (criticalComm === 0) creator.status = "approved";
           }
           if (!creator.subscriptionStartDate) creator.subscriptionStartDate = new Date();
           const end = new Date();
@@ -594,9 +607,11 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
         const creator = await Creator.findOne({ razorpaySubscriptionId: subId }).populate("user");
         if (creator) {
           creator.subscriptionStatus = "active";
-          // AUTO-UNSUSPEND on successful recurring payment
+          // AUTO-UNSUSPEND on recurring payment only if no critical overdue commission
           if (creator.status === "suspended") {
-            creator.status = "approved";
+            const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
+            const criticalComm = await Commission.countDocuments({ creator: creator._id, status: { $in: ["pending", "overdue"] }, dueDate: { $lte: thirtyDaysAgo } });
+            if (criticalComm === 0) creator.status = "approved";
           }
           creator.lastPaymentDate = new Date();
           creator.paymentFailCount = 0; // Reset fail count on success
