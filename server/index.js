@@ -300,6 +300,10 @@ app.use("/api/admin/social-links", protect, authorize("admin"), adminSocialLinks
 app.use("/api/admin/payment-history", protect, authorize("admin"), adminPaymentHistoryRoutes);
 app.use("/api/admin/homepage-enquiries", protect, authorize("admin"), adminHomepageEnquiriesRoutes);
 
+// Backup & Reports routes
+app.use("/api/admin/backups", protect, authorize("admin"), require("./routes/admin/backups"));
+app.use("/api/admin/reports", protect, authorize("admin"), require("./routes/admin/reports"));
+
 // Admin: general-purpose image upload to Cloudinary
 const { upload: adminUpload } = require("./middleware/upload");
 app.post("/api/admin/upload", protect, authorize("admin"), adminUpload.single("file"), async (req, res) => {

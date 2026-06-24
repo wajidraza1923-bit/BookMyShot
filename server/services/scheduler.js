@@ -225,6 +225,25 @@ function initScheduler() {
   }, { timezone: "Asia/Kolkata" });
 
   console.log("[Scheduler] ✅ Data retention job registered (3AM IST daily)");
+
+  // ═══════════════════════════════════════════════════════════════
+  // AUTOMATED BACKUPS — Daily at 2:00 AM IST, Weekly on Sundays
+  // ═══════════════════════════════════════════════════════════════
+  cron.schedule("0 2 * * *", async () => {
+    console.log("[Scheduler] Running automated backup...");
+    try {
+      const { createBackup, cleanupOldBackups } = require("./backupService");
+      const isWeekly = new Date().getDay() === 0; // Sunday
+      const type = isWeekly ? "weekly" : "daily";
+      await createBackup(type);
+      await cleanupOldBackups();
+      console.log(`[Scheduler] ${type} backup completed`);
+    } catch (e) {
+      console.error("[Scheduler] Backup error:", e.message);
+    }
+  }, { timezone: "Asia/Kolkata" });
+
+  console.log("[Scheduler] ✅ Automated backup job registered (2AM IST daily, weekly on Sundays)");
 }
 
 module.exports = { initScheduler };
