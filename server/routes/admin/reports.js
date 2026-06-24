@@ -161,4 +161,13 @@ router.get("/creator-statement/:id", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// POST /send-monthly-statements — Manually trigger monthly statements
+router.post("/send-monthly-statements", async (req, res, next) => {
+  try {
+    const { sendMonthlyStatements } = require("../../services/creatorStatements");
+    const result = await sendMonthlyStatements();
+    res.json({ success: true, message: "Monthly statements sent", ...result });
+  } catch (e) { next(e); }
+});
+
 module.exports = router;

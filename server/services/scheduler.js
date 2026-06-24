@@ -244,6 +244,23 @@ function initScheduler() {
   }, { timezone: "Asia/Kolkata" });
 
   console.log("[Scheduler] ✅ Automated backup job registered (2AM IST daily, weekly on Sundays)");
+
+  // ═══════════════════════════════════════════════════════════════
+  // MONTHLY CREATOR STATEMENTS — 1st of every month at 10:00 AM IST
+  // Sends email reports to creators with 2+ bookings in the past month
+  // ═══════════════════════════════════════════════════════════════
+  cron.schedule("0 10 1 * *", async () => {
+    console.log("[Scheduler] Running monthly creator statements...");
+    try {
+      const { sendMonthlyStatements } = require("./creatorStatements");
+      const result = await sendMonthlyStatements();
+      console.log(`[Scheduler] Monthly statements: ${result.sent} sent, ${result.failed || 0} failed`);
+    } catch (e) {
+      console.error("[Scheduler] Monthly statements error:", e.message);
+    }
+  }, { timezone: "Asia/Kolkata" });
+
+  console.log("[Scheduler] ✅ Monthly creator statements registered (1st of month, 10AM IST)");
 }
 
 module.exports = { initScheduler };
