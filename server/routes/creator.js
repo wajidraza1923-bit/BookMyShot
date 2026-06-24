@@ -49,6 +49,67 @@ router.get("/analytics", async (req, res, next) => {
   }
 });
 
+// Suspension details — shows reason + outstanding amounts for suspended creators
+router.get("/suspension-details", async (req, res, next) => {
+  try {
+    const creator = await getCreator(req.user._id);
+    if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
+
+    // Determine suspension reason
+    let reason = "Account suspended by admin.";
+    let suspensionType = "manual";
+    let subscriptionDue = 0;
+    let commissionDue = 0;
+
+    // Check subscription status
+    const configService = require("../services/configService");
+    const subSettings = await configService.getSubscriptionSettings();
+    const monthlyPrice = subSettings.monthlyPlanPrice || 299;
+
+    if (creator.subscriptionStatus === "expired" || creator.subscriptionStatus === "suspended") {
+      subscriptionDue = creator.subscriptionAmount || monthlyPrice;
+      suspensionType = "subscription_expired";
+      reason = "Your subscription has expired. Please renew to reactivate your account.";
+    }
+
+    // Check pending commissions
+    const pendingComm = await Commission.aggregate([
+      { $match: { creator: creator._id, status: { $in: ["pending", "overdue"] } } },
+      { $group: { _id: null, total: { $sum: "$commissionAmount" } } },
+    ]);
+    if (pendingComm.length > 0 && pendingComm[0].total > 0) {
+      commissionDue = pendingComm[0].total;
+      if (subscriptionDue > 0) {
+        suspensionType = "both";
+        reason = "Subscription expired and commission payment is overdue.";
+      } else {
+        suspensionType = "commission_due";
+        reason = "Commission payment is overdue. Please clear your dues to reactivate.";
+      }
+    }
+
+    // If no financial reason found, it's manual admin suspension
+    if (subscriptionDue === 0 && commissionDue === 0) {
+      suspensionType = "manual";
+      reason = "Your account has been suspended by the admin. Contact support for details.";
+    }
+
+    res.json({
+      success: true,
+      data: {
+        reason,
+        suspensionType,
+        subscriptionDue,
+        commissionDue,
+        totalDue: subscriptionDue + commissionDue,
+        subscriptionStatus: creator.subscriptionStatus,
+        subscriptionEndDate: creator.subscriptionEndDate,
+        creatorId: creator.creatorId,
+      },
+    });
+  } catch (e) { next(e); }
+});
+
 // Comprehensive dashboard data (single API call)
 router.get("/dashboard", async (req, res, next) => {
   try {

@@ -9,6 +9,7 @@ import CustomerNavigator from './CustomerNavigator';
 import CreatorNavigator from './CreatorNavigator';
 import AdminNavigator from './AdminNavigator';
 import GuestNavigator from './GuestNavigator';
+import SuspendedScreen from '../screens/SuspendedScreen';
 
 const navTheme = {
   dark: true,
@@ -48,7 +49,11 @@ export default function RootNavigator() {
       if (user.subscriptionStatus === 'pending_payment') {
         return <PaymentRequiredScreen />;
       }
-      // Otherwise show pending approval / rejected / suspended screen
+      // If suspended, show detailed suspension screen with Pay Now
+      if (user.creatorStatus === 'suspended') {
+        return <SuspendedScreen />;
+      }
+      // Otherwise show pending approval / rejected screen
       return <PendingApprovalScreen status={user.creatorStatus} />;
     }
     
