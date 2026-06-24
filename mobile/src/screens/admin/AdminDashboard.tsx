@@ -44,7 +44,7 @@ export default function AdminDashboard({ navigation }: any) {
     { icon: 'diamond-outline', label: 'Subscriptions', desc: 'Plans, renewals, billing', screen: 'AdminSubscriptions' },
     { icon: 'cash-outline', label: 'Earnings & Commission', desc: 'Revenue reports, commissions', screen: 'AdminEarnings' },
     { icon: 'star-outline', label: 'Promotions', desc: 'Featured creators, boosts', screen: 'AdminPromotions' },
-    { icon: 'notifications-outline', label: 'Notifications', desc: 'Send notifications, alerts', screen: 'AdminInquiries' },
+    { icon: 'notifications-outline', label: 'Notifications', desc: 'Send notifications, alerts', screen: 'AdminNotifications' },
     { icon: 'settings-outline', label: 'Platform Settings', desc: 'Commission %, pricing, config', screen: 'AdminSettings' },
     { icon: 'flask-outline', label: 'QA Testing', desc: 'Run API tests, verify features', screen: 'QADashboard' },
     { icon: 'create-outline', label: 'Content Management', desc: 'Categories, districts, galleries, testimonials', screen: 'ContentManager' },

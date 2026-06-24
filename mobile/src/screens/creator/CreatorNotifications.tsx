@@ -44,6 +44,28 @@ export default function CreatorNotifications({ navigation }: any) {
     }
   };
 
+  const handleNotifPress = async (item: any) => {
+    await markRead(item._id);
+    // Navigate to the correct screen based on type/targetScreen
+    const screen = item.targetScreen || '';
+    const id = item.targetId || item.meta?.bookingId || item.meta?.inquiryId || '';
+    if (screen) {
+      try { navigation.navigate(screen, id ? { id } : {}); } catch {}
+      return;
+    }
+    // Fallback: navigate by notification type
+    switch (item.type) {
+      case 'booking': navigation.navigate('CreatorBookings'); break;
+      case 'inquiry': navigation.navigate('CreatorBookings'); break;
+      case 'payment': navigation.navigate('CreatorWallet'); break;
+      case 'commission': navigation.navigate('CreatorWallet'); break;
+      case 'subscription': navigation.navigate('CreatorSubscription'); break;
+      case 'promotion': navigation.navigate('CreatorProfile'); break;
+      case 'message': navigation.navigate('CreatorBookings'); break;
+      default: break; // Stay on notifications screen
+    }
+  };
+
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
@@ -68,7 +90,7 @@ export default function CreatorNotifications({ navigation }: any) {
             const icon = getIcon(item.type);
             const timeAgo = getTimeAgo(item.createdAt);
             return (
-              <TouchableOpacity style={[styles.notifItem, !item.read && styles.notifUnread]} onPress={() => markRead(item._id)} activeOpacity={0.7}>
+              <TouchableOpacity style={[styles.notifItem, !item.read && styles.notifUnread]} onPress={() => handleNotifPress(item)} activeOpacity={0.7}>
                 <View style={[styles.notifIcon, { backgroundColor: icon.color + '15' }]}>
                   <Ionicons name={icon.name as any} size={18} color={icon.color} />
                 </View>
