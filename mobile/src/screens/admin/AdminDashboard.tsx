@@ -53,6 +53,7 @@ export default function AdminDashboard({ navigation }: any) {
     { icon: 'server-outline', label: 'Backups', desc: 'Database backup management', screen: 'AdminBackups' },
     { icon: 'document-text-outline', label: 'Creator Reports', desc: 'Send performance reports to creators', screen: 'AdminReportMgmt' },
     { icon: 'warning-outline', label: 'Overdue Management', desc: 'Track pending payments, defaulters', screen: 'AdminOverdue' },
+    { icon: 'trophy-outline', label: 'Creator Rankings', desc: 'Manage positions in all sections', screen: 'AdminRankings' },
   ];
 
   return (
