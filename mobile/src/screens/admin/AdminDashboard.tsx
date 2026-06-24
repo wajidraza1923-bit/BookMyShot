@@ -50,6 +50,8 @@ export default function AdminDashboard({ navigation }: any) {
     { icon: 'create-outline', label: 'Content Management', desc: 'Categories, districts, galleries, testimonials', screen: 'ContentManager' },
     { icon: 'star-outline', label: 'Reviews Management', desc: 'Creator reviews, app reviews, moderation', screen: 'AdminReviews' },
     { icon: 'share-social-outline', label: 'Social Links', desc: 'Manage social media links (syncs to website + app)', screen: 'AdminSocialLinks' },
+    { icon: 'server-outline', label: 'Backups', desc: 'Database backup management', screen: 'AdminBackups' },
+    { icon: 'document-text-outline', label: 'Creator Reports', desc: 'Send performance reports to creators', screen: 'AdminReportMgmt' },
   ];
 
   return (

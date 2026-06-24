@@ -14,6 +14,8 @@ import AdminContentManager from '../screens/admin/AdminContentManager';
 import AdminReviews from '../screens/admin/AdminReviews';
 import AdminSocialLinks from '../screens/admin/AdminSocialLinks';
 import AdminUsers from '../screens/admin/AdminUsers';
+import AdminBackups from '../screens/admin/AdminBackups';
+import AdminReportMgmt from '../screens/admin/AdminReportMgmt';
 
 const Stack = createNativeStackNavigator();
 
@@ -33,6 +35,8 @@ export default function AdminNavigator() {
       <Stack.Screen name="AdminReviews" component={AdminReviews} />
       <Stack.Screen name="AdminSocialLinks" component={AdminSocialLinks} />
       <Stack.Screen name="AdminUsers" component={AdminUsers} />
+      <Stack.Screen name="AdminBackups" component={AdminBackups} />
+      <Stack.Screen name="AdminReportMgmt" component={AdminReportMgmt} />
     </Stack.Navigator>
   );
 }
