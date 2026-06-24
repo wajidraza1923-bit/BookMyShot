@@ -52,6 +52,7 @@ export default function AdminDashboard({ navigation }: any) {
     { icon: 'share-social-outline', label: 'Social Links', desc: 'Manage social media links (syncs to website + app)', screen: 'AdminSocialLinks' },
     { icon: 'server-outline', label: 'Backups', desc: 'Database backup management', screen: 'AdminBackups' },
     { icon: 'document-text-outline', label: 'Creator Reports', desc: 'Send performance reports to creators', screen: 'AdminReportMgmt' },
+    { icon: 'warning-outline', label: 'Overdue Management', desc: 'Track pending payments, defaulters', screen: 'AdminOverdue' },
   ];
 
   return (

@@ -16,6 +16,7 @@ import AdminSocialLinks from '../screens/admin/AdminSocialLinks';
 import AdminUsers from '../screens/admin/AdminUsers';
 import AdminBackups from '../screens/admin/AdminBackups';
 import AdminReportMgmt from '../screens/admin/AdminReportMgmt';
+import AdminOverdue from '../screens/admin/AdminOverdue';
 
 const Stack = createNativeStackNavigator();
 
@@ -37,6 +38,7 @@ export default function AdminNavigator() {
       <Stack.Screen name="AdminUsers" component={AdminUsers} />
       <Stack.Screen name="AdminBackups" component={AdminBackups} />
       <Stack.Screen name="AdminReportMgmt" component={AdminReportMgmt} />
+      <Stack.Screen name="AdminOverdue" component={AdminOverdue} />
     </Stack.Navigator>
   );
 }

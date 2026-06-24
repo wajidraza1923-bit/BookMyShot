@@ -205,6 +205,9 @@
         <a href="#" data-panel="payment-settings"><span class="icon"><i class="fa-solid fa-money-check-dollar"></i></span> Razorpay Settings</a>
         <a href="#" data-panel="payment-requests"><span class="icon"><i class="fa-solid fa-receipt"></i></span> Payment History</a>
         <a href="#" data-panel="audit"><span class="icon"><i class="fa-solid fa-shield-halved"></i></span> Audit Logs</a>
+        <a href="#" data-panel="backups"><span class="icon"><i class="fa-solid fa-database"></i></span> Backups</a>
+        <a href="#" data-panel="report-management"><span class="icon"><i class="fa-solid fa-file-lines"></i></span> Creator Reports</a>
+        <a href="#" data-panel="overdue-management" style="color:#f59e0b"><span class="icon"><i class="fa-solid fa-exclamation-triangle"></i></span> Overdue Management</a>
       </nav>
       <div class="sidebar-footer">
         <a href="/" target="_blank"><span class="icon"><i class="fa-solid fa-globe"></i></span> View Site</a>
@@ -716,6 +719,24 @@
     </div>
   </div>
 
+  <!-- Backups Panel -->
+  <div class="panel" id="panel-backups" style="display:none">
+    <div class="panel-header"><h2>Backup Management</h2><p>Database backups, storage, and recovery</p></div>
+    <div id="backupsPanel"><div class="loader"></div></div>
+  </div>
+
+  <!-- Report Management Panel -->
+  <div class="panel" id="panel-report-management" style="display:none">
+    <div class="panel-header"><h2>Creator Reports</h2><p>Send, track, and manage creator performance reports</p></div>
+    <div id="reportMgmtPanel"><div class="loader"></div></div>
+  </div>
+
+  <!-- Overdue Management Panel -->
+  <div class="panel" id="panel-overdue-management" style="display:none">
+    <div class="panel-header"><h2>⚠️ Overdue Management</h2><p>Financial monitoring — Track pending subscriptions, commissions & defaulters</p></div>
+    <div id="overduePanel"><div class="loader"></div></div>
+  </div>
+
   <!-- Creator Detail Modal -->
   <div class="modal-overlay" id="creatorDetailModal">
     <div class="modal" style="max-width:700px">
@@ -820,6 +841,9 @@
           else if (p === "announcements") loadAnnouncementsPanel();
           else if (p === "finance-control") loadApprovalQueue();
           else if (p === "creator-accounts") loadCreatorAccounts();
+          else if (p === "backups") loadBackupsPanel();
+          else if (p === "report-management") loadReportMgmtPanel();
+          else if (p === "overdue-management") loadOverduePanel();
         } catch (err) { /* panel load error */ }
         // Close mobile sidebar
         document.getElementById("sidebar").classList.remove("open");
@@ -2350,6 +2374,205 @@
     window.extendPromo = async function(id) {
       try { await API.patch("/promotions/admin/" + id + "/extend", { days: 30 }); toast("Promotion extended by 30 days", "success"); loadPromotionRequests(); }
       catch (e) { toast(e.message, "error"); }
+    };
+
+    // ─── BACKUP MANAGEMENT ─────────────────────────────────────────
+    async function loadBackupsPanel() {
+      const el = document.getElementById("backupsPanel");
+      el.innerHTML = '<div class="loader"></div>';
+      try {
+        const [histRes, statsRes] = await Promise.all([
+          API.get("/admin/backups"),
+          API.get("/admin/backups/stats"),
+        ]);
+        const backups = histRes.data || [];
+        const stats = histRes.stats || {};
+        const storage = statsRes.data || {};
+        const last = stats.lastBackup;
+        el.innerHTML = `
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0.75rem;margin-bottom:1.5rem">
+            <div class="card stat-card"><div class="value">${stats.completed || 0}</div><div class="label">Successful</div></div>
+            <div class="card stat-card"><div class="value">${stats.failed || 0}</div><div class="label">Failed</div></div>
+            <div class="card stat-card"><div class="value">${storage.totalSizeMB || '0'} MB</div><div class="label">Storage Used</div></div>
+            <div class="card stat-card"><div class="value">${storage.dailyBackups || 0}/${storage.weeklyBackups || 0}</div><div class="label">Daily/Weekly</div></div>
+          </div>
+          <div class="card" style="margin-bottom:1rem;padding:1rem">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem">
+              <div>
+                <strong style="color:var(--text)">Last Backup:</strong>
+                <span style="color:var(--muted);margin-left:0.5rem">${last ? new Date(last.createdAt).toLocaleString("en-IN") : 'Never'}</span>
+                <span style="margin-left:0.5rem;color:${last?.status === 'completed' ? 'var(--success)' : 'var(--error)'}">${last?.status || '—'}</span>
+              </div>
+              <div style="display:flex;gap:0.5rem">
+                <button class="btn btn-primary btn-sm" onclick="triggerBackup()">🔄 Manual Backup</button>
+                <button class="btn btn-outline btn-sm" onclick="runBackupCleanup()">🗑️ Cleanup Old</button>
+              </div>
+            </div>
+          </div>
+          <div class="card" style="padding:0.75rem 1rem;margin-bottom:1rem;background:rgba(16,185,129,0.05);border-color:rgba(16,185,129,0.15)">
+            <strong style="color:var(--success);font-size:0.8rem">☁️ MongoDB Atlas:</strong>
+            <span style="color:var(--muted);font-size:0.8rem;margin-left:0.5rem">Continuous backup enabled (automatic). Restore via Atlas Dashboard.</span>
+          </div>
+          <div class="card" style="padding:0.75rem 1rem;margin-bottom:1rem;font-size:0.75rem;color:var(--muted)">
+            <strong>Retention Policy:</strong> Daily backups kept 90 days • Weekly backups (Sundays) kept 1 year • MongoDB Atlas: continuous
+          </div>
+          <h4 style="color:var(--text);margin:1rem 0 0.5rem">Backup History</h4>
+          <div class="table-wrap"><table><thead><tr><th>Date</th><th>Type</th><th>Status</th><th>Size</th></tr></thead><tbody>
+            ${backups.slice(0, 20).map(b => `<tr>
+              <td>${new Date(b.createdAt).toLocaleString("en-IN",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}</td>
+              <td>${b.type}</td>
+              <td><span class="status-badge status-${b.status === 'completed' ? 'active' : 'overdue'}">${b.status}</span></td>
+              <td>${b.sizeBytes ? (b.sizeBytes/1024/1024).toFixed(2) + ' MB' : '—'}</td>
+            </tr>`).join("") || '<tr><td colspan="4">No backups yet</td></tr>'}
+          </tbody></table></div>
+        `;
+      } catch (e) { el.innerHTML = '<p style="color:var(--error)">Failed to load backups: ' + e.message + '</p>'; }
+    }
+    window.triggerBackup = async () => {
+      if (!confirm("Start a manual backup now?")) return;
+      try { toast("Backup started...", "success"); await API.post("/admin/backups/trigger", { type: "manual" }); toast("Backup completed!", "success"); loadBackupsPanel(); }
+      catch (e) { toast("Backup failed: " + e.message, "error"); }
+    };
+    window.runBackupCleanup = async () => {
+      try { const r = await API.post("/admin/backups/cleanup"); toast("Cleanup done", "success"); loadBackupsPanel(); }
+      catch (e) { toast(e.message, "error"); }
+    };
+
+    // ─── REPORT MANAGEMENT ─────────────────────────────────────────
+    async function loadReportMgmtPanel() {
+      const el = document.getElementById("reportMgmtPanel");
+      el.innerHTML = '<div class="loader"></div>';
+      try {
+        const [histRes, statsRes, creatorsRes] = await Promise.all([
+          API.get("/admin/report-management"),
+          API.get("/admin/report-management/stats"),
+          API.get("/admin/creators"),
+        ]);
+        const logs = histRes.data || [];
+        const stats = statsRes.data || {};
+        const creators = (creatorsRes.creators || []).filter(c => c.status === 'approved');
+        el.innerHTML = `
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.75rem;margin-bottom:1.5rem">
+            <div class="card stat-card"><div class="value">${stats.totalReports || 0}</div><div class="label">Total Sent</div></div>
+            <div class="card stat-card"><div class="value">${stats.thisMonth?.sent || 0}</div><div class="label">This Month</div></div>
+            <div class="card stat-card"><div class="value">${stats.allTime?.failed || 0}</div><div class="label">Failed</div></div>
+          </div>
+          <div class="card" style="padding:1rem;margin-bottom:1.5rem">
+            <h4 style="color:var(--gold);margin:0 0 0.75rem">📤 Send Report</h4>
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center">
+              <select id="reportCreatorSelect" style="padding:0.5rem;background:rgba(255,255,255,0.04);border:1px solid var(--border-light);border-radius:8px;color:var(--text);font-size:0.8rem;min-width:200px">
+                ${creators.map(c => `<option value="${c._id}">${c.user?.name || 'Creator'} (${c.user?.email || '—'})</option>`).join("")}
+              </select>
+              <button class="btn btn-primary btn-sm" onclick="sendLiveReport()">📊 Send Live Report</button>
+              <button class="btn btn-outline btn-sm" onclick="sendAllReports()">📨 Send to All (2+ bookings)</button>
+            </div>
+          </div>
+          <h4 style="color:var(--text);margin:0 0 0.5rem">Sent Reports History</h4>
+          <div class="table-wrap"><table><thead><tr><th>Date</th><th>Creator</th><th>Email</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+            ${logs.slice(0, 30).map(l => `<tr>
+              <td>${new Date(l.createdAt).toLocaleString("en-IN",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}</td>
+              <td>${l.to}</td>
+              <td style="font-size:0.75rem;color:var(--muted)">${l.subject?.substring(0,30) || '—'}...</td>
+              <td><span class="status-badge status-${l.status === 'sent' ? 'active' : 'overdue'}">${l.status}</span></td>
+              <td><button class="btn btn-outline btn-sm" onclick="resendReport('${l._id}')">Resend</button></td>
+            </tr>`).join("") || '<tr><td colspan="5">No reports sent yet</td></tr>'}
+          </tbody></table></div>
+        `;
+      } catch (e) { el.innerHTML = '<p style="color:var(--error)">Failed to load: ' + e.message + '</p>'; }
+    }
+    window.sendLiveReport = async () => {
+      const id = document.getElementById("reportCreatorSelect")?.value;
+      if (!id) { toast("Select a creator", "error"); return; }
+      try { await API.post("/admin/report-management/send/" + id); toast("Report sent!", "success"); loadReportMgmtPanel(); }
+      catch (e) { toast(e.message, "error"); }
+    };
+    window.sendAllReports = async () => {
+      if (!confirm("Send monthly reports to all creators with 2+ bookings?")) return;
+      try { const r = await API.post("/admin/report-management/send-all"); toast("Reports sent: " + (r.sent || 0), "success"); loadReportMgmtPanel(); }
+      catch (e) { toast(e.message, "error"); }
+    };
+    window.resendReport = async (logId) => {
+      try { await API.post("/admin/report-management/resend/" + logId); toast("Report resent!", "success"); loadReportMgmtPanel(); }
+      catch (e) { toast(e.message, "error"); }
+    };
+
+    // ─── OVERDUE MANAGEMENT ──────────────────────────────────────────
+    async function loadOverduePanel() {
+      const el = document.getElementById("overduePanel");
+      el.innerHTML = '<div class="loader"></div>';
+      try {
+        const res = await API.get("/admin/overdue");
+        const { summary, data } = res;
+        const fmt = (n) => '₹' + (n||0).toLocaleString('en-IN');
+        el.innerHTML = `
+          <!-- Summary Cards -->
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:0.6rem;margin-bottom:1.5rem">
+            <div class="card stat-card" style="border-left:3px solid var(--error)"><div class="value">${fmt(summary.totalPendingAmount)}</div><div class="label">Total Pending</div></div>
+            <div class="card stat-card"><div class="value">${fmt(summary.totalCommissionPending)}</div><div class="label">Commission Due</div></div>
+            <div class="card stat-card"><div class="value">${fmt(summary.totalSubscriptionPending)}</div><div class="label">Subscription Due</div></div>
+            <div class="card stat-card"><div class="value">${summary.suspendedCreators}</div><div class="label">Suspended</div></div>
+            <div class="card stat-card"><div class="value">${summary.overdue7}</div><div class="label">7+ Days</div></div>
+            <div class="card stat-card"><div class="value">${summary.overdue30}</div><div class="label">30+ Days</div></div>
+            <div class="card stat-card"><div class="value">${summary.overdue60}</div><div class="label">60+ Days</div></div>
+            <div class="card stat-card"><div class="value">${summary.overdue90}</div><div class="label">90+ Days</div></div>
+          </div>
+          <!-- Filter Tabs -->
+          <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:1rem">
+            <button class="btn btn-sm btn-outline overdue-filter active" data-filter="all">All (${data.length})</button>
+            <button class="btn btn-sm btn-outline overdue-filter" data-filter="suspended">Suspended</button>
+            <button class="btn btn-sm btn-outline overdue-filter" data-filter="7">7+ Days</button>
+            <button class="btn btn-sm btn-outline overdue-filter" data-filter="30">30+ Days</button>
+            <button class="btn btn-sm btn-outline overdue-filter" data-filter="60">60+ Days</button>
+            <button class="btn btn-sm btn-outline overdue-filter" data-filter="90">90+ Days</button>
+          </div>
+          <!-- Table -->
+          <div class="table-wrap"><table><thead><tr><th>Creator</th><th>Email</th><th>Sub Due</th><th>Comm Due</th><th>Total</th><th>Days Overdue</th><th>Status</th><th>Actions</th></tr></thead><tbody id="overdueTableBody">
+            ${data.map(r => `<tr class="overdue-row" data-days="${r.daysOverdue}" data-status="${r.accountStatus}">
+              <td><strong>${r.name}</strong><br><span style="font-size:0.7rem;color:var(--muted)">${r.creatorId}</span></td>
+              <td style="font-size:0.75rem">${r.email}<br><span style="color:var(--muted)">${r.phone||''}</span></td>
+              <td style="color:${r.subscriptionDue>0?'var(--error)':'var(--muted)'}">${r.subscriptionDue>0?fmt(r.subscriptionDue):'—'}</td>
+              <td style="color:${r.commissionDue>0?'#f59e0b':'var(--muted)'}">${r.commissionDue>0?fmt(r.commissionDue):'—'}</td>
+              <td style="font-weight:700;color:var(--gold)">${fmt(r.totalDue)}</td>
+              <td style="color:${r.daysOverdue>=30?'var(--error)':r.daysOverdue>=7?'#f59e0b':'var(--muted)'};font-weight:700">${r.daysOverdue>0?r.daysOverdue+' days':'—'}</td>
+              <td><span class="status-badge status-${r.accountStatus==='suspended'?'overdue':r.accountStatus==='warning'?'pending':'active'}">${r.accountStatus}</span></td>
+              <td style="white-space:nowrap">
+                <button class="btn btn-outline btn-sm" onclick="sendOverdueReminder('${r._id}')" title="Send Reminder">📧</button>
+                ${r.accountStatus!=='suspended'?`<button class="btn btn-danger btn-sm" onclick="suspendOverdue('${r._id}')" title="Suspend">⛔</button>`:`<button class="btn btn-primary btn-sm" onclick="reactivateOverdue('${r._id}')" title="Reactivate">✅</button>`}
+              </td>
+            </tr>`).join('')||'<tr><td colspan="8"><div class="empty-state"><h3>No overdue creators 🎉</h3></div></td></tr>'}
+          </tbody></table></div>
+        `;
+        // Attach filter handlers
+        document.querySelectorAll('.overdue-filter').forEach(btn => {
+          btn.addEventListener('click', function() {
+            document.querySelectorAll('.overdue-filter').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            const filter = this.dataset.filter;
+            document.querySelectorAll('.overdue-row').forEach(row => {
+              const days = parseInt(row.dataset.days);
+              const status = row.dataset.status;
+              let show = true;
+              if (filter === 'suspended') show = status === 'suspended';
+              else if (filter === '7') show = days >= 7;
+              else if (filter === '30') show = days >= 30;
+              else if (filter === '60') show = days >= 60;
+              else if (filter === '90') show = days >= 90;
+              row.style.display = show ? '' : 'none';
+            });
+          });
+        });
+      } catch (e) { el.innerHTML = '<p style="color:var(--error)">Failed to load: ' + e.message + '</p>'; }
+    }
+    window.sendOverdueReminder = async (id) => {
+      try { await API.post("/admin/overdue/" + id + "/remind", { message: "You have pending dues on BookMyShot. Please clear your balance to avoid account suspension." }); toast("Reminder sent", "success"); } catch (e) { toast(e.message, "error"); }
+    };
+    window.suspendOverdue = async (id) => {
+      if (!confirm("Suspend this creator for non-payment?")) return;
+      try { await API.post("/admin/overdue/" + id + "/suspend"); toast("Suspended", "success"); loadOverduePanel(); } catch (e) { toast(e.message, "error"); }
+    };
+    window.reactivateOverdue = async (id) => {
+      if (!confirm("Reactivate this creator?")) return;
+      try { await API.post("/admin/overdue/" + id + "/reactivate"); toast("Reactivated", "success"); loadOverduePanel(); } catch (e) { toast(e.message, "error"); }
     };
 
   </script>
