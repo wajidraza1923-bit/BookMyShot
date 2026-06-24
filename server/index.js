@@ -305,6 +305,10 @@ app.use("/api/admin/backups", protect, authorize("admin"), require("./routes/adm
 app.use("/api/admin/reports", protect, authorize("admin"), require("./routes/admin/reports"));
 app.use("/api/admin/report-management", protect, authorize("admin"), require("./routes/admin/reportManagement"));
 app.use("/api/admin/overdue", protect, authorize("admin"), require("./routes/admin/overdueManagement"));
+app.use("/api/admin/rankings", protect, authorize("admin"), require("./routes/admin/rankings"));
+
+// Public rankings API (used by website + app)
+app.use("/api/rankings", require("./routes/rankings"));
 
 // Admin: general-purpose image upload to Cloudinary
 const { upload: adminUpload } = require("./middleware/upload");
