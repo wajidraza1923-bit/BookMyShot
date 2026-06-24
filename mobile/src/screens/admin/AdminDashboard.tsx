@@ -49,6 +49,7 @@ export default function AdminDashboard({ navigation }: any) {
     { icon: 'flask-outline', label: 'QA Testing', desc: 'Run API tests, verify features', screen: 'QADashboard' },
     { icon: 'create-outline', label: 'Content Management', desc: 'Categories, districts, galleries, testimonials', screen: 'ContentManager' },
     { icon: 'star-outline', label: 'Reviews Management', desc: 'Creator reviews, app reviews, moderation', screen: 'AdminReviews' },
+    { icon: 'share-social-outline', label: 'Social Links', desc: 'Manage social media links (syncs to website + app)', screen: 'AdminSocialLinks' },
   ];
 
   return (

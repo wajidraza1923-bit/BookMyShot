@@ -2,7 +2,7 @@
   "expo": {
     "name": "BookMyShot",
     "slug": "bookmyshot",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -12,17 +12,13 @@
       "checkAutomatically": "NEVER",
       "fallbackToCacheTimeout": 0
     },
-    "splash": {
-      "backgroundColor": "#0A0A0A",
-      "resizeMode": "contain"
-    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "in.bookmyshot.app"
     },
     "android": {
       "package": "in.bookmyshot.app",
-      "versionCode": 1,
+      "versionCode": 2,
       "permissions": [
         "INTERNET",
         "VIBRATE",
@@ -37,11 +33,15 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "navigationBarColor": "#0A0A0A",
       "backgroundColor": "#0A0A0A"
     },
     "plugins": [
-      "expo-splash-screen",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0A0A0A"
+        }
+      ],
       [
         "expo-font",
         {
@@ -57,14 +57,11 @@
         }
       ]
     ],
-    "notification": {
-      "icon": "./assets/notification-icon.png",
-      "color": "#D4AF37",
-      "androidMode": "default",
-      "androidCollapsedTitle": "BookMyShot"
-    },
     "extra": {
-      "apiBaseUrl": "https://site--bookmyshot--ykz2mr8mzlrv.code.run/api"
+      "apiBaseUrl": "https://site--bookmyshot--ykz2mr8mzlrv.code.run/api",
+      "eas": {
+        "projectId": "1ac5a660-1182-471d-9584-0c9ccb80b306"
+      }
     }
   }
 }
