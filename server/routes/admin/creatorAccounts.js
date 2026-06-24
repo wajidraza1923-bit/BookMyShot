@@ -13,7 +13,7 @@ router.get("/", async (req, res, next) => {
     const limitNum = Math.max(1, parseInt(limit, 10) || 20);
     const skip = (pageNum - 1) * limitNum;
 
-    let filter = {};
+    let filter = { status: { $ne: "deleted" } };
 
     if (search) {
       const regex = new RegExp(search, "i");

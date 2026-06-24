@@ -104,85 +104,127 @@ router.patch("/creators/:id/featured", async (req, res, next) => {
 
 router.delete("/creators/:id", async (req, res, next) => {
   try {
-    const creator = await Creator.findById(req.params.id);
+    const creator = await Creator.findById(req.params.id).populate("user", "name email");
     if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
 
     const creatorId = creator._id;
-    const userId = creator.user;
-
-    // Delete all associated data
     const mongoose = require("mongoose");
-    const models = {
-      Booking: mongoose.models.Booking,
-      Inquiry: mongoose.models.Inquiry,
-      Review: mongoose.models.Review,
-      Commission: mongoose.models.Commission,
-      PaymentProof: mongoose.models.PaymentProof,
-      PaymentRecord: mongoose.models.PaymentRecord,
-      BookingEvent: mongoose.models.BookingEvent,
-      CalendarEvent: mongoose.models.CalendarEvent,
-      Availability: mongoose.models.Availability,
-      Planning: mongoose.models.Planning,
-      SearchBoost: mongoose.models.SearchBoost,
-      WeddingPackage: mongoose.models.WeddingPackage,
-      Invoice: mongoose.models.Invoice,
-      PromotionRequest: mongoose.models.PromotionRequest,
-    };
 
-    // Delete related records (ignore errors for models that may not exist)
-    for (const [name, Model] of Object.entries(models)) {
-      if (Model) {
-        try { await Model.deleteMany({ creator: creatorId }); } catch {}
-      }
+    // Check for pending financial obligations — block permanent deletion if any exist
+    const pendingCommissions = mongoose.models.Commission
+      ? await mongoose.models.Commission.countDocuments({ creator: creatorId, status: { $in: ["pending", "overdue"] } })
+      : 0;
+    const unresolvedBookings = mongoose.models.Booking
+      ? await mongoose.models.Booking.countDocuments({ creator: creatorId, status: { $in: ["Creator Accepted", "Pending", "In Progress"] } })
+      : 0;
+
+    if (pendingCommissions > 0 || unresolvedBookings > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot delete: Creator has ${pendingCommissions} pending commission(s) and ${unresolvedBookings} unresolved booking(s). Resolve these first.`,
+        pendingCommissions,
+        unresolvedBookings,
+      });
     }
 
-    // Remove creator from favorites in User documents
+    // SOFT DELETE — mark as deleted, preserve all financial/business records
+    creator.status = "deleted";
+    creator.deletedAt = new Date();
+    creator.deletedBy = req.user._id;
+    creator.deleteReason = req.body.reason || "Deleted by admin";
+    creator.featured = false;
+    creator.rank = 0;
+    await creator.save();
+
+    // Remove from search results (remove from favorites)
     try { await User.updateMany({ favorites: creatorId }, { $pull: { favorites: creatorId } }); } catch {}
 
-    // Delete cloud storage files (portfolio images, videos, avatar)
+    // Delete media files from Cloudinary (media can be removed, financial records stay)
     try {
       const { deleteFile, isConfigured } = require("../services/cloudinaryService");
       if (isConfigured()) {
-        // Delete portfolio images from Cloudinary
-        if (creator.portfolio && creator.portfolio.length > 0) {
-          for (const item of creator.portfolio) {
-            const pid = typeof item === 'string' ? '' : (item?.publicId || '');
-            if (pid) try { await deleteFile(pid, 'image'); } catch {}
-          }
+        for (const item of (creator.portfolio || [])) {
+          const pid = typeof item === 'string' ? '' : (item?.publicId || '');
+          if (pid) try { await deleteFile(pid, 'image'); } catch {}
         }
-        // Delete videos from Cloudinary
-        if (creator.videos && creator.videos.length > 0) {
-          for (const item of creator.videos) {
-            const pid = typeof item === 'string' ? '' : (item?.publicId || '');
-            if (pid) try { await deleteFile(pid, 'video'); } catch {}
-          }
+        for (const item of (creator.videos || [])) {
+          const pid = typeof item === 'string' ? '' : (item?.publicId || '');
+          if (pid) try { await deleteFile(pid, 'video'); } catch {}
         }
-        // Delete avatar from Cloudinary
-        const user = await User.findById(userId).select('avatarPublicId');
-        if (user?.avatarPublicId) try { await deleteFile(user.avatarPublicId, 'image'); } catch {}
       }
     } catch {}
 
-    // Delete notifications for this user
-    if (mongoose.models.Notification) {
-      try { await mongoose.models.Notification.deleteMany({ $or: [{ user: userId }, { fromUser: userId }] }); } catch {}
-    }
+    // Clear media arrays (files removed from cloud, no need to keep references)
+    creator.portfolio = [];
+    creator.videos = [];
+    await creator.save();
 
-    // Delete messages
-    if (mongoose.models.Message) {
-      try { await mongoose.models.Message.deleteMany({ $or: [{ sender: userId }, { recipient: userId }] }); } catch {}
-    }
-
-    // Delete the Creator document
-    await Creator.findByIdAndDelete(creatorId);
-
-    // Delete the User document
-    if (userId) await User.findByIdAndDelete(userId);
-
-    res.json({ success: true, message: "Creator and all associated data permanently deleted" });
+    res.json({
+      success: true,
+      message: "Creator moved to Deleted. Financial records preserved. Can be reactivated anytime.",
+    });
   } catch (e) {
     next(e);
   }
+});
+
+// RESTORE deleted creator
+router.patch("/creators/:id/restore", async (req, res, next) => {
+  try {
+    const creator = await Creator.findById(req.params.id);
+    if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
+    if (creator.status !== "deleted") return res.status(400).json({ success: false, message: "Creator is not deleted" });
+
+    creator.status = "approved";
+    creator.deletedAt = null;
+    creator.deletedBy = null;
+    creator.deleteReason = "";
+    await creator.save();
+
+    res.json({ success: true, message: "Creator restored successfully", data: creator });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// GET deleted creators
+router.get("/creators-deleted", async (req, res, next) => {
+  try {
+    const mongoose = require("mongoose");
+    const deleted = await Creator.find({ status: "deleted" })
+      .populate("user", "name email phone avatar")
+      .sort("-deletedAt")
+      .lean();
+
+    // Enrich with financial data
+    const enriched = await Promise.all(deleted.map(async (c) => {
+      const pendingComm = mongoose.models.Commission
+        ? await mongoose.models.Commission.aggregate([
+          { $match: { creator: c._id, status: { $in: ["pending", "overdue"] } } },
+          { $group: { _id: null, total: { $sum: "$commissionAmount" } } }
+        ]) : [];
+      const totalEarnings = mongoose.models.Commission
+        ? await mongoose.models.Commission.aggregate([
+          { $match: { creator: c._id, status: "paid" } },
+          { $group: { _id: null, total: { $sum: "$creatorEarning" } } }
+        ]) : [];
+      const bookingCount = mongoose.models.Booking
+        ? await mongoose.models.Booking.countDocuments({ creator: c._id })
+        : 0;
+
+      return {
+        ...c,
+        pendingCommission: pendingComm[0]?.total || 0,
+        totalEarnings: totalEarnings[0]?.total || 0,
+        bookingCount,
+      };
+    }));
+
+    res.json({ success: true, creators: enriched });
+  } catch (e) {
+    next(e);
+  }
+});
 });
 
 // Badge and Rank routes (also in creatorAccounts.js sub-router - duplicated here for hot-reload compatibility)

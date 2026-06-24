@@ -11,7 +11,7 @@ const creatorSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, unique: true },
     creatorId: { type: String, unique: true, sparse: true, default: null },
-    status: { type: String, enum: ["pending", "approved", "rejected", "suspended"], default: "pending" },
+    status: { type: String, enum: ["pending", "approved", "rejected", "suspended", "deleted"], default: "pending" },
     specialty: { type: String, default: "" },
     bio: { type: String, default: "" },
     experience: { type: String, default: "" },
@@ -69,6 +69,10 @@ const creatorSchema = new mongoose.Schema(
     paymentMethod: { type: String, default: "" },
     paymentFailCount: { type: Number, default: 0 },
     nextBillingDate: { type: Date },
+    // Soft-delete fields (creator accounts are never permanently erased)
+    deletedAt: { type: Date, default: null },
+    deletedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+    deleteReason: { type: String, default: "" },
   },
   { timestamps: true }
 );

@@ -165,39 +165,23 @@ function initScheduler() {
       const now = new Date();
       let cleaned = {};
 
-      // 1. Purge soft-deleted user accounts after 30 days
+      // 1. Purge soft-deleted NORMAL USER accounts after 30 days (NOT creators)
       const softDeleteCutoff = new Date(now - 30 * 86400000);
-      const softDeleted = await User.find({ accountDeleteRequested: true, accountDeletedAt: { $lte: softDeleteCutoff } });
+      const softDeleted = await User.find({ accountDeleteRequested: true, accountDeletedAt: { $lte: softDeleteCutoff }, role: "user" });
       for (const u of softDeleted) {
-        // If creator, delete creator record + cloud files
-        const creator = await Creator.findOne({ user: u._id });
-        if (creator) {
-          try {
-            const { deleteFile, isConfigured } = require("./cloudinaryService");
-            if (isConfigured()) {
-              for (const item of (creator.portfolio || [])) {
-                const pid = typeof item === 'string' ? '' : (item?.publicId || '');
-                if (pid) try { await deleteFile(pid, 'image'); } catch {}
-              }
-              for (const item of (creator.videos || [])) {
-                const pid = typeof item === 'string' ? '' : (item?.publicId || '');
-                if (pid) try { await deleteFile(pid, 'video'); } catch {}
-              }
-              if (u.avatarPublicId) try { await deleteFile(u.avatarPublicId, 'image'); } catch {}
-            }
-          } catch {}
-          await Creator.findByIdAndDelete(creator._id);
-        }
         await User.findByIdAndDelete(u._id);
       }
       cleaned.softDeletedUsers = softDeleted.length;
 
-      // 2. Delete rejected creator applications after 30 days
+      // 2. Auto-archive rejected creator applications after 30 days (soft-delete, NOT permanent)
       const rejectCutoff = new Date(now - 30 * 86400000);
       const rejectedCreators = await Creator.find({ status: "rejected", updatedAt: { $lte: rejectCutoff } });
       for (const rc of rejectedCreators) {
-        await User.findByIdAndDelete(rc.user);
-        await Creator.findByIdAndDelete(rc._id);
+        // Only mark as deleted — do NOT remove from DB (business records)
+        rc.status = "deleted";
+        rc.deletedAt = now;
+        rc.deleteReason = "Auto-archived: rejected application expired after 30 days";
+        await rc.save();
       }
       cleaned.rejectedApps = rejectedCreators.length;
 
