@@ -139,6 +139,30 @@ router.delete("/creators/:id", async (req, res, next) => {
     // Remove creator from favorites in User documents
     try { await User.updateMany({ favorites: creatorId }, { $pull: { favorites: creatorId } }); } catch {}
 
+    // Delete cloud storage files (portfolio images, videos, avatar)
+    try {
+      const { deleteFile, isConfigured } = require("../services/cloudinaryService");
+      if (isConfigured()) {
+        // Delete portfolio images from Cloudinary
+        if (creator.portfolio && creator.portfolio.length > 0) {
+          for (const item of creator.portfolio) {
+            const pid = typeof item === 'string' ? '' : (item?.publicId || '');
+            if (pid) try { await deleteFile(pid, 'image'); } catch {}
+          }
+        }
+        // Delete videos from Cloudinary
+        if (creator.videos && creator.videos.length > 0) {
+          for (const item of creator.videos) {
+            const pid = typeof item === 'string' ? '' : (item?.publicId || '');
+            if (pid) try { await deleteFile(pid, 'video'); } catch {}
+          }
+        }
+        // Delete avatar from Cloudinary
+        const user = await User.findById(userId).select('avatarPublicId');
+        if (user?.avatarPublicId) try { await deleteFile(user.avatarPublicId, 'image'); } catch {}
+      }
+    } catch {}
+
     // Delete notifications for this user
     if (mongoose.models.Notification) {
       try { await mongoose.models.Notification.deleteMany({ $or: [{ user: userId }, { fromUser: userId }] }); } catch {}
@@ -200,8 +224,20 @@ router.get("/users", async (req, res, next) => {
 
 router.delete("/users/:id", async (req, res, next) => {
   try {
-    await User.findByIdAndDelete(req.params.id);
-    res.json({ success: true });
+    const userId = req.params.id;
+    // Clean up related data for this user
+    const mongoose = require("mongoose");
+    if (mongoose.models.Notification) {
+      try { await mongoose.models.Notification.deleteMany({ user: userId }); } catch {}
+    }
+    if (mongoose.models.Message) {
+      try { await mongoose.models.Message.deleteMany({ $or: [{ sender: userId }, { recipient: userId }] }); } catch {}
+    }
+    // Remove from any creator's favorites
+    try { await User.updateMany({}, { $pull: { favorites: userId } }); } catch {}
+    // Delete the user
+    await User.findByIdAndDelete(userId);
+    res.json({ success: true, message: "User and associated data deleted" });
   } catch (e) {
     next(e);
   }
