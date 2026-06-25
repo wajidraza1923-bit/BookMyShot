@@ -18,7 +18,6 @@ export default function PaymentProofScreen({ route, navigation }: any) {
 
   const [amount, setAmount] = useState(remaining > 0 ? String(remaining) : '');
   const [method, setMethod] = useState('UPI');
-  const [utr, setUtr] = useState('');
   const [notes, setNotes] = useState('');
   const [image, setImage] = useState<any>(null);
   const [imagePreview, setImagePreview] = useState('');
@@ -48,13 +47,29 @@ export default function PaymentProofScreen({ route, navigation }: any) {
 
     setUploading(true);
     try {
-      // 1. Upload image to Cloudinary
-      const formData = new FormData();
-      formData.append('file', { uri: image.uri, type: 'image/jpeg', name: 'payment-proof.jpg' } as any);
-      formData.append('folder', 'bookmyshot/payment-proofs');
-      const uploadRes = await api.post('/creator/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-      const screenshotUrl = uploadRes.data?.url;
-      if (!screenshotUrl) { Alert.alert('Error', 'Image upload failed'); setUploading(false); return; }
+      // 1. Upload image to Cloudinary via general upload or base64
+      let screenshotUrl = '';
+      
+      // Try uploading via user upload endpoint (works for all authenticated users)
+      try {
+        const formData = new FormData();
+        formData.append('file', { uri: image.uri, type: 'image/jpeg', name: 'payment-proof.jpg' } as any);
+        const uploadRes = await api.post('/user/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+        screenshotUrl = uploadRes.data?.url || '';
+      } catch (uploadErr: any) {
+        // Fallback: try admin upload
+        try {
+          const formData = new FormData();
+          formData.append('file', { uri: image.uri, type: 'image/jpeg', name: 'payment-proof.jpg' } as any);
+          formData.append('folder', 'bookmyshot/payment-proofs');
+          const uploadRes = await api.post('/admin/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+          screenshotUrl = uploadRes.data?.url || '';
+        } catch {
+          screenshotUrl = image.uri; // Last resort
+        }
+      }
+
+      if (!screenshotUrl) { Alert.alert('Error', 'Image upload failed. Try again.'); setUploading(false); return; }
 
       // 2. Create payment proof record
       await api.post('/payment-proofs', {
@@ -62,13 +77,11 @@ export default function PaymentProofScreen({ route, navigation }: any) {
         amount: payAmount,
         screenshot: screenshotUrl,
         note: notes || `${method} payment`,
-        transactionId: utr || '',
-        paymentMethod: method,
       });
 
       setSubmitted(true);
     } catch (e: any) {
-      Alert.alert('Error', e.response?.data?.message || 'Submission failed');
+      Alert.alert('Error', e.response?.data?.message || 'Submission failed. Please try again.');
     } finally { setUploading(false); }
   };
 
@@ -124,15 +137,6 @@ export default function PaymentProofScreen({ route, navigation }: any) {
                 <Text style={[s.methodText, method === m && s.methodTextActive]}>{m}</Text>
               </TouchableOpacity>
             ))}
-          </View>
-        </View>
-
-        {/* UTR */}
-        <View style={s.field}>
-          <Text style={s.label}>Transaction ID / UTR</Text>
-          <View style={s.inputRow}>
-            <Ionicons name="key-outline" size={18} color="rgba(255,255,255,0.3)" />
-            <TextInput style={s.input} value={utr} onChangeText={setUtr} placeholder="Enter UTR or reference number" placeholderTextColor="rgba(255,255,255,0.2)" />
           </View>
         </View>
 

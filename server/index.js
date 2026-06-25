@@ -363,6 +363,30 @@ app.post("/api/creator/upload", protect, authorize("creator"), adminUpload.singl
   }
 });
 
+// User: upload payment proof to Cloudinary (any authenticated user)
+app.post("/api/user/upload", protect, adminUpload.single("file"), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, message: "No file" });
+    const { uploadBuffer, isConfigured } = require("./services/cloudinaryService");
+    const folder = "bookmyshot/payment-proofs";
+    
+    if (isConfigured()) {
+      const result = await uploadBuffer(req.file.buffer, { folder, resourceType: "image" });
+      return res.json({ success: true, url: result.url, publicId: result.publicId });
+    } else {
+      const fs = require("fs");
+      const pathMod = require("path");
+      const uploadDir = pathMod.join(__dirname, "../public/uploads/proofs");
+      if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+      const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${pathMod.extname(req.file.originalname)}`;
+      fs.writeFileSync(pathMod.join(uploadDir, filename), req.file.buffer);
+      return res.json({ success: true, url: `/uploads/proofs/${filename}` });
+    }
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message || "Upload failed" });
+  }
+});
+
 // Maintenance mode check — applied after auth/admin routes.
 // Internally bypasses admin users and /api/auth paths.
 app.use(maintenanceMode);
