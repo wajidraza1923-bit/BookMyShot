@@ -10,8 +10,8 @@ const Commission = require("../../models/Commission");
 const PaymentProof = require("../../models/PaymentProof");
 const configService = require("../../services/configService");
 
-// GET / — Complete analytics dashboard data
-router.get("/", async (req, res, next) => {
+// GET /full — Complete analytics dashboard data
+router.get("/full", async (req, res, next) => {
   try {
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());

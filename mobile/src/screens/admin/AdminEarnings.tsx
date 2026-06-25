@@ -11,8 +11,10 @@ export default function AdminEarnings({ navigation }: any) {
 
   const load = useCallback(async () => {
     try {
-      const res = await api.get('/admin/analytics');
-      setData(res.data?.data);
+      const res = await api.get('/admin/analytics/full');
+      // The existing admin.js /analytics returns {stats:...}, the new one returns {data:...}
+      const d = res.data?.data || res.data;
+      setData(d);
     } catch (e: any) {
       console.log('[Earnings] Error:', e.response?.status, e.response?.data?.message || e.message);
     } finally { setLoading(false); }
