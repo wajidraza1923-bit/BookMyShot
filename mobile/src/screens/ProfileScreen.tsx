@@ -71,7 +71,7 @@ export default function ProfileScreen({ navigation }: any) {
       title: 'Account',
       items: [
         { icon: 'calendar-outline', label: 'My Bookings', screen: 'Bookings', badge: stats.bookings > 0 ? String(stats.bookings) : null },
-        { icon: 'notifications-outline', label: 'Notifications', screen: 'Bookings', badge: stats.notifications > 0 ? String(stats.notifications) : null },
+        { icon: 'notifications-outline', label: 'Notifications', screen: 'CreatorNotifications', badge: stats.notifications > 0 ? String(stats.notifications) : null },
       ],
     },
   ];
@@ -80,7 +80,7 @@ export default function ProfileScreen({ navigation }: any) {
   const settingsSection = {
     title: 'Settings',
     items: [
-      { icon: 'person-outline', label: 'Edit Profile', screen: role === 'creator' ? 'CreatorSettings' : '' },
+      { icon: 'person-outline', label: 'Edit Profile', screen: role === 'creator' ? 'CreatorSettings' : 'EditProfile' },
       { icon: 'help-circle-outline', label: 'Help & FAQ', action: () => Linking.openURL('https://bookmyshot.in/faq') },
       { icon: 'document-text-outline', label: 'Terms & Privacy', action: () => Linking.openURL('https://bookmyshot.in/terms') },
       { icon: 'star-outline', label: 'Rate BookMyShot', action: () => Linking.openURL('https://play.google.com/store/apps/details?id=in.bookmyshot.app').catch(() => Alert.alert('Coming Soon', 'App Store link will be available after launch.')) },
