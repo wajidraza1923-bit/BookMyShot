@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Alert, Platform, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -54,19 +55,20 @@ export default function InquiryScreen({ route, navigation }: any) {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
-  const openDatePicker = () => {
-    // For React Native we'll use a simple date selection approach
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    setSelectedDate(selectedDate || tomorrow);
-    setShowDatePicker(true);
-  };
-
-  const confirmDate = (date: Date) => {
-    setSelectedDate(date);
-    const formatted = date.toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
-    update('eventDate', date.toISOString());
-    setShowDatePicker(false);
+  const onDateChange = (event: any, date?: Date) => {
+    setShowDatePicker(Platform.OS === 'ios'); // iOS keeps picker open
+    if (event.type === 'dismissed') return;
+    if (date) {
+      // Prevent past dates
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (date < today) {
+        Alert.alert('Invalid Date', 'Please select a valid future event date.');
+        return;
+      }
+      setSelectedDate(date);
+      update('eventDate', date.toISOString());
+    }
   };
 
   const handleSubmit = async () => {
@@ -188,18 +190,27 @@ export default function InquiryScreen({ route, navigation }: any) {
           <Field label="Phone Number *" icon="call-outline" value={form.phone} onChange={(v: string) => update('phone', v)} keyboard="phone-pad" />
           <Field label="Email" icon="mail-outline" value={form.email} onChange={(v: string) => update('email', v)} keyboard="email-address" />
           <Field label="Event Type *" icon="calendar-outline" value={form.eventType} onChange={(v: string) => update('eventType', v)} placeholder="e.g. Wedding, Pre-Wedding, Reception" />
-          <TouchableOpacity style={s.dateField} onPress={() => {
-            // Simple date input — user types, we parse
-          }}>
-            <Ionicons name="today-outline" size={18} color={form.eventDate ? '#F97316' : 'rgba(255,255,255,0.3)'} />
-            <Text style={[s.dateText, form.eventDate && { color: '#fff' }]}>
-              {form.eventDate && selectedDate ? `📅 ${selectedDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}` : 'Select Event Date'}
-            </Text>
-          </TouchableOpacity>
-          {!form.eventDate && (
-            <View style={{ marginTop: -8, marginBottom: 14 }}>
-              <TextInput style={[s.fieldInput, { height: 42 }]} placeholder="DD/MM/YYYY" placeholderTextColor="rgba(255,255,255,0.2)" value={form.eventDate.includes('T') ? '' : form.eventDate} onChangeText={(v) => { update('eventDate', v); const d = new Date(parseDate(v)); if (!isNaN(d.getTime())) setSelectedDate(d); }} keyboardType="numeric" />
-            </View>
+          
+          {/* Native Date Picker Field */}
+          <View style={s.field}>
+            <Text style={s.fieldLabel}>Event Date *</Text>
+            <TouchableOpacity style={s.dateField} onPress={() => setShowDatePicker(true)} activeOpacity={0.7}>
+              <Ionicons name="today-outline" size={18} color={selectedDate ? '#F97316' : 'rgba(255,255,255,0.3)'} />
+              <Text style={[s.dateText, selectedDate && { color: '#fff' }]}>
+                {selectedDate ? selectedDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : 'Select Event Date'}
+              </Text>
+              <Ionicons name="chevron-down" size={14} color="rgba(255,255,255,0.3)" />
+            </TouchableOpacity>
+          </View>
+          {showDatePicker && (
+            <DateTimePicker
+              value={selectedDate || new Date()}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'calendar'}
+              minimumDate={new Date()}
+              onChange={onDateChange}
+              themeVariant="dark"
+            />
           )}
           <Field label="City / District" icon="location-outline" value={form.city} onChange={(v: string) => update('city', v)} />
           <Field label="Budget (₹)" icon="wallet-outline" value={form.budget} onChange={(v: string) => update('budget', v)} keyboard="numeric" placeholder="e.g. 50000" />
