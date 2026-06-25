@@ -277,6 +277,15 @@ router.patch("/:id/status", protect, async (req, res, next) => {
       targetId: booking._id.toString(),
     });
 
+    // Real-time update
+    try {
+      const socketService = require("../services/socketService");
+      const userId = (booking.user._id || booking.user).toString();
+      const creatorUserId = booking.creator?.user?._id?.toString() || "";
+      socketService.notifyBookingUpdate(userId, creatorUserId, { bookingId: booking._id, status: booking.status });
+      socketService.emitToRole("admin", "dashboard:refresh", { type: "booking" });
+    } catch (e) {}
+
     res.json({ success: true, booking });
   } catch (e) {
     next(e);

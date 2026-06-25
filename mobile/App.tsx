@@ -1,3 +1,7 @@
+/**
+ * BookMyShot — Main App Entry Point
+ * Integrates: Auth, Navigation, Push Notifications, Update Checker
+ */
 import React, { useState, useEffect, useRef } from 'react';
 import { StatusBar, View, Text, StyleSheet, Animated } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
@@ -8,6 +12,14 @@ import RootNavigator from './src/navigation/RootNavigator';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 import UpdateChecker from './src/components/UpdateChecker';
 import { colors, typography, spacing } from './src/theme';
+import { getNavigationRef } from './src/navigation/navigationService';
+import {
+  addNotificationReceivedListener,
+  addNotificationResponseListener,
+  getLastNotificationResponse,
+  getNavigationTarget,
+  setBadgeCount,
+} from './src/services/pushNotifications';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -19,6 +31,7 @@ export default function App() {
 
   useEffect(() => {
     prepareApp();
+    setupNotificationListeners();
   }, []);
 
   const prepareApp = async () => {
@@ -36,6 +49,55 @@ export default function App() {
     setTimeout(() => {
       Animated.timing(fadeAnim, { toValue: 0, duration: 500, useNativeDriver: true }).start(() => setShowBrandSplash(false));
     }, 200);
+  };
+
+  // ═══ Push Notification Listeners ═══
+  const setupNotificationListeners = () => {
+    // Foreground: notification received while app is open
+    const receivedSub = addNotificationReceivedListener((notification: any) => {
+      console.log('[App] Notification received (foreground):', notification.request?.content?.title);
+      // Could update badge or show in-app toast here
+    });
+
+    // Tap: user clicked a notification (foreground, background, or terminated)
+    const responseSub = addNotificationResponseListener((response: any) => {
+      console.log('[App] Notification tapped:', response.notification?.request?.content?.title);
+      const data = response.notification?.request?.content?.data;
+      handleNotificationNavigation(data);
+      setBadgeCount(0);
+    });
+
+    // Cold start: check if app was opened from a notification while terminated
+    checkInitialNotification();
+
+    return () => {
+      receivedSub.remove();
+      responseSub.remove();
+    };
+  };
+
+  const checkInitialNotification = async () => {
+    const response = await getLastNotificationResponse();
+    if (response) {
+      const data = response.notification?.request?.content?.data;
+      // Delay navigation slightly to ensure navigator is mounted
+      setTimeout(() => handleNotificationNavigation(data), 1500);
+    }
+  };
+
+  const handleNotificationNavigation = (data: any) => {
+    if (!data) return;
+    const navRef = getNavigationRef();
+    if (!navRef) return;
+    const target = getNavigationTarget(data);
+    if (target) {
+      try {
+        navRef.navigate(target.screen, target.params);
+        console.log('[App] Navigated to:', target.screen);
+      } catch (e: any) {
+        console.log('[App] Navigation failed:', e.message);
+      }
+    }
   };
 
   const completeOnboarding = async () => {

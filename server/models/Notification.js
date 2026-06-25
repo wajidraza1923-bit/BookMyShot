@@ -18,16 +18,33 @@ const notificationSchema = new mongoose.Schema(
 // Auto-send push notification when in-app notification is created
 notificationSchema.post("save", async function (doc) {
   if (doc.isNew !== false) {
+    // Push notification (FCM via Expo)
     try {
       const pushService = require("../services/pushService");
       await pushService.sendToUser(doc.user, doc.title, doc.message, {
-        type: doc.type,
+        type: doc.type || "info",
         notificationId: doc._id.toString(),
+        targetScreen: doc.targetScreen || "",
+        targetId: doc.targetId || "",
         link: doc.link || "",
       });
     } catch (e) {
-      // Push delivery failure should never block the main flow
       console.log("[Push] Auto-send failed (non-fatal):", e.message);
+    }
+
+    // Real-time Socket.IO event
+    try {
+      const socketService = require("../services/socketService");
+      socketService.notifyNewNotification(doc.user, {
+        _id: doc._id,
+        title: doc.title,
+        message: doc.message,
+        type: doc.type,
+        targetScreen: doc.targetScreen,
+        createdAt: doc.createdAt || new Date(),
+      });
+    } catch (e) {
+      // Socket not initialized yet during startup — ignore
     }
   }
 });

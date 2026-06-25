@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>App Updates — BookMyShot Admin</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0a0a;color:#e5e5e5;min-height:100vh}
+.header{background:#111;border-bottom:1px solid #222;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+.header h1{font-size:18px;color:#D4AF37;font-weight:600}
+.header a{color:#888;text-decoration:none;font-size:13px}
+.header a:hover{color:#D4AF37}
+.container{max-width:900px;margin:0 auto;padding:24px}
+.card{background:#151515;border:1px solid #222;border-radius:12px;padding:24px;margin-bottom:20px}
+.card h2{font-size:16px;color:#D4AF37;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.form-row{display:flex;gap:16px;margin-bottom:14px}
+.form-row>*{flex:1}
+label{display:block;font-size:12px;color:#888;margin-bottom:4px;font-weight:500}
+input,textarea,select{width:100%;background:#0a0a0a;border:1px solid #333;border-radius:8px;padding:10px 12px;color:#fff;font-size:13px;outline:none;transition:border-color .2s}
+input:focus,textarea:focus{border-color:#D4AF37}
+textarea{resize:vertical;min-height:100px}
+.toggle-row{display:flex;align-items:center;gap:12px;margin-bottom:14px;padding:10px 14px;background:#0a0a0a;border:1px solid #222;border-radius:8px}
+.toggle{position:relative;width:44px;height:24px;background:#333;border-radius:12px;cursor:pointer;transition:background .2s;flex-shrink:0}
+.toggle.active{background:#D4AF37}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;background:#fff;border-radius:10px;transition:transform .2s}
+.toggle.active::after{transform:translateX(20px)}
+.toggle-label{font-size:13px;color:#ccc}
+.toggle-label small{display:block;font-size:10px;color:#666;margin-top:2px}
+.btn{padding:12px 24px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-primary{background:#D4AF37;color:#000}
+.btn-primary:hover{background:#e5c04b}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-danger{background:rgba(220,38,38,.1);color:#dc2626;border:1px solid rgba(220,38,38,.2);font-size:11px;padding:6px 10px;border-radius:6px}
+.btn-danger:hover{background:rgba(220,38,38,.2)}
+.file-upload{border:2px dashed #333;border-radius:10px;padding:24px;text-align:center;cursor:pointer;transition:border-color .2s}
+.file-upload:hover{border-color:#D4AF37}
+.file-upload.has-file{border-color:#10b981;background:rgba(16,185,129,.03)}
+.file-upload p{color:#888;font-size:12px;margin-top:4px}
+.file-upload .name{color:#10b981;font-weight:600;font-size:13px}
+.version-item{display:flex;align-items:flex-start;justify-content:space-between;padding:14px 16px;background:#0a0a0a;border:1px solid #222;border-radius:10px;margin-bottom:10px;gap:12px}
+.version-item .info{flex:1}
+.version-item .ver{font-weight:700;color:#fff;font-size:14px}
+.version-item .title-text{font-size:12px;color:#aaa;margin-top:2px}
+.version-item .desc{font-size:11px;color:#666;margin-top:4px;white-space:pre-line;max-height:60px;overflow:hidden}
+.badges{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.badge{padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600}
+.badge-green{background:rgba(16,185,129,.1);color:#10b981}
+.badge-red{background:rgba(220,38,38,.1);color:#dc2626}
+.badge-gold{background:rgba(212,175,55,.1);color:#D4AF37}
+.badge-blue{background:rgba(59,130,246,.1);color:#60a5fa}
+.actions{display:flex;gap:6px;flex-shrink:0;align-items:center}
+.toast{position:fixed;top:20px;right:20px;background:#151515;border:1px solid #333;border-radius:10px;padding:12px 20px;color:#fff;font-size:13px;z-index:999;display:none;box-shadow:0 4px 20px rgba(0,0,0,.5)}
+.toast.show{display:block}
+.toast.success{border-color:#10b981}
+.toast.error{border-color:#dc2626}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid #D4AF37;border-top-color:transparent;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:30px;color:#666;font-size:13px}
+.current-info{background:rgba(212,175,55,.04);border:1px solid rgba(212,175,55,.12);border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:12px;color:#999}
+.current-info strong{color:#D4AF37}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>📱 App Update Management</h1>
+  <a href="/admin/dashboard.html">← Back to Dashboard</a>
+</div>
+
+<div class="container">
+  <!-- Current Version Info -->
+  <div class="current-info" id="currentInfo">
+    Loading current version info...
+  </div>
+
+  <!-- Publish New Version -->
+  <div class="card">
+    <h2>🚀 Publish New App Update</h2>
+    <form id="publishForm">
+      <div class="form-row">
+        <div>
+          <label>Version Name *</label>
+          <input type="text" id="version" placeholder="2.2.0" required>
+        </div>
+        <div>
+          <label>Version Code * (integer, must be higher)</label>
+          <input type="number" id="versionCode" placeholder="3" required min="1">
+        </div>
+      </div>
+
+      <div style="margin-bottom:14px">
+        <label>Update Title</label>
+        <input type="text" id="title" placeholder="Major Performance Update">
+      </div>
+
+      <div style="margin-bottom:14px">
+        <label>What's New / Description *</label>
+        <textarea id="description" placeholder="• Bug fixes and performance improvements&#10;• New payment system&#10;• Better notifications&#10;• UI improvements" rows="5"></textarea>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label>Min Version Code (users below this are force-updated)</label>
+          <input type="number" id="minVersionCode" placeholder="2" value="1">
+        </div>
+        <div style="display:flex;align-items:flex-end">
+          <div id="uploadStatus" style="font-size:11px;color:#666;padding-bottom:10px">No APK selected</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:18px">
+        <label>Upload APK *</label>
+        <div class="file-upload" id="dropZone">
+          <input type="file" id="apkFile" accept=".apk" hidden>
+          <div id="fileLabel" style="cursor:pointer" onclick="document.getElementById('apkFile').click()">
+            <div style="font-size:28px;margin-bottom:6px">📦</div>
+            <div style="color:#D4AF37;font-weight:600;font-size:14px">Choose APK File</div>
+            <p>or drag and drop the .apk file here</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Force Update Toggle -->
+      <div class="toggle-row">
+        <div class="toggle" id="forceToggle" onclick="toggleForce()"></div>
+        <div class="toggle-label">
+          Force Update
+          <small>Users CANNOT use the app until they update. App is completely blocked.</small>
+        </div>
+      </div>
+
+      <!-- Optional Update Toggle -->
+      <div class="toggle-row">
+        <div class="toggle active" id="optionalToggle" onclick="toggleOptional()"></div>
+        <div class="toggle-label">
+          Optional Update
+          <small>Users see "Update Now" + "Later" buttons. They can skip.</small>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary" id="publishBtn" style="margin-top:8px">
+        Publish Update
+      </button>
+    </form>
+  </div>
+
+  <!-- Version History -->
+  <div class="card">
+    <h2>📋 Published Versions</h2>
+    <div id="versionList"><p class="empty">Loading...</p></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
+let forceUpdate = false;
+let optionalUpdate = true;
+
+if (!token) window.location.href = '/admin/dashboard.html';
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show ' + type;
+  setTimeout(() => t.className = 'toast', 4000);
+}
+
+function toggleForce() {
+  forceUpdate = !forceUpdate;
+  document.getElementById('forceToggle').classList.toggle('active', forceUpdate);
+  // If force is ON, optional is irrelevant but keep it
+}
+function toggleOptional() {
+  optionalUpdate = !optionalUpdate;
+  document.getElementById('optionalToggle').classList.toggle('active', optionalUpdate);
+}
+
+// File handling
+const apkFile = document.getElementById('apkFile');
+const dropZone = document.getElementById('dropZone');
+const fileLabel = document.getElementById('fileLabel');
+
+apkFile.addEventListener('change', () => {
+  if (apkFile.files[0]) {
+    const size = (apkFile.files[0].size / 1024 / 1024).toFixed(1);
+    document.getElementById('fileLabel').innerHTML = `
+      <div style="cursor:pointer" onclick="document.getElementById('apkFile').click()">
+        <div style="font-size:20px;margin-bottom:4px">✅</div>
+        <div class="name">${apkFile.files[0].name}</div>
+        <p>${size} MB — Click to change</p>
+      </div>`;
+    dropZone.classList.add('has-file');
+    document.getElementById('uploadStatus').innerHTML = '<span style="color:#10b981">✓ APK ready to upload</span>';
+  }
+});
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.style.borderColor='#D4AF37'; });
+dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor='#333'; });
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.style.borderColor='#333';
+  const file = e.dataTransfer.files[0];
+  if (file && file.name.endsWith('.apk')) {
+    // Create a new DataTransfer to assign the file
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    apkFile.files = dt.files;
+    apkFile.dispatchEvent(new Event('change'));
+  } else {
+    showToast('Please drop a .apk file', 'error');
+  }
+});
+
+// Load current version info
+async function loadCurrentInfo() {
+  try {
+    const res = await fetch('/api/app-version');
+    const data = await res.json();
+    if (data.success && data.versionCode) {
+      document.getElementById('currentInfo').innerHTML = `
+        <strong>Live Version:</strong> v${data.version} (code ${data.versionCode})
+        ${data.forceUpdate ? ' — <span style="color:#dc2626;font-weight:600">⚠ FORCE UPDATE ACTIVE</span>' : ''}
+        ${data.downloadUrl ? ` — <span style="color:#10b981">APK Ready</span> <a href="${data.downloadUrl}" target="_blank" style="color:#D4AF37;font-size:11px;margin-left:4px">Download Link ↗</a>` : ' — <span style="color:#f59e0b">No APK uploaded</span>'}
+      `;
+    } else {
+      document.getElementById('currentInfo').innerHTML = '<strong>No version published yet.</strong> Upload an APK and publish your first update below.';
+    }
+  } catch { document.getElementById('currentInfo').textContent = 'Failed to load current info'; }
+}
+
+// Publish
+document.getElementById('publishForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = document.getElementById('publishBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Publishing...';
+
+  try {
+    if (!apkFile.files[0]) {
+      showToast('❌ Please select an APK file to upload', 'error');
+      btn.disabled = false; btn.textContent = 'Publish Update';
+      return;
+    }
+
+    const fd = new FormData();
+    fd.append('version', document.getElementById('version').value);
+    fd.append('versionCode', document.getElementById('versionCode').value);
+    fd.append('title', document.getElementById('title').value);
+    fd.append('description', document.getElementById('description').value);
+    fd.append('minVersionCode', document.getElementById('minVersionCode').value || '1');
+    fd.append('forceUpdate', forceUpdate.toString());
+    fd.append('optionalUpdate', optionalUpdate.toString());
+    fd.append('apk', apkFile.files[0]);
+
+    btn.innerHTML = '<span class="spinner"></span> Uploading APK...';
+
+    const res = await fetch('/api/app-version', {
+      method: 'POST', headers: { 'Authorization': 'Bearer ' + token }, body: fd
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('✅ v' + document.getElementById('version').value + ' published! APK uploaded successfully.');
+      document.getElementById('publishForm').reset();
+      document.getElementById('fileLabel').innerHTML = `
+        <div style="cursor:pointer" onclick="document.getElementById('apkFile').click()">
+          <div style="font-size:28px;margin-bottom:6px">📦</div>
+          <div style="color:#D4AF37;font-weight:600;font-size:14px">Choose APK File</div>
+          <p>or drag and drop the .apk file here</p>
+        </div>`;
+      dropZone.classList.remove('has-file');
+      document.getElementById('uploadStatus').innerHTML = 'No APK selected';
+      forceUpdate = false; optionalUpdate = true;
+      document.getElementById('forceToggle').classList.remove('active');
+      document.getElementById('optionalToggle').classList.add('active');
+      loadHistory(); loadCurrentInfo();
+    } else {
+      showToast('❌ ' + (data.message || 'Failed to publish'), 'error');
+    }
+  } catch (err) { showToast('❌ Network error: ' + err.message, 'error'); }
+  finally { btn.disabled = false; btn.textContent = 'Publish Update'; }
+});
+
+// History
+async function loadHistory() {
+  try {
+    const res = await fetch('/api/app-version/history', { headers: { 'Authorization': 'Bearer ' + token } });
+    const data = await res.json();
+    const list = document.getElementById('versionList');
+    if (!data.success || !data.versions?.length) { list.innerHTML = '<p class="empty">No versions yet</p>'; return; }
+
+    list.innerHTML = data.versions.map(v => `
+      <div class="version-item">
+        <div class="info">
+          <div class="ver">v${v.version} <span style="color:#666;font-weight:400">(code ${v.versionCode})</span></div>
+          ${v.title ? `<div class="title-text">${v.title}</div>` : ''}
+          ${v.description ? `<div class="desc">${v.description}</div>` : ''}
+          <div class="badges">
+            ${v.published ? '<span class="badge badge-green">Published</span>' : '<span class="badge badge-red">Draft</span>'}
+            ${v.forceUpdate ? '<span class="badge badge-red">🚨 Force Update</span>' : ''}
+            ${v.optionalUpdate && !v.forceUpdate ? '<span class="badge badge-blue">Optional</span>' : ''}
+            ${v.downloadUrl ? '<span class="badge badge-green">APK ✓</span>' : '<span class="badge badge-gold">No APK</span>'}
+          </div>
+          <div style="font-size:10px;color:#555;margin-top:4px">${new Date(v.createdAt).toLocaleString('en-IN')}</div>
+        </div>
+        <div class="actions">
+          ${v.downloadUrl ? `<a href="${v.downloadUrl}" target="_blank" style="color:#10b981;font-size:11px;text-decoration:none">⬇ APK</a>` : ''}
+          <button class="btn-danger" onclick="deleteVer('${v._id}')">Delete</button>
+        </div>
+      </div>
+    `).join('');
+  } catch { document.getElementById('versionList').innerHTML = '<p class="empty" style="color:#dc2626">Error loading</p>'; }
+}
+
+async function deleteVer(id) {
+  if (!confirm('Delete this version permanently?')) return;
+  try {
+    const res = await fetch('/api/app-version/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
+    const data = await res.json();
+    if (data.success) { showToast('Deleted'); loadHistory(); loadCurrentInfo(); }
+    else showToast(data.message || 'Failed', 'error');
+  } catch { showToast('Network error', 'error'); }
+}
+
+loadCurrentInfo();
+loadHistory();
+
+// Real-time sync: poll every 10 seconds for changes from mobile admin
+setInterval(() => { loadCurrentInfo(); loadHistory(); }, 10000);
+</script>
+</body>
+</html>

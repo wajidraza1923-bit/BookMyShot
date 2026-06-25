@@ -54,6 +54,7 @@ export default function AdminDashboard({ navigation }: any) {
     { icon: 'document-text-outline', label: 'Creator Reports', desc: 'Send performance reports to creators', screen: 'AdminReportMgmt' },
     { icon: 'warning-outline', label: 'Overdue Management', desc: 'Track pending payments, defaulters', screen: 'AdminOverdue' },
     { icon: 'trophy-outline', label: 'Creator Rankings', desc: 'Manage positions in all sections', screen: 'AdminRankings' },
+    { icon: 'phone-portrait-outline', label: 'App Updates', desc: 'Manage versions, force update, APK', screen: 'AdminAppUpdates' },
   ];
 
   return (

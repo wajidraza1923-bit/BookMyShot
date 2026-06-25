@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "917398216652",
+    "project_id": "bookmyshot-a1bf0",
+    "storage_bucket": "bookmyshot-a1bf0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:917398216652:android:ec8c77590a3fe65e340769",
+        "android_client_info": {
+          "package_name": "in.bookmyshot.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCxNuhP5gJW-wxUFbm7VvZBjDiIbPCDLrY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, Alert, TextInput, Modal } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, TextInput, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, radius } from '../../theme';
 import api from '../../services/api';
+import PremiumModal from '../../components/PremiumModal';
+import Toast from '../../components/Toast';
 
 export default function CreatorBookings({ navigation }: any) {
   const [bookings, setBookings] = useState<any[]>([]);
@@ -20,6 +22,10 @@ export default function CreatorBookings({ navigation }: any) {
   const [amountInput, setAmountInput] = useState('');
   const [payForm, setPayForm] = useState({ amount: '', type: 'advance', notes: '' });
   const [eventForm, setEventForm] = useState({ name: '', date: '', location: '' });
+
+  // Premium feedback states (replacing Alert.alert)
+  const [toast, setToast] = useState<{ visible: boolean; type: 'success' | 'error' | 'info' | 'warning'; title: string; message?: string }>({ visible: false, type: 'info', title: '' });
+  const [confirmModal, setConfirmModal] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void; confirmText?: string; destructive?: boolean }>({ visible: false, title: '', message: '', onConfirm: () => {} });
 
   const load = useCallback(async () => {
     try {
@@ -46,46 +52,47 @@ export default function CreatorBookings({ navigation }: any) {
   // ═══ ACTIONS (reuse same API calls as BookingDetail) ═══
   const acceptBooking = async () => {
     const amount = parseInt(amountInput);
-    if (!amount || amount <= 0) { Alert.alert('Error', 'Enter a valid amount'); return; }
+    if (!amount || amount <= 0) { setToast({ visible: true, type: 'error', title: 'Invalid Amount', message: 'Enter a valid amount' }); return; }
     try {
       await api.patch(`/creator/booking-requests/${activeBookingId}`, { status: 'Creator Accepted', amount });
       setShowAmountModal(false); await load();
-      Alert.alert('Accepted', `Booking accepted for ₹${amount.toLocaleString('en-IN')}`);
-    } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
+      setToast({ visible: true, type: 'success', title: 'Booking Accepted', message: `Accepted for ₹${amount.toLocaleString('en-IN')}` });
+    } catch (e: any) { setToast({ visible: true, type: 'error', title: 'Failed', message: e.response?.data?.message || 'Could not accept booking' }); }
   };
 
   const setProjectAmount = async () => {
     const amount = parseInt(amountInput);
-    if (!amount || amount <= 0) { Alert.alert('Error', 'Invalid amount'); return; }
+    if (!amount || amount <= 0) { setToast({ visible: true, type: 'error', title: 'Invalid Amount', message: 'Enter a valid amount' }); return; }
     try {
       await api.patch(`/payment-records/booking/${activeBookingId}/amount`, { amount });
       setShowAmountModal(false); await load();
-      Alert.alert('Updated', `Amount set to ₹${amount.toLocaleString('en-IN')}`);
-    } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
+      setToast({ visible: true, type: 'success', title: 'Amount Updated', message: `Set to ₹${amount.toLocaleString('en-IN')}` });
+    } catch (e: any) { setToast({ visible: true, type: 'error', title: 'Failed', message: e.response?.data?.message || 'Could not update amount' }); }
   };
 
   const recordPayment = async () => {
     const amount = parseInt(payForm.amount);
-    if (!amount || amount <= 0) { Alert.alert('Error', 'Enter valid amount'); return; }
+    if (!amount || amount <= 0) { setToast({ visible: true, type: 'error', title: 'Invalid Amount', message: 'Enter a valid amount' }); return; }
     try {
       await api.post('/payment-records/creator', { bookingId: activeBookingId, amount, paymentType: payForm.type, notes: payForm.notes });
       setShowPaymentModal(false); setPayForm({ amount: '', type: 'advance', notes: '' }); await load();
-      Alert.alert('Recorded', `₹${amount.toLocaleString('en-IN')} payment recorded`);
-    } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
+      setToast({ visible: true, type: 'success', title: 'Payment Recorded', message: `₹${amount.toLocaleString('en-IN')} recorded` });
+    } catch (e: any) { setToast({ visible: true, type: 'error', title: 'Failed', message: e.response?.data?.message || 'Could not record payment' }); }
   };
 
-  const markPaid = (id: string) => Alert.alert('Mark Paid', 'Mark as fully paid?', [{ text: 'Cancel' }, { text: 'Confirm', onPress: async () => { try { await api.patch(`/payment-records/booking/${id}/mark-paid`); await load(); } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); } } }]);
+  const markPaid = (id: string) => setConfirmModal({ visible: true, title: 'Mark Fully Paid', message: 'Are you sure this booking is fully paid?', confirmText: 'Confirm', onConfirm: async () => { setConfirmModal({ ...confirmModal, visible: false }); try { await api.patch(`/payment-records/booking/${id}/mark-paid`); await load(); setToast({ visible: true, type: 'success', title: 'Marked Paid' }); } catch (e: any) { setToast({ visible: true, type: 'error', title: 'Failed', message: e.response?.data?.message || 'Failed' }); } } });
 
   const addEvent = async () => {
-    if (!eventForm.name || !eventForm.date) { Alert.alert('Error', 'Name and date required'); return; }
+    if (!eventForm.name || !eventForm.date) { setToast({ visible: true, type: 'error', title: 'Missing Fields', message: 'Event name and date are required' }); return; }
     try {
       await api.post('/booking-events', { bookingId: activeBookingId, eventName: eventForm.name, eventDate: eventForm.date, location: eventForm.location });
       setShowEventModal(false); setEventForm({ name: '', date: '', location: '' }); await load();
-    } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
+      setToast({ visible: true, type: 'success', title: 'Event Added' });
+    } catch (e: any) { setToast({ visible: true, type: 'error', title: 'Failed', message: e.response?.data?.message || 'Could not add event' }); }
   };
 
-  const rejectBooking = (id: string) => Alert.alert('Reject', 'Reject this booking?', [{ text: 'Cancel' }, { text: 'Reject', style: 'destructive', onPress: async () => { try { await api.patch(`/creator/booking-requests/${id}`, { status: 'rejected' }); await load(); } catch {} } }]);
-  const completeBooking = (id: string) => Alert.alert('Complete', 'Mark as completed?', [{ text: 'Cancel' }, { text: 'Complete', onPress: async () => { try { await api.patch(`/creator/bookings/${id}/complete`); await load(); } catch {} } }]);
+  const rejectBooking = (id: string) => setConfirmModal({ visible: true, title: 'Reject Booking', message: 'Are you sure you want to reject this booking?', confirmText: 'Reject', destructive: true, onConfirm: async () => { setConfirmModal({ ...confirmModal, visible: false }); try { await api.patch(`/creator/booking-requests/${id}`, { status: 'rejected' }); await load(); setToast({ visible: true, type: 'info', title: 'Booking Rejected' }); } catch {} } });
+  const completeBooking = (id: string) => setConfirmModal({ visible: true, title: 'Complete Booking', message: 'Mark this booking as completed?', confirmText: 'Complete', onConfirm: async () => { setConfirmModal({ ...confirmModal, visible: false }); try { await api.patch(`/creator/bookings/${id}/complete`); await load(); setToast({ visible: true, type: 'success', title: 'Booking Completed' }); } catch {} } });
 
   const getStatusColor = (s: string) => {
     if (s === 'Completed' || s === 'completed') return colors.success;
@@ -252,6 +259,28 @@ export default function CreatorBookings({ navigation }: any) {
           </View>
         </View></View>
       </Modal>
+
+      {/* ═══ CONFIRM MODAL (replaces Alert.alert confirmations) ═══ */}
+      <PremiumModal
+        visible={confirmModal.visible}
+        onClose={() => setConfirmModal({ ...confirmModal, visible: false })}
+        type={confirmModal.destructive ? 'warning' : 'confirm'}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        buttons={[
+          { text: 'Cancel', onPress: () => setConfirmModal({ ...confirmModal, visible: false }), variant: 'secondary' },
+          { text: confirmModal.confirmText || 'Confirm', onPress: confirmModal.onConfirm, variant: confirmModal.destructive ? 'destructive' : 'primary' },
+        ]}
+      />
+
+      {/* ═══ TOAST ═══ */}
+      <Toast
+        visible={toast.visible}
+        type={toast.type}
+        title={toast.title}
+        message={toast.message}
+        onHide={() => setToast({ ...toast, visible: false })}
+      />
     </View>
   );
 }

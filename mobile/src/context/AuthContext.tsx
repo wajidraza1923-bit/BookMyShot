@@ -92,6 +92,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             await AsyncStorage.setItem('bms_user', JSON.stringify(normalized));
             console.log('[Auth] Session valid, user:', normalized.name, 'role:', normalized.role, 'creatorStatus:', normalized.creatorStatus, 'subStatus:', normalized.subscriptionStatus);
             registerPush();
+            // Connect Socket.IO for real-time
+            try { const { connect, setupAppStateHandler } = require('../services/socket'); connect(); setupAppStateHandler(); } catch {}
           }
         } catch (e: any) {
           console.log('[Auth] Token validation failed:', e.message, '- using cached session');
@@ -209,6 +211,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(normalizedUser);
       console.log('═══ LOGIN SUCCESS ═══');
 
+      // Connect Socket.IO for real-time updates
+      try { const { connect } = require('../services/socket'); connect(); } catch {}
+
       return { success: true };
     } catch (e: any) {
       console.log('═══ LOGIN EXCEPTION ═══');
@@ -303,6 +308,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     console.log('[Auth] Logging out...');
+    // Disconnect Socket.IO
+    try { const { disconnect } = require('../services/socket'); disconnect(); } catch {}
     // Clear push token on backend
     try { await api.post('/notifications/push-token', { token: '', platform: '' }); } catch {}
     await clearSession();

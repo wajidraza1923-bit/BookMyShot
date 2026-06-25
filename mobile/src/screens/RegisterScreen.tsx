@@ -7,13 +7,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, radius } from '../theme';
 import Input from '../components/Input';
 import Button from '../components/Button';
+import PremiumModal from '../components/PremiumModal';
 import { useAuth } from '../context/AuthContext';
 
 export default function RegisterScreen({ navigation }: any) {
@@ -25,6 +25,7 @@ export default function RegisterScreen({ navigation }: any) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errorModal, setErrorModal] = useState<{ visible: boolean; title: string; message: string }>({ visible: false, title: '', message: '' });
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -52,7 +53,7 @@ export default function RegisterScreen({ navigation }: any) {
     if (result.requiresVerification) {
       navigation.navigate('VerifyEmail', { email: email.trim().toLowerCase() });
     } else {
-      Alert.alert('Registration Failed', result.message || 'Something went wrong');
+      setErrorModal({ visible: true, title: 'Registration Failed', message: result.message || 'Something went wrong. Please try again.' });
     }
   };
 
@@ -150,6 +151,15 @@ export default function RegisterScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <PremiumModal
+        visible={errorModal.visible}
+        onClose={() => setErrorModal({ ...errorModal, visible: false })}
+        type="error"
+        title={errorModal.title}
+        message={errorModal.message}
+        buttons={[{ text: 'Try Again', onPress: () => setErrorModal({ ...errorModal, visible: false }), variant: 'primary' }]}
+      />
     </KeyboardAvoidingView>
   );
 }

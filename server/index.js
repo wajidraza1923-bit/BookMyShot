@@ -249,6 +249,11 @@ const startServer = async () => {
 
     server = app.listen(PORT, () => {
       console.log(`BookMyShot server running on port ${PORT}`);
+
+      // Initialize Socket.IO on the http server
+      const socketService = require("./services/socketService");
+      socketService.init(server);
+
       // Start automated cron jobs
       const { initScheduler } = require("./services/scheduler");
       initScheduler();

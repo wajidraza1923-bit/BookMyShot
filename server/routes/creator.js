@@ -753,6 +753,8 @@ router.patch("/inquiries/:id/reply", async (req, res, next) => {
       });
 
       if (!existingBooking) {
+        const bookingAmount = inquiry.budget || 0;
+
         createdBooking = await Booking.create({
           user: inquiry.user,
           creator: creator._id,
@@ -762,13 +764,66 @@ router.patch("/inquiries/:id/reply", async (req, res, next) => {
           eventType: inquiry.eventType || "Event",
           eventDate: inquiry.eventDate,
           eventLocation: inquiry.city || "",
-          budget: inquiry.budget || 0,
+          budget: bookingAmount,
           message: inquiry.message || "",
           status: "Creator Accepted",
-          amount: inquiry.budget || 0,
+          amount: bookingAmount,
+          remaining: bookingAmount,
+          highestBudget: bookingAmount,
           invoiceNumber: `BMS-INQ-${Date.now()}`,
           leadSource: "bookmyshot",
         });
+
+        // ═══ COMMISSION GENERATION — Immediately on first booking acceptance ═══
+        if (bookingAmount > 0) {
+          const configService = require("../services/configService");
+          const commSettings = await configService.getCommissionSettings();
+          const leadSource = "bookmyshot"; // Inquiry from platform = BMS lead
+          const commPercent = leadSource === "creator"
+            ? (commSettings.creatorLeadCommissionPercent || 3)
+            : (commSettings.bmsLeadCommissionPercent || 5);
+          const commAmount = Math.round((bookingAmount * commPercent) / 100);
+          const creatorEarning = bookingAmount - commAmount;
+
+          // Update booking with commission fields
+          createdBooking.commissionPercent = commPercent;
+          createdBooking.commissionAmount = commAmount;
+          createdBooking.commissionLockedAmount = bookingAmount;
+          createdBooking.commissionLocked = true;
+          createdBooking.creatorReceivable = creatorEarning;
+          createdBooking.commissionStatus = "pending";
+          await createdBooking.save();
+
+          // Create Commission record (single record per booking — never duplicated)
+          const Commission = require("../models/Commission");
+          const existingCommission = await Commission.findOne({ booking: createdBooking._id });
+          if (!existingCommission) {
+            await Commission.create({
+              booking: createdBooking._id,
+              creator: creator._id,
+              user: inquiry.user,
+              totalAmount: bookingAmount,
+              highestDealAmount: bookingAmount,
+              leadSource,
+              commissionPercent: commPercent,
+              commissionAmount: commAmount,
+              creatorEarning,
+              status: "pending",
+            });
+            console.log(`[COMMISSION] ✅ Generated for booking ${createdBooking._id}: ₹${commAmount} (${commPercent}% of ₹${bookingAmount})`);
+
+            // Notify creator about commission
+            await Notification.create({
+              user: req.user._id,
+              type: "commission",
+              title: "📊 Commission Generated",
+              message: `Commission of ₹${commAmount.toLocaleString('en-IN')} (${commPercent}%) has been generated for booking ₹${bookingAmount.toLocaleString('en-IN')}. Due in 30 days.`,
+              targetScreen: "CreatorWallet",
+            });
+          }
+        }
+      } else {
+        createdBooking = existingBooking;
       }
     }
 
@@ -787,8 +842,21 @@ router.patch("/inquiries/:id/reply", async (req, res, next) => {
             ? `Your inquiry for ${inquiry.eventType} has been declined.`
             : `Your inquiry has been updated to: ${inquiry.status}`,
         type: "inquiry",
+        targetScreen: inquiry.status === "accepted" ? "Bookings" : undefined,
       });
     }
+
+    // ═══ Real-time Socket.IO updates ═══
+    try {
+      const socketService = require("../services/socketService");
+      if (createdBooking) {
+        socketService.notifyBookingUpdate(inquiry.user?.toString(), req.user._id.toString(), { bookingId: createdBooking._id, status: "Creator Accepted" });
+      }
+      if (inquiry.status === "accepted" || inquiry.status === "rejected") {
+        socketService.notifyInquiryUpdate(inquiry.user?.toString(), { inquiryId: inquiry._id, status: inquiry.status });
+      }
+      socketService.emitToRole("admin", "dashboard:refresh", { type: "inquiry" });
+    } catch (e) {}
 
     res.json({ success: true, inquiry, booking: createdBooking });
   } catch (e) {

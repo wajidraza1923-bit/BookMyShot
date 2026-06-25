@@ -27,13 +27,13 @@ function GuestTabs() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarStyle: { backgroundColor: '#0F0F0F', borderTopColor: 'rgba(255,255,255,0.06)', borderTopWidth: 1, height: 64, paddingBottom: 10, paddingTop: 8, elevation: 0 },
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '500', letterSpacing: 0.2 },
+        tabBarStyle: { backgroundColor: '#0A0A0A', borderTopColor: 'rgba(255,255,255,0.06)', borderTopWidth: 1, height: 68, paddingBottom: 12, paddingTop: 8, elevation: 0 },
+        tabBarActiveTintColor: '#D4AF37',
+        tabBarInactiveTintColor: 'rgba(255,255,255,0.35)',
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '600', letterSpacing: 0.2, marginTop: 2 },
         tabBarIcon: ({ focused, color }) => {
           const icons: Record<string, string> = { Home: focused ? 'home' : 'home-outline', Discover: focused ? 'compass' : 'compass-outline', Account: focused ? 'person' : 'person-outline' };
-          return <Ionicons name={(icons[route.name] || 'home') as any} size={21} color={color} />;
+          return <Ionicons name={(icons[route.name] || 'home') as any} size={22} color={color} />;
         },
       })}
     >

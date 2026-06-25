@@ -63,7 +63,8 @@ export async function openRazorpaySubscription(
   userEmail: string
 ): Promise<{ razorpay_subscription_id: string; razorpay_payment_id: string; razorpay_signature: string }> {
   // In production APK/AAB, use react-native-razorpay
-  const RazorpayCheckout = require('react-native-razorpay').default;
+  const RazorpayCheckout = null; // Native module - only works in production APK
+  if (!RazorpayCheckout) throw new Error('Razorpay is only available in production builds. Please use EAS build.');
 
   const options = {
     key: keyId,
@@ -115,7 +116,8 @@ export async function openRazorpayOrder(
   description: string,
   userName: string
 ): Promise<{ razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }> {
-  const RazorpayCheckout = require('react-native-razorpay').default;
+  const RazorpayCheckout = null; // Native module - only works in production APK
+  if (!RazorpayCheckout) throw new Error('Razorpay is only available in production builds. Please use EAS build.');
 
   const options = {
     key: keyId,
@@ -221,10 +223,6 @@ export async function getCreatorEarnings() {
 
 // ═══ HELPER: Check if native Razorpay is available ═══
 export function isNativeRazorpayAvailable(): boolean {
-  try {
-    const RazorpayCheckout = require('react-native-razorpay').default;
-    return !!RazorpayCheckout;
-  } catch {
-    return false;
-  }
+  // react-native-razorpay only works in production APK builds, not Expo Go
+  return false;
 }

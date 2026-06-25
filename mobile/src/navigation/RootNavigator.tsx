@@ -4,6 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../theme';
+import { setNavigationRef } from './navigationService';
 
 import CustomerNavigator from './CustomerNavigator';
 import CreatorNavigator from './CreatorNavigator';
@@ -65,7 +66,7 @@ export default function RootNavigator() {
   };
 
   return (
-    <NavigationContainer theme={navTheme}>
+    <NavigationContainer theme={navTheme} ref={(ref) => { if (ref) setNavigationRef(ref); }}>
       {getNavigator()}
     </NavigationContainer>
   );

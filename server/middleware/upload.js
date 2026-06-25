@@ -50,4 +50,20 @@ const upload = multer({
   fileFilter: anyMediaFilter,
 });
 
-module.exports = { upload, uploadPhotos, uploadVideos };
+// APK upload: max 150MB
+const apkFilter = (req, file, cb) => {
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (ext === '.apk' || file.mimetype === 'application/vnd.android.package-archive' || file.mimetype === 'application/octet-stream') {
+    cb(null, true);
+  } else {
+    cb(new Error("Only .apk files are allowed"), false);
+  }
+};
+
+const uploadApk = multer({
+  storage,
+  limits: { fileSize: 150 * 1024 * 1024 }, // 150MB
+  fileFilter: apkFilter,
+});
+
+module.exports = { upload, uploadPhotos, uploadVideos, uploadApk };

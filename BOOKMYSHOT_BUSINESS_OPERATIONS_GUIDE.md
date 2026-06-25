@@ -1,4 +1,4 @@
-# BOOKMYSHOT — BUSINESS OPERATIONS GUIDE
+c# BOOKMYSHOT — BUSINESS OPERATIONS GUIDE
 
 > **For:** Platform Owner | **Date:** June 2026 | **Language:** Simple, non-technical
 

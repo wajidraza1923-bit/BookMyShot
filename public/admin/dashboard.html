@@ -208,6 +208,7 @@
         <a href="#" data-panel="backups"><span class="icon"><i class="fa-solid fa-database"></i></span> Backups</a>
         <a href="#" data-panel="report-management"><span class="icon"><i class="fa-solid fa-file-lines"></i></span> Creator Reports</a>
         <a href="#" data-panel="overdue-management" style="color:#f59e0b"><span class="icon"><i class="fa-solid fa-exclamation-triangle"></i></span> Overdue Management</a>
+        <a href="#" data-panel="app-updates" style="color:#D4AF37"><span class="icon"><i class="fa-solid fa-mobile-screen"></i></span> App Updates</a>
       </nav>
       <div class="sidebar-footer">
         <a href="/" target="_blank"><span class="icon"><i class="fa-solid fa-globe"></i></span> View Site</a>
@@ -738,6 +739,64 @@
     <div id="overduePanel"><div class="loader"></div></div>
   </div>
 
+  <!-- App Updates Panel -->
+  <div class="panel" id="panel-app-updates">
+    <div class="panel-header"><h2>📱 App Update Management</h2><p>Upload APK, publish versions, control force updates — synced with mobile admin in real time</p></div>
+    <div id="appUpdatesPanel">
+      <!-- Current Live Version -->
+      <div class="card" style="margin-bottom:1rem;border-color:rgba(212,175,55,0.15)">
+        <div id="auLiveVersion" style="font-size:0.85rem;color:#999">Loading current version...</div>
+      </div>
+
+      <!-- Publish Form -->
+      <div class="card" style="margin-bottom:1.25rem">
+        <h3 style="margin-bottom:1rem;font-size:0.95rem;color:var(--gold)">🚀 Publish New Update</h3>
+        <form id="auPublishForm">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">
+            <div><label style="font-size:0.75rem;color:#888;display:block;margin-bottom:3px">Version Name *</label><input type="text" id="auVersion" placeholder="2.2.0" required style="width:100%;background:#0a0a0a;border:1px solid #333;border-radius:6px;padding:0.5rem 0.7rem;color:#fff;font-size:0.82rem"></div>
+            <div><label style="font-size:0.75rem;color:#888;display:block;margin-bottom:3px">Version Code *</label><input type="number" id="auVersionCode" placeholder="3" required min="1" style="width:100%;background:#0a0a0a;border:1px solid #333;border-radius:6px;padding:0.5rem 0.7rem;color:#fff;font-size:0.82rem"></div>
+            <div><label style="font-size:0.75rem;color:#888;display:block;margin-bottom:3px">Min Version Code</label><input type="number" id="auMinCode" placeholder="2" value="1" style="width:100%;background:#0a0a0a;border:1px solid #333;border-radius:6px;padding:0.5rem 0.7rem;color:#fff;font-size:0.82rem"></div>
+          </div>
+          <div style="margin-bottom:0.75rem"><label style="font-size:0.75rem;color:#888;display:block;margin-bottom:3px">Update Title</label><input type="text" id="auTitle" placeholder="Major Performance Update" style="width:100%;background:#0a0a0a;border:1px solid #333;border-radius:6px;padding:0.5rem 0.7rem;color:#fff;font-size:0.82rem"></div>
+          <div style="margin-bottom:0.75rem"><label style="font-size:0.75rem;color:#888;display:block;margin-bottom:3px">What's New / Release Notes *</label><textarea id="auDescription" placeholder="• Bug fixes&#10;• New features&#10;• Performance improvements" rows="4" style="width:100%;background:#0a0a0a;border:1px solid #333;border-radius:6px;padding:0.5rem 0.7rem;color:#fff;font-size:0.82rem;resize:vertical"></textarea></div>
+
+          <!-- APK Upload -->
+          <div style="margin-bottom:0.9rem">
+            <label style="font-size:0.75rem;color:#888;display:block;margin-bottom:3px">Upload APK *</label>
+            <div id="auDropZone" style="border:2px dashed #333;border-radius:10px;padding:1.5rem;text-align:center;cursor:pointer;transition:border-color 0.2s">
+              <input type="file" id="auApkFile" accept=".apk" hidden>
+              <div id="auFileLabel" onclick="document.getElementById('auApkFile').click()" style="cursor:pointer">
+                <div style="font-size:1.8rem;margin-bottom:0.4rem">📦</div>
+                <div style="color:var(--gold);font-weight:600;font-size:0.9rem">Choose APK File</div>
+                <div style="color:#666;font-size:0.75rem;margin-top:0.25rem">or drag & drop .apk file here</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Toggles -->
+          <div style="display:flex;gap:1rem;margin-bottom:0.9rem">
+            <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;padding:0.5rem 0.75rem;background:#0a0a0a;border:1px solid #222;border-radius:6px;flex:1">
+              <input type="checkbox" id="auForceUpdate" style="accent-color:#dc2626;width:16px;height:16px">
+              <span style="font-size:0.82rem;color:#ccc">Force Update <span style="font-size:0.7rem;color:#888;display:block">Blocks app until updated</span></span>
+            </label>
+            <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;padding:0.5rem 0.75rem;background:#0a0a0a;border:1px solid #222;border-radius:6px;flex:1">
+              <input type="checkbox" id="auOptionalUpdate" checked style="accent-color:var(--gold);width:16px;height:16px">
+              <span style="font-size:0.82rem;color:#ccc">Optional Update <span style="font-size:0.7rem;color:#888;display:block">Shows Update Now + Later</span></span>
+            </label>
+          </div>
+
+          <button type="submit" id="auPublishBtn" class="btn btn-primary" style="width:100%;padding:0.7rem;font-size:0.9rem">Publish Update</button>
+        </form>
+      </div>
+
+      <!-- Version History -->
+      <div class="card">
+        <h3 style="margin-bottom:0.75rem;font-size:0.95rem;color:var(--gold)">📋 Version History</h3>
+        <div id="auHistoryList" style="font-size:0.82rem;color:#888">Loading...</div>
+      </div>
+    </div>
+  </div>
+
   <!-- Creator Detail Modal -->
   <div class="modal-overlay" id="creatorDetailModal">
     <div class="modal" style="max-width:700px">
@@ -845,6 +904,7 @@
           else if (p === "backups") loadBackupsPanel();
           else if (p === "report-management") loadReportMgmtPanel();
           else if (p === "overdue-management") loadOverduePanel();
+          else if (p === "app-updates") loadAppUpdatesPanel();
         } catch (err) { /* panel load error */ }
         // Close mobile sidebar
         document.getElementById("sidebar").classList.remove("open");
@@ -2590,6 +2650,142 @@
       if (!confirm("Reactivate this creator?")) return;
       try { await API.post("/admin/overdue/" + id + "/reactivate"); toast("Reactivated", "success"); loadOverduePanel(); } catch (e) { toast(e.message, "error"); }
     };
+
+    // ═══════════════════════════════════════════════════════════════
+    // APP UPDATES PANEL
+    // ═══════════════════════════════════════════════════════════════
+    function loadAppUpdatesPanel() {
+      auLoadLiveVersion();
+      auLoadHistory();
+      auSetupFileUpload();
+      auSetupForm();
+    }
+
+    let auFileReady = false;
+    let auSetupDone = false;
+
+    function auLoadLiveVersion() {
+      fetch("/api/app-version").then(r => r.json()).then(data => {
+        if (data.success && data.versionCode) {
+          document.getElementById("auLiveVersion").innerHTML = `<strong style="color:var(--gold)">Live Version:</strong> v${data.version} (code ${data.versionCode}) ${data.forceUpdate ? '<span style="color:#dc2626;font-weight:600;margin-left:0.5rem">⚠ FORCE UPDATE ACTIVE</span>' : ''} ${data.downloadUrl ? '<span style="color:#10b981;margin-left:0.5rem">✓ APK uploaded</span>' : '<span style="color:#f59e0b;margin-left:0.5rem">⚠ No APK</span>'}`;
+        } else {
+          document.getElementById("auLiveVersion").innerHTML = '<strong>No version published yet.</strong> Upload your first APK below.';
+        }
+      }).catch(() => { document.getElementById("auLiveVersion").textContent = "Failed to load"; });
+    }
+
+    function auLoadHistory() {
+      fetch("/api/app-version/history", { headers: { Authorization: "Bearer " + API.getToken() } }).then(r => r.json()).then(data => {
+        const el = document.getElementById("auHistoryList");
+        if (!data.success || !data.versions?.length) { el.innerHTML = '<div style="text-align:center;color:#666;padding:1rem">No versions published yet</div>'; return; }
+        el.innerHTML = data.versions.map(v => `
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;padding:0.7rem 0.85rem;background:#0a0a0a;border:1px solid #222;border-radius:8px;margin-bottom:0.5rem;gap:0.75rem">
+            <div style="flex:1">
+              <div style="font-weight:700;color:#fff">v${v.version} <span style="color:#666;font-weight:400">(code ${v.versionCode})</span></div>
+              ${v.title ? `<div style="font-size:0.75rem;color:#aaa;margin-top:1px">${v.title}</div>` : ''}
+              ${v.description ? `<div style="font-size:0.72rem;color:#555;margin-top:3px;white-space:pre-line;max-height:40px;overflow:hidden">${v.description}</div>` : ''}
+              <div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap">
+                ${v.published ? '<span style="background:rgba(16,185,129,.1);color:#10b981;padding:1px 6px;border-radius:3px;font-size:0.65rem;font-weight:600">Published</span>' : ''}
+                ${v.forceUpdate ? '<span style="background:rgba(220,38,38,.1);color:#dc2626;padding:1px 6px;border-radius:3px;font-size:0.65rem;font-weight:600">🚨 Force</span>' : ''}
+                ${v.downloadUrl ? '<span style="background:rgba(16,185,129,.1);color:#10b981;padding:1px 6px;border-radius:3px;font-size:0.65rem;font-weight:600">APK ✓</span>' : '<span style="background:rgba(245,158,11,.1);color:#f59e0b;padding:1px 6px;border-radius:3px;font-size:0.65rem;font-weight:600">No APK</span>'}
+              </div>
+              <div style="font-size:0.65rem;color:#444;margin-top:3px">${new Date(v.createdAt).toLocaleString('en-IN')}</div>
+            </div>
+            <div style="display:flex;gap:4px;align-items:center">
+              ${v.downloadUrl ? `<a href="${v.downloadUrl}" target="_blank" style="color:#10b981;font-size:0.7rem;text-decoration:none">⬇ APK</a>` : ''}
+              <button onclick="auDeleteVersion('${v._id}')" style="background:rgba(220,38,38,.1);color:#dc2626;border:1px solid rgba(220,38,38,.2);padding:3px 8px;border-radius:4px;font-size:0.7rem;cursor:pointer;font-weight:600">Delete</button>
+            </div>
+          </div>
+        `).join('');
+      }).catch(() => { document.getElementById("auHistoryList").innerHTML = '<div style="color:#dc2626">Error loading history</div>'; });
+    }
+
+    function auSetupFileUpload() {
+      if (auSetupDone) return;
+      auSetupDone = true;
+      const fileInput = document.getElementById("auApkFile");
+      const dropZone = document.getElementById("auDropZone");
+      const fileLabel = document.getElementById("auFileLabel");
+
+      fileInput.addEventListener("change", function() {
+        if (this.files[0]) {
+          const sz = (this.files[0].size / 1024 / 1024).toFixed(1);
+          fileLabel.innerHTML = `<div onclick="document.getElementById('auApkFile').click()" style="cursor:pointer"><div style="font-size:1.2rem">✅</div><div style="color:#10b981;font-weight:600;font-size:0.85rem">${this.files[0].name}</div><div style="color:#666;font-size:0.72rem">${sz} MB — Click to change</div></div>`;
+          dropZone.style.borderColor = "#10b981";
+          auFileReady = true;
+        }
+      });
+
+      dropZone.addEventListener("dragover", function(e) { e.preventDefault(); this.style.borderColor = "var(--gold)"; });
+      dropZone.addEventListener("dragleave", function() { this.style.borderColor = "#333"; });
+      dropZone.addEventListener("drop", function(e) {
+        e.preventDefault(); this.style.borderColor = "#333";
+        const file = e.dataTransfer.files[0];
+        if (file && file.name.endsWith(".apk")) {
+          const dt = new DataTransfer(); dt.items.add(file); fileInput.files = dt.files;
+          fileInput.dispatchEvent(new Event("change"));
+        } else { toast("Only .apk files allowed", "error"); }
+      });
+    }
+
+    function auSetupForm() {
+      const form = document.getElementById("auPublishForm");
+      if (form._auBound) return;
+      form._auBound = true;
+      form.addEventListener("submit", async function(e) {
+        e.preventDefault();
+        const btn = document.getElementById("auPublishBtn");
+        const fileInput = document.getElementById("auApkFile");
+
+        if (!fileInput.files[0]) { toast("Please select an APK file to upload", "error"); return; }
+
+        btn.disabled = true; btn.textContent = "Uploading APK...";
+        try {
+          const fd = new FormData();
+          fd.append("version", document.getElementById("auVersion").value);
+          fd.append("versionCode", document.getElementById("auVersionCode").value);
+          fd.append("title", document.getElementById("auTitle").value);
+          fd.append("description", document.getElementById("auDescription").value);
+          fd.append("minVersionCode", document.getElementById("auMinCode").value || "1");
+          fd.append("forceUpdate", document.getElementById("auForceUpdate").checked.toString());
+          fd.append("optionalUpdate", document.getElementById("auOptionalUpdate").checked.toString());
+          fd.append("apk", fileInput.files[0]);
+
+          const res = await fetch("/api/app-version", { method: "POST", headers: { Authorization: "Bearer " + API.getToken() }, body: fd });
+          const data = await res.json();
+          if (data.success) {
+            toast("✅ v" + document.getElementById("auVersion").value + " published! APK uploaded.", "success");
+            form.reset();
+            document.getElementById("auOptionalUpdate").checked = true;
+            document.getElementById("auFileLabel").innerHTML = `<div onclick="document.getElementById('auApkFile').click()" style="cursor:pointer"><div style="font-size:1.8rem;margin-bottom:0.4rem">📦</div><div style="color:var(--gold);font-weight:600;font-size:0.9rem">Choose APK File</div><div style="color:#666;font-size:0.75rem;margin-top:0.25rem">or drag & drop .apk file here</div></div>`;
+            document.getElementById("auDropZone").style.borderColor = "#333";
+            auFileReady = false;
+            auLoadLiveVersion();
+            auLoadHistory();
+          } else {
+            toast("❌ " + (data.message || "Failed"), "error");
+          }
+        } catch (err) { toast("❌ Network error", "error"); }
+        finally { btn.disabled = false; btn.textContent = "Publish Update"; }
+      });
+    }
+
+    window.auDeleteVersion = async function(id) {
+      if (!confirm("Delete this version permanently?")) return;
+      try {
+        const res = await fetch("/api/app-version/" + id, { method: "DELETE", headers: { Authorization: "Bearer " + API.getToken() } });
+        const data = await res.json();
+        if (data.success) { toast("Deleted", "success"); auLoadLiveVersion(); auLoadHistory(); }
+        else toast(data.message || "Failed", "error");
+      } catch { toast("Network error", "error"); }
+    };
+
+    // Auto-refresh app updates every 10s for real-time sync with mobile admin
+    setInterval(function() {
+      if (document.getElementById("panel-app-updates") && document.getElementById("panel-app-updates").classList.contains("active")) {
+        auLoadLiveVersion(); auLoadHistory();
+      }
+    }, 10000);
 
   </script>
   <script src="/js/native-app.js"></script>
