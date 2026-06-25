@@ -4,9 +4,8 @@
  * Uses: POST /api/inquiries (same endpoint as website)
  */
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Alert, Platform, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Alert, Platform, Image, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -55,20 +54,16 @@ export default function InquiryScreen({ route, navigation }: any) {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
-  const onDateChange = (event: any, date?: Date) => {
-    setShowDatePicker(Platform.OS === 'ios'); // iOS keeps picker open
-    if (event.type === 'dismissed') return;
-    if (date) {
-      // Prevent past dates
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      if (date < today) {
-        Alert.alert('Invalid Date', 'Please select a valid future event date.');
-        return;
-      }
-      setSelectedDate(date);
-      update('eventDate', date.toISOString());
+  const selectDate = (date: Date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (date < today) {
+      Alert.alert('Invalid Date', 'Please select a valid future event date.');
+      return;
     }
+    setSelectedDate(date);
+    update('eventDate', date.toISOString());
+    setShowDatePicker(false);
   };
 
   const handleSubmit = async () => {
@@ -191,7 +186,7 @@ export default function InquiryScreen({ route, navigation }: any) {
           <Field label="Email" icon="mail-outline" value={form.email} onChange={(v: string) => update('email', v)} keyboard="email-address" />
           <Field label="Event Type *" icon="calendar-outline" value={form.eventType} onChange={(v: string) => update('eventType', v)} placeholder="e.g. Wedding, Pre-Wedding, Reception" />
           
-          {/* Native Date Picker Field */}
+          {/* Date Picker Field */}
           <View style={s.field}>
             <Text style={s.fieldLabel}>Event Date *</Text>
             <TouchableOpacity style={s.dateField} onPress={() => setShowDatePicker(true)} activeOpacity={0.7}>
@@ -202,16 +197,19 @@ export default function InquiryScreen({ route, navigation }: any) {
               <Ionicons name="chevron-down" size={14} color="rgba(255,255,255,0.3)" />
             </TouchableOpacity>
           </View>
-          {showDatePicker && (
-            <DateTimePicker
-              value={selectedDate || new Date()}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'calendar'}
-              minimumDate={new Date()}
-              onChange={onDateChange}
-              themeVariant="dark"
-            />
-          )}
+
+          {/* Date Picker Modal */}
+          <Modal visible={showDatePicker} transparent animationType="slide">
+            <View style={s.modalOverlay}>
+              <View style={s.modalCard}>
+                <Text style={s.modalTitle}>Select Event Date</Text>
+                <DateGrid selectedDate={selectedDate} onSelect={selectDate} />
+                <TouchableOpacity style={s.modalClose} onPress={() => setShowDatePicker(false)}>
+                  <Text style={s.modalCloseText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
           <Field label="City / District" icon="location-outline" value={form.city} onChange={(v: string) => update('city', v)} />
           <Field label="Budget (₹)" icon="wallet-outline" value={form.budget} onChange={(v: string) => update('budget', v)} keyboard="numeric" placeholder="e.g. 50000" />
           <Field label="Message / Requirements" icon="chatbubble-outline" value={form.message} onChange={(v: string) => update('message', v)} multiline placeholder="Tell us about your event..." />
@@ -303,4 +301,57 @@ const s = StyleSheet.create({
   successSub: { fontSize: 13, color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginTop: 8, lineHeight: 20 },
   successBtn: { marginTop: 24, backgroundColor: '#FF8C2B', paddingHorizontal: 28, paddingVertical: 12, borderRadius: 12 },
   successBtnText: { fontSize: 14, fontWeight: '700', color: '#000' },
+  // Modal
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'flex-end' },
+  modalCard: { backgroundColor: '#1a1a1a', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 40 },
+  modalTitle: { fontSize: 16, fontWeight: '700', color: '#fff', textAlign: 'center', marginBottom: 16 },
+  modalClose: { alignItems: 'center', marginTop: 16, paddingVertical: 12 },
+  modalCloseText: { fontSize: 14, color: 'rgba(255,255,255,0.4)' },
 });
+
+// Simple Calendar Grid Component (works in Expo Go, no native modules)
+function DateGrid({ selectedDate, onSelect }: { selectedDate: Date | null; onSelect: (d: Date) => void }) {
+  const [viewMonth, setViewMonth] = React.useState(new Date());
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const year = viewMonth.getFullYear();
+  const month = viewMonth.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDay = new Date(year, month, 1).getDay();
+  const monthName = viewMonth.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+
+  const prevMonth = () => { const d = new Date(viewMonth); d.setMonth(d.getMonth() - 1); if (d >= new Date(today.getFullYear(), today.getMonth(), 1)) setViewMonth(d); };
+  const nextMonth = () => { const d = new Date(viewMonth); d.setMonth(d.getMonth() + 1); setViewMonth(d); };
+
+  const days: (number | null)[] = [];
+  for (let i = 0; i < firstDay; i++) days.push(null);
+  for (let i = 1; i <= daysInMonth; i++) days.push(i);
+
+  return (
+    <View>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <TouchableOpacity onPress={prevMonth} style={{ padding: 8 }}><Ionicons name="chevron-back" size={20} color="#F97316" /></TouchableOpacity>
+        <Text style={{ fontSize: 14, fontWeight: '700', color: '#fff' }}>{monthName}</Text>
+        <TouchableOpacity onPress={nextMonth} style={{ padding: 8 }}><Ionicons name="chevron-forward" size={20} color="#F97316" /></TouchableOpacity>
+      </View>
+      <View style={{ flexDirection: 'row', marginBottom: 6 }}>
+        {['S','M','T','W','T','F','S'].map((d, i) => <Text key={i} style={{ flex: 1, textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.3)', fontWeight: '600' }}>{d}</Text>)}
+      </View>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+        {days.map((day, i) => {
+          if (!day) return <View key={i} style={{ width: '14.28%', height: 38 }} />;
+          const date = new Date(year, month, day);
+          const isPast = date < today;
+          const isSelected = selectedDate && date.toDateString() === selectedDate.toDateString();
+          const isToday = date.toDateString() === today.toDateString();
+          return (
+            <TouchableOpacity key={i} style={{ width: '14.28%', height: 38, alignItems: 'center', justifyContent: 'center' }} onPress={() => !isPast && onSelect(date)} disabled={isPast}>
+              <View style={[{ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' }, isSelected && { backgroundColor: '#F97316' }, isToday && !isSelected && { borderWidth: 1, borderColor: '#F97316' }]}>
+                <Text style={[{ fontSize: 13, color: isPast ? 'rgba(255,255,255,0.15)' : '#fff' }, isSelected && { color: '#000', fontWeight: '700' }]}>{day}</Text>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
