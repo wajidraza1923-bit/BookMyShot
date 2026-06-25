@@ -23,6 +23,8 @@ router.get("/featured", async (req, res, next) => {
       .populate("user", "name email avatar phone")
       .sort("featuredRank")
       .lean();
+    // Normalize portfolio for lean results
+    featured.forEach(c => { if (c.portfolio) c.portfolio = c.portfolio.map(i => typeof i === 'string' ? i : (i?.url || '')); });
     res.json({ success: true, data: featured });
   } catch (e) { next(e); }
 });

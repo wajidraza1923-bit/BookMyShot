@@ -68,6 +68,12 @@ router.get("/", async (req, res, next) => {
       });
     }
 
+    // Normalize portfolio/video items to strings (lean() bypasses toJSON transform)
+    creators.forEach(c => {
+      if (c.portfolio) c.portfolio = c.portfolio.map((item) => typeof item === 'string' ? item : (item?.url || item?.uri || ''));
+      if (c.videos) c.videos = c.videos.map((item) => typeof item === 'string' ? item : (item?.url || item?.uri || ''));
+    });
+
     res.json({ success: true, creators });
   } catch (e) {
     next(e);
