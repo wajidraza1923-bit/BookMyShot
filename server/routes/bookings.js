@@ -84,6 +84,7 @@ router.post("/", protect, async (req, res, next) => {
       eventDate,
       eventLocation,
       budget,
+      highestBudget: budget || 0,
       message,
       status: "Booking Created",
       invoiceNumber: `BMS-${Date.now()}`,
@@ -180,6 +181,10 @@ router.patch("/:id/status", protect, async (req, res, next) => {
       const newAmount = amount || booking.budget || 0;
       booking.amount = newAmount;
       booking.remaining = newAmount;
+      // Track highest budget — never decreases
+      if (newAmount > (booking.highestBudget || 0)) {
+        booking.highestBudget = newAmount;
+      }
       if (creatorNotes) booking.creatorNotes = creatorNotes;
 
       // Immediately calculate commission (highest amount wins, no payment dependency)

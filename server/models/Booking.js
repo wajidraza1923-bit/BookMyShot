@@ -12,6 +12,7 @@ const bookingSchema = new mongoose.Schema(
     eventTime: { type: String, default: "" },
     eventLocation: { type: String, default: "" },
     budget: { type: Number, default: 0 },
+    highestBudget: { type: Number, default: 0 }, // Never decreases — commission always based on this
     message: { type: String, default: "" },
     status: {
       type: String,
