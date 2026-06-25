@@ -40,10 +40,10 @@ export default function AdminEarnings({ navigation }: any) {
       <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />} contentContainerStyle={{ padding: 14, paddingBottom: 100 }}>
 
         {/* Revenue Overview — ADMIN ONLY (commission + subscriptions) */}
-        <Section title="💰 Admin Revenue (Platform Earnings)">
+        <Section title="💰 Admin Revenue (Actually Received)">
           <Row label="Total Admin Revenue" value={fmt(revenue.lifetime)} highlight />
-          <Row label="Commission Revenue" value={fmt(revenue.commissionRevenue)} />
-          <Row label="Subscription Revenue" value={fmt(revenue.subscriptionRevenue)} />
+          <Row label="Commission Received" value={fmt(revenue.commissionReceived || revenue.commissionRevenue)} color="#10B981" />
+          <Row label="Subscription Received" value={fmt(revenue.subscriptionReceived || revenue.subscriptionRevenue)} />
           <Row label="Today" value={fmt(revenue.today)} />
           <Row label="This Week" value={fmt(revenue.week)} />
           <Row label="This Month" value={fmt(revenue.month)} />
@@ -53,10 +53,10 @@ export default function AdminEarnings({ navigation }: any) {
         </Section>
 
         {/* Commission — Admin Commission Only */}
-        <Section title="📊 Commission (Admin Earnings)">
-          <Row label="Total Commission Generated" value={fmt(commission.total)} />
-          <Row label="Paid (Received by Admin)" value={fmt(commission.paid)} color="#10B981" highlight />
-          <Row label="Pending (Not Yet Paid)" value={fmt(commission.pending)} color="#F59E0B" />
+        <Section title="📊 Commission">
+          <Row label="Total Generated" value={fmt(commission.total)} />
+          <Row label="Actually Received" value={fmt(commission.received || commission.paid)} color="#10B981" highlight />
+          <Row label="Pending (Not Received)" value={fmt(commission.pending)} color="#F59E0B" />
           <Row label="Today" value={fmt(commission.today)} muted />
           <Row label="This Month" value={fmt(commission.month)} muted />
         </Section>
