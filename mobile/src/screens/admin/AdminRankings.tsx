@@ -4,134 +4,146 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, radius } from '../../theme';
 import api from '../../services/api';
 
-const SECTIONS = [
-  { key: 'all_creators', label: 'All' },
-  { key: 'best_reviewed', label: 'Best Reviewed' },
-  { key: 'featured', label: 'Featured' },
-  { key: 'top_creators', label: 'Top' },
-  { key: 'trending', label: 'Trending' },
-];
-
 export default function AdminRankings({ navigation }: any) {
-  const [rankings, setRankings] = useState<any>({});
+  const [featured, setFeatured] = useState<any[]>([]);
+  const [overall, setOverall] = useState<any[]>([]);
   const [creators, setCreators] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [tab, setTab] = useState('all_creators');
-  const [adding, setAdding] = useState(false);
+  const [tab, setTab] = useState<'featured' | 'overall'>('featured');
   const [search, setSearch] = useState('');
-  const [pickerCreator, setPickerCreator] = useState<any>(null);
+  const [showAdd, setShowAdd] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const [rankRes, creatorsRes] = await Promise.all([
-        api.get('/admin/rankings'),
-        api.get('/admin/creator-accounts'),
+      const [featRes, overRes] = await Promise.all([
+        api.get('/admin/ranking-management/featured'),
+        api.get('/admin/ranking-management/overall?limit=100'),
       ]);
-      setRankings(rankRes.data?.data || {});
-      const rd = creatorsRes.data?.data;
-      const all = Array.isArray(rd?.creators) ? rd.creators : Array.isArray(creatorsRes.data?.creators) ? creatorsRes.data.creators : [];
-      setCreators(all.filter((c: any) => c.status === 'approved'));
+      setFeatured(featRes.data?.data || []);
+      setOverall(overRes.data?.data || []);
+      setCreators(overRes.data?.data || []);
     } catch {} finally { setLoading(false); }
   }, []);
 
   useEffect(() => { load(); }, []);
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
-  const assign = async (creatorId: string, pos: number) => {
+  const setFeaturedRank = async (creatorId: string, rank: number) => {
     try {
-      await api.put(`/admin/rankings/${tab}/${pos}`, { creatorId });
-      setAdding(false); setPickerCreator(null); setSearch('');
+      await api.put(`/admin/ranking-management/featured/${creatorId}/${rank}`);
       await load();
     } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
   };
 
-  const remove = (pos: number) => {
-    Alert.alert('Remove', `Remove #${pos}?`, [{ text: 'Cancel' }, { text: 'Remove', style: 'destructive', onPress: async () => { try { await api.delete(`/admin/rankings/${tab}/${pos}`); await load(); } catch {} } }]);
+  const removeFeatured = async (creatorId: string) => {
+    try {
+      await api.delete(`/admin/ranking-management/featured/${creatorId}`);
+      await load();
+    } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
   };
 
-  const list = rankings[tab] || [];
-  const filtered = creators.filter(c => { if (!search) return true; const s = search.toLowerCase(); return (c.user?.name||'').toLowerCase().includes(s) || (c.creatorId||'').toLowerCase().includes(s); });
+  const moveCreator = async (creatorId: string, direction: 'up' | 'down') => {
+    try {
+      await api.put(`/admin/ranking-management/overall/${creatorId}/move`, { direction });
+      await load();
+    } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
+  };
+
+  const filtered = creators.filter(c => {
+    if (!search) return true;
+    const s = search.toLowerCase();
+    return (c.user?.name || '').toLowerCase().includes(s) || (c.creatorId || '').toLowerCase().includes(s) || (c.city || '').toLowerCase().includes(s);
+  });
 
   if (loading) return <View style={s.root}><ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 80 }} /></View>;
 
   return (
     <View style={s.root}>
-      {/* Compact Header */}
+      {/* Header */}
       <View style={s.head}>
         <TouchableOpacity onPress={() => navigation.goBack()}><Ionicons name="arrow-back" size={20} color={colors.text} /></TouchableOpacity>
-        <Text style={s.headTitle}>Rankings</Text>
-        <TouchableOpacity onPress={() => { setAdding(!adding); setPickerCreator(null); }} style={s.addIcon}><Ionicons name={adding ? "close" : "add"} size={18} color="#000" /></TouchableOpacity>
+        <Text style={s.headTitle}>Ranking Management</Text>
       </View>
 
-      {/* Compact Chip Tabs */}
-      <View style={s.chips}>
-        {SECTIONS.map(sec => (
-          <TouchableOpacity key={sec.key} style={[s.chip, tab === sec.key && s.chipActive]} onPress={() => { setTab(sec.key); setAdding(false); }}>
-            <Text style={[s.chipText, tab === sec.key && s.chipTextActive]}>{sec.label}</Text>
-            <Text style={[s.chipCount, tab === sec.key && { color: colors.primary }]}>{(rankings[sec.key] || []).length}</Text>
-          </TouchableOpacity>
-        ))}
+      {/* Tab Chips */}
+      <View style={s.tabs}>
+        <TouchableOpacity style={[s.tabChip, tab === 'featured' && s.tabActive]} onPress={() => setTab('featured')}>
+          <Text style={[s.tabText, tab === 'featured' && s.tabTextActive]}>Featured ({featured.length}/4)</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[s.tabChip, tab === 'overall' && s.tabActive]} onPress={() => setTab('overall')}>
+          <Text style={[s.tabText, tab === 'overall' && s.tabTextActive]}>Overall ({overall.length})</Text>
+        </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}>
+      <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />} contentContainerStyle={{ paddingHorizontal: 14, paddingBottom: 100 }}>
 
-        {/* Add Panel */}
-        {adding && (
-          <View style={s.addPanel}>
-            {pickerCreator ? (
-              <View>
-                <View style={s.pickerHead}>
-                  <Image source={{ uri: pickerCreator.user?.avatar || 'https://via.placeholder.com/24' }} style={s.tinyAv} />
-                  <Text style={s.pickerName}>{pickerCreator.user?.name}</Text>
-                  <TouchableOpacity onPress={() => setPickerCreator(null)}><Ionicons name="close" size={16} color={colors.textMuted} /></TouchableOpacity>
+        {/* ═══ FEATURED TAB ═══ */}
+        {tab === 'featured' && (
+          <>
+            <Text style={s.subHead}>Top 4 Featured Creators (manually selected)</Text>
+            {/* Current Featured */}
+            {[1,2,3,4].map(rank => {
+              const c = featured.find((f: any) => f.featuredRank === rank);
+              const bg = rank === 1 ? '#FFD70012' : rank === 2 ? '#C0C0C010' : rank === 3 ? '#CD7F3210' : 'transparent';
+              const numColor = rank === 1 ? '#FFD700' : rank === 2 ? '#C0C0C0' : rank === 3 ? '#CD7F32' : colors.primary;
+              return (
+                <View key={rank} style={[s.row, { backgroundColor: bg }]}>
+                  <Text style={[s.rankNum, { color: numColor }]}>#{rank}</Text>
+                  {c ? (
+                    <>
+                      <Image source={{ uri: c.user?.avatar || 'https://via.placeholder.com/28' }} style={s.av} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={s.name}>{c.user?.name || '—'}</Text>
+                        <Text style={s.meta}>{c.city || ''} • ★{c.rating || '5.0'}</Text>
+                      </View>
+                      <TouchableOpacity onPress={() => removeFeatured(c._id)}><Ionicons name="close-circle" size={18} color={colors.error} /></TouchableOpacity>
+                    </>
+                  ) : (
+                    <Text style={s.emptySlot}>Empty — tap a creator below to assign</Text>
+                  )}
                 </View>
-                <View style={s.posRow}>
-                  {[1,2,3,4,5,6,7,8].map(p => {
-                    const taken = list.find((r: any) => r.position === p && r.source === 'promotion');
-                    return <TouchableOpacity key={p} style={[s.posChip, taken && s.posDisabled]} disabled={!!taken} onPress={() => assign(pickerCreator._id, p)}><Text style={[s.posText, taken && { color: colors.textMuted }]}>#{p}</Text></TouchableOpacity>;
-                  })}
+              );
+            })}
+
+            {/* Assign Creator to Featured */}
+            <Text style={[s.subHead, { marginTop: 16 }]}>Assign Creator</Text>
+            <TextInput style={s.searchBox} placeholder="Search by name or city..." placeholderTextColor="rgba(255,255,255,0.2)" value={search} onChangeText={setSearch} />
+            {filtered.filter(c => !featured.find((f: any) => f._id === c._id)).slice(0, 8).map(c => (
+              <View key={c._id} style={s.assignRow}>
+                <Image source={{ uri: c.user?.avatar || 'https://via.placeholder.com/24' }} style={s.smAv} />
+                <View style={{ flex: 1 }}>
+                  <Text style={s.assignName}>{c.user?.name || 'Creator'}</Text>
+                  <Text style={s.assignMeta}>{c.city || ''} • ★{c.rating || '5.0'}</Text>
                 </View>
-              </View>
-            ) : (
-              <View>
-                <TextInput style={s.searchBox} placeholder="Search creator..." placeholderTextColor="rgba(255,255,255,0.2)" value={search} onChangeText={setSearch} />
-                {filtered.slice(0, 6).map(c => (
-                  <TouchableOpacity key={c._id} style={s.searchItem} onPress={() => setPickerCreator(c)}>
-                    <Image source={{ uri: c.user?.avatar || 'https://via.placeholder.com/20' }} style={s.tinyAv} />
-                    <Text style={s.searchName} numberOfLines={1}>{c.user?.name || 'Creator'}</Text>
-                    <Text style={s.searchRating}>★{c.rating || '5.0'}</Text>
+                {[1,2,3,4].map(r => (
+                  <TouchableOpacity key={r} style={s.posBtn} onPress={() => setFeaturedRank(c._id, r)}>
+                    <Text style={s.posBtnText}>#{r}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
-            )}
-          </View>
+            ))}
+          </>
         )}
 
-        {/* Leaderboard — Compact rows */}
-        {list.length > 0 ? list.map((r: any) => {
-          const pos = r.position;
-          const bg = pos === 1 ? '#FFD70015' : pos === 2 ? '#C0C0C015' : pos === 3 ? '#CD7F3215' : 'transparent';
-          const numColor = pos === 1 ? '#FFD700' : pos === 2 ? '#C0C0C0' : pos === 3 ? '#CD7F32' : colors.primary;
-          const srcColor = r.source === 'promotion' ? '#10B981' : r.source === 'admin_manual' ? '#F97316' : '#6B7280';
-          const srcLabel = r.source === 'promotion' ? 'Promo' : r.source === 'admin_manual' ? 'Manual' : 'Auto';
-          return (
-            <View key={r._id || pos} style={[s.row, { backgroundColor: bg }]}>  
-              <Text style={[s.rowNum, { color: numColor }]}>#{pos}</Text>
-              <Image source={{ uri: r.creator?.avatar || 'https://via.placeholder.com/28' }} style={s.rowAv} />
-              <View style={{ flex: 1 }}>
-                <Text style={s.rowName} numberOfLines={1}>{r.creator?.name || '—'}</Text>
-                <Text style={s.rowMeta}>{r.creator?.city || ''}{r.creator?.rating ? ` • ★${r.creator.rating}` : ''}</Text>
+        {/* ═══ OVERALL TAB ═══ */}
+        {tab === 'overall' && (
+          <>
+            <Text style={s.subHead}>All Creators — Manual Order</Text>
+            <TextInput style={s.searchBox} placeholder="Search..." placeholderTextColor="rgba(255,255,255,0.2)" value={search} onChangeText={setSearch} />
+            {filtered.map((c: any, i: number) => (
+              <View key={c._id} style={s.row}>
+                <Text style={[s.rankNum, { color: colors.textMuted }]}>#{c.displayOrder || i + 1}</Text>
+                <Image source={{ uri: c.user?.avatar || 'https://via.placeholder.com/28' }} style={s.av} />
+                <View style={{ flex: 1 }}>
+                  <Text style={s.name}>{c.user?.name || '—'}</Text>
+                  <Text style={s.meta}>{c.city || ''} • ★{c.rating || '5.0'}</Text>
+                </View>
+                <TouchableOpacity onPress={() => moveCreator(c._id, 'up')} style={s.moveBtn}><Ionicons name="chevron-up" size={16} color={colors.primary} /></TouchableOpacity>
+                <TouchableOpacity onPress={() => moveCreator(c._id, 'down')} style={s.moveBtn}><Ionicons name="chevron-down" size={16} color={colors.primary} /></TouchableOpacity>
               </View>
-              <View style={[s.srcBadge, { backgroundColor: srcColor + '18' }]}><Text style={[s.srcText, { color: srcColor }]}>{srcLabel}</Text></View>
-              {r.source !== 'promotion' && <TouchableOpacity onPress={() => remove(pos)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}><Ionicons name="close" size={14} color="rgba(239,68,68,0.6)" /></TouchableOpacity>}
-            </View>
-          );
-        }) : (
-          <View style={s.empty}>
-            <Text style={s.emptyTitle}>Automatic Ranking Active</Text>
-            <Text style={s.emptyDesc}>Sorted by rating & bookings. Tap + to override.</Text>
-          </View>
+            ))}
+          </>
         )}
       </ScrollView>
     </View>
@@ -140,39 +152,26 @@ export default function AdminRankings({ navigation }: any) {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  head: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 52, paddingBottom: 8, gap: 12 },
-  headTitle: { flex: 1, fontSize: 18, fontWeight: '700', color: colors.text },
-  addIcon: { width: 30, height: 30, borderRadius: 15, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
-  // Chips
-  chips: { flexDirection: 'row', paddingHorizontal: 16, gap: 6, marginBottom: 10 },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 16, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
-  chipActive: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },
-  chipText: { fontSize: 11, fontWeight: '600', color: colors.textMuted },
-  chipTextActive: { color: colors.primary },
-  chipCount: { fontSize: 9, color: colors.textMuted, fontWeight: '700' },
-  // Add Panel
-  addPanel: { backgroundColor: colors.surface, borderRadius: 10, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: colors.primary + '30' },
-  searchBox: { backgroundColor: 'rgba(255,255,255,0.03)', borderWidth: 1, borderColor: colors.border, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7, color: colors.text, fontSize: 12, marginBottom: 8 },
-  searchItem: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.03)' },
-  searchName: { flex: 1, fontSize: 12, color: colors.text, fontWeight: '500' },
-  searchRating: { fontSize: 10, color: '#F59E0B', fontWeight: '600' },
-  tinyAv: { width: 24, height: 24, borderRadius: 12, borderWidth: 1, borderColor: colors.border },
-  pickerHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.04)' },
-  pickerName: { flex: 1, fontSize: 13, fontWeight: '600', color: colors.text },
-  posRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  posChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: colors.primaryMuted, borderWidth: 1, borderColor: colors.primary + '30' },
-  posDisabled: { backgroundColor: 'rgba(255,255,255,0.02)', borderColor: colors.border },
-  posText: { fontSize: 13, fontWeight: '700', color: colors.primary },
-  // Leaderboard rows
-  row: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 9, paddingHorizontal: 10, borderRadius: 8, marginBottom: 2, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.025)' },
-  rowNum: { fontSize: 13, fontWeight: '800', width: 26 },
-  rowAv: { width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: colors.border },
-  rowName: { fontSize: 12, fontWeight: '600', color: colors.text },
-  rowMeta: { fontSize: 9, color: colors.textMuted },
-  srcBadge: { paddingHorizontal: 5, paddingVertical: 2, borderRadius: 3 },
-  srcText: { fontSize: 8, fontWeight: '700' },
-  // Empty
-  empty: { alignItems: 'center', paddingVertical: 32 },
-  emptyTitle: { fontSize: 13, fontWeight: '600', color: colors.textMuted },
-  emptyDesc: { fontSize: 11, color: colors.textMuted, marginTop: 4 },
+  head: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingTop: 50, paddingBottom: 8, gap: 10 },
+  headTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: colors.text },
+  tabs: { flexDirection: 'row', paddingHorizontal: 14, gap: 8, marginBottom: 8 },
+  tabChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  tabActive: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },
+  tabText: { fontSize: 12, fontWeight: '600', color: colors.textMuted },
+  tabTextActive: { color: colors.primary },
+  subHead: { fontSize: 11, fontWeight: '600', color: colors.textMuted, marginBottom: 8, marginTop: 4, letterSpacing: 0.3 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8, paddingHorizontal: 8, borderRadius: 8, marginBottom: 2, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.025)' },
+  rankNum: { fontSize: 13, fontWeight: '800', width: 28 },
+  av: { width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: colors.border },
+  name: { fontSize: 12, fontWeight: '600', color: colors.text },
+  meta: { fontSize: 9, color: colors.textMuted },
+  emptySlot: { flex: 1, fontSize: 11, color: colors.textMuted, fontStyle: 'italic' },
+  searchBox: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7, color: colors.text, fontSize: 12, marginBottom: 8 },
+  assignRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.025)' },
+  smAv: { width: 22, height: 22, borderRadius: 11, borderWidth: 1, borderColor: colors.border },
+  assignName: { fontSize: 11, fontWeight: '600', color: colors.text },
+  assignMeta: { fontSize: 9, color: colors.textMuted },
+  posBtn: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, backgroundColor: colors.primaryMuted, borderWidth: 1, borderColor: colors.primary + '30' },
+  posBtnText: { fontSize: 10, fontWeight: '700', color: colors.primary },
+  moveBtn: { padding: 4 },
 });
