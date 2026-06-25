@@ -188,11 +188,8 @@ export default function InquiryScreen({ route, navigation }: any) {
           <Field label="Phone Number *" icon="call-outline" value={form.phone} onChange={(v: string) => update('phone', v)} keyboard="phone-pad" />
           <Field label="Email" icon="mail-outline" value={form.email} onChange={(v: string) => update('email', v)} keyboard="email-address" />
           <Field label="Event Type *" icon="calendar-outline" value={form.eventType} onChange={(v: string) => update('eventType', v)} placeholder="e.g. Wedding, Pre-Wedding, Reception" />
-          <TouchableOpacity style={styles.dateField || s.dateField} onPress={() => {
+          <TouchableOpacity style={s.dateField} onPress={() => {
             // Simple date input — user types, we parse
-            Alert.prompt ? Alert.prompt('Event Date', 'Enter date (DD/MM/YYYY):', (text: string) => {
-              if (text) { update('eventDate', text); setSelectedDate(new Date(parseDate(text))); }
-            }) : update('eventDate', form.eventDate);
           }}>
             <Ionicons name="today-outline" size={18} color={form.eventDate ? '#F97316' : 'rgba(255,255,255,0.3)'} />
             <Text style={[s.dateText, form.eventDate && { color: '#fff' }]}>
