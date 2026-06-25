@@ -13,7 +13,9 @@ export default function AdminEarnings({ navigation }: any) {
     try {
       const res = await api.get('/admin/analytics');
       setData(res.data?.data);
-    } catch {} finally { setLoading(false); }
+    } catch (e: any) {
+      console.log('[Earnings] Error:', e.response?.status, e.response?.data?.message || e.message);
+    } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { load(); }, []);
@@ -22,7 +24,7 @@ export default function AdminEarnings({ navigation }: any) {
   const fmt = (n: number) => '₹' + (n || 0).toLocaleString('en-IN');
 
   if (loading) return <View style={s.root}><ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 80 }} /></View>;
-  if (!data) return <View style={s.root}><Text style={{ color: colors.textMuted, textAlign: 'center', marginTop: 80 }}>Failed to load</Text></View>;
+  if (!data) return <View style={s.root}><Text style={{ color: colors.textMuted, textAlign: 'center', marginTop: 80 }}>Failed to load analytics</Text><TouchableOpacity onPress={() => { setLoading(true); load(); }} style={{ marginTop: 16, alignSelf: 'center', paddingHorizontal: 20, paddingVertical: 10, backgroundColor: colors.primary, borderRadius: 8 }}><Text style={{ color: '#000', fontWeight: '700' }}>Retry</Text></TouchableOpacity></View>;
 
   const { revenue, commission, subscriptions, forecast, payments, creators, bookings } = data;
 

@@ -19,8 +19,11 @@ router.get("/", async (req, res, next) => {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const yearStart = new Date(now.getFullYear(), 0, 1);
 
-    const subSettings = await configService.getSubscriptionSettings();
-    const monthlyPrice = subSettings.monthlyPlanPrice || 299;
+    let monthlyPrice = 299;
+    try {
+      const subSettings = await configService.getSubscriptionSettings();
+      monthlyPrice = subSettings.monthlyPlanPrice || 299;
+    } catch {}
 
     // ═══ REVENUE ═══
     const allBookings = await Booking.find({}).lean();
@@ -118,7 +121,10 @@ router.get("/", async (req, res, next) => {
         trends: { revenue: revenueTrend },
       },
     });
-  } catch (e) { next(e); }
+  } catch (e) {
+    console.error("[Analytics] Error:", e.message, e.stack?.substring(0, 200));
+    res.status(500).json({ success: false, message: "Analytics error: " + e.message });
+  }
 });
 
 module.exports = router;
