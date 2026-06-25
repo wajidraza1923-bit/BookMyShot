@@ -26,7 +26,7 @@ router.get("/", async (req, res, next) => {
     } catch {}
 
     // ═══ REVENUE ═══
-    const allBookings = await Booking.find({}).lean();
+    const allBookings = await Booking.find({}).select("amount budget status createdAt").lean();
     const completedBookings = allBookings.filter(b => b.status === "Completed");
     const lifetimeRevenue = allBookings.reduce((s, b) => s + (b.amount || b.budget || 0), 0);
     const todayRevenue = allBookings.filter(b => new Date(b.createdAt) >= todayStart).reduce((s, b) => s + (b.amount || b.budget || 0), 0);
@@ -40,7 +40,7 @@ router.get("/", async (req, res, next) => {
     const avgMonthly = Math.round(lifetimeRevenue / Math.max(1, Math.ceil(daysSinceFirst / 30)));
 
     // ═══ COMMISSION ═══
-    const allCommissions = await Commission.find({}).lean();
+    const allCommissions = await Commission.find({}).select("commissionAmount creatorEarning status creator createdAt").lean();
     const totalCommission = allCommissions.reduce((s, c) => s + (c.commissionAmount || 0), 0);
     const todayComm = allCommissions.filter(c => new Date(c.createdAt) >= todayStart).reduce((s, c) => s + (c.commissionAmount || 0), 0);
     const monthComm = allCommissions.filter(c => new Date(c.createdAt) >= monthStart).reduce((s, c) => s + (c.commissionAmount || 0), 0);
@@ -50,7 +50,7 @@ router.get("/", async (req, res, next) => {
     const platformEarnings = paidComm;
 
     // ═══ SUBSCRIPTIONS ═══
-    const allCreators = await Creator.find({ status: { $ne: "deleted" } }).lean();
+    const allCreators = await Creator.find({ status: { $ne: "deleted" } }).select("status subscriptionStatus autoRenew verified").lean();
     const activeSubs = allCreators.filter(c => c.subscriptionStatus === "active").length;
     const pendingSubs = allCreators.filter(c => c.subscriptionStatus === "pending_payment").length;
     const expiredSubs = allCreators.filter(c => c.subscriptionStatus === "expired").length;
