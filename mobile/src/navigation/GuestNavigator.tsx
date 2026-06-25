@@ -17,6 +17,7 @@ import InquiryScreen from '../screens/InquiryScreen';
 import WriteReviewScreen from '../screens/WriteReviewScreen';
 import PlatformReviewScreen from '../screens/PlatformReviewScreen';
 import AllCreatorsScreen from '../screens/AllCreatorsScreen';
+import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -57,6 +58,7 @@ export default function GuestNavigator() {
       <Stack.Screen name="WriteReview" component={WriteReviewScreen} />
       <Stack.Screen name="PlatformReview" component={PlatformReviewScreen} />
       <Stack.Screen name="AllCreators" component={AllCreatorsScreen} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
     </Stack.Navigator>
   );
 }
