@@ -306,6 +306,7 @@ app.use("/api/admin/reports", protect, authorize("admin"), require("./routes/adm
 app.use("/api/admin/report-management", protect, authorize("admin"), require("./routes/admin/reportManagement"));
 app.use("/api/admin/overdue", protect, authorize("admin"), require("./routes/admin/overdueManagement"));
 app.use("/api/admin/rankings", protect, authorize("admin"), require("./routes/admin/rankings"));
+app.use("/api/admin/ranking-management", protect, authorize("admin"), require("./routes/admin/rankingManagement"));
 
 // Public rankings API (used by website + app)
 app.use("/api/rankings", require("./routes/rankings"));

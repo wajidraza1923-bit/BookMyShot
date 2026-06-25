@@ -44,8 +44,13 @@ router.get("/", async (req, res, next) => {
 
       if (activeBoosts.length > 0) {
         const boostedIds = new Set(activeBoosts.map(b => b.creator.toString()));
-        // Sort: boosted creators first, then featured, then by rating
+        // Sort: displayOrder (admin manual) > boosted > featured > rating
         creators.sort((a, b) => {
+          // Admin manual display order takes highest priority
+          const aOrder = a.displayOrder || 9999;
+          const bOrder = b.displayOrder || 9999;
+          if (aOrder !== bOrder) return aOrder - bOrder;
+          // Then boosted
           const aBoost = boostedIds.has(a._id.toString()) ? 1 : 0;
           const bBoost = boostedIds.has(b._id.toString()) ? 1 : 0;
           if (aBoost !== bBoost) return bBoost - aBoost;
@@ -54,7 +59,13 @@ router.get("/", async (req, res, next) => {
         });
       }
     } catch (boostErr) {
-      // If boost lookup fails, continue without boost ordering
+      // Fallback: sort by displayOrder then rating
+      creators.sort((a, b) => {
+        const aOrder = a.displayOrder || 9999;
+        const bOrder = b.displayOrder || 9999;
+        if (aOrder !== bOrder) return aOrder - bOrder;
+        return (b.rating || 0) - (a.rating || 0);
+      });
     }
 
     res.json({ success: true, creators });

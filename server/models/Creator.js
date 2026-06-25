@@ -23,6 +23,8 @@ const creatorSchema = new mongoose.Schema(
     rating: { type: Number, default: 5 },
     weddingsCount: { type: Number, default: 0 },
     featured: { type: Boolean, default: false },
+    featuredRank: { type: Number, default: 0 }, // 1-4 for Featured section, 0 = not featured
+    displayOrder: { type: Number, default: 9999 }, // Manual overall ordering (lower = higher)
     featuredStartDate: { type: Date },
     featuredEndDate: { type: Date },
     featuredPaymentStatus: { type: String, enum: ["pending", "paid", "rejected", "none"], default: "none" },
