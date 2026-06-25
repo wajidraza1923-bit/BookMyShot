@@ -10,50 +10,157 @@ export default function AdminEarnings({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
-    try { const res = await api.get('/admin/payment-history'); setData(res.data); } catch {} finally { setLoading(false); }
+    try {
+      const res = await api.get('/admin/analytics');
+      setData(res.data?.data);
+    } catch {} finally { setLoading(false); }
   }, []);
 
   useEffect(() => { load(); }, []);
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
-  if (loading) return <View style={s.container}><ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 80 }} /></View>;
+  const fmt = (n: number) => '₹' + (n || 0).toLocaleString('en-IN');
 
-  const stats = data?.stats || {};
+  if (loading) return <View style={s.root}><ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 80 }} /></View>;
+  if (!data) return <View style={s.root}><Text style={{ color: colors.textMuted, textAlign: 'center', marginTop: 80 }}>Failed to load</Text></View>;
+
+  const { revenue, commission, subscriptions, forecast, payments, creators, bookings } = data;
 
   return (
-    <View style={s.container}>
-      <View style={s.header}><TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}><Ionicons name="arrow-back" size={20} color={colors.text} /></TouchableOpacity><Text style={s.title}>Earnings</Text></View>
-      <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />} contentContainerStyle={{ padding: spacing.xl, paddingBottom: 100 }}>
-        <View style={s.card}>
-          <Text style={s.cardLabel}>Total Revenue</Text>
-          <Text style={s.cardValue}>₹{(stats.totalRevenue || 0).toLocaleString('en-IN')}</Text>
-        </View>
-        <View style={s.card}>
-          <Text style={s.cardLabel}>This Month</Text>
-          <Text style={[s.cardValue, { color: colors.success }]}>₹{(stats.monthlyRevenue || 0).toLocaleString('en-IN')}</Text>
-        </View>
-        <View style={s.card}>
-          <Text style={s.cardLabel}>Active Subscriptions</Text>
-          <Text style={s.cardValue}>{stats.activeSubscriptions || 0}</Text>
-        </View>
-        <View style={s.card}>
-          <Text style={s.cardLabel}>Failed Payments</Text>
-          <Text style={[s.cardValue, { color: colors.error }]}>{stats.failedPayments || 0}</Text>
-        </View>
-        <View style={s.card}>
-          <Text style={s.cardLabel}>Expired</Text>
-          <Text style={s.cardValue}>{stats.expiredSubscriptions || 0}</Text>
-        </View>
+    <View style={s.root}>
+      <View style={s.head}>
+        <TouchableOpacity onPress={() => navigation.goBack()}><Ionicons name="arrow-back" size={20} color={colors.text} /></TouchableOpacity>
+        <Text style={s.headTitle}>Earnings & Revenue</Text>
+      </View>
+
+      <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />} contentContainerStyle={{ padding: 14, paddingBottom: 100 }}>
+
+        {/* Revenue Overview */}
+        <Section title="💰 Revenue Overview">
+          <Row label="Lifetime Revenue" value={fmt(revenue.lifetime)} highlight />
+          <Row label="Today" value={fmt(revenue.today)} />
+          <Row label="This Week" value={fmt(revenue.week)} />
+          <Row label="This Month" value={fmt(revenue.month)} />
+          <Row label="This Year" value={fmt(revenue.year)} />
+          <Row label="Avg Daily" value={fmt(revenue.avgDaily)} muted />
+          <Row label="Avg Monthly" value={fmt(revenue.avgMonthly)} muted />
+        </Section>
+
+        {/* Commission */}
+        <Section title="📊 Commission Analytics">
+          <Row label="Total Commission" value={fmt(commission.total)} highlight />
+          <Row label="Platform Earnings" value={fmt(commission.platformEarnings)} color="#10B981" />
+          <Row label="Creator Earnings" value={fmt(commission.creatorEarnings)} />
+          <Row label="Pending" value={fmt(commission.pending)} color="#F59E0B" />
+          <Row label="Paid" value={fmt(commission.paid)} color="#10B981" />
+          <Row label="Today" value={fmt(commission.today)} muted />
+          <Row label="This Month" value={fmt(commission.month)} muted />
+        </Section>
+
+        {/* Subscriptions */}
+        <Section title="💎 Subscriptions">
+          <StatRow data={[
+            { label: 'Active', value: subscriptions.active, color: '#10B981' },
+            { label: 'Pending', value: subscriptions.pending, color: '#F59E0B' },
+            { label: 'Expired', value: subscriptions.expired, color: '#EF4444' },
+            { label: 'Trial', value: subscriptions.trial, color: '#3B82F6' },
+          ]} />
+        </Section>
+
+        {/* Forecast */}
+        <Section title="📈 Revenue Forecast">
+          <Row label="Next 7 Days" value={fmt(forecast.next7)} />
+          <Row label="Next 30 Days" value={fmt(forecast.next30)} />
+          <Row label="Next 3 Months" value={fmt(forecast.next90)} color="#10B981" />
+          <Row label="Next 6 Months" value={fmt(forecast.next180)} />
+          <Row label="Next 12 Months" value={fmt(forecast.next365)} highlight />
+        </Section>
+
+        {/* Payments */}
+        <Section title="💳 Payments">
+          <StatRow data={[
+            { label: 'Success', value: payments.successful, color: '#10B981' },
+            { label: 'Failed', value: payments.failed, color: '#EF4444' },
+            { label: 'Pending', value: payments.pending, color: '#F59E0B' },
+          ]} />
+        </Section>
+
+        {/* Bookings */}
+        <Section title="📅 Bookings">
+          <Row label="Total" value={bookings.total} highlight />
+          <StatRow data={[
+            { label: 'Today', value: bookings.today, color: '#F97316' },
+            { label: 'Monthly', value: bookings.monthly, color: '#3B82F6' },
+            { label: 'Completed', value: bookings.completed, color: '#10B981' },
+            { label: 'Cancelled', value: bookings.cancelled, color: '#EF4444' },
+          ]} />
+        </Section>
+
+        {/* Creators */}
+        <Section title="👥 Creators">
+          <StatRow data={[
+            { label: 'Total', value: creators.total, color: '#F97316' },
+            { label: 'Active', value: creators.active, color: '#10B981' },
+            { label: 'Pending', value: creators.pending, color: '#F59E0B' },
+            { label: 'Suspended', value: creators.suspended, color: '#EF4444' },
+          ]} />
+        </Section>
+
+        {/* Revenue Trend */}
+        {data.trends?.revenue && (
+          <Section title="📉 Revenue Trend (Last 7 Days)">
+            {data.trends.revenue.map((d: any, i: number) => (
+              <Row key={i} label={new Date(d.date).toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short' })} value={fmt(d.revenue)} muted={d.revenue === 0} />
+            ))}
+          </Section>
+        )}
       </ScrollView>
     </View>
   );
 }
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <View style={s.section}>
+      <Text style={s.sectionTitle}>{title}</Text>
+      {children}
+    </View>
+  );
+}
+
+function Row({ label, value, highlight, muted, color }: { label: string; value: any; highlight?: boolean; muted?: boolean; color?: string }) {
+  return (
+    <View style={s.row}>
+      <Text style={[s.rowLabel, muted && { color: 'rgba(255,255,255,0.25)' }]}>{label}</Text>
+      <Text style={[s.rowValue, highlight && { color: colors.primary, fontSize: 15, fontWeight: '800' }, color && { color }, muted && { color: 'rgba(255,255,255,0.25)' }]}>{value}</Text>
+    </View>
+  );
+}
+
+function StatRow({ data }: { data: { label: string; value: number; color: string }[] }) {
+  return (
+    <View style={s.statRow}>
+      {data.map((d, i) => (
+        <View key={i} style={s.statItem}>
+          <Text style={[s.statVal, { color: d.color }]}>{d.value}</Text>
+          <Text style={s.statLabel}>{d.label}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.xl, paddingTop: spacing['5xl'], paddingBottom: spacing.md, gap: spacing.md },
-  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
-  title: { ...typography.headlineLg, color: colors.text, flex: 1 },
-  card: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.xl, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border },
-  cardLabel: { ...typography.labelMd, color: colors.textMuted },
-  cardValue: { ...typography.displayMd, color: colors.text, marginTop: spacing.sm },
+  root: { flex: 1, backgroundColor: colors.background },
+  head: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingTop: 50, paddingBottom: 8, gap: 10 },
+  headTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: colors.text },
+  section: { backgroundColor: colors.surface, borderRadius: 12, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: colors.border },
+  sectionTitle: { fontSize: 12, fontWeight: '700', color: colors.primary, marginBottom: 10, letterSpacing: 0.3 },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 5, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.02)' },
+  rowLabel: { fontSize: 12, color: 'rgba(255,255,255,0.5)' },
+  rowValue: { fontSize: 13, fontWeight: '600', color: colors.text },
+  statRow: { flexDirection: 'row', gap: 8 },
+  statItem: { flex: 1, alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 8, paddingVertical: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.03)' },
+  statVal: { fontSize: 16, fontWeight: '700' },
+  statLabel: { fontSize: 9, color: colors.textMuted, marginTop: 2 },
 });
