@@ -80,12 +80,12 @@ router.get("/", async (req, res, next) => {
     const verifiedCreators = allCreators.filter(c => c.verified).length;
 
     // Top earning creators
-    const creatorEarningsMap: any = {};
+    const creatorEarningsMap = {};
     allCommissions.filter(c => c.status === "paid").forEach(c => {
       const cid = c.creator?.toString() || "";
       creatorEarningsMap[cid] = (creatorEarningsMap[cid] || 0) + (c.creatorEarning || 0);
     });
-    const topEarners = Object.entries(creatorEarningsMap).sort((a: any, b: any) => b[1] - a[1]).slice(0, 5);
+    const topEarners = Object.entries(creatorEarningsMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
     // ═══ BOOKINGS ═══
     const totalBookingsCount = allBookings.length;
