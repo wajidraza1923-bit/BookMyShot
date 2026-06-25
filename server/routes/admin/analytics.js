@@ -7,7 +7,6 @@ const router = express.Router();
 const Creator = require("../../models/Creator");
 const Booking = require("../../models/Booking");
 const Commission = require("../../models/Commission");
-const PaymentRecord = require("../../models/PaymentRecord");
 const PaymentProof = require("../../models/PaymentProof");
 const configService = require("../../services/configService");
 
@@ -85,7 +84,7 @@ router.get("/", async (req, res, next) => {
       const cid = c.creator?.toString() || "";
       creatorEarningsMap[cid] = (creatorEarningsMap[cid] || 0) + (c.creatorEarning || 0);
     });
-    const topEarners = Object.entries(creatorEarningsMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const topEarners = Object.entries(creatorEarningsMap).sort((a, b) => (Number(b[1]) || 0) - (Number(a[1]) || 0)).slice(0, 5);
 
     // ═══ BOOKINGS ═══
     const totalBookingsCount = allBookings.length;
