@@ -78,13 +78,53 @@ router.get("/creator", protect, async (req, res, next) => {
 
     const proofs = await PaymentProof.find({ creator: creator._id })
       .populate("user", "name email phone")
-      .populate({ path: "booking", select: "eventType eventDate clientName" })
+      .populate({ path: "booking", select: "eventType eventDate clientName invoiceNumber amount budget" })
       .sort("-createdAt");
 
     res.json({ success: true, proofs });
   } catch (e) {
     next(e);
   }
+});
+
+// Creator verifies/rejects payment proof
+router.patch("/:id/creator-verify", protect, async (req, res, next) => {
+  try {
+    const { status, adminNote } = req.body;
+    if (!["verified", "rejected"].includes(status)) return res.status(400).json({ success: false, message: "Status must be verified or rejected" });
+
+    const creator = await Creator.findOne({ user: req.user._id });
+    if (!creator) return res.status(403).json({ success: false, message: "Not a creator" });
+
+    const proof = await PaymentProof.findOne({ _id: req.params.id, creator: creator._id });
+    if (!proof) return res.status(404).json({ success: false, message: "Payment proof not found" });
+
+    proof.status = status;
+    if (adminNote) proof.adminNote = adminNote;
+    await proof.save();
+
+    // If approved, update booking payment
+    if (status === "verified" && proof.booking) {
+      const Booking = require("../models/Booking");
+      const booking = await Booking.findById(proof.booking);
+      if (booking) {
+        booking.advancePaid = (booking.advancePaid || 0) + (proof.amount || 0);
+        booking.remaining = Math.max(0, (booking.amount || booking.budget || 0) - booking.advancePaid);
+        if (booking.remaining <= 0) booking.paymentStatus = "paid";
+        else booking.paymentStatus = "partial";
+        await booking.save();
+      }
+    }
+
+    // Notify user
+    const notifTitle = status === "verified" ? "✅ Payment Approved" : "❌ Payment Rejected";
+    const notifMsg = status === "verified"
+      ? `Your payment of ₹${(proof.amount || 0).toLocaleString('en-IN')} has been approved.`
+      : `Your payment proof was rejected. ${adminNote || ''}`;
+    await Notification.create({ user: proof.user, type: "payment", title: notifTitle, message: notifMsg, targetScreen: "Bookings" });
+
+    res.json({ success: true, message: `Payment ${status}` });
+  } catch (e) { next(e); }
 });
 
 // Get all payment proofs (admin)

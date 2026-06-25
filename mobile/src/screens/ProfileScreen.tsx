@@ -54,6 +54,7 @@ export default function ProfileScreen({ navigation }: any) {
         { icon: 'images-outline', label: 'My Portfolio', screen: 'CreatorPortfolio' },
         { icon: 'pricetag-outline', label: 'Packages', screen: 'CreatorPackages' },
         { icon: 'card-outline', label: 'Wallet & Earnings', screen: 'CreatorWallet' },
+        { icon: 'shield-checkmark-outline', label: 'Payment Verification', screen: 'CreatorPaymentVerification' },
         { icon: 'diamond-outline', label: 'Subscription', screen: 'CreatorSubscription', badge: 'PRO' },
       ],
     },
