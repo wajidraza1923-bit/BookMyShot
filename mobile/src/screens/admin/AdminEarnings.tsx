@@ -39,9 +39,11 @@ export default function AdminEarnings({ navigation }: any) {
 
       <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />} contentContainerStyle={{ padding: 14, paddingBottom: 100 }}>
 
-        {/* Revenue Overview */}
-        <Section title="💰 Revenue Overview">
-          <Row label="Lifetime Revenue" value={fmt(revenue.lifetime)} highlight />
+        {/* Revenue Overview — ADMIN ONLY (commission + subscriptions) */}
+        <Section title="💰 Admin Revenue (Platform Earnings)">
+          <Row label="Total Admin Revenue" value={fmt(revenue.lifetime)} highlight />
+          <Row label="Commission Revenue" value={fmt(revenue.commissionRevenue)} />
+          <Row label="Subscription Revenue" value={fmt(revenue.subscriptionRevenue)} />
           <Row label="Today" value={fmt(revenue.today)} />
           <Row label="This Week" value={fmt(revenue.week)} />
           <Row label="This Month" value={fmt(revenue.month)} />
@@ -50,16 +52,22 @@ export default function AdminEarnings({ navigation }: any) {
           <Row label="Avg Monthly" value={fmt(revenue.avgMonthly)} muted />
         </Section>
 
-        {/* Commission */}
-        <Section title="📊 Commission Analytics">
-          <Row label="Total Commission" value={fmt(commission.total)} highlight />
-          <Row label="Platform Earnings" value={fmt(commission.platformEarnings)} color="#10B981" />
-          <Row label="Creator Earnings" value={fmt(commission.creatorEarnings)} />
-          <Row label="Pending" value={fmt(commission.pending)} color="#F59E0B" />
-          <Row label="Paid" value={fmt(commission.paid)} color="#10B981" />
+        {/* Commission — Admin Commission Only */}
+        <Section title="📊 Commission (Admin Earnings)">
+          <Row label="Total Commission Generated" value={fmt(commission.total)} />
+          <Row label="Paid (Received by Admin)" value={fmt(commission.paid)} color="#10B981" highlight />
+          <Row label="Pending (Not Yet Paid)" value={fmt(commission.pending)} color="#F59E0B" />
           <Row label="Today" value={fmt(commission.today)} muted />
           <Row label="This Month" value={fmt(commission.month)} muted />
         </Section>
+
+        {/* Creator Info — separate informational section */}
+        {data.creatorInfo && (
+          <Section title="👤 Creator Earnings (Info Only)">
+            <Row label="Total Creator Earnings" value={fmt(data.creatorInfo.totalEarnings)} muted />
+            <Row label="Total Booking Value" value={fmt(data.creatorInfo.totalBookingValue)} muted />
+          </Section>
+        )}
 
         {/* Subscriptions */}
         <Section title="💎 Subscriptions">
