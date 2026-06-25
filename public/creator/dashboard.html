@@ -1760,8 +1760,10 @@
     // ─── Logout ─────────────────────────────────────────────────────────────
 
     document.getElementById('logoutBtn').addEventListener('click', function() {
+      if (!confirm("Are you sure you want to log out?")) return;
       if (typeof API !== 'undefined' && API.clearAuth) API.clearAuth();
       localStorage.removeItem('bms_user');
+      sessionStorage.clear();
       window.location.href = '/';
     });
 

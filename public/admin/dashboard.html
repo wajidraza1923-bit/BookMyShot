@@ -855,7 +855,16 @@
       document.getElementById("sidebar").classList.toggle("open");
     });
 
-    document.getElementById("logoutBtn").addEventListener("click", e => { e.preventDefault(); API.clearAuth(); window.location.href = "/"; });
+    document.getElementById("logoutBtn").addEventListener("click", e => {
+      e.preventDefault();
+      if (confirm("Are you sure you want to log out?")) {
+        API.clearAuth();
+        // Clear all session data
+        sessionStorage.clear();
+        // Redirect to homepage (not admin panel)
+        window.location.href = "/";
+      }
+    });
 
     // Dashboard
     async function loadDashboard() {
