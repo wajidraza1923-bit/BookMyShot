@@ -33,6 +33,42 @@ export default function InquiryScreen({ route, navigation }: any) {
 
   const update = (key: string, val: string) => setForm(f => ({ ...f, [key]: val }));
 
+  // Parse DD/MM/YYYY to ISO string for backend
+  const parseDate = (dateStr: string): string => {
+    if (!dateStr) return new Date().toISOString();
+    // Try ISO first
+    const iso = new Date(dateStr);
+    if (!isNaN(iso.getTime())) return iso.toISOString();
+    // Parse DD/MM/YYYY
+    const parts = dateStr.split(/[\/\-\.]/);
+    if (parts.length === 3) {
+      const day = parseInt(parts[0]);
+      const month = parseInt(parts[1]) - 1;
+      const year = parseInt(parts[2]);
+      const d = new Date(year > 100 ? year : 2000 + year, month, day);
+      if (!isNaN(d.getTime())) return d.toISOString();
+    }
+    return new Date().toISOString();
+  };
+
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+  const openDatePicker = () => {
+    // For React Native we'll use a simple date selection approach
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    setSelectedDate(selectedDate || tomorrow);
+    setShowDatePicker(true);
+  };
+
+  const confirmDate = (date: Date) => {
+    setSelectedDate(date);
+    const formatted = date.toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
+    update('eventDate', date.toISOString());
+    setShowDatePicker(false);
+  };
+
   const handleSubmit = async () => {
     // Validate based on destination
     if (selectedCreatorId) {
@@ -57,7 +93,7 @@ export default function InquiryScreen({ route, navigation }: any) {
         email: form.email || '',
         phone: form.phone,
         eventType: form.eventType || 'Wedding',
-        eventDate: form.eventDate || undefined,
+        eventDate: form.eventDate ? parseDate(form.eventDate) : undefined,
         city: form.city,
         budget: Number(form.budget) || 0,
         message: form.message,
@@ -152,7 +188,22 @@ export default function InquiryScreen({ route, navigation }: any) {
           <Field label="Phone Number *" icon="call-outline" value={form.phone} onChange={(v: string) => update('phone', v)} keyboard="phone-pad" />
           <Field label="Email" icon="mail-outline" value={form.email} onChange={(v: string) => update('email', v)} keyboard="email-address" />
           <Field label="Event Type *" icon="calendar-outline" value={form.eventType} onChange={(v: string) => update('eventType', v)} placeholder="e.g. Wedding, Pre-Wedding, Reception" />
-          <Field label="Event Date" icon="today-outline" value={form.eventDate} onChange={(v: string) => update('eventDate', v)} placeholder="DD/MM/YYYY" />
+          <TouchableOpacity style={styles.dateField || s.dateField} onPress={() => {
+            // Simple date input — user types, we parse
+            Alert.prompt ? Alert.prompt('Event Date', 'Enter date (DD/MM/YYYY):', (text: string) => {
+              if (text) { update('eventDate', text); setSelectedDate(new Date(parseDate(text))); }
+            }) : update('eventDate', form.eventDate);
+          }}>
+            <Ionicons name="today-outline" size={18} color={form.eventDate ? '#F97316' : 'rgba(255,255,255,0.3)'} />
+            <Text style={[s.dateText, form.eventDate && { color: '#fff' }]}>
+              {form.eventDate && selectedDate ? `📅 ${selectedDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}` : 'Select Event Date'}
+            </Text>
+          </TouchableOpacity>
+          {!form.eventDate && (
+            <View style={{ marginTop: -8, marginBottom: 14 }}>
+              <TextInput style={[s.fieldInput, { height: 42 }]} placeholder="DD/MM/YYYY" placeholderTextColor="rgba(255,255,255,0.2)" value={form.eventDate.includes('T') ? '' : form.eventDate} onChangeText={(v) => { update('eventDate', v); const d = new Date(parseDate(v)); if (!isNaN(d.getTime())) setSelectedDate(d); }} keyboardType="numeric" />
+            </View>
+          )}
           <Field label="City / District" icon="location-outline" value={form.city} onChange={(v: string) => update('city', v)} />
           <Field label="Budget (₹)" icon="wallet-outline" value={form.budget} onChange={(v: string) => update('budget', v)} keyboard="numeric" placeholder="e.g. 50000" />
           <Field label="Message / Requirements" icon="chatbubble-outline" value={form.message} onChange={(v: string) => update('message', v)} multiline placeholder="Tell us about your event..." />
@@ -223,6 +274,8 @@ const s = StyleSheet.create({
   fieldText: { flex: 1, fontSize: 14, color: '#fff' },
   submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#FF8C2B', borderRadius: 14, paddingVertical: 14, marginTop: 20 },
   submitText: { fontSize: 15, fontWeight: '700', color: '#000' },
+  dateField: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(255,255,255,0.03)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', borderRadius: 12, paddingHorizontal: 12, height: 46, marginBottom: 14 },
+  dateText: { flex: 1, fontSize: 14, color: 'rgba(255,255,255,0.3)' },
   chooseBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: 'rgba(255,140,43,0.3)', borderRadius: 14, paddingVertical: 13, marginTop: 12 },
   chooseBtnText: { fontSize: 13, fontWeight: '600', color: '#FF8C2B' },
   // Creator selection

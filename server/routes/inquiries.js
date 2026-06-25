@@ -41,6 +41,30 @@ router.post("/", optionalAuth, async (req, res, next) => {
       return res.status(403).json({ success: false, message: "This creator is currently unavailable" });
     }
 
+    // Parse eventDate properly — handle multiple formats (DD/MM/YYYY, ISO, etc.)
+    let parsedDate = null;
+    if (eventDate) {
+      // Try ISO format first
+      parsedDate = new Date(eventDate);
+      // If invalid, try DD/MM/YYYY format
+      if (isNaN(parsedDate.getTime())) {
+        const parts = String(eventDate).split(/[\/\-\.]/);
+        if (parts.length === 3) {
+          const day = parseInt(parts[0]);
+          const month = parseInt(parts[1]) - 1;
+          const year = parseInt(parts[2]);
+          if (year > 100) parsedDate = new Date(year, month, day);
+          else parsedDate = new Date(2000 + year, month, day);
+        }
+      }
+      // If still invalid, use 30 days from now
+      if (!parsedDate || isNaN(parsedDate.getTime())) {
+        parsedDate = new Date(Date.now() + 30 * 86400000);
+      }
+    } else {
+      parsedDate = new Date(Date.now() + 30 * 86400000);
+    }
+
     const inquiry = await Inquiry.create({
       user: req.user ? req.user._id : undefined,
       creator: creatorId,
@@ -48,7 +72,7 @@ router.post("/", optionalAuth, async (req, res, next) => {
       phone: phone || "Not provided",
       city: city || "",
       eventType: eventType || "General Inquiry",
-      eventDate: eventDate || new Date(),
+      eventDate: parsedDate,
       budget: budget || 0,
       message: message || "",
       contactUnlocked: true,
