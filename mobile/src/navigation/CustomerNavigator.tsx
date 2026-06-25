@@ -20,6 +20,7 @@ import PlatformReviewScreen from '../screens/PlatformReviewScreen';
 import AllCreatorsScreen from '../screens/AllCreatorsScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import CreatorNotifications from '../screens/creator/CreatorNotifications';
+import PaymentProofScreen from '../screens/PaymentProofScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -63,6 +64,7 @@ export default function CustomerNavigator() {
       <Stack.Screen name="AllCreators" component={AllCreatorsScreen} />
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       <Stack.Screen name="CreatorNotifications" component={CreatorNotifications} />
+      <Stack.Screen name="PaymentProof" component={PaymentProofScreen} options={{ animation: 'slide_from_bottom' }} />
     </Stack.Navigator>
   );
 }

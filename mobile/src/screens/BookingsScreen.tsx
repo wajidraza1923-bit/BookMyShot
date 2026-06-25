@@ -155,8 +155,9 @@ export default function BookingsScreen({ navigation }: any) {
 
                 {/* Upload Proof Button */}
                 {b.paymentStatus !== 'paid' && b.paymentStatus !== 'verified' && b.status !== 'rejected' && b.status !== 'cancelled' && (
-                  <TouchableOpacity style={s.uploadBtn} onPress={() => uploadProof(b._id)} disabled={uploading === b._id}>
-                    {uploading === b._id ? <ActivityIndicator size="small" color="#000" /> : <><Ionicons name="cloud-upload-outline" size={16} color="#000" /><Text style={s.uploadText}>Upload Payment Proof</Text></>}
+                  <TouchableOpacity style={s.uploadBtn} onPress={() => navigation.navigate('PaymentProof', { bookingId: b._id, totalAmount: amount, paidAmount: paid, creatorName })}>
+                    <Ionicons name="card-outline" size={16} color="#000" />
+                    <Text style={s.uploadText}>Pay Now / Upload Proof</Text>
                   </TouchableOpacity>
                 )}
 
