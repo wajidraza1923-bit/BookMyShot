@@ -224,6 +224,7 @@
         <div class="header-right">
           <span style="color:var(--text-dim);font-size:0.82rem" id="adminName">Admin</span>
           <img class="avatar" id="adminAvatar" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100" alt="">
+          <button id="headerLogoutBtn" style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.15);border-radius:8px;padding:6px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;color:#EF4444;font-size:0.75rem;font-weight:600;transition:all 0.2s" onmouseover="this.style.background='rgba(239,68,68,0.15)'" onmouseout="this.style.background='rgba(239,68,68,0.08)'"><i class="fa-solid fa-right-from-bracket" style="font-size:12px"></i> Logout</button>
         </div>
       </header>
 
@@ -859,9 +860,15 @@
       e.preventDefault();
       if (confirm("Are you sure you want to log out?")) {
         API.clearAuth();
-        // Clear all session data
         sessionStorage.clear();
-        // Redirect to homepage (not admin panel)
+        window.location.href = "/";
+      }
+    });
+
+    document.getElementById("headerLogoutBtn").addEventListener("click", () => {
+      if (confirm("Are you sure you want to log out?")) {
+        API.clearAuth();
+        sessionStorage.clear();
         window.location.href = "/";
       }
     });
