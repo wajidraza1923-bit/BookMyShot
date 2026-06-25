@@ -248,12 +248,34 @@ router.patch("/:id/status", protect, async (req, res, next) => {
     if (req.body.creatorNotes) booking.creatorNotes = req.body.creatorNotes;
     await booking.save();
 
-    await createNotification(
-      booking.user._id,
-      "Booking Updated",
-      `Your booking is now ${booking.status}`,
-      "booking"
-    );
+    // Send detailed notification to user based on status
+    const Notification = require("../models/Notification");
+    const creatorName = booking.creator?.user?.name || "Creator";
+    let notifTitle = "Booking Updated";
+    let notifMsg = `Your booking status is now: ${booking.status}`;
+    
+    if (status === "Creator Accepted") {
+      notifTitle = "✅ Inquiry Accepted";
+      notifMsg = `${creatorName} accepted your inquiry. Amount: ₹${booking.amount?.toLocaleString('en-IN') || booking.budget}`;
+    } else if (status === "rejected") {
+      notifTitle = "❌ Inquiry Rejected";
+      notifMsg = `${creatorName} has rejected your inquiry.${booking.creatorNotes ? ' Reason: ' + booking.creatorNotes : ''}`;
+    } else if (status === "Completed") {
+      notifTitle = "🎉 Booking Completed";
+      notifMsg = `Your booking with ${creatorName} has been marked as completed!`;
+    } else if (status === "cancelled") {
+      notifTitle = "🚫 Booking Cancelled";
+      notifMsg = `Your booking with ${creatorName} has been cancelled.`;
+    }
+
+    await Notification.create({
+      user: booking.user._id || booking.user,
+      type: "booking",
+      title: notifTitle,
+      message: notifMsg,
+      targetScreen: "Bookings",
+      targetId: booking._id.toString(),
+    });
 
     res.json({ success: true, booking });
   } catch (e) {

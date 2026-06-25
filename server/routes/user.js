@@ -9,7 +9,19 @@ const Notification = require("../models/Notification");
 const { protect, authorize } = require("../middleware/auth");
 
 const router = express.Router();
-router.use(protect, authorize("user"));
+router.use(protect, authorize("user", "admin"));
+
+// GET /bookings — User's bookings (real-time from database)
+router.get("/bookings", async (req, res, next) => {
+  try {
+    const bookings = await Booking.find({ user: req.user._id })
+      .populate({ path: "creator", populate: { path: "user", select: "name avatar" }, select: "user creatorId specialty city" })
+      .sort("-createdAt")
+      .lean();
+
+    res.json({ success: true, bookings });
+  } catch (e) { next(e); }
+});
 
 // Favorites
 router.get("/favorites", async (req, res, next) => {
