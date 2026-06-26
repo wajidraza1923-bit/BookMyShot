@@ -814,6 +814,17 @@
     </div>
   </div>
 
+  <!-- Creator Financial Ledger Modal -->
+  <div class="modal-overlay" id="creatorLedgerModal">
+    <div class="modal" style="max-width:900px;max-height:90vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;position:sticky;top:0;background:var(--bg-card);padding:0.5rem 0;z-index:10">
+        <h3 style="margin:0;color:var(--gold)">💰 Creator Financial Ledger</h3>
+        <button class="btn btn-outline btn-sm" onclick="closeModal('creatorLedgerModal')">✕ Close</button>
+      </div>
+      <div id="ledgerContent"><div class="loader"></div></div>
+    </div>
+  </div>
+
   <!-- Broadcast Modal -->
   <div class="modal-overlay" id="broadcastModal">
     <div class="modal" style="max-width:480px">
@@ -1049,6 +1060,7 @@
           <button class="btn btn-outline btn-sm" onclick="activateSub('${c._id}')">Activate Sub</button>
           <button class="btn btn-outline btn-sm" onclick="extendSub('${c._id}')">Extend +30d</button>
           <button class="btn btn-primary btn-sm" onclick="sendNotifToCreator('${c._id}')">Send Notification</button>
+          <button class="btn btn-primary btn-sm" style="background:#10b981" onclick="closeModal('creatorDetailModal');openCreatorLedger('${c._id}')">💰 View Finances</button>
         </div>
         ${bookings.length > 0 ? `<h4 style="margin-top:1.5rem;color:var(--gold-light);font-family:var(--font-display);font-size:0.95rem">Recent Bookings</h4>
         <div class="table-wrap" style="margin-top:0.5rem"><table><thead><tr><th>Client</th><th>Type</th><th>Amount</th><th>Lead</th><th>Status</th></tr></thead><tbody>
@@ -2784,6 +2796,123 @@
         if (data.success) { toast("Deleted", "success"); auLoadLiveVersion(); auLoadHistory(); }
         else toast(data.message || "Failed", "error");
       } catch { toast("Network error", "error"); }
+    };
+
+    // ═══════════════════════════════════════════════════════════════
+    // CREATOR FINANCIAL LEDGER
+    // ═══════════════════════════════════════════════════════════════
+    window.openCreatorLedger = async function(creatorId) {
+      const modal = document.getElementById("creatorLedgerModal");
+      const el = document.getElementById("ledgerContent");
+      el.innerHTML = '<div class="loader"></div>';
+      modal.classList.add("active");
+
+      try {
+        const res = await fetch("/api/admin/creator-ledger/" + creatorId, { headers: { Authorization: "Bearer " + API.getToken() } });
+        const json = await res.json();
+        if (!json.success) { el.innerHTML = '<p style="color:#dc2626">Failed: ' + (json.message || 'Error') + '</p>'; return; }
+
+        const { profile: p, summary: s, bookings, commissions, subscriptions, promotions, ledger, monthlySummary } = json.data;
+        const fmt = n => '₹' + (n || 0).toLocaleString('en-IN');
+        const fmtDate = d => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+
+        el.innerHTML = `
+          <!-- Profile Summary -->
+          <div style="display:flex;gap:1rem;align-items:center;margin-bottom:1.25rem;padding:1rem;background:#0a0a0a;border:1px solid #222;border-radius:10px">
+            <img src="${p.avatar || ''}" style="width:48px;height:48px;border-radius:24px;object-fit:cover;border:2px solid var(--gold)" onerror="this.style.display='none'">
+            <div style="flex:1">
+              <div style="font-weight:700;color:#fff;font-size:1rem">${p.name}</div>
+              <div style="font-size:0.75rem;color:#888">${p.email} • ${p.creatorId} • Joined: ${fmtDate(p.joinDate)}</div>
+              <div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap">
+                <span style="background:${p.status==='approved'?'rgba(16,185,129,.1)':'rgba(220,38,38,.1)'};color:${p.status==='approved'?'#10b981':'#dc2626'};padding:1px 8px;border-radius:4px;font-size:0.65rem;font-weight:600">${p.status}</span>
+                <span style="background:rgba(59,130,246,.1);color:#60a5fa;padding:1px 8px;border-radius:4px;font-size:0.65rem;font-weight:600">Sub: ${p.subscriptionStatus}</span>
+                ${p.featured ? '<span style="background:rgba(212,175,55,.1);color:#D4AF37;padding:1px 8px;border-radius:4px;font-size:0.65rem;font-weight:600">⭐ Featured</span>' : ''}
+              </div>
+            </div>
+          </div>
+
+          <!-- Financial Summary -->
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.5rem;margin-bottom:1.25rem">
+            <div style="background:#0a0a0a;border:1px solid #222;border-radius:8px;padding:0.7rem;text-align:center"><div style="font-size:1.1rem;font-weight:700;color:var(--gold)">${fmt(s.totalBookingValue)}</div><div style="font-size:0.65rem;color:#888">Total Booking Value</div></div>
+            <div style="background:#0a0a0a;border:1px solid #222;border-radius:8px;padding:0.7rem;text-align:center"><div style="font-size:1.1rem;font-weight:700;color:#dc2626">${fmt(s.totalCommissionDeducted)}</div><div style="font-size:0.65rem;color:#888">Commission Deducted</div></div>
+            <div style="background:#0a0a0a;border:1px solid #222;border-radius:8px;padding:0.7rem;text-align:center"><div style="font-size:1.1rem;font-weight:700;color:#10b981">${fmt(s.totalCreatorEarnings)}</div><div style="font-size:0.65rem;color:#888">Creator Earnings</div></div>
+            <div style="background:#0a0a0a;border:1px solid #222;border-radius:8px;padding:0.7rem;text-align:center"><div style="font-size:1.1rem;font-weight:700;color:#60a5fa">${fmt(s.totalSubscriptionPaid)}</div><div style="font-size:0.65rem;color:#888">Subscription Paid</div></div>
+            <div style="background:#0a0a0a;border:1px solid #222;border-radius:8px;padding:0.7rem;text-align:center"><div style="font-size:1.1rem;font-weight:700;color:#f59e0b">${fmt(s.totalPromotionPaid)}</div><div style="font-size:0.65rem;color:#888">Promotions Paid</div></div>
+            <div style="background:#0a0a0a;border:1px solid #222;border-radius:8px;padding:0.7rem;text-align:center"><div style="font-size:1.1rem;font-weight:700;color:#fff">${s.totalBookings}</div><div style="font-size:0.65rem;color:#888">Total Bookings</div></div>
+          </div>
+
+          <!-- Booking Ledger -->
+          <h4 style="color:var(--gold);font-size:0.85rem;margin-bottom:0.5rem">📋 Booking Ledger (${bookings.length})</h4>
+          <div style="overflow-x:auto;margin-bottom:1.25rem">
+            <table style="width:100%;font-size:0.72rem;border-collapse:collapse">
+              <thead><tr style="background:rgba(218,175,55,.05)">
+                <th style="padding:6px 8px;text-align:left;color:#888;border-bottom:1px solid #222">ID</th>
+                <th style="padding:6px 8px;text-align:left;color:#888;border-bottom:1px solid #222">Client</th>
+                <th style="padding:6px 8px;text-align:right;color:#888;border-bottom:1px solid #222">Amount</th>
+                <th style="padding:6px 8px;text-align:right;color:#888;border-bottom:1px solid #222">Comm %</th>
+                <th style="padding:6px 8px;text-align:right;color:#888;border-bottom:1px solid #222">Commission</th>
+                <th style="padding:6px 8px;text-align:right;color:#888;border-bottom:1px solid #222">Creator Gets</th>
+                <th style="padding:6px 8px;text-align:left;color:#888;border-bottom:1px solid #222">Status</th>
+                <th style="padding:6px 8px;text-align:left;color:#888;border-bottom:1px solid #222">Date</th>
+              </tr></thead>
+              <tbody>${bookings.slice(0,50).map(b => `<tr style="border-bottom:1px solid rgba(255,255,255,.03)">
+                <td style="padding:5px 8px;color:#666">${(b.invoiceNumber||b._id).toString().slice(-8)}</td>
+                <td style="padding:5px 8px;color:#fff">${b.clientName||'—'}</td>
+                <td style="padding:5px 8px;text-align:right;color:#fff">${fmt(b.amount)}</td>
+                <td style="padding:5px 8px;text-align:right;color:#f59e0b">${b.commissionPercent||0}%</td>
+                <td style="padding:5px 8px;text-align:right;color:#dc2626">${fmt(b.commissionAmount)}</td>
+                <td style="padding:5px 8px;text-align:right;color:#10b981;font-weight:600">${fmt(b.creatorReceived)}</td>
+                <td style="padding:5px 8px"><span style="font-size:0.65rem;padding:1px 6px;border-radius:3px;background:rgba(255,255,255,.04);color:#aaa">${b.status}</span></td>
+                <td style="padding:5px 8px;color:#666">${fmtDate(b.date)}</td>
+              </tr>`).join('')}</tbody>
+            </table>
+          </div>
+
+          <!-- Monthly Summary -->
+          <h4 style="color:var(--gold);font-size:0.85rem;margin-bottom:0.5rem">📊 Monthly Summary</h4>
+          <div style="overflow-x:auto;margin-bottom:1.25rem">
+            <table style="width:100%;font-size:0.72rem;border-collapse:collapse">
+              <thead><tr style="background:rgba(218,175,55,.05)">
+                <th style="padding:6px 8px;text-align:left;color:#888;border-bottom:1px solid #222">Month</th>
+                <th style="padding:6px 8px;text-align:right;color:#888;border-bottom:1px solid #222">Bookings</th>
+                <th style="padding:6px 8px;text-align:right;color:#888;border-bottom:1px solid #222">Value</th>
+                <th style="padding:6px 8px;text-align:right;color:#888;border-bottom:1px solid #222">Commission</th>
+                <th style="padding:6px 8px;text-align:right;color:#888;border-bottom:1px solid #222">Earnings</th>
+              </tr></thead>
+              <tbody>${monthlySummary.map(m => `<tr style="border-bottom:1px solid rgba(255,255,255,.03)">
+                <td style="padding:5px 8px;color:#fff">${m.month}</td>
+                <td style="padding:5px 8px;text-align:right;color:#fff">${m.bookings}</td>
+                <td style="padding:5px 8px;text-align:right;color:#fff">${fmt(m.bookingValue)}</td>
+                <td style="padding:5px 8px;text-align:right;color:#dc2626">${fmt(m.commission)}</td>
+                <td style="padding:5px 8px;text-align:right;color:#10b981;font-weight:600">${fmt(m.earnings)}</td>
+              </tr>`).join('')}</tbody>
+            </table>
+          </div>
+
+          <!-- Transaction Ledger -->
+          <h4 style="color:var(--gold);font-size:0.85rem;margin-bottom:0.5rem">📒 Full Transaction Ledger (${ledger.length})</h4>
+          <div style="overflow-x:auto">
+            <table style="width:100%;font-size:0.7rem;border-collapse:collapse">
+              <thead><tr style="background:rgba(218,175,55,.05)">
+                <th style="padding:5px 8px;text-align:left;color:#888;border-bottom:1px solid #222">Date</th>
+                <th style="padding:5px 8px;text-align:left;color:#888;border-bottom:1px solid #222">Description</th>
+                <th style="padding:5px 8px;text-align:left;color:#888;border-bottom:1px solid #222">Type</th>
+                <th style="padding:5px 8px;text-align:right;color:#888;border-bottom:1px solid #222">Amount</th>
+                <th style="padding:5px 8px;text-align:left;color:#888;border-bottom:1px solid #222">Status</th>
+              </tr></thead>
+              <tbody>${ledger.slice(0,100).map(t => `<tr style="border-bottom:1px solid rgba(255,255,255,.02)">
+                <td style="padding:4px 8px;color:#666">${fmtDate(t.date)}</td>
+                <td style="padding:4px 8px;color:#ccc">${t.description}</td>
+                <td style="padding:4px 8px"><span style="color:${t.type==='credit'?'#10b981':'#dc2626'};font-weight:600">${t.type==='credit'?'↑ Credit':'↓ Debit'}</span></td>
+                <td style="padding:4px 8px;text-align:right;color:${t.type==='credit'?'#10b981':'#dc2626'};font-weight:600">${t.type==='credit'?'+':'−'}${fmt(t.amount)}</td>
+                <td style="padding:4px 8px;color:#888">${t.status||'—'}</td>
+              </tr>`).join('')}</tbody>
+            </table>
+          </div>
+        `;
+      } catch (e) {
+        el.innerHTML = '<p style="color:#dc2626">Network error: ' + e.message + '</p>';
+      }
     };
 
     // Auto-refresh app updates every 10s for real-time sync with mobile admin
