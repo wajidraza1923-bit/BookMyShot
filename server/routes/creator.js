@@ -661,15 +661,35 @@ router.post("/inquiries", async (req, res, next) => {
       return res.status(400).json({ success: false, message: "Name, event type, and date are required" });
     }
 
+    // Parse and validate date
+    let parsedDate;
+    try {
+      parsedDate = new Date(eventDate);
+      if (isNaN(parsedDate.getTime())) {
+        // Try DD/MM/YYYY format
+        const parts = eventDate.split(/[\/\-\.]/);
+        if (parts.length === 3) {
+          const [a, b, c] = parts;
+          if (a.length === 4) parsedDate = new Date(`${a}-${b}-${c}`);
+          else parsedDate = new Date(`${c}-${b}-${a}`);
+        }
+        if (isNaN(parsedDate.getTime())) {
+          return res.status(400).json({ success: false, message: "Invalid date format. Use YYYY-MM-DD" });
+        }
+      }
+    } catch {
+      return res.status(400).json({ success: false, message: "Invalid date format" });
+    }
+
     // Create the inquiry (auto-accepted, created by creator)
     const inquiry = await Inquiry.create({
-      user: req.user._id, // Link to creator's own user account as placeholder
+      user: req.user._id,
       creator: creator._id,
       name,
       phone: phone || "Not provided",
       city: city || "",
       eventType,
-      eventDate,
+      eventDate: parsedDate,
       budget: budget || 0,
       message: message || "",
       status: "accepted",
@@ -678,13 +698,13 @@ router.post("/inquiries", async (req, res, next) => {
 
     // Create booking directly (auto-accepted, no approval needed)
     const booking = await Booking.create({
-      user: req.user._id, // Creator's user ID (marks this as creator-created)
+      user: req.user._id,
       creator: creator._id,
       clientName: name,
       clientEmail: email || `${name.toLowerCase().replace(/\s+/g, '')}@offline.bookmyshot.app`,
       clientPhone: phone || "Not provided",
       eventType,
-      eventDate,
+      eventDate: parsedDate,
       eventLocation: city || "",
       budget: budget || 0,
       message: message || "",
