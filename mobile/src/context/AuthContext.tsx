@@ -60,7 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Test API connectivity with timeout (don't block app startup)
       const { testApiConnection } = require('../services/api');
       const connPromise = testApiConnection();
-      const timeoutPromise = new Promise(resolve => setTimeout(() => resolve({ ok: false, message: 'Timeout' }), 5000));
+      const timeoutPromise = new Promise(resolve => setTimeout(() => resolve({ ok: false, message: 'Timeout' }), 2000));
       const connTest: any = await Promise.race([connPromise, timeoutPromise]);
       console.log('[Auth] API connectivity:', connTest.ok ? 'OK' : 'FAILED -', connTest.message);
 
@@ -77,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Validate token with timeout (don't block if server is slow)
         try {
           const mePromise = authAPI.me();
-          const meTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 8000));
+          const meTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 4000));
           const res: any = await Promise.race([mePromise, meTimeout]);
           const freshUser = res.data?.user;
           const freshCreator = res.data?.creator;

@@ -42,13 +42,14 @@ export default function App() {
       setShowOnboarding(true);
     }
 
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // No artificial delay — show content immediately
     setAppReady(true);
     try { await SplashScreen.hideAsync(); } catch {}
 
+    // Fade out brand splash quickly
     setTimeout(() => {
-      Animated.timing(fadeAnim, { toValue: 0, duration: 500, useNativeDriver: true }).start(() => setShowBrandSplash(false));
-    }, 200);
+      Animated.timing(fadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => setShowBrandSplash(false));
+    }, 100);
   };
 
   // ═══ Push Notification Listeners ═══

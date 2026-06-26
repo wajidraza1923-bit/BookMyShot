@@ -195,15 +195,7 @@ export default function UpdateChecker({ children }: { children: React.ReactNode 
     );
   }
 
-  // ═══ Loading state (brief) ═══
-  if (checking) {
-    return (
-      <View style={s.loadingScreen}>
-        <StatusBar barStyle="light-content" backgroundColor="#000" />
-        <ActivityIndicator size="small" color="#D4AF37" />
-      </View>
-    );
-  }
+  // ═══ Don't block — show children immediately while checking ═══
 
   // ═══ Normal: No update needed or dismissed ═══
   return <>{children}</>;
