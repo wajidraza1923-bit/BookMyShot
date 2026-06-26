@@ -1,25 +1,33 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
-  <!-- Background -->
-  <rect width="1024" height="1024" rx="220" fill="#0A0A0A"/>
-  
-  <!-- Outer ring -->
-  <circle cx="512" cy="420" r="200" fill="none" stroke="#D4AF37" stroke-width="12" opacity="0.3"/>
-  
-  <!-- Camera shutter shape -->
-  <circle cx="512" cy="420" r="140" fill="none" stroke="#D4AF37" stroke-width="8"/>
-  <circle cx="512" cy="420" r="50" fill="#D4AF37" opacity="0.9"/>
-  
-  <!-- Shutter blades -->
-  <path d="M512 280 L540 360 L484 360 Z" fill="#D4AF37" opacity="0.7"/>
-  <path d="M632 350 L572 400 L560 344 Z" fill="#D4AF37" opacity="0.7"/>
-  <path d="M632 490 L572 440 L620 404 Z" fill="#D4AF37" opacity="0.7"/>
-  <path d="M512 560 L484 480 L540 480 Z" fill="#D4AF37" opacity="0.7"/>
-  <path d="M392 490 L452 440 L404 404 Z" fill="#D4AF37" opacity="0.7"/>
-  <path d="M392 350 L452 400 L404 436 Z" fill="#D4AF37" opacity="0.7"/>
-  
-  <!-- BMS Text -->
-  <text x="512" y="720" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="180" font-weight="700" fill="#D4AF37" letter-spacing="20">BMS</text>
-  
-  <!-- Subtitle -->
-  <text x="512" y="820" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="48" font-weight="300" fill="#B8962E" letter-spacing="12" opacity="0.8">BOOKMYSHOT</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Dark green circular background -->
+  <circle cx="256" cy="256" r="256" fill="#1a3a2a"/>
+  <!-- Inner ring -->
+  <circle cx="256" cy="256" r="220" fill="none" stroke="#D4AF37" stroke-width="2" opacity="0.3"/>
+  <!-- Crown above BM -->
+  <g transform="translate(256, 155)" fill="#D4AF37">
+    <!-- Crown base -->
+    <rect x="-40" y="0" width="80" height="6" rx="3"/>
+    <!-- Crown points -->
+    <polygon points="-35,-20 -25,0 -15,-15 0,-25 15,-15 25,0 35,-20 30,0 -30,0"/>
+    <!-- Crown gems -->
+    <circle cx="-25" cy="-8" r="3"/>
+    <circle cx="0" cy="-14" r="3.5"/>
+    <circle cx="25" cy="-8" r="3"/>
+  </g>
+  <!-- Letter B -->
+  <g transform="translate(175, 190)" fill="#D4AF37">
+    <path d="M0,0 L0,130 L55,130 C80,130 95,115 95,95 C95,80 85,70 72,67 C83,63 90,52 90,40 C90,18 72,0 50,0 Z M25,20 L48,20 C60,20 67,28 67,40 C67,52 60,60 48,60 L25,60 Z M25,75 L52,75 C66,75 72,84 72,95 C72,107 65,112 52,112 L25,112 Z"/>
+  </g>
+  <!-- Letter M -->
+  <g transform="translate(280, 190)" fill="#D4AF37">
+    <path d="M0,130 L0,0 L5,0 L55,75 L105,0 L110,0 L110,130 L88,130 L88,45 L55,100 L22,45 L22,130 Z"/>
+  </g>
+  <!-- Bottom decorative line -->
+  <rect x="180" y="340" width="152" height="2" rx="1" fill="#D4AF37" opacity="0.5"/>
+  <!-- Subtle camera aperture blades (background decoration) -->
+  <g transform="translate(256, 256)" fill="none" stroke="#D4AF37" stroke-width="0.8" opacity="0.12">
+    <path d="M0,-200 A200,200 0 0,1 173,100"/>
+    <path d="M173,100 A200,200 0 0,1 -173,100"/>
+    <path d="M-173,100 A200,200 0 0,1 0,-200"/>
+  </g>
 </svg>
