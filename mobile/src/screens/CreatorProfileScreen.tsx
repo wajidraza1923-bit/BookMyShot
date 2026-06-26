@@ -166,12 +166,18 @@ export default function CreatorProfileScreen({ route, navigation }: any) {
         {/* TAB: VIDEOS */}
         {activeTab === 'videos' && (
           <View style={s.videosWrap}>
-            {videos.length > 0 ? videos.map((v: string, i: number) => (
-              <TouchableOpacity key={i} style={s.videoCard} onPress={() => Linking.openURL(v)}>
-                <View style={s.videoThumb}><Ionicons name="play-circle" size={36} color="#FF8C2B" /></View>
-                <Text style={s.videoLabel}>Video {i + 1}</Text>
-              </TouchableOpacity>
-            )) : (
+            {videos.length > 0 ? videos.map((v: any, i: number) => {
+              const videoUrl = typeof v === 'string' ? v : v.url || '';
+              const thumbUrl = videoUrl
+                ? videoUrl.replace(/\.(mp4|mov|avi|webm)$/i, '.jpg').replace('/video/upload/', '/video/upload/c_fill,w_400,h_400,so_1/')
+                : '';
+              return (
+                <TouchableOpacity key={i} style={s.videoGridItem} onPress={() => Linking.openURL(videoUrl)}>
+                  <Image source={{ uri: thumbUrl }} style={s.videoGridThumb} />
+                  <View style={s.videoPlayOverlay}><Ionicons name="play-circle" size={40} color="rgba(255,255,255,0.9)" /></View>
+                </TouchableOpacity>
+              );
+            }) : (
               <EmptyState icon="videocam-outline" text="No videos uploaded yet" />
             )}
           </View>
@@ -328,10 +334,10 @@ const s = StyleSheet.create({
   masonryNormal: { width: COL2, height: COL2 },
   masonryImg: { width: '100%', height: '100%' },
   // Videos
-  videosWrap: { paddingHorizontal: 16, paddingTop: 12, gap: 10 },
-  videoCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-  videoThumb: { width: 56, height: 56, borderRadius: 10, backgroundColor: 'rgba(255,140,43,0.06)', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  videoLabel: { fontSize: 12, color: 'rgba(255,255,255,0.5)' },
+  videosWrap: { paddingHorizontal: 16, paddingTop: 12, flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  videoGridItem: { width: '48%', aspectRatio: 1, borderRadius: 12, overflow: 'hidden', position: 'relative', backgroundColor: 'rgba(255,255,255,0.02)' },
+  videoGridThumb: { width: '100%', height: '100%', resizeMode: 'cover' },
+  videoPlayOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.25)' },
   // Packages
   packagesWrap: { paddingHorizontal: 16, paddingTop: 12, gap: 10 },
   pkgCard: { backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },

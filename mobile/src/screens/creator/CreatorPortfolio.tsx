@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, Image, Alert, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, Image, Alert, Dimensions, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { colors, spacing, typography, radius } from '../../theme';
@@ -256,11 +256,12 @@ export default function CreatorPortfolio({ navigation }: any) {
         />
       ) : (
         <FlatList
-          key="videos-list"
+          key="videos-grid"
           data={videos}
-          numColumns={1}
+          numColumns={2}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ padding: spacing.xl, paddingBottom: 100 }}
+          columnWrapperStyle={{ gap: 8 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />}
           keyExtractor={(item, i) => 'video-' + (typeof item === 'string' ? item : item.url) + i}
           ListEmptyComponent={
@@ -271,15 +272,30 @@ export default function CreatorPortfolio({ navigation }: any) {
               <TouchableOpacity style={styles.emptyBtn} onPress={uploadVideo}><Ionicons name="add" size={16} color={colors.textInverse} /><Text style={styles.emptyBtnText}>Upload Video</Text></TouchableOpacity>
             </View>
           }
-          renderItem={({ item }) => (
-            <TouchableOpacity style={styles.videoCard} onLongPress={() => deleteVideo(item)} activeOpacity={0.85}>
-              <View style={styles.videoThumb}><Ionicons name="play-circle" size={40} color={colors.primary} /></View>
-              <View style={styles.videoInfo}>
-                <Text style={styles.videoUrl} numberOfLines={1}>{typeof item === 'string' ? item : item.url}</Text>
-                <Text style={styles.videoMeta}>Long press to delete</Text>
-              </View>
-            </TouchableOpacity>
-          )}
+          renderItem={({ item }) => {
+            const videoUrl = typeof item === 'string' ? item : item.url;
+            // Generate thumbnail: Cloudinary replaces extension with .jpg for video thumbnails
+            const thumbUrl = videoUrl
+              ? videoUrl.replace(/\.(mp4|mov|avi|webm)$/i, '.jpg')
+                .replace('/video/upload/', '/video/upload/c_fill,w_400,h_400,so_1/')
+              : '';
+            return (
+              <TouchableOpacity
+                style={styles.videoGridItem}
+                onPress={() => { if (videoUrl) Linking.openURL(videoUrl); }}
+                onLongPress={() => deleteVideo(item)}
+                activeOpacity={0.85}
+              >
+                <Image source={{ uri: thumbUrl }} style={styles.videoGridThumb} />
+                <View style={styles.videoPlayOverlay}>
+                  <Ionicons name="play-circle" size={36} color="rgba(255,255,255,0.9)" />
+                </View>
+                <View style={styles.videoDeleteHint}>
+                  <Ionicons name="trash-outline" size={10} color="#fff" />
+                </View>
+              </TouchableOpacity>
+            );
+          }}
         />
       )}
 
@@ -309,11 +325,10 @@ const styles = StyleSheet.create({
   imageWrap: { width: IMG_SIZE, height: IMG_SIZE, borderRadius: radius.sm, overflow: 'hidden', position: 'relative' },
   image: { width: '100%', height: '100%', resizeMode: 'cover' },
   deleteOverlay: { position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(239,68,68,0.8)', alignItems: 'center', justifyContent: 'center' },
-  videoCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border },
-  videoThumb: { width: 64, height: 64, borderRadius: radius.md, backgroundColor: colors.primaryMuted, alignItems: 'center', justifyContent: 'center', marginRight: spacing.lg },
-  videoInfo: { flex: 1 },
-  videoUrl: { ...typography.bodySm, color: colors.text },
-  videoMeta: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
+  videoGridItem: { flex: 1, aspectRatio: 1, borderRadius: radius.md, overflow: 'hidden', position: 'relative', marginBottom: 8, backgroundColor: colors.surface },
+  videoGridThumb: { width: '100%', height: '100%', resizeMode: 'cover' },
+  videoPlayOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.2)' },
+  videoDeleteHint: { position: 'absolute', top: 6, right: 6, width: 18, height: 18, borderRadius: 9, backgroundColor: 'rgba(239,68,68,0.7)', alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: spacing['4xl'] },
   emptyTitle: { ...typography.headlineMd, color: colors.text, marginTop: spacing.lg },
   emptySubtitle: { ...typography.bodyMd, color: colors.textMuted, marginTop: spacing.xs, textAlign: 'center' },
