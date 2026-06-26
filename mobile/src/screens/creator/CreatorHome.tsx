@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, RefreshControl, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, RefreshControl, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { colors, spacing, typography, radius } from '../../theme';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
+import { getRazorpayConfig, createCommissionOrder, verifyCommissionPayment } from '../../services/payment';
+import RazorpayWebCheckout from '../../components/RazorpayWebCheckout';
 
 export default function CreatorHome({ navigation }: any) {
   const { user } = useAuth();
@@ -12,6 +14,9 @@ export default function CreatorHome({ navigation }: any) {
   const [stats, setStats] = useState({ totalEarnings: 0, monthlyEarnings: 0, totalBookings: 0, pendingPayments: 0, upcomingEventsCount: 0, newInquiries: 0, favorites: 0, reviews: 0, commissionDue: 0 });
   const [loading, setLoading] = useState(true);
   const [promo, setPromo] = useState<any>({ featured: null, rank: null, pending: 0 });
+  const [paying, setPaying] = useState(false);
+  const [showRazorpay, setShowRazorpay] = useState(false);
+  const [rpConfig, setRpConfig] = useState<{ keyId: string; orderId: string; amount: number; name: string }>({ keyId: '', orderId: '', amount: 0, name: '' });
 
   const loadDashboard = useCallback(async () => {
     try {
@@ -31,6 +36,40 @@ export default function CreatorHome({ navigation }: any) {
   useEffect(() => { loadDashboard(); }, []);
   useFocusEffect(useCallback(() => { loadDashboard(); }, []));
   const onRefresh = async () => { setRefreshing(true); await loadDashboard(); setRefreshing(false); };
+
+  // ═══ PAY COMMISSION DIRECTLY FROM DASHBOARD ═══
+  const handlePayNow = async () => {
+    const amount = stats.commissionDue;
+    if (amount <= 0) { Alert.alert('No Dues', '✅ No commission pending'); return; }
+
+    setPaying(true);
+    try {
+      const config = await getRazorpayConfig();
+      if (!config.configured) { Alert.alert('Unavailable', 'Payment gateway not configured.'); setPaying(false); return; }
+
+      const order = await createCommissionOrder(amount);
+      if (!order.id) { Alert.alert('Error', 'Failed to create payment order.'); setPaying(false); return; }
+
+      const meRes = await api.get('/auth/me');
+      setRpConfig({ keyId: config.keyId, orderId: order.id, amount, name: meRes.data?.user?.name || '' });
+      setShowRazorpay(true);
+      setPaying(false);
+    } catch (e: any) {
+      Alert.alert('Error', e.response?.data?.message || e.message || 'Payment failed');
+      setPaying(false);
+    }
+  };
+
+  const handlePaymentSuccess = async (paymentData: any) => {
+    setShowRazorpay(false);
+    setPaying(true);
+    try {
+      const verified = await verifyCommissionPayment(paymentData.razorpay_order_id, paymentData.razorpay_payment_id, paymentData.razorpay_signature, rpConfig.amount);
+      if (verified) { Alert.alert('Success! ✅', 'Commission paid successfully!'); await loadDashboard(); }
+      else Alert.alert('Verification Failed', 'Contact support if charged.');
+    } catch (e: any) { Alert.alert('Error', e.message || 'Verification failed'); }
+    setPaying(false);
+  };
 
   const statCards = [
     { label: 'Total Earnings', value: `₹${stats.totalEarnings.toLocaleString('en-IN')}`, icon: 'wallet', color: colors.primary },
@@ -87,7 +126,9 @@ export default function CreatorHome({ navigation }: any) {
               <Text style={styles.alertTitle}>Commission Due: ₹{stats.commissionDue.toLocaleString('en-IN')}</Text>
               <Text style={styles.alertSubtitle}>Pay before due date to avoid suspension</Text>
             </View>
-            <TouchableOpacity style={styles.alertBtn} onPress={() => navigation.navigate('CreatorWallet')}><Text style={styles.alertBtnText}>Pay</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.alertBtn} onPress={handlePayNow} disabled={paying}>
+              {paying ? <ActivityIndicator size="small" color="#000" /> : <Text style={styles.alertBtnText}>Pay Now</Text>}
+            </TouchableOpacity>
           </View>
         )}
 
@@ -203,6 +244,20 @@ export default function CreatorHome({ navigation }: any) {
 
         <View style={{ height: 100 }} />
       </ScrollView>
+
+      {/* Razorpay WebView Checkout for Commission Payment */}
+      <RazorpayWebCheckout
+        visible={showRazorpay}
+        keyId={rpConfig.keyId}
+        orderId={rpConfig.orderId}
+        amount={rpConfig.amount}
+        name="BookMyShot"
+        description={`Commission Payment — ₹${rpConfig.amount}`}
+        prefillName={rpConfig.name}
+        onSuccess={handlePaymentSuccess}
+        onFailure={(error) => { setShowRazorpay(false); Alert.alert('Payment Failed', error?.description || 'Payment not completed'); }}
+        onClose={() => setShowRazorpay(false)}
+      />
     </View>
   );
 }
