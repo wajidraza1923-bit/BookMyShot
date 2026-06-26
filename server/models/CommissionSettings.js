@@ -2,8 +2,9 @@ const mongoose = require("mongoose");
 
 const commissionSettingsSchema = new mongoose.Schema(
   {
-    bmsLeadCommissionPercent: { type: Number, default: 5 },
-    creatorLeadCommissionPercent: { type: Number, default: 3 },
+    bmsLeadCommissionPercent: { type: Number, default: 5 },       // Booking commission (BookMyShot platform leads)
+    creatorLeadCommissionPercent: { type: Number, default: 3 },   // Legacy alias — same as inquiryCommissionPercent
+    inquiryCommissionPercent: { type: Number, default: 3 },       // Inquiry commission (creator-generated inquiries)
     latePaymentFeePercent: { type: Number, default: 2 },
     manualAdjustmentPercent: { type: Number, default: 0 },
   },

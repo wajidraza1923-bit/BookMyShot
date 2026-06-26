@@ -1,4 +1,4 @@
-const express = require("express");
+﻿const express = require("express");
 const Creator = require("../models/Creator");
 const Booking = require("../models/Booking");
 const Commission = require("../models/Commission");
@@ -8,9 +8,9 @@ const { protect, authorize } = require("../middleware/auth");
 const router = express.Router();
 router.use(protect);
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // CREATOR ENDPOINTS
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 // GET creator revenue dashboard
 router.get("/creator/dashboard", authorize("creator"), async (req, res, next) => {
@@ -118,9 +118,9 @@ router.get("/creator/invoices", authorize("creator"), async (req, res, next) => 
   }
 });
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ADMIN ENDPOINTS
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 // GET admin revenue dashboard
 router.get("/admin/dashboard", authorize("admin"), async (req, res, next) => {
@@ -276,9 +276,9 @@ router.get("/admin/invoices", authorize("admin"), async (req, res, next) => {
   }
 });
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // COMMISSION CALCULATION HELPER (used by booking routes)
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 // POST calculate and create commission for a booking (called when amount is set)
 router.post("/calculate", authorize("creator"), async (req, res, next) => {
@@ -296,7 +296,7 @@ router.post("/calculate", authorize("creator"), async (req, res, next) => {
 
     const leadSource = booking.leadSource || "bookmyshot";
     const commissionPercent = leadSource === "creator"
-      ? (commSettings.creatorLeadCommissionPercent || 3)
+      ? (commSettings.inquiryCommissionPercent || commSettings.creatorLeadCommissionPercent || 3)
       : (commSettings.bmsLeadCommissionPercent || 5);
     const amount = booking.amount || 0;
     const commissionAmount = Math.round((amount * commissionPercent) / 100);

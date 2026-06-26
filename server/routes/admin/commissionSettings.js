@@ -23,9 +23,17 @@ router.put("/", validateCommissionSettings, async (req, res, next) => {
     const previousValues = {
       bmsLeadCommissionPercent: previous.bmsLeadCommissionPercent,
       creatorLeadCommissionPercent: previous.creatorLeadCommissionPercent,
+      inquiryCommissionPercent: previous.inquiryCommissionPercent,
       latePaymentFeePercent: previous.latePaymentFeePercent,
       manualAdjustmentPercent: previous.manualAdjustmentPercent,
     };
+
+    // Sync inquiryCommissionPercent with creatorLeadCommissionPercent if provided
+    if (req.body.inquiryCommissionPercent !== undefined) {
+      req.body.creatorLeadCommissionPercent = req.body.inquiryCommissionPercent;
+    } else if (req.body.creatorLeadCommissionPercent !== undefined) {
+      req.body.inquiryCommissionPercent = req.body.creatorLeadCommissionPercent;
+    }
 
     // Persist changes
     const settings = await CommissionSettings.updateSettings(req.body);
@@ -44,6 +52,7 @@ router.put("/", validateCommissionSettings, async (req, res, next) => {
       newValues: {
         bmsLeadCommissionPercent: settings.bmsLeadCommissionPercent,
         creatorLeadCommissionPercent: settings.creatorLeadCommissionPercent,
+        inquiryCommissionPercent: settings.inquiryCommissionPercent,
         latePaymentFeePercent: settings.latePaymentFeePercent,
         manualAdjustmentPercent: settings.manualAdjustmentPercent,
       },

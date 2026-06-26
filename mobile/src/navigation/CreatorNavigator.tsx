@@ -47,7 +47,7 @@ function CreatorTabs() {
       })}
     >
       <Tab.Screen name="Dashboard" component={CreatorHome} />
-      <Tab.Screen name="Bookings" component={BookingsScreen} />
+      <Tab.Screen name="Bookings" component={CreatorBookings} />
       <Tab.Screen name="Calendar" component={CreatorCalendar} />
       <Tab.Screen name="Messages" component={MessagesScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />

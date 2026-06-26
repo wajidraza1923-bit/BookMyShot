@@ -1,4 +1,4 @@
-const express = require("express");
+﻿const express = require("express");
 const Creator = require("../models/Creator");
 const Booking = require("../models/Booking");
 const Planning = require("../models/Planning");
@@ -49,7 +49,7 @@ router.get("/analytics", async (req, res, next) => {
   }
 });
 
-// Suspension details — shows reason + outstanding amounts for suspended creators
+// Suspension details â€” shows reason + outstanding amounts for suspended creators
 router.get("/suspension-details", async (req, res, next) => {
   try {
     const creator = await getCreator(req.user._id);
@@ -88,7 +88,7 @@ router.get("/suspension-details", async (req, res, next) => {
       }
     }
 
-    // If no financial reason found, it's manual admin suspension — still show subscription as due for reactivation
+    // If no financial reason found, it's manual admin suspension â€” still show subscription as due for reactivation
     if (subscriptionDue === 0 && commissionDue === 0) {
       suspensionType = "manual";
       subscriptionDue = monthlyPrice; // Require subscription payment to reactivate
@@ -190,7 +190,7 @@ router.get("/dashboard", async (req, res, next) => {
         const dl = Math.ceil((creator.subscriptionEndDate - now) / 86400000);
         if (dl <= 0) return { level: "expired", message: "Your subscription has expired. Profile is hidden." };
         if (dl === 1) return { level: "critical", message: "Subscription expires TOMORROW. Without renewal: profile hidden, no bookings, no inquiries, promotions removed." };
-        if (dl <= 3 && creator.autoRenew === false) return { level: "urgent", message: `${dl} days left. AutoPay is off — renew manually.` };
+        if (dl <= 3 && creator.autoRenew === false) return { level: "urgent", message: `${dl} days left. AutoPay is off â€” renew manually.` };
         if (dl <= 7 && creator.autoRenew === false) return { level: "warning", message: `${dl} days until expiry. AutoPay is off.` };
         return null;
       })(),
@@ -246,7 +246,7 @@ router.put("/planning", async (req, res, next) => {
   }
 });
 
-// ─── PRIVATE PERSONAL CALENDAR EVENTS ──────────────────────────────────────
+// â”€â”€â”€ PRIVATE PERSONAL CALENDAR EVENTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 // Get all private calendar events (personal + event type)
 router.get("/calendar/private", async (req, res, next) => {
@@ -364,7 +364,7 @@ router.get("/calendar/availability", async (req, res, next) => {
   }
 });
 
-// ─── BOOKING REQUESTS (for creator dashboard) ──────────────────────────────
+// â”€â”€â”€ BOOKING REQUESTS (for creator dashboard) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 // Get all booking requests for the creator
 router.get("/booking-requests", async (req, res, next) => {
@@ -396,13 +396,13 @@ router.patch("/booking-requests/:id", async (req, res, next) => {
       const commSettings = await configService.getCommissionSettings();
       const leadSource = booking.leadSource || "bookmyshot";
       const commPercent = leadSource === "creator"
-        ? (commSettings.creatorLeadCommissionPercent || 3)
+        ? (commSettings.inquiryCommissionPercent || commSettings.creatorLeadCommissionPercent || 3)
         : (commSettings.bmsLeadCommissionPercent || 5);
 
       const previousHighest = booking.commissionLockedAmount || 0;
 
       if (amount > previousHighest) {
-        // New highest amount → recalculate commission
+        // New highest amount â†’ recalculate commission
         const commAmount = Math.round((amount * commPercent) / 100);
         booking.commissionPercent = commPercent;
         booking.commissionAmount = commAmount;
@@ -439,7 +439,7 @@ router.patch("/booking-requests/:id", async (req, res, next) => {
           });
         }
       } else {
-        // Same or lower → keep existing commission based on highest
+        // Same or lower â†’ keep existing commission based on highest
         booking.creatorReceivable = amount - (booking.commissionAmount || 0);
       }
     }
@@ -460,7 +460,7 @@ router.patch("/booking-requests/:id", async (req, res, next) => {
   }
 });
 
-// ─── PACKAGE MANAGEMENT ────────────────────────────────────────────────────
+// â”€â”€â”€ PACKAGE MANAGEMENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 // Get packages for the creator
 router.get("/packages", async (req, res, next) => {
@@ -512,7 +512,7 @@ router.delete("/packages/:id", async (req, res, next) => {
   }
 });
 
-// ─── PROFILE IMAGE UPLOAD ──────────────────────────────────────────────────
+// â”€â”€â”€ PROFILE IMAGE UPLOAD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 // Upload profile image (avatar)
 router.post("/upload/profile-image", async (req, res, next) => {
@@ -555,7 +555,7 @@ router.post("/upload/profile-image", async (req, res, next) => {
   }
 });
 
-// ─── NOTIFICATIONS ─────────────────────────────────────────────────────────
+// â”€â”€â”€ NOTIFICATIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 router.get("/notifications", async (req, res, next) => {
   try {
@@ -587,7 +587,7 @@ router.get("/bookings/:id/pdf", async (req, res, next) => {
 
     const doc = new PDFDocument();
     doc.pipe(res);
-    doc.fontSize(20).text("BookMyShot — Booking Details", { align: "center" });
+    doc.fontSize(20).text("BookMyShot â€” Booking Details", { align: "center" });
     doc.moveDown();
     doc.fontSize(12).text(`Client: ${booking.clientName}`);
     doc.text(`Email: ${booking.clientEmail}`);
@@ -618,7 +618,7 @@ router.patch("/settings", async (req, res, next) => {
   }
 });
 
-// ─── LEADS / INQUIRIES ──────────────────────────────────────────────────────
+// â”€â”€â”€ LEADS / INQUIRIES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 // Get all leads (inquiries) for the creator
 router.get("/leads", async (req, res, next) => {
@@ -649,7 +649,7 @@ router.patch("/leads/:id", async (req, res, next) => {
   }
 });
 
-// ─── INQUIRY REPLY ────────────────────────────────────────────────────────────
+// â”€â”€â”€ INQUIRY REPLY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 // Creator creates an inquiry + booking directly (for offline clients)
 router.post("/inquiries", async (req, res, next) => {
@@ -699,7 +699,7 @@ router.post("/inquiries", async (req, res, next) => {
     if (booking.amount > 0) {
       const configService = require("../services/configService");
       const commSettings = await configService.getCommissionSettings();
-      const commPercent = commSettings.creatorLeadCommissionPercent || 3;
+      const commPercent = commSettings.inquiryCommissionPercent || commSettings.creatorLeadCommissionPercent || 3;
       const commAmount = Math.round((booking.amount * commPercent) / 100);
 
       booking.commissionPercent = commPercent;
@@ -774,13 +774,13 @@ router.patch("/inquiries/:id/reply", async (req, res, next) => {
           leadSource: "bookmyshot",
         });
 
-        // ═══ COMMISSION GENERATION — Immediately on first booking acceptance ═══
+        // â•â•â• COMMISSION GENERATION â€” Immediately on first booking acceptance â•â•â•
         if (bookingAmount > 0) {
           const configService = require("../services/configService");
           const commSettings = await configService.getCommissionSettings();
           const leadSource = "bookmyshot"; // Inquiry from platform = BMS lead
           const commPercent = leadSource === "creator"
-            ? (commSettings.creatorLeadCommissionPercent || 3)
+            ? (commSettings.inquiryCommissionPercent || commSettings.creatorLeadCommissionPercent || 3)
             : (commSettings.bmsLeadCommissionPercent || 5);
           const commAmount = Math.round((bookingAmount * commPercent) / 100);
           const creatorEarning = bookingAmount - commAmount;
@@ -794,7 +794,7 @@ router.patch("/inquiries/:id/reply", async (req, res, next) => {
           createdBooking.commissionStatus = "pending";
           await createdBooking.save();
 
-          // Create Commission record (single record per booking — never duplicated)
+          // Create Commission record (single record per booking â€” never duplicated)
           const Commission = require("../models/Commission");
           const existingCommission = await Commission.findOne({ booking: createdBooking._id });
           if (!existingCommission) {
@@ -810,14 +810,14 @@ router.patch("/inquiries/:id/reply", async (req, res, next) => {
               creatorEarning,
               status: "pending",
             });
-            console.log(`[COMMISSION] ✅ Generated for booking ${createdBooking._id}: ₹${commAmount} (${commPercent}% of ₹${bookingAmount})`);
+            console.log(`[COMMISSION] âœ… Generated for booking ${createdBooking._id}: â‚¹${commAmount} (${commPercent}% of â‚¹${bookingAmount})`);
 
             // Notify creator about commission
             await Notification.create({
               user: req.user._id,
               type: "commission",
-              title: "📊 Commission Generated",
-              message: `Commission of ₹${commAmount.toLocaleString('en-IN')} (${commPercent}%) has been generated for booking ₹${bookingAmount.toLocaleString('en-IN')}. Due in 30 days.`,
+              title: "ðŸ“Š Commission Generated",
+              message: `Commission of â‚¹${commAmount.toLocaleString('en-IN')} (${commPercent}%) has been generated for booking â‚¹${bookingAmount.toLocaleString('en-IN')}. Due in 30 days.`,
               targetScreen: "CreatorWallet",
             });
           }
@@ -832,10 +832,10 @@ router.patch("/inquiries/:id/reply", async (req, res, next) => {
       await Notification.create({
         user: inquiry.user,
         title: inquiry.status === "accepted"
-          ? "✅ Inquiry Accepted"
+          ? "âœ… Inquiry Accepted"
           : inquiry.status === "rejected"
-            ? "❌ Inquiry Declined"
-            : "📩 Inquiry Update",
+            ? "âŒ Inquiry Declined"
+            : "ðŸ“© Inquiry Update",
         message: inquiry.status === "accepted"
           ? `Your inquiry for ${inquiry.eventType} has been accepted! A booking has been created.`
           : inquiry.status === "rejected"
@@ -846,7 +846,7 @@ router.patch("/inquiries/:id/reply", async (req, res, next) => {
       });
     }
 
-    // ═══ Real-time Socket.IO updates ═══
+    // â•â•â• Real-time Socket.IO updates â•â•â•
     try {
       const socketService = require("../services/socketService");
       if (createdBooking) {
@@ -864,7 +864,7 @@ router.patch("/inquiries/:id/reply", async (req, res, next) => {
   }
 });
 
-// ─── PAYMENT PROOFS ─────────────────────────────────────────────────────────
+// â”€â”€â”€ PAYMENT PROOFS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 // Get payment proofs for creator's bookings
 router.get("/payment-proofs", async (req, res, next) => {
@@ -949,11 +949,11 @@ router.patch("/payment-proofs/:id/verify", async (req, res, next) => {
     await Notification.create({
       user: proof.user,
       title: req.body.status === "verified"
-        ? "✅ Payment Approved"
-        : "❌ Payment Rejected",
+        ? "âœ… Payment Approved"
+        : "âŒ Payment Rejected",
       message: req.body.status === "verified"
-        ? `Your payment of ₹${proof.amount} has been approved.`
-        : `Your payment of ₹${proof.amount} has been rejected. Please upload a new payment proof.`,
+        ? `Your payment of â‚¹${proof.amount} has been approved.`
+        : `Your payment of â‚¹${proof.amount} has been rejected. Please upload a new payment proof.`,
       type: "payment",
     });
     res.json({ success: true, proof, booking });
@@ -975,7 +975,7 @@ router.patch("/bookings/:id/complete", async (req, res, next) => {
     const Notification = require("../models/Notification");
     await Notification.create({
       user: booking.user,
-      title: "✅ Booking Completed",
+      title: "âœ… Booking Completed",
       message: `Your ${booking.eventType} has been marked as completed. Thank you!`,
       type: "booking",
     });
@@ -985,7 +985,7 @@ router.patch("/bookings/:id/complete", async (req, res, next) => {
   }
 });
 
-// ─── COMMISSIONS / EARNINGS ─────────────────────────────────────────────────
+// â”€â”€â”€ COMMISSIONS / EARNINGS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 // Get creator's commission earnings
 router.get("/earnings", async (req, res, next) => {

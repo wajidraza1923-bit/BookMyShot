@@ -34,6 +34,7 @@ const DEFAULTS = {
   commission: {
     bmsLeadCommissionPercent: 5,
     creatorLeadCommissionPercent: 3,
+    inquiryCommissionPercent: 3,
     latePaymentFeePercent: 2,
     manualAdjustmentPercent: 0,
   },

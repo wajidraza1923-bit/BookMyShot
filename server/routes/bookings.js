@@ -1,4 +1,4 @@
-const express = require("express");
+﻿const express = require("express");
 const Booking = require("../models/Booking");
 const Creator = require("../models/Creator");
 const User = require("../models/User");
@@ -181,7 +181,7 @@ router.patch("/:id/status", protect, async (req, res, next) => {
       const newAmount = amount || booking.budget || 0;
       booking.amount = newAmount;
       booking.remaining = newAmount;
-      // Track highest budget — never decreases
+      // Track highest budget â€” never decreases
       if (newAmount > (booking.highestBudget || 0)) {
         booking.highestBudget = newAmount;
       }
@@ -193,7 +193,7 @@ router.patch("/:id/status", protect, async (req, res, next) => {
         const commSettings = await configService.getCommissionSettings();
         const leadSource = booking.leadSource || "bookmyshot";
         const commPercent = leadSource === "creator"
-          ? (commSettings.creatorLeadCommissionPercent || 3)
+          ? (commSettings.inquiryCommissionPercent || commSettings.creatorLeadCommissionPercent || 3)
           : (commSettings.bmsLeadCommissionPercent || 5);
         const previousHighest = booking.commissionLockedAmount || 0;
 
@@ -255,16 +255,16 @@ router.patch("/:id/status", protect, async (req, res, next) => {
     let notifMsg = `Your booking status is now: ${booking.status}`;
     
     if (status === "Creator Accepted") {
-      notifTitle = "✅ Inquiry Accepted";
-      notifMsg = `${creatorName} accepted your inquiry. Amount: ₹${booking.amount?.toLocaleString('en-IN') || booking.budget}`;
+      notifTitle = "âœ… Inquiry Accepted";
+      notifMsg = `${creatorName} accepted your inquiry. Amount: â‚¹${booking.amount?.toLocaleString('en-IN') || booking.budget}`;
     } else if (status === "rejected") {
-      notifTitle = "❌ Inquiry Rejected";
+      notifTitle = "âŒ Inquiry Rejected";
       notifMsg = `${creatorName} has rejected your inquiry.${booking.creatorNotes ? ' Reason: ' + booking.creatorNotes : ''}`;
     } else if (status === "Completed") {
-      notifTitle = "🎉 Booking Completed";
+      notifTitle = "ðŸŽ‰ Booking Completed";
       notifMsg = `Your booking with ${creatorName} has been marked as completed!`;
     } else if (status === "cancelled") {
-      notifTitle = "🚫 Booking Cancelled";
+      notifTitle = "ðŸš« Booking Cancelled";
       notifMsg = `Your booking with ${creatorName} has been cancelled.`;
     }
 
@@ -311,7 +311,7 @@ router.patch("/:id/schedule", protect, authorize("creator"), async (req, res, ne
 
     await createNotification(
       booking.user._id,
-      "📅 Event Scheduled",
+      "ðŸ“… Event Scheduled",
       `Your ${booking.eventType} has been scheduled for ${new Date(scheduledDate).toLocaleDateString()} at ${scheduledTime || "TBD"}`,
       "booking"
     );
@@ -335,7 +335,7 @@ router.patch("/:id/complete", protect, authorize("creator"), async (req, res, ne
 
     await createNotification(
       booking.user._id,
-      "✅ Booking Completed",
+      "âœ… Booking Completed",
       `Your ${booking.eventType} has been marked as completed. Thank you!`,
       "booking"
     );

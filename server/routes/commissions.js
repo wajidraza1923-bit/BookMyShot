@@ -1,4 +1,4 @@
-const express = require("express");
+﻿const express = require("express");
 const Commission = require("../models/Commission");
 const Booking = require("../models/Booking");
 const Creator = require("../models/Creator");
@@ -26,7 +26,7 @@ router.post("/", protect, async (req, res, next) => {
       const commSettings = await configService.getCommissionSettings();
       const leadSource = booking.leadSource || "bookmyshot";
       percent = leadSource === "creator"
-        ? (commSettings.creatorLeadCommissionPercent || 3)
+        ? (commSettings.inquiryCommissionPercent || commSettings.creatorLeadCommissionPercent || 3)
         : (commSettings.bmsLeadCommissionPercent || 5);
     }
     const commissionAmount = (totalAmount * percent) / 100;

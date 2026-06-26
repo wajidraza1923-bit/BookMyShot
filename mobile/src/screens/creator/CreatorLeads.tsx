@@ -114,6 +114,9 @@ export default function CreatorLeads({ navigation }: any) {
             <Text style={st.pendingText}>{pendingCount}</Text>
           </View>
         )}
+        <TouchableOpacity onPress={() => navigation.navigate('CreateInquiry')} style={st.addBtn}>
+          <Ionicons name="add" size={20} color={colors.primary} />
+        </TouchableOpacity>
       </View>
 
       {/* Tabs */}
@@ -307,6 +310,7 @@ const st = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.xl, paddingTop: spacing['5xl'], paddingBottom: spacing.md, gap: spacing.md },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
   title: { ...typography.headlineLg, color: colors.text, flex: 1 },
+  addBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primaryMuted, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(212,175,55,0.2)' },
   pendingBadge: { backgroundColor: colors.warning + '20', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 12, borderWidth: 1, borderColor: colors.warning + '30' },
   pendingText: { ...typography.labelSm, color: colors.warning, fontWeight: '700' },
   tabs: { flexDirection: 'row', marginHorizontal: spacing.xl, backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.xs, borderWidth: 1, borderColor: colors.border },

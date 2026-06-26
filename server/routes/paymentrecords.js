@@ -1,4 +1,4 @@
-const express = require("express");
+﻿const express = require("express");
 const PaymentRecord = require("../models/PaymentRecord");
 const Booking = require("../models/Booking");
 const Creator = require("../models/Creator");
@@ -83,7 +83,7 @@ router.post("/user", async (req, res, next) => {
       return res.status(403).json({ success: false, message: "Not your booking" });
     }
 
-    // ═══ VALIDATION: Total received must NEVER exceed booking amount ═══
+    // â•â•â• VALIDATION: Total received must NEVER exceed booking amount â•â•â•
     const bookingTotal = booking.amount || booking.budget || 0;
     if (bookingTotal > 0) {
       const existingRecords = await PaymentRecord.find({ booking: bookingId, status: { $in: ["approved", "pending"] } });
@@ -92,7 +92,7 @@ router.post("/user", async (req, res, next) => {
         const maxAllowed = Math.max(0, bookingTotal - totalAlreadyRecorded);
         return res.status(400).json({
           success: false,
-          message: `Payment exceeds booking amount. Booking total: ₹${bookingTotal}, Already recorded: ₹${totalAlreadyRecorded}, Maximum allowed: ₹${maxAllowed}`,
+          message: `Payment exceeds booking amount. Booking total: â‚¹${bookingTotal}, Already recorded: â‚¹${totalAlreadyRecorded}, Maximum allowed: â‚¹${maxAllowed}`,
         });
       }
     }
@@ -121,8 +121,8 @@ router.post("/user", async (req, res, next) => {
     if (creator && creator.user) {
       await Notification.create({
         user: creator.user,
-        title: "💰 New Payment Record",
-        message: `₹${amount} ${paymentType || "payment"} recorded for ${booking.eventType}`,
+        title: "ðŸ’° New Payment Record",
+        message: `â‚¹${amount} ${paymentType || "payment"} recorded for ${booking.eventType}`,
         type: "payment",
       });
     }
@@ -153,7 +153,7 @@ router.post("/creator", async (req, res, next) => {
       return res.status(403).json({ success: false, message: "Not your booking" });
     }
 
-    // ═══ VALIDATION: Total received must NEVER exceed booking amount ═══
+    // â•â•â• VALIDATION: Total received must NEVER exceed booking amount â•â•â•
     const bookingTotal = booking.amount || booking.budget || 0;
     if (bookingTotal <= 0) {
       return res.status(400).json({ success: false, message: "Booking amount not set. Please set the deal amount first." });
@@ -164,7 +164,7 @@ router.post("/creator", async (req, res, next) => {
       const maxAllowed = bookingTotal - totalAlreadyPaid;
       return res.status(400).json({
         success: false,
-        message: `Payment exceeds booking amount. Booking total: ₹${bookingTotal}, Already received: ₹${totalAlreadyPaid}, Maximum you can add: ₹${maxAllowed}`,
+        message: `Payment exceeds booking amount. Booking total: â‚¹${bookingTotal}, Already received: â‚¹${totalAlreadyPaid}, Maximum you can add: â‚¹${maxAllowed}`,
       });
     }
 
@@ -187,8 +187,8 @@ router.post("/creator", async (req, res, next) => {
     // Notify user
     await Notification.create({
       user: booking.user,
-      title: "💰 Payment Recorded",
-      message: `Creator recorded ₹${amount} ${paymentType || "payment"} for ${booking.eventType}`,
+      title: "ðŸ’° Payment Recorded",
+      message: `Creator recorded â‚¹${amount} ${paymentType || "payment"} for ${booking.eventType}`,
       type: "payment",
     });
 
@@ -216,8 +216,8 @@ router.patch("/:id/approve", async (req, res, next) => {
     // Notify user
     await Notification.create({
       user: record.user,
-      title: "✅ Payment Approved",
-      message: `Your payment of ₹${record.amount} has been approved.`,
+      title: "âœ… Payment Approved",
+      message: `Your payment of â‚¹${record.amount} has been approved.`,
       type: "payment",
     });
 
@@ -243,8 +243,8 @@ router.patch("/:id/reject", async (req, res, next) => {
     // Notify user
     await Notification.create({
       user: record.user,
-      title: "❌ Payment Rejected",
-      message: `Your payment of ₹${record.amount} was rejected. ${req.body.reason || "Please resubmit."}`,
+      title: "âŒ Payment Rejected",
+      message: `Your payment of â‚¹${record.amount} was rejected. ${req.body.reason || "Please resubmit."}`,
       type: "payment",
     });
 
@@ -276,24 +276,24 @@ router.patch("/booking/:bookingId/amount", async (req, res, next) => {
 
     booking.amount = newAmount;
 
-    // ═══════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     // COMMISSION LOGIC:
     // - First time: calculate commission on the amount set
     // - If amount INCREASES above previous highest: recalculate on new higher amount
     // - If amount DECREASES: commission stays at previous highest (never goes down)
     // - Commission is always based on the HIGHEST amount ever set
-    // ═══════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     const configService = require("../services/configService");
     const commSettings = await configService.getCommissionSettings();
     const leadSource = booking.leadSource || "bookmyshot";
     const commissionPercent = leadSource === "creator"
-      ? (commSettings.creatorLeadCommissionPercent || 3)
+      ? (commSettings.inquiryCommissionPercent || commSettings.creatorLeadCommissionPercent || 3)
       : (commSettings.bmsLeadCommissionPercent || 5);
 
     const previousHighest = booking.commissionLockedAmount || 0;
 
     if (newAmount > previousHighest) {
-      // New amount is HIGHER than ever before → recalculate commission on this new amount
+      // New amount is HIGHER than ever before â†’ recalculate commission on this new amount
       const commissionAmount = Math.round((newAmount * commissionPercent) / 100);
 
       booking.commissionPercent = commissionPercent;
@@ -327,7 +327,7 @@ router.patch("/booking/:bookingId/amount", async (req, res, next) => {
         });
       }
     } else {
-      // Amount is SAME or LOWER than previous highest → commission stays unchanged
+      // Amount is SAME or LOWER than previous highest â†’ commission stays unchanged
       booking.creatorReceivable = newAmount - booking.commissionAmount;
     }
 
@@ -359,7 +359,7 @@ router.patch("/booking/:bookingId/mark-paid", async (req, res, next) => {
     // Notify user
     await Notification.create({
       user: booking.user,
-      title: "✅ Booking Fully Paid",
+      title: "âœ… Booking Fully Paid",
       message: `Your booking for ${booking.eventType} has been marked as fully paid.`,
       type: "payment",
     });
