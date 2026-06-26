@@ -5,6 +5,7 @@ const Creator = require("../models/Creator");
 const User = require("../models/User");
 const Notification = require("../models/Notification");
 const Invoice = require("../models/Invoice");
+const Commission = require("../models/Commission");
 const { protect, authorize } = require("../middleware/auth");
 const emailService = require("../services/emailService");
 
@@ -421,14 +422,19 @@ router.post("/create-commission-order", protect, authorize("creator"), async (re
     const creator = await Creator.findOne({ user: req.user._id });
     if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
 
-    const order = await razorpayService.createOrder(amount, "INR", `comm_${Date.now()}`, {
-      creatorId: creator._id.toString(),
-      userId: req.user._id.toString(),
-      type: "commission",
-    });
-
-    res.json({ success: true, order, amount, keyId: process.env.RAZORPAY_KEY_ID });
+    try {
+      const order = await razorpayService.createOrder(amount, "INR", `comm_${Date.now()}`, {
+        creatorId: creator._id.toString(),
+        userId: req.user._id.toString(),
+        type: "commission",
+      });
+      res.json({ success: true, order, amount, keyId: process.env.RAZORPAY_KEY_ID });
+    } catch (rpError) {
+      console.error("[Razorpay] Commission order creation failed:", rpError.message || rpError);
+      return res.status(500).json({ success: false, message: "Failed to create payment order: " + (rpError.message || "Razorpay API error") });
+    }
   } catch (e) {
+    console.error("[Razorpay] create-commission-order error:", e.message);
     next(e);
   }
 });
@@ -458,7 +464,6 @@ router.post("/verify-commission-payment", protect, async (req, res, next) => {
     await Creator.updateOne({ _id: creator._id }, { $inc: { commissionPaid: paidAmount } });
 
     // Mark pending commissions as paid (oldest first)
-    const Commission = require("../models/Commission");
     let remaining = paidAmount;
     const pendingComms = await Commission.find({ creator: creator._id, status: { $in: ["pending", "overdue"] } }).sort({ createdAt: 1 });
     for (const comm of pendingComms) {
