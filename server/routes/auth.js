@@ -433,6 +433,35 @@ router.get("/me", protect, async (req, res, next) => {
     let creator = null;
     if (req.user.role === "creator") {
       creator = await Creator.findOne({ user: req.user._id });
+      
+      // ═══ AUTO-APPROVAL FALLBACK ═══
+      // If creator has a Razorpay subscription ID but is still "pending",
+      // check subscription status and auto-approve if authenticated/active
+      if (creator && creator.status === "pending" && creator.razorpaySubscriptionId) {
+        try {
+          const razorpayService = require("../services/razorpayService");
+          if (razorpayService.isConfigured()) {
+            const rpSub = await razorpayService.fetchSubscription(creator.razorpaySubscriptionId);
+            if (rpSub && (rpSub.status === "active" || rpSub.status === "authenticated")) {
+              creator.status = "approved";
+              creator.subscriptionStatus = "active";
+              if (!creator.subscriptionStartDate) creator.subscriptionStartDate = new Date();
+              if (!creator.subscriptionEndDate) {
+                const end = new Date();
+                end.setMonth(end.getMonth() + 1);
+                creator.subscriptionEndDate = end;
+                creator.nextBillingDate = end;
+              }
+              creator.lastPaymentDate = new Date();
+              await creator.save();
+              console.log("[Auth/me] ✅ Auto-approved creator via Razorpay status check:", creator._id);
+            }
+          }
+        } catch (rpErr) {
+          // Don't fail the /me request if Razorpay check fails
+          console.log("[Auth/me] Razorpay status check failed (non-fatal):", rpErr.message);
+        }
+      }
     }
     res.json({ success: true, user: req.user, creator });
   } catch (e) {

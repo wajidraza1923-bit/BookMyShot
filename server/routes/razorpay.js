@@ -650,12 +650,33 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
 
       case "subscription.authenticated": {
         // Creator authorized the mandate — subscription is ready
+        // AUTO-APPROVE: If creator is pending, approve them immediately
         const subId = payload.subscription?.entity?.id;
         console.log("[Razorpay] Subscription authenticated:", subId);
         const creator = await Creator.findOne({ razorpaySubscriptionId: subId });
         if (creator) {
-          // Just log — actual activation happens on subscription.activated
-          console.log("[Razorpay] Mandate authorized for creator:", creator._id);
+          console.log("[Razorpay] Mandate authorized for creator:", creator._id, "current status:", creator.status);
+          if (creator.status === "pending") {
+            creator.status = "approved";
+            creator.subscriptionStatus = "active";
+            if (!creator.subscriptionStartDate) creator.subscriptionStartDate = new Date();
+            const end = new Date();
+            end.setMonth(end.getMonth() + 1);
+            creator.subscriptionEndDate = end;
+            creator.nextBillingDate = end;
+            creator.lastPaymentDate = new Date();
+            await creator.save();
+            console.log("[Razorpay] ✅ Creator auto-approved via webhook:", creator._id);
+            // Notify creator
+            if (creator.user) {
+              await Notification.create({
+                user: creator.user,
+                type: "subscription",
+                title: "✅ Account Approved!",
+                message: "Your subscription is active and your creator account has been approved. Welcome to BookMyShot!",
+              });
+            }
+          }
         }
         break;
       }
