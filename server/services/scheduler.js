@@ -149,7 +149,80 @@ function initScheduler() {
     }
   }, { timezone: "Asia/Kolkata" });
 
-  console.log("[Scheduler] ✅ All cron jobs registered (9AM/10AM/11AM IST daily)");
+  // ═══════════════════════════════════════════════════════════════
+  // BOOKING REMINDERS — Daily at 8:00 AM IST
+  // Sends push notifications to creators for upcoming confirmed bookings
+  // Reminders: 7 days, 5 days, 3 days, 1 day before event
+  // ═══════════════════════════════════════════════════════════════
+  cron.schedule("0 8 * * *", async () => {
+    console.log("[Scheduler] Running booking reminders...");
+    try {
+      const Booking = require("../models/Booking");
+      const Creator = require("../models/Creator");
+      const Notification = require("../models/Notification");
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      let sent = 0;
+
+      // Find all active bookings with future event dates
+      const activeBookings = await Booking.find({
+        status: { $in: ["Creator Accepted", "Payment Submitted", "Payment Approved", "Event Scheduled"] },
+        eventDate: { $gte: now },
+      }).populate({ path: "creator", populate: { path: "user", select: "_id name" } });
+
+      for (const booking of activeBookings) {
+        if (!booking.eventDate || !booking.creator?.user?._id) continue;
+
+        const eventDate = new Date(booking.eventDate);
+        eventDate.setHours(0, 0, 0, 0);
+        const daysUntil = Math.round((eventDate - now) / 86400000);
+        const userId = booking.creator.user._id;
+
+        // Only send on specific days: 7, 5, 3, 1
+        if (![7, 5, 3, 1].includes(daysUntil)) continue;
+
+        // Prevent duplicate: check if reminder already sent today for this booking
+        const todayStart = new Date(now);
+        const existing = await Notification.findOne({
+          user: userId,
+          type: "booking",
+          targetId: booking._id.toString(),
+          createdAt: { $gte: todayStart },
+        });
+        if (existing) continue;
+
+        // Build reminder message based on days remaining
+        let title, message;
+        if (daysUntil === 7 || daysUntil === 5) {
+          title = `📸 BookMyShot Reminder — ${daysUntil} Days`;
+          message = `Your upcoming booking "${booking.clientName} - ${booking.eventType}" is scheduled in ${daysUntil} days (${eventDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}). Please review the booking details, contact your client if needed, and prepare your equipment.`;
+        } else if (daysUntil === 3) {
+          title = "📸 BookMyShot — 3 Days Left";
+          message = `Only 3 days left for your booking "${booking.clientName} - ${booking.eventType}" on ${eventDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}. Make sure everything is ready and your availability is confirmed.`;
+        } else if (daysUntil === 1) {
+          title = "📸 BookMyShot — Tomorrow!";
+          message = `Tomorrow is your booking "${booking.clientName} - ${booking.eventType}". Please reach the venue on time and deliver an amazing experience. Best of luck from Team BookMyShot! 🎉`;
+        }
+
+        if (title && message) {
+          await Notification.create({
+            user: userId,
+            type: "booking",
+            title,
+            message,
+            targetScreen: "BookingDetail",
+            targetId: booking._id.toString(),
+          });
+          sent++;
+        }
+      }
+      console.log(`[Scheduler] Booking reminders sent: ${sent}`);
+    } catch (e) {
+      console.error("[Scheduler] Booking reminders error:", e.message);
+    }
+  }, { timezone: "Asia/Kolkata" });
+
+  console.log("[Scheduler] ✅ All cron jobs registered (8AM/9AM/10AM/11AM IST daily)");
 
   // ═══════════════════════════════════════════════════════════════
   // DATA RETENTION POLICY — Daily cleanup at 3:00 AM IST
