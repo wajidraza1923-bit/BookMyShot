@@ -26,8 +26,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 // ═══ MUST MATCH mobile/app.json versionCode ═══
-const APP_VERSION_CODE = 2;
-const APP_VERSION_NAME = '2.1.0';
+const APP_VERSION_CODE = 3;
+const APP_VERSION_NAME = '2.2.0';
 const API_BASE = 'https://site--bookmyshot--ykz2mr8mzlrv.code.run/api';
 
 interface UpdateInfo {
