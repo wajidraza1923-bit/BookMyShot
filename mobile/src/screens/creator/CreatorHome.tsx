@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, RefreshControl, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { colors, spacing, typography, radius } from '../../theme';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
@@ -28,6 +29,7 @@ export default function CreatorHome({ navigation }: any) {
   }, []);
 
   useEffect(() => { loadDashboard(); }, []);
+  useFocusEffect(useCallback(() => { loadDashboard(); }, []));
   const onRefresh = async () => { setRefreshing(true); await loadDashboard(); setRefreshing(false); };
 
   const statCards = [
@@ -85,7 +87,7 @@ export default function CreatorHome({ navigation }: any) {
               <Text style={styles.alertTitle}>Commission Due: ₹{stats.commissionDue.toLocaleString('en-IN')}</Text>
               <Text style={styles.alertSubtitle}>Pay before due date to avoid suspension</Text>
             </View>
-            <TouchableOpacity style={styles.alertBtn}><Text style={styles.alertBtnText}>Pay</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.alertBtn} onPress={() => navigation.navigate('CreatorWallet')}><Text style={styles.alertBtnText}>Pay</Text></TouchableOpacity>
           </View>
         )}
 
