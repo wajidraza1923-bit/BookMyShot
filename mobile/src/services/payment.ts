@@ -1,42 +1,33 @@
 /**
- * BookMyShot Payment Service
- * Production Razorpay integration using same backend APIs as website.
+ * BookMyShot Payment Service — Production
+ * Uses react-native-razorpay for native checkout in production APK.
+ * Falls back to WebView-based checkout in Expo Go (development only).
  * 
- * Architecture:
- * 1. Mobile calls backend → creates Razorpay order/subscription
- * 2. Mobile opens Razorpay Checkout (native SDK in production, WebView in dev)
- * 3. On payment success → mobile sends verification to backend
- * 4. Backend verifies signature → activates subscription/records payment
- * 5. Webhooks handle edge cases (payment.failed, subscription.charged)
- * 
- * Same endpoints as website:
- * - POST /api/razorpay/create-subscription (subscription)
- * - POST /api/razorpay/verify-subscription (verify)
- * - POST /api/razorpay/create-commission-order (commission payment)
- * - POST /api/razorpay/verify-commission-payment (verify)
- * - GET  /api/razorpay/config (get public key)
+ * SAME backend endpoints as website:
+ * - POST /api/razorpay/create-subscription
+ * - POST /api/razorpay/verify-subscription
+ * - POST /api/razorpay/create-commission-order
+ * - POST /api/razorpay/verify-commission-payment
+ * - POST /api/razorpay/create-promotion-order
+ * - POST /api/razorpay/verify-payment
+ * - GET  /api/razorpay/config
  */
 
-import { Platform } from 'react-native';
+import { Linking } from 'react-native';
 import api from './api';
 
+// ═══ Detect native Razorpay module ═══
+let RazorpayCheckout: any = null;
+try {
+  RazorpayCheckout = require('react-native-razorpay').default;
+} catch (e) {
+  console.log('[Payment] react-native-razorpay not available (Expo Go). Will use WebView fallback.');
+}
+
 // Types
-export interface RazorpayConfig {
-  keyId: string;
-  configured: boolean;
-}
-
-export interface PaymentOrder {
-  id: string;
-  amount: number;
-  currency: string;
-}
-
-export interface SubscriptionResult {
-  subscriptionId: string;
-  status?: string;
-  message?: string;
-}
+export interface RazorpayConfig { keyId: string; configured: boolean; }
+export interface PaymentOrder { id: string; amount: number; currency: string; }
+export interface SubscriptionResult { subscriptionId: string; status?: string; message?: string; keyId?: string; amount?: number; }
 
 // ═══ GET RAZORPAY CONFIG ═══
 export async function getRazorpayConfig(): Promise<RazorpayConfig> {
@@ -44,35 +35,47 @@ export async function getRazorpayConfig(): Promise<RazorpayConfig> {
   return { keyId: res.data?.keyId || '', configured: res.data?.configured || false };
 }
 
-// ═══ SUBSCRIPTION FLOW ═══
-// Step 1: Create subscription on backend (same as website)
+// ═══ CHECK IF NATIVE RAZORPAY IS AVAILABLE ═══
+export function isNativeRazorpayAvailable(): boolean {
+  return RazorpayCheckout !== null && typeof RazorpayCheckout?.open === 'function';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SUBSCRIPTION FLOW
+// ═══════════════════════════════════════════════════════════════
+
+// Step 1: Create subscription on backend
 export async function createSubscription(): Promise<SubscriptionResult> {
   const res = await api.post('/razorpay/create-subscription', {});
   return {
-    subscriptionId: res.data?.subscriptionId || '',
-    status: res.data?.status,
+    subscriptionId: res.data?.subscriptionId || res.data?.subscription?.id || '',
+    status: res.data?.status || res.data?.subscription?.status,
     message: res.data?.message,
+    keyId: res.data?.keyId,
+    amount: res.data?.amount,
   };
 }
 
-// Step 2: Open Razorpay Checkout (production only - needs native module)
+// Step 2: Open Razorpay Checkout for subscription
 export async function openRazorpaySubscription(
   keyId: string,
   subscriptionId: string,
   userName: string,
   userEmail: string
 ): Promise<{ razorpay_subscription_id: string; razorpay_payment_id: string; razorpay_signature: string }> {
-  // In production APK/AAB, use react-native-razorpay
-  const RazorpayCheckout = null; // Native module - only works in production APK
-  if (!RazorpayCheckout) throw new Error('Razorpay is only available in production builds. Please use EAS build.');
+  if (!RazorpayCheckout) {
+    throw { code: 'NO_NATIVE_MODULE', message: 'Razorpay native module not available. Use production APK.' };
+  }
 
   const options = {
     key: keyId,
     subscription_id: subscriptionId,
     name: 'BookMyShot',
-    description: 'Creator Monthly Subscription',
+    description: 'Creator Monthly Subscription (AutoPay)',
+    image: 'https://bookmyshot.in/images/logo.png',
     prefill: { name: userName, email: userEmail },
     theme: { color: '#D4AF37' },
+    modal: { confirm_close: true },
   };
 
   const result = await RazorpayCheckout.open(options);
@@ -83,7 +86,7 @@ export async function openRazorpaySubscription(
   };
 }
 
-// Step 3: Verify subscription on backend (same as website)
+// Step 3: Verify subscription
 export async function verifySubscription(
   razorpay_subscription_id: string,
   razorpay_payment_id: string,
@@ -97,18 +100,21 @@ export async function verifySubscription(
   return res.data?.success || false;
 }
 
-// ═══ COMMISSION PAYMENT FLOW ═══
-// Step 1: Create order for commission payment
+// ═══════════════════════════════════════════════════════════════
+// COMMISSION PAYMENT FLOW
+// ═══════════════════════════════════════════════════════════════
+
+// Step 1: Create order
 export async function createCommissionOrder(amount: number): Promise<PaymentOrder> {
   const res = await api.post('/razorpay/create-commission-order', { amount });
   return {
     id: res.data?.order?.id || '',
-    amount: res.data?.order?.amount || amount * 100,
+    amount: res.data?.amount || amount,
     currency: 'INR',
   };
 }
 
-// Step 2: Open Razorpay Checkout for commission
+// Step 2: Open Razorpay Checkout for one-time payment (commission/promotion)
 export async function openRazorpayOrder(
   keyId: string,
   orderId: string,
@@ -116,8 +122,9 @@ export async function openRazorpayOrder(
   description: string,
   userName: string
 ): Promise<{ razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }> {
-  const RazorpayCheckout = null; // Native module - only works in production APK
-  if (!RazorpayCheckout) throw new Error('Razorpay is only available in production builds. Please use EAS build.');
+  if (!RazorpayCheckout) {
+    throw { code: 'NO_NATIVE_MODULE', message: 'Razorpay native module not available. Use production APK.' };
+  }
 
   const options = {
     key: keyId,
@@ -126,8 +133,10 @@ export async function openRazorpayOrder(
     name: 'BookMyShot',
     description,
     order_id: orderId,
+    image: 'https://bookmyshot.in/images/logo.png',
     prefill: { name: userName },
     theme: { color: '#D4AF37' },
+    modal: { confirm_close: true },
   };
 
   const result = await RazorpayCheckout.open(options);
@@ -154,12 +163,15 @@ export async function verifyCommissionPayment(
   return res.data?.success || false;
 }
 
-// ═══ PROMOTION PAYMENT FLOW ═══
+// ═══════════════════════════════════════════════════════════════
+// PROMOTION PAYMENT FLOW
+// ═══════════════════════════════════════════════════════════════
+
 export async function createPromotionOrder(planType: string, amount: number): Promise<PaymentOrder> {
   const res = await api.post('/razorpay/create-promotion-order', { planType, amount });
   return {
     id: res.data?.order?.id || '',
-    amount: res.data?.order?.amount || amount * 100,
+    amount: res.data?.amount || amount,
     currency: 'INR',
   };
 }
@@ -182,21 +194,31 @@ export async function verifyPromotionPayment(
   return res.data?.success || false;
 }
 
-// ═══ PAYMENT RECORDS (booking payments - same as website) ═══
+// ═══════════════════════════════════════════════════════════════
+// CANCEL SUBSCRIPTION (AutoPay off)
+// ═══════════════════════════════════════════════════════════════
+export async function cancelSubscription(): Promise<boolean> {
+  const res = await api.post('/razorpay/cancel-subscription', {});
+  return res.data?.success || false;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AUTOPAY STATUS
+// ═══════════════════════════════════════════════════════════════
+export async function getAutoPayStatus() {
+  const res = await api.get('/razorpay/autopay-status');
+  return res.data?.data || {};
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PAYMENT RECORDS (booking payments)
+// ═══════════════════════════════════════════════════════════════
 export async function recordBookingPayment(
-  bookingId: string,
-  amount: number,
+  bookingId: string, amount: number,
   paymentType: 'advance' | 'partial' | 'final' | 'other',
-  notes?: string,
-  proof?: string
+  notes?: string, proof?: string
 ) {
-  const res = await api.post('/payment-records/creator', {
-    bookingId,
-    amount,
-    paymentType,
-    notes: notes || '',
-    proof: proof || '',
-  });
+  const res = await api.post('/payment-records/creator', { bookingId, amount, paymentType, notes: notes || '', proof: proof || '' });
   return res.data;
 }
 
@@ -215,14 +237,10 @@ export async function markBookingPaid(bookingId: string) {
   return res.data;
 }
 
-// ═══ EARNINGS (same as website /creator/earnings) ═══
+// ═══════════════════════════════════════════════════════════════
+// EARNINGS
+// ═══════════════════════════════════════════════════════════════
 export async function getCreatorEarnings() {
   const res = await api.get('/creator/earnings');
   return res.data;
-}
-
-// ═══ HELPER: Check if native Razorpay is available ═══
-export function isNativeRazorpayAvailable(): boolean {
-  // react-native-razorpay only works in production APK builds, not Expo Go
-  return false;
 }
