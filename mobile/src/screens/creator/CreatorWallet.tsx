@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, radius } from '../../theme';
 import api from '../../services/api';
 import { getRazorpayConfig, createCommissionOrder, openRazorpayOrder, verifyCommissionPayment, isNativeRazorpayAvailable } from '../../services/payment';
+import RazorpayWebCheckout from '../../components/RazorpayWebCheckout';
 
 export default function CreatorWallet({ navigation }: any) {
   const [data, setData] = useState<any>(null);
@@ -12,6 +13,9 @@ export default function CreatorWallet({ navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [paying, setPaying] = useState(false);
+  // WebView Razorpay checkout state
+  const [showRazorpay, setShowRazorpay] = useState(false);
+  const [razorpayConfig, setRazorpayConfig] = useState<{ keyId: string; orderId: string; amount: number; name: string }>({ keyId: '', orderId: '', amount: 0, name: '' });
 
   const load = useCallback(async () => {
     try {
@@ -31,9 +35,8 @@ export default function CreatorWallet({ navigation }: any) {
   useEffect(() => { load(); }, []);
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
-  // ═══ PAY COMMISSION (same flow as website) ═══
+  // ═══ PAY COMMISSION (WebView fallback for guaranteed compatibility) ═══
   const handlePayCommission = async () => {
-    // Always fetch fresh commission from API (single source of truth — same as website)
     let amount = 0;
     try {
       const freshData = await api.get('/creator/dashboard');
@@ -47,26 +50,53 @@ export default function CreatorWallet({ navigation }: any) {
     setPaying(true);
     try {
       const rpConfig = await getRazorpayConfig();
-      if (!rpConfig.configured) { Alert.alert('Unavailable', 'Payment gateway not configured.'); setPaying(false); return; }
+      if (!rpConfig.configured) { Alert.alert('Unavailable', 'Payment gateway not configured. Contact admin.'); setPaying(false); return; }
 
       const order = await createCommissionOrder(amount);
-      if (!order.id) { Alert.alert('Error', 'Failed to create payment order'); setPaying(false); return; }
+      if (!order.id) { Alert.alert('Error', 'Failed to create payment order. Try again.'); setPaying(false); return; }
 
+      // Try native Razorpay first (production APK)
       if (isNativeRazorpayAvailable()) {
         try {
           const meRes = await api.get('/auth/me');
-          const result = await openRazorpayOrder(rpConfig.keyId, order.id, amount, 'Commission Payment — ₹' + amount, meRes.data?.user?.name || '');
+          const result = await openRazorpayOrder(rpConfig.keyId, order.id, amount, `Commission Payment — ₹${amount}`, meRes.data?.user?.name || '');
           const verified = await verifyCommissionPayment(result.razorpay_order_id, result.razorpay_payment_id, result.razorpay_signature, amount);
           if (verified) { Alert.alert('Success! ✅', 'Commission paid successfully!'); await load(); }
           else Alert.alert('Verification Failed', 'Contact support if charged.');
         } catch (e: any) {
           if (e.code !== 'PAYMENT_CANCELLED') Alert.alert('Failed', e.description || e.message || 'Payment failed');
         }
+        setPaying(false);
       } else {
-        Alert.alert('Development Mode', `Commission: ₹${amount}\nOrder ID: ${order.id}\n\nNative Razorpay requires production APK.`);
+        // Fallback: WebView-based Razorpay checkout (works everywhere)
+        const meRes = await api.get('/auth/me');
+        setRazorpayConfig({ keyId: rpConfig.keyId, orderId: order.id, amount, name: meRes.data?.user?.name || '' });
+        setShowRazorpay(true);
+        setPaying(false);
       }
-    } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
-    finally { setPaying(false); }
+    } catch (e: any) {
+      Alert.alert('Error', e.response?.data?.message || e.message || 'Failed to initiate payment');
+      setPaying(false);
+    }
+  };
+
+  // Handle WebView Razorpay success
+  const handleRazorpaySuccess = async (paymentData: any) => {
+    setShowRazorpay(false);
+    setPaying(true);
+    try {
+      const verified = await verifyCommissionPayment(
+        paymentData.razorpay_order_id,
+        paymentData.razorpay_payment_id,
+        paymentData.razorpay_signature,
+        razorpayConfig.amount
+      );
+      if (verified) { Alert.alert('Success! ✅', 'Commission paid successfully!'); await load(); }
+      else Alert.alert('Verification Failed', 'Payment received but verification failed. Contact support.');
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Verification failed');
+    }
+    setPaying(false);
   };
 
   if (loading) return <View style={s.container}><View style={s.header}><TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}><Ionicons name="arrow-back" size={20} color={colors.text} /></TouchableOpacity><Text style={s.title}>Wallet & Earnings</Text></View><ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 80 }} /></View>;
@@ -174,6 +204,20 @@ export default function CreatorWallet({ navigation }: any) {
           <Text style={s.feeText}>BMS leads ({bmsPercent}%) = bookings from BookMyShot platform. Creator leads ({creatorPercent}%) = your own clients added via the app. Commission is based on the highest deal amount set.</Text>
         </View>
       </ScrollView>
+
+      {/* Razorpay WebView Checkout */}
+      <RazorpayWebCheckout
+        visible={showRazorpay}
+        keyId={razorpayConfig.keyId}
+        orderId={razorpayConfig.orderId}
+        amount={razorpayConfig.amount}
+        name="BookMyShot"
+        description={`Commission Payment — ₹${razorpayConfig.amount}`}
+        prefillName={razorpayConfig.name}
+        onSuccess={handleRazorpaySuccess}
+        onFailure={(error) => { setShowRazorpay(false); Alert.alert('Payment Failed', error?.description || 'Payment was not completed'); }}
+        onClose={() => setShowRazorpay(false)}
+      />
     </View>
   );
 }

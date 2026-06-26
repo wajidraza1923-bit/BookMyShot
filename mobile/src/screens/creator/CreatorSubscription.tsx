@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, A
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, radius } from '../../theme';
 import api from '../../services/api';
+import RazorpayWebCheckout from '../../components/RazorpayWebCheckout';
 
 export default function CreatorSubscription({ navigation }: any) {
   const [creator, setCreator] = useState<any>(null);
@@ -10,6 +11,9 @@ export default function CreatorSubscription({ navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
+  // WebView Razorpay state for subscription
+  const [showRazorpay, setShowRazorpay] = useState(false);
+  const [rpSubConfig, setRpSubConfig] = useState<{ keyId: string; subscriptionId: string; name: string; email: string }>({ keyId: '', subscriptionId: '', name: '', email: '' });
 
   const load = useCallback(async () => {
     try {
@@ -92,11 +96,15 @@ export default function CreatorSubscription({ navigation }: any) {
           }
         }
       } else {
-        Alert.alert(
-          'Development Mode',
-          `Razorpay native SDK not available (Expo Go).\n\nSubscription ID: ${subRes.subscriptionId}\n\nIn production APK, the Razorpay checkout will open automatically.`,
-          [{ text: 'OK' }]
-        );
+        // WebView fallback: open Razorpay checkout via WebView (works everywhere)
+        const meRes = await api.get('/auth/me');
+        setRpSubConfig({
+          keyId: rpConfig.keyId,
+          subscriptionId: subRes.subscriptionId,
+          name: meRes.data?.user?.name || '',
+          email: meRes.data?.user?.email || '',
+        });
+        setShowRazorpay(true);
       }
     } catch (e: any) {
       Alert.alert('Error', e.response?.data?.message || e.message || 'Failed to process subscription');
@@ -288,6 +296,34 @@ export default function CreatorSubscription({ navigation }: any) {
           </View>
         )}
       </ScrollView>
+
+      {/* Razorpay WebView Checkout for Subscription */}
+      <RazorpayWebCheckout
+        visible={showRazorpay}
+        keyId={rpSubConfig.keyId}
+        subscriptionId={rpSubConfig.subscriptionId}
+        name="BookMyShot"
+        description="Creator Monthly Subscription (AutoPay)"
+        prefillName={rpSubConfig.name}
+        prefillEmail={rpSubConfig.email}
+        onSuccess={async (paymentData) => {
+          setShowRazorpay(false);
+          setSubscribing(true);
+          try {
+            const { verifySubscription } = require('../../services/payment');
+            const verified = await verifySubscription(
+              paymentData.razorpay_subscription_id,
+              paymentData.razorpay_payment_id,
+              paymentData.razorpay_signature
+            );
+            if (verified) { Alert.alert('Success! 🎉', 'Subscription activated!'); await load(); }
+            else Alert.alert('Verification Failed', 'Contact support if charged.');
+          } catch (e: any) { Alert.alert('Error', e.message || 'Verification failed'); }
+          setSubscribing(false);
+        }}
+        onFailure={(error) => { setShowRazorpay(false); Alert.alert('Payment Failed', error?.description || 'Subscription payment was not completed'); }}
+        onClose={() => { setShowRazorpay(false); setSubscribing(false); }}
+      />
     </View>
   );
 }
