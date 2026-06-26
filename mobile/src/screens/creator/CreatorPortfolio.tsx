@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, Image, Alert, Dimensions, Linking } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, Image, Alert, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { colors, spacing, typography, radius } from '../../theme';
+import VideoPlayer from '../../components/VideoPlayer';
 import api from '../../services/api';
 
 const { width } = Dimensions.get('window');
@@ -23,6 +24,7 @@ export default function CreatorPortfolio({ navigation }: any) {
   const [uploading, setUploading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [tab, setTab] = useState<'photos' | 'videos'>('photos');
+  const [playingVideo, setPlayingVideo] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -282,7 +284,7 @@ export default function CreatorPortfolio({ navigation }: any) {
             return (
               <TouchableOpacity
                 style={styles.videoGridItem}
-                onPress={() => { if (videoUrl) Linking.openURL(videoUrl); }}
+                onPress={() => { if (videoUrl) setPlayingVideo(videoUrl); }}
                 onLongPress={() => deleteVideo(item)}
                 activeOpacity={0.85}
               >
@@ -304,6 +306,9 @@ export default function CreatorPortfolio({ navigation }: any) {
         <Ionicons name="information-circle-outline" size={14} color={colors.textMuted} />
         <Text style={styles.hintText}>Long press any item to delete. Photos: JPG/PNG/WEBP (10MB). Videos: MP4/MOV (50MB).</Text>
       </View>
+
+      {/* In-App Video Player */}
+      <VideoPlayer visible={!!playingVideo} url={playingVideo || ''} onClose={() => setPlayingVideo(null)} />
     </View>
   );
 }

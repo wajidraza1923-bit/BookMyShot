@@ -8,6 +8,7 @@ import * as Haptics from 'expo-haptics';
 import { colors, spacing, typography, radius } from '../theme';
 import Button from '../components/Button';
 import LoginRequiredSheet from '../components/LoginRequiredSheet';
+import VideoPlayer from '../components/VideoPlayer';
 import { creatorsAPI } from '../services/api';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -24,6 +25,7 @@ export default function CreatorProfileScreen({ route, navigation }: any) {
   const [reviews, setReviews] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'portfolio' | 'videos' | 'packages' | 'reviews'>('portfolio');
   const [showLoginSheet, setShowLoginSheet] = useState(false);
+  const [playingVideo, setPlayingVideo] = useState<string | null>(null);
 
   const handleRestrictedAction = () => {
     if (!isAuthenticated) {
@@ -172,7 +174,7 @@ export default function CreatorProfileScreen({ route, navigation }: any) {
                 ? videoUrl.replace(/\.(mp4|mov|avi|webm)$/i, '.jpg').replace('/video/upload/', '/video/upload/c_fill,w_400,h_400,so_1/')
                 : '';
               return (
-                <TouchableOpacity key={i} style={s.videoGridItem} onPress={() => Linking.openURL(videoUrl)}>
+                <TouchableOpacity key={i} style={s.videoGridItem} onPress={() => setPlayingVideo(videoUrl)}>
                   <Image source={{ uri: thumbUrl }} style={s.videoGridThumb} />
                   <View style={s.videoPlayOverlay}><Ionicons name="play-circle" size={40} color="rgba(255,255,255,0.9)" /></View>
                 </TouchableOpacity>
@@ -182,6 +184,9 @@ export default function CreatorProfileScreen({ route, navigation }: any) {
             )}
           </View>
         )}
+
+        {/* In-App Video Player */}
+        <VideoPlayer visible={!!playingVideo} url={playingVideo || ''} onClose={() => setPlayingVideo(null)} />
 
         {/* TAB: PACKAGES */}
         {activeTab === 'packages' && (
