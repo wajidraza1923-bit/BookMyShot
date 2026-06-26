@@ -497,6 +497,13 @@ router.post("/verify-commission-payment", protect, async (req, res, next) => {
       message: `Your commission payment of ₹${paidAmount} has been received. Thank you!`,
     });
 
+    // Real-time: notify admin dashboard
+    try {
+      const socketService = require("../services/socketService");
+      socketService.emitToRole("admin", "commission:new", { creatorId: creator._id, amount: paidAmount, status: "paid" });
+      socketService.emitToRole("admin", "dashboard:refresh", { type: "commission" });
+    } catch (e) {}
+
     // Email
     emailService.sendPaymentReceipt({
       email: req.user.email,
