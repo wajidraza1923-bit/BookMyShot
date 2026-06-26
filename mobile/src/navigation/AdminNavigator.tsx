@@ -20,6 +20,7 @@ import AdminOverdue from '../screens/admin/AdminOverdue';
 import AdminRankings from '../screens/admin/AdminRankings';
 import AdminNotifications from '../screens/admin/AdminNotifications';
 import AdminAppUpdates from '../screens/admin/AdminAppUpdates';
+import AdminCreatorLedger from '../screens/admin/AdminCreatorLedger';
 
 const Stack = createNativeStackNavigator();
 
@@ -45,6 +46,7 @@ export default function AdminNavigator() {
       <Stack.Screen name="AdminRankings" component={AdminRankings} />
       <Stack.Screen name="AdminNotifications" component={AdminNotifications} />
       <Stack.Screen name="AdminAppUpdates" component={AdminAppUpdates} />
+      <Stack.Screen name="AdminCreatorLedger" component={AdminCreatorLedger} />
     </Stack.Navigator>
   );
 }

@@ -172,6 +172,7 @@ export default function AdminCreators({ navigation }: any) {
                 {(item.status === 'suspended' || item.subscriptionStatus === 'suspended') && <TouchableOpacity style={s.approveBtn} onPress={() => updateStatus(item._id, 'approved', 'Unsuspend')}><Text style={s.approveText}>Unsuspend</Text></TouchableOpacity>}
                 {item.status === 'rejected' && <TouchableOpacity style={s.approveBtn} onPress={() => updateStatus(item._id, 'approved', 'Reactivate')}><Text style={s.approveText}>Reactivate</Text></TouchableOpacity>}
                 <TouchableOpacity style={s.deleteBtn} onPress={() => deleteCreator(item._id, item.user?.name || 'Creator')}><Ionicons name="trash-outline" size={14} color={colors.error} /><Text style={s.deleteText}>Delete</Text></TouchableOpacity>
+                <TouchableOpacity style={s.financeBtn} onPress={() => navigation.navigate('AdminCreatorLedger', { creatorId: item._id, creatorName: item.user?.name })}><Ionicons name="wallet-outline" size={13} color="#10b981" /><Text style={s.financeBtnText}>Finances</Text></TouchableOpacity>
               </View>
             </View>
           )}
@@ -214,6 +215,8 @@ const s = StyleSheet.create({
   rankBtnText: { ...typography.labelMd, color: colors.primary, fontWeight: '700' },
   deleteBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.sm, backgroundColor: 'rgba(239,68,68,0.06)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.2)' },
   deleteText: { ...typography.labelSm, color: colors.error, fontWeight: '600' },
+  financeBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.sm, backgroundColor: 'rgba(16,185,129,0.06)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.2)' },
+  financeBtnText: { ...typography.labelSm, color: '#10b981', fontWeight: '600' },
   empty: { alignItems: 'center', paddingTop: spacing['4xl'] },
   emptyText: { ...typography.bodyMd, color: colors.textMuted },
 });
