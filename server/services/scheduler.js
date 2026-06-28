@@ -62,7 +62,7 @@ function initScheduler() {
             });
             reminded++;
           }
-        } else if ([7, 5, 3].includes(daysLeft)) {
+        } else if ([30, 15, 7, 5, 3].includes(daysLeft)) {
           // ═══ PRE-EXPIRY REMINDERS — only if AutoPay is OFF ═══
           // If creator has AutoPay enabled, Razorpay handles renewal automatically — no need to nag
           if (c.autoRenew === true) continue;

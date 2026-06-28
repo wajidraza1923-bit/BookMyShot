@@ -65,14 +65,16 @@ export default function CreatorSubscription({ navigation }: any) {
   const handleSubscribe = async () => {
     setSubscribing(true);
     try {
-      const { getRazorpayConfig, createSubscription, openRazorpaySubscription, verifySubscription, isNativeRazorpayAvailable } = require('../../services/payment');
+      const { getRazorpayConfig, createSubscription, openRazorpaySubscription, openRazorpayOrder, verifySubscription, verifyCommissionPayment, isNativeRazorpayAvailable } = require('../../services/payment');
 
-      // Check if AutoPay is already ON — don't create duplicate
-      const ap = creator?._autopay;
-      if (ap?.autopayActive === true) {
-        Alert.alert('AutoPay Already Enabled', 'Your AutoPay is already active. Future subscription payments will be deducted automatically.');
-        setSubscribing(false);
-        return;
+      // Check if AutoPay is already ON (monthly only)
+      if (selectedPlan === 'monthly') {
+        const ap = creator?._autopay;
+        if (ap?.autopayActive === true) {
+          Alert.alert('AutoPay Already Enabled', 'Your AutoPay is already active. Future subscription payments will be deducted automatically.');
+          setSubscribing(false);
+          return;
+        }
       }
 
       const rpConfig = await getRazorpayConfig();
@@ -81,26 +83,54 @@ export default function CreatorSubscription({ navigation }: any) {
         return;
       }
 
-      // Create subscription on backend
+      // Create subscription/order on backend
       const subRes = await createSubscription(selectedPlan);
 
-      // If backend says subscription already active AND autopay is ON, show success
-      if ((subRes.status === 'active' || subRes.message === 'Subscription already active') && ap?.autopayActive === true) {
-        Alert.alert('AutoPay Already Enabled', 'Your AutoPay is already active. No action needed.');
-        await load();
+      // ═══ YEARLY: One-time payment flow (Razorpay Orders API) ═══
+      if (subRes.isOneTime && subRes.orderId) {
+        const meRes = await api.get('/auth/me');
+        const userName = meRes.data?.user?.name || '';
+
+        if (isNativeRazorpayAvailable()) {
+          try {
+            const paymentResult = await openRazorpayOrder(rpConfig.keyId, subRes.orderId, subRes.amount, 'BookMyShot Yearly Subscription', userName);
+            // Verify yearly payment
+            const verifyRes = await api.post('/razorpay/verify-yearly-payment', {
+              razorpay_order_id: paymentResult.razorpay_order_id,
+              razorpay_payment_id: paymentResult.razorpay_payment_id,
+              razorpay_signature: paymentResult.razorpay_signature,
+            });
+            if (verifyRes.data?.success) {
+              Alert.alert('Success! 🎉', verifyRes.data.message || 'Yearly subscription activated!');
+              await load();
+            } else {
+              Alert.alert('Verification Failed', 'Payment made but verification failed. Contact support.');
+            }
+          } catch (e: any) {
+            if (e.code === 'PAYMENT_CANCELLED') Alert.alert('Cancelled', 'Payment was cancelled.');
+            else Alert.alert('Payment Failed', e.description || e.message || 'Please try again.');
+          }
+        } else {
+          // WebView fallback for yearly
+          const meRes2 = await api.get('/auth/me');
+          setRpSubConfig({ keyId: rpConfig.keyId, subscriptionId: subRes.orderId, name: meRes2.data?.user?.name || '', email: meRes2.data?.user?.email || '' });
+          setShowRazorpay(true);
+        }
+        setSubscribing(false);
         return;
       }
 
-      // If subscription exists but AutoPay is OFF, we still need the subscriptionId to proceed
-      if (!subRes.subscriptionId && (subRes.status === 'active' || subRes.message === 'Subscription already active')) {
-        // Backend returned active but no new subscription — this means AutoPay is already linked
-        Alert.alert('AutoPay Active', 'AutoPay is already linked to your account.');
+      // ═══ MONTHLY: Recurring subscription flow ═══
+      if (subRes.status === 'active' && subRes.autopayActive) {
+        Alert.alert('AutoPay Already Enabled', 'Your AutoPay is already active.');
         await load();
+        setSubscribing(false);
         return;
       }
 
       if (!subRes.subscriptionId) {
         Alert.alert('Error', 'Failed to create subscription. Try again.');
+        setSubscribing(false);
         return;
       }
 
@@ -282,7 +312,7 @@ export default function CreatorSubscription({ navigation }: any) {
 
             {/* Price */}
             <View style={s.priceBox}>
-              <Text style={s.priceAmount}>₹{isActive ? creatorPlanPrice : (selectedPlan === 'yearly' ? (monthlyPlanPrice * 10) : monthlyPlanPrice)}</Text>
+              <Text style={s.priceAmount}>₹{isActive ? creatorPlanPrice : (selectedPlan === 'yearly' ? (config?.subscription?.yearlyPlanPrice || monthlyPlanPrice * 10) : monthlyPlanPrice)}</Text>
               <Text style={s.priceUnit}>{creator?.subscriptionPlanType === 'yearly' || selectedPlan === 'yearly' ? 'per year' : 'per month'}</Text>
               {priceChanged && isActive && (
                 <Text style={s.renewalNote}>Renewal: ₹{renewalPrice}/mo</Text>

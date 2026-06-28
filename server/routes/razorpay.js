@@ -119,26 +119,47 @@ router.post("/create-subscription", protect, authorize("creator"), async (req, r
     const monthlyPrice = subSettings.monthlyPlanPrice || 299;
     const yearlyPrice = subSettings.yearlyPlanPrice || Math.round(monthlyPrice * 10);
     const amount = isYearly ? yearlyPrice : monthlyPrice;
-    const period = isYearly ? 'yearly' : 'monthly';
-    const periodMonths = isYearly ? 12 : 1;
-    const trialDays = subSettings.trialDays || 0;
 
     const creator = await Creator.findOne({ user: req.user._id });
     if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
 
+    // ═══ YEARLY PLAN: One-time payment (Razorpay Orders API) ═══
+    if (isYearly) {
+      const order = await razorpayService.createOrder(amount, "INR", `yearly_sub_${Date.now()}`, {
+        creatorId: creator._id.toString(),
+        userId: req.user._id.toString(),
+        type: "yearly_subscription",
+      });
+
+      creator.subscriptionPlanType = "yearly";
+      creator.subscriptionPlanPrice = amount;
+      await creator.save();
+
+      return res.json({
+        success: true,
+        orderId: order.id,
+        order,
+        keyId: process.env.RAZORPAY_KEY_ID,
+        amount,
+        planType: "yearly",
+        isOneTime: true,
+      });
+    }
+
+    // ═══ MONTHLY PLAN: Recurring subscription (Razorpay Subscriptions API) ═══
+    const trialDays = subSettings.trialDays || 0;
+
     // If creator already has an active Razorpay subscription, check if AutoPay is truly active
     if (creator.razorpaySubscriptionId && creator.subscriptionStatus === "active") {
-      // Verify with Razorpay if the subscription is ACTUALLY active (not cancelled)
       let rpAutoPayActive = false;
       try {
         if (razorpayService.isConfigured()) {
           const rpSub = await razorpayService.fetchSubscription(creator.razorpaySubscriptionId);
           rpAutoPayActive = rpSub.status === "active" || rpSub.status === "authenticated";
         }
-      } catch (e) { /* Razorpay check failed — allow creating new */ }
+      } catch (e) {}
 
       if (rpAutoPayActive) {
-        // AutoPay is genuinely active in Razorpay — don't create duplicate
         return res.json({
           success: true,
           message: "Subscription already active",
@@ -147,34 +168,26 @@ router.post("/create-subscription", protect, authorize("creator"), async (req, r
           autopayActive: true,
         });
       }
-      // AutoPay was cancelled/halted in Razorpay — allow creating new subscription for re-enabling
-      console.log("[Razorpay] Existing subscription cancelled in Razorpay — creating new one for AutoPay re-enable");
     }
 
-    // Step 1: Always create a fresh Razorpay Plan with LATEST admin-configured price
-    // This ensures renewals after expiry always use the current price
     const isRenewal = creator.subscriptionStatus === "expired" || creator.subscriptionStatus === "suspended" || creator.subscriptionStatus === "overdue";
-    const applyTrial = !isRenewal && !creator.subscriptionStartDate; // Trial only for first-time subscribers
+    const applyTrial = !isRenewal && !creator.subscriptionStartDate;
 
-    console.log(`[Razorpay] Creating ${period} plan: ₹${amount}${isRenewal ? " (RENEWAL)" : " (NEW)"}`);
-    const plan = await razorpayService.createPlan(`BookMyShot Creator ${isYearly ? 'Yearly' : 'Monthly'} ₹${amount}`, amount, period, 1);
+    console.log(`[Razorpay] Creating monthly plan: ₹${monthlyPrice}${isRenewal ? " (RENEWAL)" : " (NEW)"}`);
+    const plan = await razorpayService.createPlan(`BookMyShot Creator Monthly ₹${monthlyPrice}`, monthlyPrice, "monthly", 1);
     const planId = plan.id;
-    console.log("[Razorpay] Plan created:", planId);
 
-    // Step 2: Create Razorpay Subscription
     const effectiveTrialDays = applyTrial ? trialDays : 0;
-    console.log("[Razorpay] Creating subscription. Plan:", planId, "Trial:", effectiveTrialDays, "days");
     const subscription = await razorpayService.createSubscription(planId, 60, effectiveTrialDays, {
       creatorId: creator._id.toString(),
       userId: req.user._id.toString(),
       creatorEmail: req.user.email || "",
     });
 
-    // Step 3: Save subscription ID on creator
     creator.razorpaySubscriptionId = subscription.id;
     creator.razorpayPlanId = planId;
-    creator.subscriptionPlanPrice = amount; // Lock the price this creator subscribed at
-    creator.subscriptionPlanType = isYearly ? 'yearly' : 'monthly'; // Track plan type
+    creator.subscriptionPlanPrice = monthlyPrice;
+    creator.subscriptionPlanType = "monthly";
     if (effectiveTrialDays > 0) {
       creator.subscriptionStatus = "trial";
       creator.subscriptionStartDate = new Date();
@@ -185,21 +198,89 @@ router.post("/create-subscription", protect, authorize("creator"), async (req, r
     }
     await creator.save();
 
-    console.log("[Razorpay] Subscription created:", subscription.id, "for creator:", creator._id);
-
     res.json({
       success: true,
       subscriptionId: subscription.id,
       subscription,
       keyId: process.env.RAZORPAY_KEY_ID,
-      amount,
-      planType: isYearly ? 'yearly' : 'monthly',
-      periodMonths,
+      amount: monthlyPrice,
+      planType: "monthly",
       trialDays,
     });
   } catch (e) {
     console.error("[Razorpay] create-subscription error:", e.message || JSON.stringify(e));
     res.status(500).json({ success: false, message: e.message || "Subscription creation failed", error: e.error || e });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// CREATOR: Verify YEARLY one-time payment (Orders API)
+// Activates subscription for 365 days. No AutoPay.
+// ═══════════════════════════════════════════════════════════════
+router.post("/verify-yearly-payment", protect, authorize("creator"), async (req, res, next) => {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return res.status(400).json({ success: false, message: "Missing payment verification data" });
+    }
+
+    const isValid = razorpayService.verifyPaymentSignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
+    if (!isValid) {
+      return res.status(400).json({ success: false, message: "Payment verification failed — invalid signature" });
+    }
+
+    const creator = await Creator.findOne({ user: req.user._id });
+    if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
+
+    const subSettings = await configService.getSubscriptionSettings();
+    const yearlyDuration = subSettings.yearlyPlanDuration || 365;
+    const now = new Date();
+    const endDate = new Date(now);
+    endDate.setDate(endDate.getDate() + yearlyDuration);
+
+    // Activate yearly subscription (NO AutoPay)
+    creator.subscriptionStatus = "active";
+    creator.subscriptionPlanType = "yearly";
+    creator.subscriptionPlanPrice = subSettings.yearlyPlanPrice || Math.round((subSettings.monthlyPlanPrice || 299) * 10);
+    creator.subscriptionStartDate = now;
+    creator.subscriptionEndDate = endDate;
+    creator.nextBillingDate = endDate;
+    creator.lastPaymentDate = now;
+    creator.autoRenew = false; // Yearly = no auto-renew
+    if (creator.status === "pending") creator.status = "approved";
+    await creator.save();
+
+    // Invoice
+    await Invoice.create({
+      creator: creator._id,
+      invoiceNumber: "BMS-YR-" + Date.now(),
+      type: "subscription",
+      description: "Yearly Subscription (One-Time Payment)",
+      amount: creator.subscriptionPlanPrice,
+      status: "paid",
+      paidAt: now,
+      dueDate: endDate,
+      notes: razorpay_payment_id,
+    });
+
+    // Notification
+    await Notification.create({
+      user: req.user._id,
+      type: "payment",
+      title: "✅ Yearly Subscription Activated",
+      message: `Your yearly subscription is active until ${endDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}. Enjoy 12 months of premium access!`,
+    });
+
+    // Real-time
+    try {
+      const socketService = require("../services/socketService");
+      socketService.emitToUser(req.user._id, "subscription:updated", { subscriptionStatus: "active", autoRenew: false, subscriptionEndDate: endDate, subscriptionPlanType: "yearly" });
+      socketService.emitToRole("admin", "subscription:updated", { creatorId: creator._id, subscriptionStatus: "active", planType: "yearly" });
+    } catch (e) {}
+
+    res.json({ success: true, message: `Yearly subscription activated until ${endDate.toLocaleDateString("en-IN")}`, subscriptionEndDate: endDate });
+  } catch (e) {
+    next(e);
   }
 });
 
