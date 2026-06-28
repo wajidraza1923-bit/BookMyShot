@@ -49,9 +49,10 @@ router.get("/:id", async (req, res, next) => {
     const cEmail = booking.creator?.user?.email || "";
     const cCity = booking.creator?.city || "";
     const cSpec = booking.creator?.specialty || "";
-    const cuName = booking.user?.name || booking.clientName || "\u2014";
-    const cuPhone = booking.user?.phone || booking.clientPhone || "";
-    const cuEmail = booking.user?.email || booking.clientEmail || "";
+    const cuName = booking.clientName || booking.user?.name || "\u2014";
+    const cuPhone = booking.clientPhone || booking.user?.phone || "";
+    const cuEmail = booking.clientEmail || booking.user?.email || "";
+    const cuLocation = booking.eventLocation || "";
     const invNo = booking.invoiceNumber || "BMS-" + booking._id.toString().slice(-8).toUpperCase();
 
     const payRows = payments.map((p, i) =>
@@ -123,7 +124,7 @@ td{padding:10px 12px;border-bottom:1px solid #1a1a1a;color:#CFCFCF}
 <div class="tagline">Premium Wedding Photography & Videography Marketplace</div>
 </div>
 </div>
-<div class="contact-bar"><span>bookmyshot.in</span> | <span>support@bookmyshot.in</span> | <span>+91 91000 12345</span></div>
+<div class="contact-bar"><span>bookmyshot.in</span> | <span>support@bookmyshot.in</span> | <span>+91 8492922173</span></div>
 </div>
 <div class="inv-card">
 <div class="inv-label">INVOICE</div>
@@ -144,7 +145,7 @@ td{padding:10px 12px;border-bottom:1px solid #1a1a1a;color:#CFCFCF}
 <div class="party-card">
 <div class="p-label">Customer / Client</div>
 <div class="p-name">${cuName}</div>
-<div class="p-info">${cuPhone ? '\u260E <span>' + cuPhone + '</span><br>' : ''}${cuEmail ? '\u2709 <span>' + cuEmail + '</span><br>' : ''}${booking.eventLocation ? '\uD83D\uDCCD <span>' + booking.eventLocation + '</span>' : ''}</div>
+<div class="p-info">${cuPhone ? '\u260E <span>' + cuPhone + '</span><br>' : ''}${cuEmail ? '\u2709 <span>' + cuEmail + '</span><br>' : ''}${cuLocation ? '\uD83D\uDCCD <span>' + cuLocation + '</span>' : ''}</div>
 </div>
 </div>
 </div>
