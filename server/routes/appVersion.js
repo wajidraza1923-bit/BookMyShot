@@ -15,7 +15,21 @@ const express = require("express");
 const router = express.Router();
 const AppVersion = require("../models/AppVersion");
 const { protect, authorize } = require("../middleware/auth");
-const { uploadApk } = require("../middleware/upload");
+const multer = require("multer");
+
+// Use memory storage for APK — upload to Cloudinary as raw file
+const apkUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 500 * 1024 * 1024 }, // 500MB
+  fileFilter: (req, file, cb) => {
+    const ext = require("path").extname(file.originalname).toLowerCase();
+    if (ext === '.apk' || ext === '.aab' || file.mimetype === 'application/vnd.android.package-archive' || file.mimetype === 'application/octet-stream') {
+      cb(null, true);
+    } else {
+      cb(new Error("Only .apk and .aab files are allowed"), false);
+    }
+  },
+});
 
 // ═══════════════════════════════════════════════════════════════
 // PUBLIC: Mobile app calls this on EVERY startup
@@ -85,7 +99,7 @@ router.get("/history", protect, authorize("admin"), async (req, res) => {
 // ═══════════════════════════════════════════════════════════════
 // ADMIN: Publish new version
 // ═══════════════════════════════════════════════════════════════
-router.post("/", protect, authorize("admin"), uploadApk.single("apk"), async (req, res) => {
+router.post("/", protect, authorize("admin"), apkUpload.single("apk"), async (req, res) => {
   try {
     const { version, versionCode, title, description, forceUpdate, optionalUpdate, downloadUrl, playStoreUrl, minVersionCode } = req.body;
 
@@ -99,14 +113,37 @@ router.post("/", protect, authorize("admin"), uploadApk.single("apk"), async (re
       return res.status(400).json({ success: false, message: `Version code ${code} already exists` });
     }
 
-    // Upload APK if provided
+    // Upload APK to Cloudinary as raw file
     let apkUrl = downloadUrl || "";
     let fileSize = 0;
     if (req.file) {
-      // APK is already saved to disk by multer (disk storage)
       fileSize = req.file.size || 0;
-      apkUrl = `/releases/${req.file.filename}`;
-      console.log(`[AppVersion] APK saved: ${req.file.filename} (${(fileSize / 1024 / 1024).toFixed(1)} MB)`);
+      console.log(`[AppVersion] Uploading APK to Cloudinary: ${req.file.originalname} (${(fileSize / 1024 / 1024).toFixed(1)} MB)`);
+      try {
+        const { uploadBuffer, isConfigured } = require("../services/cloudinaryService");
+        if (isConfigured()) {
+          const result = await uploadBuffer(req.file.buffer, {
+            folder: "bookmyshot/releases",
+            resourceType: "raw",
+            publicId: `bookmyshot-v${version}-${code}`,
+          });
+          apkUrl = result.url;
+          console.log(`[AppVersion] ✅ APK uploaded to Cloudinary: ${apkUrl}`);
+        } else {
+          // Fallback: save to disk if Cloudinary not configured
+          const fs = require("fs");
+          const path = require("path");
+          const dir = path.join(__dirname, "../../public/releases");
+          if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+          const filename = `bookmyshot-v${version}-${code}.apk`;
+          fs.writeFileSync(path.join(dir, filename), req.file.buffer);
+          apkUrl = `/releases/${filename}`;
+          console.log(`[AppVersion] APK saved to disk: ${filename}`);
+        }
+      } catch (uploadErr) {
+        console.error("[AppVersion] APK upload error:", uploadErr.message);
+        return res.status(500).json({ success: false, message: "APK upload failed: " + uploadErr.message });
+      }
     }
 
     const record = await AppVersion.create({
@@ -142,6 +179,7 @@ router.post("/", protect, authorize("admin"), uploadApk.single("apk"), async (re
 
     res.status(201).json({ success: true, message: `v${version} published`, data: record });
   } catch (e) {
+    console.error("[AppVersion] Publish error:", e.message);
     res.status(500).json({ success: false, message: e.message });
   }
 });
@@ -149,7 +187,7 @@ router.post("/", protect, authorize("admin"), uploadApk.single("apk"), async (re
 // ═══════════════════════════════════════════════════════════════
 // ADMIN: Edit version
 // ═══════════════════════════════════════════════════════════════
-router.put("/:id", protect, authorize("admin"), uploadApk.single("apk"), async (req, res) => {
+router.put("/:id", protect, authorize("admin"), apkUpload.single("apk"), async (req, res) => {
   try {
     const record = await AppVersion.findById(req.params.id);
     if (!record) return res.status(404).json({ success: false, message: "Not found" });
@@ -168,10 +206,22 @@ router.put("/:id", protect, authorize("admin"), uploadApk.single("apk"), async (
     if (published !== undefined) record.published = published === "true" || published === true;
 
     if (req.file) {
-      // APK saved to disk by multer
-      record.downloadUrl = `/releases/${req.file.filename}`;
-      record.fileSize = req.file.size || 0;
-      console.log(`[AppVersion] APK updated: ${req.file.filename} (${(record.fileSize / 1024 / 1024).toFixed(1)} MB)`);
+      // Upload new APK to Cloudinary
+      try {
+        const { uploadBuffer, isConfigured } = require("../services/cloudinaryService");
+        if (isConfigured()) {
+          const result = await uploadBuffer(req.file.buffer, {
+            folder: "bookmyshot/releases",
+            resourceType: "raw",
+            publicId: `bookmyshot-v${record.version}-${record.versionCode}`,
+          });
+          record.downloadUrl = result.url;
+          record.fileSize = req.file.size || 0;
+          console.log(`[AppVersion] APK updated on Cloudinary: ${result.url}`);
+        }
+      } catch (uploadErr) {
+        console.error("[AppVersion] APK update upload error:", uploadErr.message);
+      }
     }
 
     await record.save();

@@ -3226,9 +3226,9 @@
               try {
                 const data = JSON.parse(xhr.responseText);
                 resolve(data);
-              } catch(e) { reject(new Error("Invalid response")); }
+              } catch(e) { reject(new Error("Server returned invalid JSON. Status: " + xhr.status + ". Response: " + (xhr.responseText || "empty").substring(0, 200))); }
             });
-            xhr.addEventListener("error", function() { reject(new Error("Network error")); });
+            xhr.addEventListener("error", function() { reject(new Error("Network error - connection failed")); });
             xhr.addEventListener("abort", function() { reject(new Error("Upload cancelled")); });
 
             xhr.open("POST", "/api/app-version");
