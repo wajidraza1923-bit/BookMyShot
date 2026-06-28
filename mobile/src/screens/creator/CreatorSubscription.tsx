@@ -302,8 +302,9 @@ export default function CreatorSubscription({ navigation }: any) {
               {/* Details Grid (same as website) */}
               <View style={s.detailsGrid}>
                 <DetailRow label="Status" value={statusLabel} valueColor={statusColor} bold />
-                <DetailRow label="Auto Renew" value={autoRenew ? 'ON' : 'OFF'} />
-                <DetailRow label="Next Billing" value={subEndDate ? formatDate(subEndDate) : '—'} />
+                <DetailRow label="Plan" value={creator?.subscriptionPlanType === 'yearly' ? 'Yearly (12 months)' : 'Monthly'} />
+                <DetailRow label="Auto Renew" value={creator?.subscriptionPlanType === 'yearly' ? 'N/A (one-time)' : (autoRenew ? 'ON' : 'OFF')} />
+                <DetailRow label="Expiry Date" value={subEndDate ? formatDate(subEndDate) : '—'} />
                 <DetailRow label="Last Payment" value={lastPaymentDate ? formatDate(lastPaymentDate) : '—'} />
                 <DetailRow label="Start Date" value={subStartDate ? formatDate(subStartDate) : '—'} />
                 <DetailRow label="Days Remaining" value={subStatus ? String(daysRemaining) : '—'} valueColor={daysRemaining <= 5 ? colors.warning : undefined} bold={daysRemaining <= 5} />
@@ -312,8 +313,15 @@ export default function CreatorSubscription({ navigation }: any) {
 
             {/* Price */}
             <View style={s.priceBox}>
-              <Text style={s.priceAmount}>₹{isActive ? creatorPlanPrice : (selectedPlan === 'yearly' ? (config?.subscription?.yearlyPlanPrice || monthlyPlanPrice * 10) : monthlyPlanPrice)}</Text>
-              <Text style={s.priceUnit}>{creator?.subscriptionPlanType === 'yearly' || selectedPlan === 'yearly' ? 'per year' : 'per month'}</Text>
+              <Text style={s.priceAmount}>
+                ₹{isActive
+                  ? (creator?.subscriptionPlanType === 'yearly' ? creatorPlanPrice : creatorPlanPrice)
+                  : (selectedPlan === 'yearly' ? (config?.subscription?.yearlyPlanPrice || monthlyPlanPrice * 10) : monthlyPlanPrice)
+                }
+              </Text>
+              <Text style={s.priceUnit}>
+                {(isActive && creator?.subscriptionPlanType === 'yearly') || (!isActive && selectedPlan === 'yearly') ? 'per year' : 'per month'}
+              </Text>
               {priceChanged && isActive && (
                 <Text style={s.renewalNote}>Renewal: ₹{renewalPrice}/mo</Text>
               )}
@@ -358,7 +366,9 @@ export default function CreatorSubscription({ navigation }: any) {
               {subscribing ? (
                 <ActivityIndicator size="small" color={colors.textInverse} />
               ) : (
-                <Text style={s.payBtnText}>Subscribe {selectedPlan === 'yearly' ? 'Yearly' : 'Monthly'} — ₹{selectedPlan === 'yearly' ? (config?.subscription?.yearlyPlanPrice || monthlyPlanPrice * 10) : monthlyPlanPrice}</Text>
+                <Text style={s.payBtnText}>
+                  {selectedPlan === 'yearly' ? `Buy Yearly Plan — ₹${config?.subscription?.yearlyPlanPrice || monthlyPlanPrice * 10}` : `Subscribe Monthly — ₹${monthlyPlanPrice}`}
+                </Text>
               )}
             </TouchableOpacity>
           ) : isActive ? (
@@ -367,7 +377,10 @@ export default function CreatorSubscription({ navigation }: any) {
                 <ActivityIndicator size="small" color={colors.primary} />
               ) : (
                 <Text style={[s.payBtnText, { color: colors.primary }]}>
-                  {autoRenew ? 'Switch Plan' : 'Enable AutoPay'} — ₹{selectedPlan === 'yearly' ? (config?.subscription?.yearlyPlanPrice || monthlyPlanPrice * 10) : monthlyPlanPrice}
+                  {selectedPlan === 'yearly'
+                    ? `Buy Yearly Plan — ₹${config?.subscription?.yearlyPlanPrice || monthlyPlanPrice * 10}`
+                    : (autoRenew ? `Switch to Monthly — ₹${monthlyPlanPrice}` : `Enable AutoPay — ₹${monthlyPlanPrice}/mo`)
+                  }
                 </Text>
               )}
             </TouchableOpacity>
