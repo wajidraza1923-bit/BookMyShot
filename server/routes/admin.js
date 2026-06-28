@@ -1062,6 +1062,15 @@ router.post("/broadcast", async (req, res, next) => {
       await Notification.insertMany(notifications);
     }
 
+    // Send REAL push notifications to devices
+    try {
+      const pushService = require("../services/pushService");
+      const targetIds = targets.map(t => t.toString ? t.toString() : t);
+      await pushService.sendToUsers(targetIds, title, message, { type: 'admin_broadcast', screen: 'CreatorNotifications' });
+    } catch (pushErr) {
+      console.error("[Admin Broadcast] Push send error:", pushErr.message);
+    }
+
     await logAction(req.user._id, "broadcast", "system", "", `"${title}" to ${targets.length} ${audience || 'all'}`, req.ip);
     res.json({ success: true, sent: targets.length });
   } catch (e) { next(e); }
