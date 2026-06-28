@@ -989,24 +989,105 @@ router.patch("/bookings/:id/complete", async (req, res, next) => {
     const creator = await getCreator(req.user._id);
     const booking = await Booking.findOne({ _id: req.params.id, creator: creator._id });
     if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
+
+    // ═══ VALIDATION: Only complete if fully paid ═══
+    const bookingAmount = booking.amount || booking.budget || 0;
+    const PaymentRecord = require("../models/PaymentRecord");
+    const approvedPayments = await PaymentRecord.find({ booking: booking._id, status: "approved" });
+    const totalPaid = approvedPayments.reduce((s, r) => s + (r.amount || 0), 0);
+    const remaining = bookingAmount - totalPaid;
+
+    if (bookingAmount > 0 && remaining > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Booking cannot be completed until full payment is received. Remaining: ₹${remaining.toLocaleString("en-IN")}`,
+        remaining,
+        totalPaid,
+        bookingAmount,
+      });
+    }
+
+    // Mark as completed
     booking.status = "Completed";
     booking.bookingStatus = "completed";
+    booking.paymentStatus = "paid";
+    booking.completedAt = new Date();
     await booking.save();
+
+    // Lock payment records (mark as finalized)
+    await PaymentRecord.updateMany(
+      { booking: booking._id },
+      { $set: { locked: true } }
+    );
+
+    // ═══ GENERATE INVOICE DATA ═══
+    const User = require("../models/User");
+    const creatorUser = await User.findById(req.user._id).select("name email phone");
+    const customerUser = await User.findById(booking.user).select("name email phone");
+
+    const invoiceData = {
+      invoiceNumber: booking.invoiceNumber || `BMS-INV-${Date.now()}`,
+      bookingId: booking._id,
+      completedAt: new Date(),
+      creator: {
+        name: creatorUser?.name || "",
+        email: creatorUser?.email || "",
+        phone: creatorUser?.phone || "",
+        businessName: creator.businessName || creator.specialty || "",
+        city: creator.city || "",
+      },
+      customer: {
+        name: customerUser?.name || booking.clientName || "",
+        email: customerUser?.email || booking.clientEmail || "",
+        phone: customerUser?.phone || booking.clientPhone || "",
+      },
+      event: {
+        type: booking.eventType || "",
+        date: booking.eventDate,
+        location: booking.eventLocation || booking.scheduledLocation || "",
+        bookingDate: booking.createdAt,
+      },
+      payment: {
+        totalAmount: bookingAmount,
+        totalPaid,
+        remaining: 0,
+        commission: booking.commissionAmount || 0,
+        commissionPercent: booking.commissionPercent || 0,
+        creatorReceivable: booking.creatorReceivable || (bookingAmount - (booking.commissionAmount || 0)),
+      },
+      paymentRecords: approvedPayments.map(r => ({
+        date: r.createdAt,
+        amount: r.amount,
+        type: r.paymentType || "payment",
+        notes: r.notes || "",
+        addedBy: r.addedBy || "creator",
+      })),
+    };
+
+    // Save invoice number on booking
+    if (!booking.invoiceNumber) {
+      booking.invoiceNumber = invoiceData.invoiceNumber;
+      await booking.save();
+    }
+
+    // Notification
     const Notification = require("../models/Notification");
     await Notification.create({
       user: booking.user,
       title: "✅ Booking Completed",
-      message: `Your ${booking.eventType} has been marked as completed. Thank you!`,
+      message: `Your ${booking.eventType} has been completed. Invoice is ready for download.`,
       type: "booking",
       targetScreen: "Bookings",
       targetId: booking._id.toString(),
     });
+
     // Real-time update
     try {
       const socketService = require("../services/socketService");
       socketService.notifyBookingUpdate(booking.user.toString(), req.user._id.toString(), { bookingId: booking._id, status: "Completed" });
     } catch (e) {}
-    res.json({ success: true, booking });
+
+    res.json({ success: true, booking, invoice: invoiceData });
   } catch (e) {
     next(e);
   }

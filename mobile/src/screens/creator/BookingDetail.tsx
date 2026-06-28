@@ -138,14 +138,20 @@ export default function BookingDetail({ route, navigation }: any) {
   // ═══ COMPLETE ═══
   const completeBooking = () => {
     if (completing) return;
-    Alert.alert('Complete Booking', 'Mark this booking as completed?', [
+    // Validate payment is complete
+    const bookingAmount = booking.amount || 0;
+    if (bookingAmount > 0 && remaining > 0) {
+      Alert.alert('Cannot Complete', `Booking cannot be completed until full payment is received.\n\nRemaining: ₹${remaining.toLocaleString('en-IN')}`);
+      return;
+    }
+    Alert.alert('Complete Booking', 'Mark this booking as completed? This will lock all payment records and generate an invoice.', [
       { text: 'Cancel' },
       { text: 'Complete', onPress: async () => {
         setCompleting(true);
         try {
           await api.patch(`/creator/bookings/${bookingId}/complete`);
           await load();
-          Alert.alert('Done! 🎉', 'Booking marked as completed successfully.');
+          Alert.alert('Done! 🎉', 'Booking marked as completed. Invoice is ready for download.');
         } catch (e: any) {
           Alert.alert('Error', e.response?.data?.message || e.message || 'Failed to complete booking');
         } finally {
@@ -153,6 +159,12 @@ export default function BookingDetail({ route, navigation }: any) {
         }
       }}
     ]);
+  };
+
+  // ═══ DOWNLOAD INVOICE ═══
+  const downloadInvoice = () => {
+    const url = `https://site--bookmyshot--ykz2mr8mzlrv.code.run/api/invoice/${bookingId}`;
+    import('react-native').then(({ Linking }) => Linking.openURL(url));
   };
 
   // ═══ ADD EVENT ═══
@@ -279,7 +291,20 @@ export default function BookingDetail({ route, navigation }: any) {
           <TouchableOpacity style={s.btnReject} onPress={rejectBooking}><Text style={s.btnRejectText}>Reject</Text></TouchableOpacity>
           <TouchableOpacity style={s.btnAccept} onPress={() => { setAmountInput(String(booking.amount || booking.budget || '')); setShowAmountModal(true); }}><Text style={s.btnAcceptText}>Accept</Text></TouchableOpacity>
         </>}
-        {['Creator Accepted', 'Event Scheduled', 'Payment Submitted', 'Payment Approved'].includes(booking.status) && <TouchableOpacity style={[s.btnComplete, completing && { opacity: 0.6 }]} onPress={completeBooking} disabled={completing}>{completing ? <ActivityIndicator size="small" color={colors.textInverse} /> : <Text style={s.btnCompleteText}>Mark Complete</Text>}</TouchableOpacity>}
+        {['Creator Accepted', 'Event Scheduled', 'Payment Submitted', 'Payment Approved'].includes(booking.status) && (
+          <TouchableOpacity
+            style={[s.btnComplete, (remaining > 0 && booking.amount > 0) && { opacity: 0.4 }, completing && { opacity: 0.6 }]}
+            onPress={completeBooking}
+            disabled={completing}
+          >
+            {completing ? <ActivityIndicator size="small" color={colors.textInverse} /> : <Text style={s.btnCompleteText}>{remaining > 0 && booking.amount > 0 ? `₹${remaining.toLocaleString('en-IN')} Pending` : 'Mark Complete'}</Text>}
+          </TouchableOpacity>
+        )}
+        {(booking.status === 'Completed' || booking.status === 'completed') && (
+          <TouchableOpacity style={[s.btnComplete, { backgroundColor: colors.primary }]} onPress={downloadInvoice}>
+            <Text style={s.btnCompleteText}>📥 Download Invoice</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* ═══ SET AMOUNT MODAL ═══ */}

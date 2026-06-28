@@ -513,6 +513,7 @@ app.get("/api/social-links", async (req, res) => {
 
 app.use("/api/creator", creatorRoutes);
 app.use("/api/creators", creatorsRoutes);
+app.use("/api/invoice", require("./routes/invoice"));
 app.use("/api/user", userRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/messages", messageRoutes);
