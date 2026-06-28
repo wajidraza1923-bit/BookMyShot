@@ -99,7 +99,7 @@ export default function CreatorHome({ navigation }: any) {
             <Text style={styles.greeting}>Welcome back</Text>
             <Text style={styles.name}>{user?.name || 'Creator'}</Text>
           </View>
-          <TouchableOpacity style={styles.notifBtn}>
+          <TouchableOpacity style={styles.notifBtn} onPress={() => navigation.navigate('CreatorNotifications')}>
             <Ionicons name="notifications-outline" size={20} color={colors.text} />
             <View style={styles.notifDot} />
           </TouchableOpacity>
