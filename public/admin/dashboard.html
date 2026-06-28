@@ -516,14 +516,27 @@
           <div class="form-group" style="margin-top:0.75rem"><label>Title *</label><input type="text" id="notifTitle" style="width:100%;padding:0.6rem 0.8rem;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.85rem" placeholder="e.g. Subscription Reminder"></div>
           <div class="form-group"><label>Message *</label><textarea id="notifMessage" rows="3" style="width:100%;padding:0.6rem 0.8rem;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.85rem" placeholder="Your notification message..."></textarea></div>
           <div class="form-group"><label>Audience</label>
-            <select id="notifAudience" style="width:100%;padding:0.6rem 0.8rem;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.85rem">
+            <select id="notifAudience" style="width:100%;padding:0.6rem 0.8rem;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.85rem" onchange="notifAudienceChanged()">
               <option value="creators">All Creators</option>
               <option value="users">All Users</option>
               <option value="all">Everyone (Creators + Users)</option>
-              <option value="specific">Specific User/Creator IDs</option>
+              <option value="specific">Specific Creator</option>
             </select>
           </div>
-          <div class="form-group" id="specificIdsGroup" style="display:none"><label>User/Creator IDs (comma-separated)</label><input type="text" id="notifUserIds" placeholder="e.g. 6a20f4d8ea557e4efe23ecd7" style="width:100%;padding:0.6rem 0.8rem;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.85rem"></div>
+          <div class="form-group" id="specificIdsGroup" style="display:none">
+            <label>Search Creator</label>
+            <div style="position:relative">
+              <input type="text" id="notifCreatorSearch" placeholder="Type name, email, or phone..." autocomplete="off" oninput="notifSearchCreators(this.value)" style="width:100%;padding:0.6rem 0.8rem;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.85rem">
+              <div id="notifSearchResults" style="position:absolute;top:100%;left:0;right:0;max-height:200px;overflow-y:auto;background:#1a1a1a;border:1px solid var(--border);border-radius:8px;z-index:10;display:none;margin-top:4px"></div>
+            </div>
+            <div id="notifSelectedCreator" style="display:none;margin-top:0.5rem;padding:0.5rem 0.75rem;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:8px">
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <div><span id="notifSelectedName" style="color:#10b981;font-weight:600;font-size:0.82rem"></span><span id="notifSelectedMeta" style="color:#888;font-size:0.72rem;margin-left:0.5rem"></span></div>
+                <button onclick="notifClearSelection()" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:0.75rem;font-weight:600">✕ Remove</button>
+              </div>
+            </div>
+            <input type="hidden" id="notifUserIds" value="">
+          </div>
           <div style="display:flex;gap:0.5rem;margin-top:0.75rem">
             <button class="btn btn-primary" onclick="sendBroadcast()">📢 Send Broadcast</button>
             <button class="btn btn-outline" onclick="triggerSubAlerts()">⏰ Trigger Subscription Alerts</button>
@@ -1920,19 +1933,81 @@
 
       let userIds = [];
       if (audience === "specific") {
-        const idsStr = document.getElementById("notifUserIds") ? document.getElementById("notifUserIds").value.trim() : "";
-        if (!idsStr) { toast("Please enter user IDs", "error"); return; }
-        userIds = idsStr.split(",").map(s => s.trim());
+        const selectedId = document.getElementById("notifUserIds").value.trim();
+        if (!selectedId) { toast("Please search and select a creator", "error"); return; }
+        userIds = [selectedId];
       }
 
       try {
-        const res = await API.post("/admin/broadcast", { title, message, audience, userIds });
+        let res;
+        if (audience === "specific") {
+          res = await API.post("/admin/notifications/send", { title, message, creatorIds: userIds });
+        } else {
+          res = await API.post("/admin/broadcast", { title, message, audience, userIds: [] });
+        }
         toast("Broadcast sent to " + (res.sent || 0) + " users", "success");
         document.getElementById("notifTitle").value = "";
         document.getElementById("notifMessage").value = "";
+        if (audience === "specific") { notifClearSelection(); }
         loadRecentNotifs();
       } catch (e) { toast(e.message || "Failed to broadcast", "error"); }
     }
+
+    function notifAudienceChanged() {
+      var val = document.getElementById("notifAudience").value;
+      document.getElementById("specificIdsGroup").style.display = val === "specific" ? "block" : "none";
+      if (val !== "specific") { notifClearSelection(); }
+      // Ensure creators are loaded for search
+      if (val === "specific" && (!allCreators || allCreators.length === 0)) {
+        API.get("/admin/creators").then(function(data) { allCreators = data.creators || []; }).catch(function(){});
+      }
+    }
+
+    let notifSearchTimeout = null;
+    function notifSearchCreators(query) {
+      clearTimeout(notifSearchTimeout);
+      var resultsEl = document.getElementById("notifSearchResults");
+      if (!query || query.length < 2) { resultsEl.style.display = "none"; return; }
+      notifSearchTimeout = setTimeout(function() {
+        var q = query.toLowerCase();
+        var matches = (allCreators || []).filter(function(c) {
+          var name = (c.user && c.user.name ? c.user.name : c.name || '').toLowerCase();
+          var email = (c.user && c.user.email ? c.user.email : c.email || '').toLowerCase();
+          var phone = (c.user && c.user.phone ? c.user.phone : c.phone || '').toLowerCase();
+          return name.includes(q) || email.includes(q) || phone.includes(q);
+        }).slice(0, 8);
+        if (matches.length === 0) {
+          resultsEl.innerHTML = '<div style="padding:0.6rem 0.8rem;color:#888;font-size:0.78rem">No creators found</div>';
+        } else {
+          resultsEl.innerHTML = matches.map(function(c) {
+            var name = c.user && c.user.name ? c.user.name : c.name || 'Unknown';
+            var email = c.user && c.user.email ? c.user.email : c.email || '';
+            var phone = c.user && c.user.phone ? c.user.phone : c.phone || '';
+            var userId = typeof c.user === 'object' ? c.user._id : c.user;
+            return '<div onclick="notifSelectCreator(\'' + userId + '\',\'' + name.replace(/'/g,"") + '\',\'' + (email || phone) + '\')" style="padding:0.5rem 0.8rem;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.04);transition:background 0.15s" onmouseover="this.style.background=\'rgba(218,175,55,0.06)\'" onmouseout="this.style.background=\'transparent\'">'
+              + '<div style="font-size:0.82rem;color:#fff;font-weight:500">' + name + '</div>'
+              + '<div style="font-size:0.7rem;color:#888">' + email + (phone ? ' • ' + phone : '') + '</div></div>';
+          }).join('');
+        }
+        resultsEl.style.display = "block";
+      }, 200);
+    }
+
+    window.notifSelectCreator = function(userId, name, meta) {
+      document.getElementById("notifUserIds").value = userId;
+      document.getElementById("notifSelectedName").textContent = name;
+      document.getElementById("notifSelectedMeta").textContent = meta;
+      document.getElementById("notifSelectedCreator").style.display = "block";
+      document.getElementById("notifSearchResults").style.display = "none";
+      document.getElementById("notifCreatorSearch").value = "";
+    };
+
+    window.notifClearSelection = function() {
+      document.getElementById("notifUserIds").value = "";
+      document.getElementById("notifSelectedCreator").style.display = "none";
+      var searchInput = document.getElementById("notifCreatorSearch");
+      if (searchInput) searchInput.value = "";
+    };
 
     async function triggerSubAlerts() {
       if (!confirm("Send subscription expiry reminders to all creators with 5 days or less remaining?")) return;
@@ -2060,16 +2135,7 @@
       } catch (e) { el.innerHTML = '<p style="color:var(--text-dim);font-size:0.8rem">Requires server restart for admin notification view.</p>'; }
     }
 
-    // Show/hide specific IDs field
-    document.addEventListener("DOMContentLoaded", function() {
-      var sel = document.getElementById("notifAudience");
-      if (sel) {
-        sel.addEventListener("change", function() {
-          var g = document.getElementById("specificIdsGroup");
-          if (g) g.style.display = this.value === "specific" ? "block" : "none";
-        });
-      }
-    });
+    // Audience change handler is now inline via onchange="notifAudienceChanged()"
 
     async function loadCalendarPanel() {
       const el = document.getElementById("calendarPanel");
