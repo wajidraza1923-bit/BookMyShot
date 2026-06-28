@@ -95,7 +95,7 @@ async function cancelSubscription(subscriptionId, cancelAtEnd = true) {
   const rp = getInstance();
   if (!rp) throw new Error("Razorpay not configured");
 
-  return await rp.subscriptions.cancel(subscriptionId, cancelAtEnd);
+  return await rp.subscriptions.cancel(subscriptionId, { cancel_at_cycle_end: cancelAtEnd });
 }
 
 /**
