@@ -168,7 +168,17 @@ export default function CreatorBookings({ navigation }: any) {
             {item.status === 'Completed' || item.status === 'completed' ? (
               <View style={styles.quickActions}>
                 <ActionBtn icon="chatbubble-outline" label="Chat" onPress={() => navigation.navigate('BookingChat', { bookingId: item._id })} />
-                <ActionBtn icon="download-outline" label="Invoice" onPress={() => Linking.openURL(`https://site--bookmyshot--ykz2mr8mzlrv.code.run/api/invoice/${item._id}`)} />
+                <ActionBtn icon="download-outline" label="Invoice" onPress={async () => {
+                  try {
+                    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+                    const Print = require('expo-print');
+                    const tkn = await AsyncStorage.getItem('bms_token');
+                    const resp = await fetch(`https://site--bookmyshot--ykz2mr8mzlrv.code.run/api/invoice/${item._id}?token=${encodeURIComponent(tkn || '')}`, { headers: { 'Authorization': `Bearer ${tkn}`, 'x-access-token': tkn || '' } });
+                    const htm = await resp.text();
+                    if (!resp.ok || htm.includes('"success":false')) { setToast({ visible: true, type: 'error', title: 'Invoice Error', message: 'Failed to load invoice' }); return; }
+                    await Print.printAsync({ html: htm });
+                  } catch { setToast({ visible: true, type: 'error', title: 'Error', message: 'Invoice download failed' }); }
+                }} />
               </View>
             ) : (
               <View style={styles.quickActions}>
