@@ -362,10 +362,13 @@ router.patch("/contacts/:id", async (req, res, next) => {
   }
 });
 
-// Admin notifications
+// Admin notifications (all sent - for admin history view)
 router.get("/notifications", async (req, res, next) => {
   try {
-    const notifications = await Notification.find({ user: req.user._id }).sort("-createdAt").limit(50);
+    const notifications = await Notification.find({})
+      .populate("user", "name email")
+      .sort("-createdAt")
+      .limit(50);
     res.json({ success: true, notifications });
   } catch (e) {
     next(e);
@@ -643,15 +646,18 @@ router.post("/payment-records", async (req, res, next) => {
 
 router.post("/notifications/send", async (req, res, next) => {
   try {
-    const { title, message, type, creatorIds } = req.body;
+    const { title, message, type, creatorIds, target } = req.body;
     if (!title || !message) return res.status(400).json({ success: false, message: "Title and message required" });
 
     let targets = [];
     if (creatorIds && creatorIds.length > 0) {
       const creators = await Creator.find({ _id: { $in: creatorIds } });
       targets = creators.map(c => c.user);
+    } else if (target === 'all_users') {
+      const users = await User.find({ role: 'user' }).select('_id');
+      targets = users.map(u => u._id);
     } else {
-      // Broadcast to all creators
+      // Default: broadcast to all approved creators
       const creators = await Creator.find({ status: "approved" });
       targets = creators.map(c => c.user);
     }
@@ -660,7 +666,15 @@ router.post("/notifications/send", async (req, res, next) => {
       user: userId, title, message, type: type || "system",
     }));
     await Notification.insertMany(notifications);
-    await logAction(req.user._id, "notification_send", "system", "", `To ${targets.length} creators: ${title}`, req.ip);
+
+    // Send push notifications
+    try {
+      const pushService = require("../services/pushService");
+      const userIds = targets.map(t => t.toString ? t.toString() : t);
+      await pushService.sendToUsers(userIds, title, message, { type: 'admin_notification' });
+    } catch (pushErr) { /* push is best-effort */ }
+
+    await logAction(req.user._id, "notification_send", "system", "", `To ${targets.length} users: ${title}`, req.ip);
     res.json({ success: true, sent: targets.length });
   } catch (e) { next(e); }
 });
