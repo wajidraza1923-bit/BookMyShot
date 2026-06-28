@@ -14,6 +14,11 @@ export default function CreatorSubscription({ navigation }: any) {
   const [subscribing, setSubscribing] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('monthly');
+
+  // Auto-set selected plan to match current active plan on load
+  useEffect(() => {
+    if (creator?.subscriptionPlanType === 'yearly') setSelectedPlan('yearly');
+  }, [creator?.subscriptionPlanType]);
   // WebView Razorpay state for subscription
   const [showRazorpay, setShowRazorpay] = useState(false);
   const [rpSubConfig, setRpSubConfig] = useState<{ keyId: string; subscriptionId: string; name: string; email: string }>({ keyId: '', subscriptionId: '', name: '', email: '' });
@@ -341,22 +346,13 @@ export default function CreatorSubscription({ navigation }: any) {
               </View>
             </View>
 
-            {/* Price — updates based on selection */}
+            {/* Price — SIMPLE: selected plan determines what's shown */}
             <View style={s.priceBox}>
               <Text style={s.priceAmount}>
-                {isViewingYearlyPreview
-                  ? `\u20B9${yearlyPlanPrice}`
-                  : isActive && currentPlanType === 'yearly' && selectedPlan !== 'monthly'
-                    ? `\u20B9${creatorPlanPrice || yearlyPlanPrice}`
-                    : isActive && selectedPlan === 'monthly'
-                      ? `\u20B9${monthlyPlanPrice}`
-                      : selectedPlan === 'yearly'
-                        ? `\u20B9${yearlyPlanPrice}`
-                        : `\u20B9${monthlyPlanPrice}`
-                }
+                {`\u20B9${selectedPlan === 'yearly' ? yearlyPlanPrice : monthlyPlanPrice}`}
               </Text>
               <Text style={s.priceUnit}>
-                {isViewingYearlyPreview || (isActive && currentPlanType === 'yearly' && selectedPlan !== 'monthly') ? 'per year' : 'per month'}
+                {selectedPlan === 'yearly' ? 'per year' : 'per month'}
               </Text>
             </View>
           </View>
