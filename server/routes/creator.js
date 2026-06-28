@@ -990,24 +990,14 @@ router.patch("/bookings/:id/complete", async (req, res, next) => {
     const booking = await Booking.findOne({ _id: req.params.id, creator: creator._id });
     if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
 
-    // ═══ VALIDATION: Only complete if fully paid ═══
+    // Get payment data for invoice
     const bookingAmount = booking.amount || booking.budget || 0;
     const PaymentRecord = require("../models/PaymentRecord");
     const approvedPayments = await PaymentRecord.find({ booking: booking._id, status: "approved" });
     const totalPaid = approvedPayments.reduce((s, r) => s + (r.amount || 0), 0);
     const remaining = bookingAmount - totalPaid;
 
-    if (bookingAmount > 0 && remaining > 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Booking cannot be completed until full payment is received. Remaining: ₹${remaining.toLocaleString("en-IN")}`,
-        remaining,
-        totalPaid,
-        bookingAmount,
-      });
-    }
-
-    // Mark as completed
+    // Mark as completed (creator has explicitly confirmed)
     booking.status = "Completed";
     booking.bookingStatus = "completed";
     booking.paymentStatus = "paid";

@@ -22,6 +22,7 @@ export default function BookingDetail({ route, navigation }: any) {
   const [eventForm, setEventForm] = useState({ name: '', date: '', location: '', notes: '' });
   const [savingPayment, setSavingPayment] = useState(false);
   const [completing, setCompleting] = useState(false);
+  const [pendingComplete, setPendingComplete] = useState(false); // Shows Mark Complete after Mark Paid with due > 0
 
   const load = useCallback(async () => {
     try {
@@ -103,13 +104,34 @@ export default function BookingDetail({ route, navigation }: any) {
     }
   };
 
-  // ═══ MARK PAID (same as website) ═══
-  const markPaid = () => Alert.alert('Mark Fully Paid', 'Mark this booking as fully paid?', [
-    { text: 'Cancel' },
-    { text: 'Mark Paid', onPress: async () => {
-      try { await api.patch(`/payment-records/booking/${bookingId}/mark-paid`); await load(); Alert.alert('Done', 'Booking marked as fully paid'); } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
-    }}
-  ]);
+  // ═══ MARK PAID ═══
+  const markPaid = () => {
+    Alert.alert('Mark Fully Paid', 'Mark this booking as fully paid?', [
+      { text: 'Cancel' },
+      { text: 'Mark Paid', onPress: async () => {
+        try {
+          await api.patch(`/payment-records/booking/${bookingId}/mark-paid`);
+          await load();
+          // After mark paid: if due was 0 → auto-complete. If due > 0 → show Mark Complete step.
+          const updatedRemaining = (booking.amount || 0) - paymentRecords.filter((r: any) => r.status === 'approved').reduce((s: number, r: any) => s + (r.amount || 0), 0);
+          if (updatedRemaining <= 0) {
+            // Auto-complete (fully paid)
+            try {
+              await api.patch(`/creator/bookings/${bookingId}/complete`);
+              await load();
+              Alert.alert('Done! 🎉', 'Booking completed and invoice is ready.');
+            } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed to complete'); }
+          } else {
+            // Due > 0 — show Mark Complete confirmation step
+            setPendingComplete(true);
+          }
+        } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
+      }}
+    ]);
+  };
+
+  // ═══ CANCEL PENDING COMPLETE (go back to payment buttons) ═══
+  const cancelPendingComplete = () => setPendingComplete(false);
 
   // ═══ ACCEPT (with amount) ═══
   const acceptBooking = async () => {
@@ -135,23 +157,18 @@ export default function BookingDetail({ route, navigation }: any) {
     }}
   ]);
 
-  // ═══ COMPLETE ═══
+  // ═══ COMPLETE (manual after Mark Paid with due > 0) ═══
   const completeBooking = () => {
     if (completing) return;
-    // Validate payment is complete
-    const bookingAmount = booking.amount || 0;
-    if (bookingAmount > 0 && remaining > 0) {
-      Alert.alert('Cannot Complete', `Booking cannot be completed until full payment is received.\n\nRemaining: ₹${remaining.toLocaleString('en-IN')}`);
-      return;
-    }
-    Alert.alert('Complete Booking', 'Mark this booking as completed? This will lock all payment records and generate an invoice.', [
+    Alert.alert('Complete Booking', 'Are you sure you want to complete this booking? Payment records will be locked and an invoice will be generated.', [
       { text: 'Cancel' },
       { text: 'Complete', onPress: async () => {
         setCompleting(true);
         try {
           await api.patch(`/creator/bookings/${bookingId}/complete`);
           await load();
-          Alert.alert('Done! 🎉', 'Booking marked as completed. Invoice is ready for download.');
+          setPendingComplete(false);
+          Alert.alert('Done! 🎉', 'Booking completed. Invoice is ready for download.');
         } catch (e: any) {
           Alert.alert('Error', e.response?.data?.message || e.message || 'Failed to complete booking');
         } finally {
@@ -331,16 +348,23 @@ export default function BookingDetail({ route, navigation }: any) {
           <View style={s.payRow}><Text style={[s.payLabel, { fontWeight: '600' }]}>Net Receivable</Text><Text style={[s.payVal, { color: colors.primary }]}>₹{(booking.creatorReceivable || 0).toLocaleString('en-IN')}</Text></View>
         </View>
 
-        {/* ═══ QUICK ACTIONS ═══ */}
+        {/* ═══ QUICK ACTIONS — 3 states ═══ */}
         {booking.status === 'Completed' || booking.status === 'completed' ? (
-          /* COMPLETED MODE: Only Chat + Invoice + Send Invoice */
+          /* STATE 3: COMPLETED — Chat + Invoice + Send Invoice */
           <View style={s.actionsRow}>
             <ActionBtn icon="chatbubble-outline" label="Chat" onPress={() => navigation.navigate('BookingChat', { bookingId })} />
             <ActionBtn icon="download-outline" label="Invoice" onPress={downloadInvoice} />
             <ActionBtn icon="share-social-outline" label="Send Invoice" onPress={shareInvoicePDF} />
           </View>
+        ) : pendingComplete ? (
+          /* STATE 2: PENDING COMPLETE (Mark Paid clicked, due > 0) — Mark Complete + Cancel */
+          <View style={s.actionsRow}>
+            <ActionBtn icon="checkmark-circle-outline" label="Complete" onPress={completeBooking} />
+            <ActionBtn icon="chatbubble-outline" label="Chat" onPress={() => navigation.navigate('BookingChat', { bookingId })} />
+            <ActionBtn icon="close-circle-outline" label="Cancel" onPress={cancelPendingComplete} />
+          </View>
         ) : (
-          /* ACTIVE MODE: Payment controls + conditional Remind */
+          /* STATE 1: ACTIVE — Payment controls */
           <>
             <View style={s.actionsRow}>
               <ActionBtn icon="cash-outline" label="Set Amount" onPress={() => { setAmountInput(String(booking.amount || '')); setShowAmountModal(true); }} />
