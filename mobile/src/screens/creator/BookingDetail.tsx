@@ -228,64 +228,126 @@ export default function BookingDetail({ route, navigation }: any) {
   // ═══ SEND INVOICE PDF VIA SHARE SHEET (WhatsApp etc.) ═══
   const shareInvoicePDF = async () => {
     try {
+      // Step 1: Get auth token
       const AsyncStorage = require('@react-native-async-storage/async-storage').default;
       const token = await AsyncStorage.getItem('bms_token');
+      if (!token) { Alert.alert('Error', 'Not authenticated. Please login again.'); return; }
+
       const baseUrl = 'https://site--bookmyshot--ykz2mr8mzlrv.code.run/api';
-      const invoiceUrl = `${baseUrl}/invoice/${bookingId}?token=${encodeURIComponent(token || '')}`;
+      const invoiceUrl = `${baseUrl}/invoice/${bookingId}?token=${encodeURIComponent(token)}`;
 
-      // Try native PDF sharing
-      let shared = false;
-      try {
-        const Print = require('expo-print');
-        const Sharing = require('expo-sharing');
+      // Step 2: Fetch invoice HTML from server
+      console.log('[Invoice] Step 1: Fetching invoice HTML...');
+      const response = await fetch(invoiceUrl, {
+        headers: { 'Authorization': `Bearer ${token}`, 'x-access-token': token },
+      });
 
-        if (Print?.printToFileAsync && Sharing?.shareAsync) {
-          console.log('[Invoice] Fetching invoice HTML...');
-          const response = await fetch(invoiceUrl, { headers: { 'Authorization': `Bearer ${token}`, 'x-access-token': token || '' } });
-          let html = await response.text();
-          
-          if (!response.ok || !html || html.includes('"success":false')) {
-            console.log('[Invoice] Server returned error:', html.substring(0, 100));
-            // Fall through to fallback
-          } else {
-            console.log('[Invoice] HTML received, generating PDF...');
-            html = html.replace(/<button[^>]*class="print-btn"[^>]*>.*?<\/button>/gi, '');
-            
-            // Generate PDF — printToFileAsync returns { uri: 'file:///...' }
-            const result = await Print.printToFileAsync({ html });
-            console.log('[Invoice] PDF generated at:', result.uri);
-
-            // Share directly from the generated URI (no moveAsync needed)
-            if (await Sharing.isAvailableAsync()) {
-              console.log('[Invoice] Sharing available, opening share sheet...');
-              await Sharing.shareAsync(result.uri, {
-                mimeType: 'application/pdf',
-                dialogTitle: 'Send Invoice via WhatsApp',
-              });
-              shared = true;
-              console.log('[Invoice] Share completed successfully');
-            } else {
-              console.log('[Invoice] Sharing not available on this device');
-            }
-          }
+      if (!response.ok) {
+        const errText = await response.text();
+        try {
+          const errJson = JSON.parse(errText);
+          Alert.alert('Invoice Error', errJson.message || `Server error (${response.status})`);
+        } catch {
+          Alert.alert('Invoice Error', `Server returned status ${response.status}`);
         }
-      } catch (e: any) {
-        console.log('[Invoice] Native share error:', e.message);
+        return;
       }
 
-      // Fallback: Open WhatsApp with invoice link
-      if (!shared) {
-        const phone = (booking.clientPhone || '').replace(/\D/g, '').slice(-10);
-        const msg = `Hi ${booking.clientName || 'there'},\n\nYour booking invoice is ready.\n\nView/Download: ${invoiceUrl}\n\nThank you!\nBookMyShot`;
-        if (phone) {
-          Linking.openURL(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`);
-        } else {
-          Linking.openURL(invoiceUrl);
+      let html = await response.text();
+      if (!html || html.length < 100 || html.includes('"success":false')) {
+        Alert.alert('Invoice Error', 'Server returned empty or invalid invoice data.');
+        return;
+      }
+      console.log('[Invoice] Step 2: HTML received ✅ (' + html.length + ' chars)');
+
+      // Step 3: Remove print button from PDF
+      html = html.replace(/<button[^>]*class="print-btn"[^>]*>.*?<\/button>/gi, '');
+
+      // Step 4: Generate PDF file
+      let Print: any = null;
+      let Sharing: any = null;
+      try {
+        Print = require('expo-print');
+        Sharing = require('expo-sharing');
+      } catch (modErr: any) {
+        Alert.alert('Error', 'PDF module not available. Use Download Invoice instead.');
+        return;
+      }
+
+      if (!Print?.printToFileAsync) {
+        Alert.alert('Error', 'PDF generation not supported in this build. Use Download Invoice instead.');
+        return;
+      }
+
+      console.log('[Invoice] Step 3: Generating PDF...');
+      let pdfResult: any = null;
+      try {
+        pdfResult = await Print.printToFileAsync({ html, base64: false });
+      } catch (pdfErr: any) {
+        Alert.alert('PDF Error', 'Failed to generate PDF: ' + (pdfErr.message || 'Unknown error'));
+        return;
+      }
+
+      if (!pdfResult || !pdfResult.uri) {
+        Alert.alert('PDF Error', 'PDF was generated but file path is invalid.');
+        return;
+      }
+      console.log('[Invoice] Step 4: PDF generated ✅ at:', pdfResult.uri);
+
+      // Step 5: Share the PDF
+      if (!Sharing?.shareAsync) {
+        // No sharing API — open WhatsApp with link as fallback
+        console.log('[Invoice] Sharing module not available, using WhatsApp link fallback');
+        openWhatsAppFallback(invoiceUrl);
+        return;
+      }
+
+      const sharingAvailable = await Sharing.isAvailableAsync();
+      if (!sharingAvailable) {
+        console.log('[Invoice] Sharing not available on device, using WhatsApp fallback');
+        openWhatsAppFallback(invoiceUrl);
+        return;
+      }
+
+      console.log('[Invoice] Step 5: Opening share sheet...');
+      try {
+        await Sharing.shareAsync(pdfResult.uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: 'Send Invoice',
+          UTI: 'com.adobe.pdf',
+        });
+        console.log('[Invoice] ✅ Share completed');
+      } catch (shareErr: any) {
+        // User might have cancelled the share — that's not an error
+        if (shareErr.message?.includes('cancelled') || shareErr.message?.includes('dismiss')) {
+          console.log('[Invoice] Share cancelled by user');
+          return;
         }
+        console.log('[Invoice] Share sheet error:', shareErr.message);
+        // Try WhatsApp fallback
+        Alert.alert(
+          'Share Issue',
+          'Could not open share sheet. Would you like to send via WhatsApp link instead?',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Send via WhatsApp', onPress: () => openWhatsAppFallback(invoiceUrl) },
+          ]
+        );
       }
     } catch (e: any) {
-      console.log('[Invoice] Share error:', e.message);
-      Alert.alert('Error', 'Failed to share invoice. Please try Download Invoice instead.');
+      console.log('[Invoice] Unexpected error:', e.message);
+      Alert.alert('Error', 'Invoice sharing failed: ' + (e.message || 'Unknown error'));
+    }
+  };
+
+  // WhatsApp fallback — sends invoice link directly
+  const openWhatsAppFallback = (invoiceUrl: string) => {
+    const phone = (booking.clientPhone || '').replace(/\D/g, '').slice(-10);
+    const msg = `Hi ${booking.clientName || 'there'},\n\nYour booking invoice is ready.\n\n📄 View/Download Invoice:\n${invoiceUrl}\n\nThank you!\n— ${booking.creator?.user?.name || 'Your Creator'} via BookMyShot`;
+    if (phone) {
+      Linking.openURL(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`);
+    } else {
+      Linking.openURL(invoiceUrl);
     }
   };
 
