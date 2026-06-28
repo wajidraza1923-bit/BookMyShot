@@ -173,6 +173,48 @@ export default function BookingDetail({ route, navigation }: any) {
     }
   };
 
+  // ═══ SEND INVOICE PDF VIA SHARE SHEET (WhatsApp etc.) ═══
+  const shareInvoicePDF = async () => {
+    try {
+      const Print = require('expo-print');
+      const Sharing = require('expo-sharing');
+      const FileSystem = require('expo-file-system');
+      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+      const token = await AsyncStorage.getItem('bms_token');
+
+      // Fetch invoice HTML from server
+      const invoiceUrl = `https://site--bookmyshot--ykz2mr8mzlrv.code.run/api/invoice/${bookingId}${token ? '?token=' + token : ''}`;
+      const response = await fetch(invoiceUrl);
+      if (!response.ok) { Alert.alert('Error', 'Failed to load invoice. Please try again.'); return; }
+      let html = await response.text();
+
+      // Remove the print button from the HTML (not needed in PDF)
+      html = html.replace(/<button[^>]*class="pb"[^>]*>.*?<\/button>/gi, '');
+
+      // Generate PDF from HTML
+      const { uri } = await Print.printToFileAsync({ html, base64: false });
+
+      // Rename file to a meaningful name
+      const pdfName = `BookMyShot-Invoice-${booking.invoiceNumber || bookingId.slice(-8)}.pdf`;
+      const newUri = FileSystem.documentDirectory + pdfName;
+      await FileSystem.moveAsync({ from: uri, to: newUri });
+
+      // Share via native share sheet (WhatsApp, Email, etc.)
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(newUri, {
+          mimeType: 'application/pdf',
+          dialogTitle: 'Share Invoice',
+          UTI: 'com.adobe.pdf',
+        });
+      } else {
+        Alert.alert('Sharing Unavailable', 'Sharing is not available on this device. Use Download Invoice instead.');
+      }
+    } catch (e: any) {
+      console.log('[Invoice] Share error:', e.message);
+      Alert.alert('Error', 'Failed to generate/share invoice PDF. Please try Download Invoice instead.');
+    }
+  };
+
   // ═══ ADD EVENT ═══
   const addEvent = async () => {
     if (!eventForm.name || !eventForm.date) { Alert.alert('Error', 'Event name and date are required'); return; }
@@ -242,10 +284,11 @@ export default function BookingDetail({ route, navigation }: any) {
 
         {/* ═══ QUICK ACTIONS ═══ */}
         {booking.status === 'Completed' || booking.status === 'completed' ? (
-          /* Completed booking: only Chat + Download Invoice */
+          /* Completed booking: only Chat + Download Invoice + Send Invoice */
           <View style={s.actionsRow}>
             <ActionBtn icon="chatbubble-outline" label="Chat" onPress={() => navigation.navigate('BookingChat', { bookingId })} />
             <ActionBtn icon="download-outline" label="Invoice" onPress={downloadInvoice} />
+            <ActionBtn icon="share-social-outline" label="Send PDF" onPress={shareInvoicePDF} />
           </View>
         ) : (
           /* Active booking: full payment controls */

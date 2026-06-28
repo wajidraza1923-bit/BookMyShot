@@ -58,7 +58,8 @@
           "defaultChannel": "bookmyshot",
           "sounds": []
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "extra": {
       "apiBaseUrl": "https://site--bookmyshot--ykz2mr8mzlrv.code.run/api",
