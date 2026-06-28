@@ -104,36 +104,10 @@ export default function BookingDetail({ route, navigation }: any) {
     }
   };
 
-  // ═══ MARK PAID ═══
+  // ═══ MARK PAID — just a UI confirmation step, does NOT change backend data ═══
   const markPaid = () => {
-    const currentRemaining = (booking.amount || 0) - paymentRecords.filter((r: any) => r.status === 'approved').reduce((s: number, r: any) => s + (r.amount || 0), 0);
-    
-    if (currentRemaining <= 0) {
-      // Fully paid — auto-complete immediately
-      Alert.alert('Complete Booking', 'Payment is complete. Mark booking as completed?', [
-        { text: 'Cancel' },
-        { text: 'Complete', onPress: async () => {
-          try {
-            await api.patch(`/payment-records/booking/${bookingId}/mark-paid`);
-            await api.patch(`/creator/bookings/${bookingId}/complete`);
-            await load();
-            Alert.alert('Done! 🎉', 'Booking completed. Invoice is ready.');
-          } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
-        }}
-      ]);
-    } else {
-      // Due > 0 — go to pending complete state
-      Alert.alert('Mark Paid', `There is still ₹${currentRemaining.toLocaleString('en-IN')} pending. Mark as paid and proceed to completion?`, [
-        { text: 'Cancel' },
-        { text: 'Proceed', onPress: async () => {
-          try {
-            await api.patch(`/payment-records/booking/${bookingId}/mark-paid`);
-            // Don't reload — just switch to pending complete state
-            setPendingComplete(true);
-          } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
-        }}
-      ]);
-    }
+    // Simply switch to pending complete state — shows Mark Complete + Cancel
+    setPendingComplete(true);
   };
 
   // ═══ CANCEL PENDING COMPLETE (go back to payment buttons) ═══
@@ -163,14 +137,17 @@ export default function BookingDetail({ route, navigation }: any) {
     }}
   ]);
 
-  // ═══ COMPLETE (manual after Mark Paid with due > 0) ═══
+  // ═══ COMPLETE — called only after Mark Paid → Mark Complete confirmation ═══
   const completeBooking = () => {
     if (completing) return;
-    Alert.alert('Complete Booking', 'Are you sure you want to complete this booking? Payment records will be locked and an invoice will be generated.', [
+    Alert.alert('Complete Booking', 'This will mark the booking as fully paid and completed. Payment records will be locked and an invoice will be generated.', [
       { text: 'Cancel' },
       { text: 'Complete', onPress: async () => {
         setCompleting(true);
         try {
+          // Mark as paid in backend (sets remaining to 0)
+          await api.patch(`/payment-records/booking/${bookingId}/mark-paid`);
+          // Then complete the booking
           await api.patch(`/creator/bookings/${bookingId}/complete`);
           await load();
           setPendingComplete(false);
