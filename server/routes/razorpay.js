@@ -11,6 +11,22 @@ const emailService = require("../services/emailService");
 
 const router = express.Router();
 
+// ═══ Helper: Notify all admins (database + push) ═══
+async function notifyAdmins(title, message, type = "subscription") {
+  try {
+    const admins = await User.find({ role: "admin" }).select("_id");
+    for (const admin of admins) {
+      await Notification.create({ user: admin._id, type, title, message });
+    }
+    // Send push to admins
+    const pushService = require("../services/pushService");
+    const adminIds = admins.map(a => a._id.toString());
+    await pushService.sendToUsers(adminIds, title, message, { type: 'admin_alert', screen: 'AdminSubscriptions' });
+  } catch (e) {
+    console.log("[Admin Notify] Error:", e.message);
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════
 // PUBLIC: Get Razorpay key for frontend
 // ═══════════════════════════════════════════════════════════════
@@ -278,6 +294,10 @@ router.post("/verify-yearly-payment", protect, authorize("creator"), async (req,
       socketService.emitToRole("admin", "subscription:updated", { creatorId: creator._id, subscriptionStatus: "active", planType: "yearly" });
     } catch (e) {}
 
+    // Notify admins
+    const creatorName = req.user.name || req.user.email || "A creator";
+    notifyAdmins(`💰 New Yearly Subscription`, `${creatorName} subscribed to the yearly plan (₹${creator.subscriptionPlanPrice}). Account activated.`);
+
     res.json({ success: true, message: `Yearly subscription activated until ${endDate.toLocaleDateString("en-IN")}`, subscriptionEndDate: endDate });
   } catch (e) {
     next(e);
@@ -405,6 +425,10 @@ router.post("/verify-subscription", protect, async (req, res, next) => {
         autoRenew: true,
       });
     } catch (e) {}
+
+    // Notify admins about new subscription
+    const creatorName = req.user.name || req.user.email || "A creator";
+    notifyAdmins(`🎉 New Monthly Subscription`, `${creatorName} activated monthly AutoPay subscription (₹${amount}/month).`);
 
     res.json({ 
       success: true, 
@@ -841,6 +865,10 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
                 });
                 socketService.emitToRole("admin", "subscription:updated", { creatorId: creator._id, subscriptionStatus: "active", autoRenew: true });
               } catch (e) {}
+              // Notify admins about new creator subscription
+              const creatorUser = await User.findById(creator.user).select("name email");
+              const cName = creatorUser?.name || creatorUser?.email || "New Creator";
+              notifyAdmins(`🆕 New Creator Subscribed`, `${cName} has activated AutoPay and joined as a new creator. Account auto-approved.`);
             }
           }
         }
@@ -998,6 +1026,10 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
               paymentId,
             }).catch(e => console.error("[Email] admin webhook renewal:", e.message));
           }
+
+          // Admin push + in-app notification for renewal
+          const cName = creator.user?.name || creator.user?.email || "Creator";
+          notifyAdmins(`💳 Subscription Renewed`, `${cName} renewed monthly subscription (₹${chargedAmount}).`);
         }
         break;
       }
