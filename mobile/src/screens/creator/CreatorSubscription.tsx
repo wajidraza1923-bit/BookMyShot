@@ -296,35 +296,34 @@ export default function CreatorSubscription({ navigation }: any) {
             <View style={{ flex: 1 }}>
               <View style={s.planRow}>
                 <Ionicons name="diamond" size={16} color={colors.primary} />
-                <Text style={s.planName}>Subscription · Basic Plan</Text>
+                <Text style={s.planName}>
+                  {isActive ? (creator?.subscriptionPlanType === 'yearly' ? 'Yearly Plan' : 'Monthly Plan') : 'Subscription'}
+                </Text>
               </View>
 
-              {/* Details Grid (same as website) */}
+              {/* Details Grid — all real-time data from backend */}
               <View style={s.detailsGrid}>
                 <DetailRow label="Status" value={statusLabel} valueColor={statusColor} bold />
-                <DetailRow label="Plan" value={creator?.subscriptionPlanType === 'yearly' ? 'Yearly (12 months)' : 'Monthly'} />
-                <DetailRow label="Auto Renew" value={creator?.subscriptionPlanType === 'yearly' ? 'N/A (one-time)' : (autoRenew ? 'ON' : 'OFF')} />
-                <DetailRow label="Expiry Date" value={subEndDate ? formatDate(subEndDate) : '—'} />
-                <DetailRow label="Last Payment" value={lastPaymentDate ? formatDate(lastPaymentDate) : '—'} />
+                <DetailRow label="Plan Type" value={isActive ? (creator?.subscriptionPlanType === 'yearly' ? 'Yearly (12 Months)' : 'Monthly (AutoPay)') : 'No Active Plan'} />
+                <DetailRow label="AutoPay" value={creator?.subscriptionPlanType === 'yearly' ? 'OFF (One-time payment)' : (autoRenew ? 'ON' : 'OFF')} valueColor={creator?.subscriptionPlanType === 'yearly' ? colors.textMuted : (autoRenew ? colors.success : colors.error)} />
                 <DetailRow label="Start Date" value={subStartDate ? formatDate(subStartDate) : '—'} />
-                <DetailRow label="Days Remaining" value={subStatus ? String(daysRemaining) : '—'} valueColor={daysRemaining <= 5 ? colors.warning : undefined} bold={daysRemaining <= 5} />
+                <DetailRow label="Expiry Date" value={subEndDate ? formatDate(subEndDate) : '—'} valueColor={daysRemaining <= 7 ? colors.warning : undefined} />
+                <DetailRow label="Days Remaining" value={isActive ? String(daysRemaining) : '—'} valueColor={daysRemaining <= 5 ? colors.error : daysRemaining <= 15 ? colors.warning : undefined} bold={daysRemaining <= 7} />
+                <DetailRow label="Last Payment" value={lastPaymentDate ? formatDate(lastPaymentDate) : '—'} />
               </View>
             </View>
 
-            {/* Price */}
+            {/* Price — shows real price from DB */}
             <View style={s.priceBox}>
               <Text style={s.priceAmount}>
-                ₹{isActive
-                  ? (creator?.subscriptionPlanType === 'yearly' ? creatorPlanPrice : creatorPlanPrice)
-                  : (selectedPlan === 'yearly' ? (config?.subscription?.yearlyPlanPrice || monthlyPlanPrice * 10) : monthlyPlanPrice)
+                {isActive
+                  ? `₹${creatorPlanPrice || (creator?.subscriptionPlanType === 'yearly' ? (config?.subscription?.yearlyPlanPrice || monthlyPlanPrice * 10) : monthlyPlanPrice)}`
+                  : `₹${selectedPlan === 'yearly' ? (config?.subscription?.yearlyPlanPrice || monthlyPlanPrice * 10) : monthlyPlanPrice}`
                 }
               </Text>
               <Text style={s.priceUnit}>
                 {(isActive && creator?.subscriptionPlanType === 'yearly') || (!isActive && selectedPlan === 'yearly') ? 'per year' : 'per month'}
               </Text>
-              {priceChanged && isActive && (
-                <Text style={s.renewalNote}>Renewal: ₹{renewalPrice}/mo</Text>
-              )}
             </View>
           </View>
 
