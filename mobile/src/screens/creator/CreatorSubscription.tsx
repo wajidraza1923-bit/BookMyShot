@@ -237,7 +237,7 @@ export default function CreatorSubscription({ navigation }: any) {
   const subEndDate = creator?.subscriptionExpiry ? new Date(creator.subscriptionExpiry) : null;
   const subStartDate = creator?.subscriptionStartDate ? new Date(creator.subscriptionStartDate) : null;
   const lastPaymentDate = creator?.lastPaymentDate ? new Date(creator.lastPaymentDate) : null;
-  const autoRenew = creator?.autoRenew !== false;
+  const autoRenew = creator?._autopay?.autopayActive === true || (creator?._autopay?.autoRenew === true) || false;
   const daysRemaining = subEndDate ? Math.max(0, Math.ceil((subEndDate.getTime() - Date.now()) / 86400000)) : 0;
 
   // Price from platform settings database (NOT hardcoded)
@@ -332,24 +332,31 @@ export default function CreatorSubscription({ navigation }: any) {
           <View style={{ marginTop: spacing.lg }}>
             <Text style={{ ...typography.labelMd, color: colors.textMuted, marginBottom: spacing.sm }}>Available Plans</Text>
             <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+              {/* Monthly Plan Card */}
               <TouchableOpacity
-                style={[s.planOption, selectedPlan === 'monthly' && s.planOptionActive]}
+                style={[s.planOption, (isActive && creator?.subscriptionPlanType !== 'yearly') ? s.planOptionActive : (selectedPlan === 'monthly' && !isActive) ? s.planOptionActive : undefined]}
                 onPress={() => setSelectedPlan('monthly')}
                 activeOpacity={0.8}
               >
-                <Text style={[s.planOptionTitle, selectedPlan === 'monthly' && { color: colors.primary }]}>Monthly</Text>
+                {isActive && creator?.subscriptionPlanType !== 'yearly' && (
+                  <View style={[s.bestValueBadge, { backgroundColor: colors.success }]}><Text style={s.bestValueText}>ACTIVE</Text></View>
+                )}
+                <Text style={[s.planOptionTitle, (isActive && creator?.subscriptionPlanType !== 'yearly') && { color: colors.success }]}>Monthly</Text>
                 <Text style={s.planOptionPrice}>₹{monthlyPlanPrice}/mo</Text>
-                <Text style={{ fontSize: 9, color: colors.textMuted, marginTop: 2 }}>1 Month</Text>
+                <Text style={{ fontSize: 9, color: colors.textMuted, marginTop: 2 }}>1 Month • AutoPay</Text>
               </TouchableOpacity>
+              {/* Yearly Plan Card */}
               <TouchableOpacity
-                style={[s.planOption, selectedPlan === 'yearly' && s.planOptionActive, { position: 'relative' }]}
+                style={[s.planOption, (isActive && creator?.subscriptionPlanType === 'yearly') ? s.planOptionActive : (selectedPlan === 'yearly' && !isActive) ? s.planOptionActive : undefined, { position: 'relative' }]}
                 onPress={() => setSelectedPlan('yearly')}
                 activeOpacity={0.8}
               >
-                {(config?.subscription?.yearlyShowSaveBadge !== false) && (
+                {isActive && creator?.subscriptionPlanType === 'yearly' ? (
+                  <View style={[s.bestValueBadge, { backgroundColor: colors.success }]}><Text style={s.bestValueText}>ACTIVE</Text></View>
+                ) : (config?.subscription?.yearlyShowSaveBadge !== false) ? (
                   <View style={s.bestValueBadge}><Text style={s.bestValueText}>SAVE 2 MONTHS</Text></View>
-                )}
-                <Text style={[s.planOptionTitle, selectedPlan === 'yearly' && { color: colors.primary }]}>
+                ) : null}
+                <Text style={[s.planOptionTitle, (isActive && creator?.subscriptionPlanType === 'yearly') && { color: colors.success }]}>
                   {config?.subscription?.yearlyShowRecommended !== false ? 'Yearly ⭐' : 'Yearly'}
                 </Text>
                 <Text style={s.planOptionPrice}>₹{config?.subscription?.yearlyPlanPrice || (monthlyPlanPrice * 10)}/yr</Text>
@@ -360,31 +367,41 @@ export default function CreatorSubscription({ navigation }: any) {
             </View>
           </View>
 
-          {/* Subscribe/Renew/Enable Button */}
-          {(isExpired || !subStatus || subStatus === 'inactive' || subStatus === 'pending_payment') ? (
-            <TouchableOpacity style={s.payBtn} onPress={handleSubscribe} disabled={subscribing} activeOpacity={0.85}>
-              {subscribing ? (
-                <ActivityIndicator size="small" color={colors.textInverse} />
-              ) : (
-                <Text style={s.payBtnText}>
-                  {selectedPlan === 'yearly' ? `Buy Yearly Plan — ₹${config?.subscription?.yearlyPlanPrice || monthlyPlanPrice * 10}` : `Subscribe Monthly — ₹${monthlyPlanPrice}`}
-                </Text>
-              )}
-            </TouchableOpacity>
-          ) : isActive ? (
-            <TouchableOpacity style={[s.payBtn, s.payBtnOutline]} onPress={handleSubscribe} disabled={subscribing} activeOpacity={0.85}>
-              {subscribing ? (
-                <ActivityIndicator size="small" color={colors.primary} />
-              ) : (
-                <Text style={[s.payBtnText, { color: colors.primary }]}>
-                  {selectedPlan === 'yearly'
-                    ? `Buy Yearly Plan — ₹${config?.subscription?.yearlyPlanPrice || monthlyPlanPrice * 10}`
-                    : (autoRenew ? `Switch to Monthly — ₹${monthlyPlanPrice}` : `Enable AutoPay — ₹${monthlyPlanPrice}/mo`)
-                  }
-                </Text>
-              )}
-            </TouchableOpacity>
-          ) : null}
+          {/* Subscribe/Upgrade Button — only for non-active plans */}
+          {(() => {
+            const currentPlanType = creator?.subscriptionPlanType || 'monthly';
+            const isCurrentPlanSelected = isActive && selectedPlan === currentPlanType;
+            
+            // Don't show button if the currently active plan is selected
+            if (isCurrentPlanSelected) return null;
+
+            // Show buy/upgrade button
+            if (isExpired || !subStatus || subStatus === 'inactive' || subStatus === 'pending_payment') {
+              return (
+                <TouchableOpacity style={s.payBtn} onPress={handleSubscribe} disabled={subscribing} activeOpacity={0.85}>
+                  {subscribing ? <ActivityIndicator size="small" color={colors.textInverse} /> : (
+                    <Text style={s.payBtnText}>
+                      {selectedPlan === 'yearly' ? `Buy Yearly Plan — ₹${config?.subscription?.yearlyPlanPrice || monthlyPlanPrice * 10}` : `Subscribe Monthly — ₹${monthlyPlanPrice}`}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              );
+            }
+            
+            // Active but selecting a different plan = upgrade
+            if (isActive) {
+              return (
+                <TouchableOpacity style={[s.payBtn, s.payBtnOutline]} onPress={handleSubscribe} disabled={subscribing} activeOpacity={0.85}>
+                  {subscribing ? <ActivityIndicator size="small" color={colors.primary} /> : (
+                    <Text style={[s.payBtnText, { color: colors.primary }]}>
+                      {selectedPlan === 'yearly' ? `Upgrade to Yearly — ₹${config?.subscription?.yearlyPlanPrice || monthlyPlanPrice * 10}` : `Switch to Monthly — ₹${monthlyPlanPrice}/mo`}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              );
+            }
+            return null;
+          })()}
         </View>
 
         {/* Features */}
