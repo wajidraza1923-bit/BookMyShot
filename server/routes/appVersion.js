@@ -99,7 +99,19 @@ router.get("/history", protect, authorize("admin"), async (req, res) => {
 // ═══════════════════════════════════════════════════════════════
 // ADMIN: Publish new version
 // ═══════════════════════════════════════════════════════════════
-router.post("/", protect, authorize("admin"), apkUpload.single("apk"), async (req, res) => {
+router.post("/", protect, authorize("admin"), (req, res, next) => {
+  // Handle multer upload with explicit error handling
+  apkUpload.single("apk")(req, res, (multerErr) => {
+    if (multerErr) {
+      console.error("[AppVersion] Multer upload error:", multerErr.message);
+      if (multerErr.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ success: false, message: "APK file too large. Maximum size is 500MB." });
+      }
+      return res.status(400).json({ success: false, message: "Upload error: " + multerErr.message });
+    }
+    next();
+  });
+}, async (req, res) => {
   try {
     const { version, versionCode, title, description, forceUpdate, optionalUpdate, downloadUrl, playStoreUrl, minVersionCode } = req.body;
 
@@ -113,15 +125,20 @@ router.post("/", protect, authorize("admin"), apkUpload.single("apk"), async (re
       return res.status(400).json({ success: false, message: `Version code ${code} already exists` });
     }
 
-    // Upload APK to Cloudinary as raw file
+    // Upload APK — try Cloudinary first, fallback to disk
     let apkUrl = downloadUrl || "";
     let fileSize = 0;
     if (req.file) {
       fileSize = req.file.size || 0;
-      console.log(`[AppVersion] Uploading APK to Cloudinary: ${req.file.originalname} (${(fileSize / 1024 / 1024).toFixed(1)} MB)`);
-      try {
-        const { uploadBuffer, isConfigured } = require("../services/cloudinaryService");
-        if (isConfigured()) {
+      console.log(`[AppVersion] Processing APK: ${req.file.originalname} (${(fileSize / 1024 / 1024).toFixed(1)} MB)`);
+      
+      // Try Cloudinary for smaller files (< 100MB), disk for larger
+      const { uploadBuffer, isConfigured } = require("../services/cloudinaryService");
+      const useCloudinary = isConfigured() && fileSize < 100 * 1024 * 1024; // 100MB limit for Cloudinary
+      
+      if (useCloudinary) {
+        try {
+          console.log(`[AppVersion] Uploading to Cloudinary (raw)...`);
           const result = await uploadBuffer(req.file.buffer, {
             folder: "bookmyshot/releases",
             resourceType: "raw",
@@ -129,8 +146,15 @@ router.post("/", protect, authorize("admin"), apkUpload.single("apk"), async (re
           });
           apkUrl = result.url;
           console.log(`[AppVersion] ✅ APK uploaded to Cloudinary: ${apkUrl}`);
-        } else {
-          // Fallback: save to disk if Cloudinary not configured
+        } catch (cloudErr) {
+          console.error("[AppVersion] Cloudinary failed, falling back to disk:", cloudErr.message);
+          // Fall through to disk storage
+        }
+      }
+      
+      // Disk fallback (or primary for large files)
+      if (!apkUrl) {
+        try {
           const fs = require("fs");
           const path = require("path");
           const dir = path.join(__dirname, "../../public/releases");
@@ -138,11 +162,11 @@ router.post("/", protect, authorize("admin"), apkUpload.single("apk"), async (re
           const filename = `bookmyshot-v${version}-${code}.apk`;
           fs.writeFileSync(path.join(dir, filename), req.file.buffer);
           apkUrl = `/releases/${filename}`;
-          console.log(`[AppVersion] APK saved to disk: ${filename}`);
+          console.log(`[AppVersion] ✅ APK saved to disk: ${filename}`);
+        } catch (diskErr) {
+          console.error("[AppVersion] Disk save also failed:", diskErr.message);
+          return res.status(500).json({ success: false, message: "APK storage failed. Both Cloudinary and disk storage unavailable. Error: " + diskErr.message });
         }
-      } catch (uploadErr) {
-        console.error("[AppVersion] APK upload error:", uploadErr.message);
-        return res.status(500).json({ success: false, message: "APK upload failed: " + uploadErr.message });
       }
     }
 

@@ -36,14 +36,19 @@ async function uploadBuffer(buffer, options = {}) {
     const uploadOptions = {
       folder,
       resource_type: resourceType,
-      quality: "auto",
-      fetch_format: "auto",
     };
+    // Only apply image/video transformations for non-raw resources
+    if (resourceType !== "raw") {
+      uploadOptions.quality = "auto";
+      uploadOptions.fetch_format = "auto";
+    }
     if (publicId) uploadOptions.public_id = publicId;
+    // Increase timeout for large files (APKs can be 100MB+)
+    uploadOptions.timeout = 600000; // 10 minutes
 
     const stream = cloudinary.uploader.upload_stream(uploadOptions, (error, result) => {
       if (error) {
-        console.error("[Cloudinary] Upload error:", error.message);
+        console.error("[Cloudinary] Upload error:", error.message, error.http_code || '');
         return reject(error);
       }
       resolve({
