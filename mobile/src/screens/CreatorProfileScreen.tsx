@@ -53,7 +53,16 @@ export default function CreatorProfileScreen({ route, navigation }: any) {
   };
 
   if (loading) return <View style={s.center}><ActivityIndicator size="large" color={colors.primary} /></View>;
-  if (!creator) return <View style={s.center}><Text style={s.errorText}>Creator not found</Text></View>;
+  if (!creator) return (
+    <View style={s.center}>
+      <Ionicons name="person-outline" size={40} color="rgba(255,255,255,0.15)" />
+      <Text style={s.errorText}>Creator not found</Text>
+      <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', marginTop: 4 }}>This profile may be unavailable</Text>
+      <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginTop: 16, paddingHorizontal: 20, paddingVertical: 10, backgroundColor: 'rgba(255,140,43,0.1)', borderWidth: 1, borderColor: 'rgba(255,140,43,0.25)', borderRadius: 10 }}>
+        <Text style={{ color: '#FF8C2B', fontSize: 13, fontWeight: '600' }}>← Go Back</Text>
+      </TouchableOpacity>
+    </View>
+  );
 
   const user = creator.user || {};
   const name = user.name || 'Creator';

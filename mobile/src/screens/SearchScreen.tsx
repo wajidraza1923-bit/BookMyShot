@@ -231,7 +231,11 @@ function ResultsList({ creators, navigation, districts, selectedCity, setSelecte
     <FlatList data={creators} showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
       ListHeaderComponent={
         <View>
-          {/* District filter bar */}
+          {/* Back button + District filter bar */}
+          <TouchableOpacity onPress={() => setShowResults(false)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12, paddingVertical: 4 }}>
+            <Ionicons name="arrow-back" size={16} color="#FF8C2B" />
+            <Text style={{ fontSize: 12, color: '#FF8C2B', fontWeight: '600' }}>Back to Discover</Text>
+          </TouchableOpacity>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }} contentContainerStyle={{ gap: 8 }}>
             <TouchableOpacity style={[s.distChip, !selectedCity && s.distChipActive]} onPress={() => { setSelectedCity(''); }}>
               <Text style={[s.distChipText, !selectedCity && s.distChipTextActive]}>All</Text>
@@ -245,7 +249,16 @@ function ResultsList({ creators, navigation, districts, selectedCity, setSelecte
           <Text style={s.resCount}>{creators.length} creator{creators.length !== 1 ? 's' : ''} found{selectedCity ? ` in ${selectedCity}` : ''}</Text>
         </View>
       }
-      ListEmptyComponent={<View style={s.empty}><Ionicons name="search-outline" size={36} color="rgba(255,255,255,0.1)" /><Text style={s.emptyTitle}>No creators found{selectedCity ? ` in ${selectedCity}` : ''}</Text><Text style={s.emptySubTitle}>Try a different location or category</Text></View>}
+      ListEmptyComponent={
+        <View style={s.empty}>
+          <Ionicons name="search-outline" size={36} color="rgba(255,255,255,0.1)" />
+          <Text style={s.emptyTitle}>No creators found{selectedCity ? ` in ${selectedCity}` : ''}</Text>
+          <Text style={s.emptySubTitle}>Try a different location or category</Text>
+          <TouchableOpacity onPress={() => setShowResults(false)} style={{ marginTop: 16, paddingHorizontal: 20, paddingVertical: 10, backgroundColor: 'rgba(255,140,43,0.1)', borderWidth: 1, borderColor: 'rgba(255,140,43,0.25)', borderRadius: 10 }}>
+            <Text style={{ color: '#FF8C2B', fontSize: 13, fontWeight: '600' }}>← Back to Discover</Text>
+          </TouchableOpacity>
+        </View>
+      }
       keyExtractor={(i: any) => i._id}
       renderItem={({ item }: any) => (
         <TouchableOpacity style={s.resCard} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })} activeOpacity={0.85}>
