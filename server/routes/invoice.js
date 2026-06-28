@@ -1,58 +1,74 @@
 /**
  * BookMyShot — Invoice Generation for Completed Bookings
- * GET /api/creator/bookings/:id/invoice — HTML invoice (print/download as PDF)
+ * GET /api/invoice/:id — Returns beautiful HTML invoice (user can print/save as PDF)
+ * 
+ * Auth: Supports BOTH methods:
+ *   1. Authorization: Bearer <token> (header) — for API calls
+ *   2. ?token=<token> (query param) — for browser/download links
  */
 const express = require("express");
 const router = express.Router();
+const jwt = require("jsonwebtoken");
 const Booking = require("../models/Booking");
 const Creator = require("../models/Creator");
+const User = require("../models/User");
 const PaymentRecord = require("../models/PaymentRecord");
-const { protect } = require("../middleware/auth");
 
-router.use(async (req, res, next) => {
-  // Optional protect — try to authenticate but don't block if token is in query
-  try {
-    await new Promise((resolve, reject) => {
-      protect(req, res, (err) => { if (err) reject(err); else resolve(undefined); });
-    });
-  } catch (e) {
-    // Will be handled inside the route with query token fallback
+// Custom auth that supports both header and query token
+async function authenticateRequest(req) {
+  let token = null;
+
+  // Try Authorization header first
+  if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
+    token = req.headers.authorization.split(" ")[1];
   }
-  next();
-});
+
+  // Fallback to query parameter (for browser links)
+  if (!token && req.query.token) {
+    token = req.query.token;
+  }
+
+  if (!token) return null;
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id).select("-password");
+    return user;
+  } catch (e) {
+    return null;
+  }
+}
 
 router.get("/:id", async (req, res, next) => {
   try {
-    // Support auth via query param (for browser/download links)
-    if (!req.user && req.query.token) {
-      try {
-        const jwt = require("jsonwebtoken");
-        const User = require("../models/User");
-        const decoded = jwt.verify(req.query.token, process.env.JWT_SECRET);
-        req.user = await User.findById(decoded.id).select("-password");
-      } catch (e) {
-        return res.status(401).json({ success: false, message: "Invalid token" });
-      }
+    // Authenticate
+    const user = await authenticateRequest(req);
+    if (!user) {
+      return res.status(401).json({ success: false, message: "Authentication required. Please login first." });
     }
-    if (!req.user) return res.status(401).json({ success: false, message: "Authentication required. Add ?token=YOUR_TOKEN to the URL." });
 
+    // Load booking with populated fields
     const booking = await Booking.findById(req.params.id)
       .populate("user", "name email phone")
       .populate({ path: "creator", populate: { path: "user", select: "name email phone" } });
+
     if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
 
-    // Access check
-    const userId = req.user._id.toString();
+    // Access check: booking owner, creator, or admin
+    const userId = user._id.toString();
     const bookingUserId = (booking.user?._id || booking.user || "").toString();
     const creatorUserId = (booking.creator?.user?._id || "").toString();
-    if (userId !== bookingUserId && userId !== creatorUserId && req.user.role !== "admin") {
-      return res.status(403).json({ success: false, message: "Access denied" });
+
+    if (userId !== bookingUserId && userId !== creatorUserId && user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "You don't have permission to view this invoice" });
     }
 
+    // Get payment records
     const payments = await PaymentRecord.find({ booking: booking._id, status: "approved" }).sort("createdAt").lean();
     const totalPaid = payments.reduce((s, r) => s + (r.amount || 0), 0);
     const bookingAmount = booking.amount || booking.budget || 0;
 
+    // Helpers
     const fd = (d) => d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "\u2014";
     const fc = (n) => "\u20B9" + (n || 0).toLocaleString("en-IN");
 
@@ -60,6 +76,7 @@ router.get("/:id", async (req, res, next) => {
       `<tr><td>${fd(p.createdAt)}</td><td>${fc(p.amount)}</td><td style="text-transform:capitalize">${p.paymentType || "\u2014"}</td><td style="text-transform:capitalize">${p.addedBy || "\u2014"}</td></tr>`
     ).join("");
 
+    // Generate HTML invoice
     const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Invoice ${booking.invoiceNumber || ""} - BookMyShot</title>
@@ -86,7 +103,7 @@ td{padding:7px 8px;border-bottom:1px solid rgba(255,255,255,.03);color:#ddd}
 @media print{body{background:#fff;color:#111;padding:0}.inv{background:#fff;border:1px solid #ddd}th{background:#f5f5f5;color:#333}td{color:#333}.sum{background:#fafaf5;border-color:#e5e0c8}.sr{color:#333}.ft{color:#999}.pb{display:none}.done{background:#e6f9f0;border-color:#b8e6d0;color:#059669}}
 @media(max-width:480px){.grid{grid-template-columns:1fr}.inv{padding:18px}}
 </style></head><body>
-<button class="pb" onclick="window.print()">📥 Download / Print Invoice</button>
+<button class="pb" onclick="window.print()">Download / Print Invoice</button>
 <div class="inv">
 <div class="hdr">
 <div><div class="logo">Book<span>MyShot</span></div><div style="font-size:10px;color:#888;margin-top:3px">Premium Photography & Videography</div></div>
@@ -119,7 +136,7 @@ ${payments.length > 0 ? `<div class="sec"><div class="st">Payment Records</div>
 <div class="ft">Thank you for choosing BookMyShot<br><span style="color:#D4AF37">bookmyshot.in</span> \u2022 support@bookmyshot.in</div>
 </div></body></html>`;
 
-    res.setHeader("Content-Type", "text/html");
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.send(html);
   } catch (e) {
     next(e);
