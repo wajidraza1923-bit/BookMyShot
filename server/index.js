@@ -397,6 +397,9 @@ app.post("/api/user/upload", protect, adminUpload.single("file"), async (req, re
 // Internally bypasses admin users and /api/auth paths.
 app.use(maintenanceMode);
 
+// Invoice route (BEFORE other protected routes — handles its own auth)
+app.use("/api/invoice", require("./routes/invoice"));
+
 // Health check endpoint (for monitoring and debugging)
 app.get("/api/health", (req, res) => {
   res.json({
@@ -513,7 +516,6 @@ app.get("/api/social-links", async (req, res) => {
 
 app.use("/api/creator", creatorRoutes);
 app.use("/api/creators", creatorsRoutes);
-app.use("/api/invoice", require("./routes/invoice"));
 app.use("/api/user", userRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/messages", messageRoutes);

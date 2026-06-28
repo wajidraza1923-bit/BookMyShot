@@ -41,11 +41,17 @@ async function authenticateRequest(req) {
 
 router.get("/:id", async (req, res, next) => {
   try {
+    console.log("[Invoice] Request for booking:", req.params.id);
+    console.log("[Invoice] Auth header:", req.headers.authorization ? "Bearer ***" : "NONE");
+    console.log("[Invoice] Query token:", req.query.token ? "***present***" : "NONE");
+
     // Authenticate
     const user = await authenticateRequest(req);
     if (!user) {
+      console.log("[Invoice] AUTH FAILED — no valid token found");
       return res.status(401).json({ success: false, message: "Authentication required. Please login first." });
     }
+    console.log("[Invoice] Authenticated user:", user._id, user.name, user.role);
 
     // Load booking with populated fields
     const booking = await Booking.findById(req.params.id)
@@ -59,9 +65,13 @@ router.get("/:id", async (req, res, next) => {
     const bookingUserId = (booking.user?._id || booking.user || "").toString();
     const creatorUserId = (booking.creator?.user?._id || "").toString();
 
+    console.log("[Invoice] Access check — userId:", userId, "bookingUser:", bookingUserId, "creatorUser:", creatorUserId, "role:", user.role);
+
     if (userId !== bookingUserId && userId !== creatorUserId && user.role !== "admin") {
+      console.log("[Invoice] ACCESS DENIED");
       return res.status(403).json({ success: false, message: "You don't have permission to view this invoice" });
     }
+    console.log("[Invoice] Access GRANTED");
 
     // Get payment records
     const payments = await PaymentRecord.find({ booking: booking._id, status: "approved" }).sort("createdAt").lean();
