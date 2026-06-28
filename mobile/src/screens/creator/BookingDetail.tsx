@@ -188,6 +188,23 @@ export default function BookingDetail({ route, navigation }: any) {
   const callCustomer = () => booking?.clientPhone && Linking.openURL(`tel:${booking.clientPhone}`);
   const whatsApp = () => booking?.clientPhone && Linking.openURL(`https://wa.me/91${booking.clientPhone.replace(/\D/g, '').slice(-10)}`);
 
+  // ═══ WHATSAPP PAYMENT REMINDER ═══
+  const sendPaymentReminder = () => {
+    if (!booking?.clientPhone) { Alert.alert('No Phone', 'Customer phone number not available'); return; }
+    const phone = booking.clientPhone.replace(/\D/g, '').slice(-10);
+    const customerName = booking.clientName || 'Customer';
+    const creatorName = user?.name || 'Creator';
+    const eventDate = booking.eventDate ? new Date(booking.eventDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'TBD';
+    const bookingAmount = booking.amount || 0;
+    const paidAmount = paymentRecords.filter((r: any) => r.status === 'approved').reduce((sum: number, r: any) => sum + (r.amount || 0), 0);
+    const pendingAmount = Math.max(0, bookingAmount - paidAmount);
+
+    const message = `Hi ${customerName},\n\nThis is a friendly payment reminder from *${creatorName}* via BookMyShot.\n\nYour booking details:\n• Booking ID: ${booking.invoiceNumber || booking._id?.slice(-8)}\n• Event: ${booking.eventType || 'Booking'}\n• Event Date: ${eventDate}\n• Total Project Amount: ₹${bookingAmount.toLocaleString('en-IN')}\n• Amount Paid: ₹${paidAmount.toLocaleString('en-IN')}\n• *Pending Amount: ₹${pendingAmount.toLocaleString('en-IN')}*\n\nKindly clear your pending payment of ₹${pendingAmount.toLocaleString('en-IN')} at your earliest convenience.\n\nThank you for choosing BookMyShot. 🙏`;
+
+    const encoded = encodeURIComponent(message);
+    Linking.openURL(`https://wa.me/91${phone}?text=${encoded}`);
+  };
+
   if (loading || !booking) return <View style={s.container}><ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 80 }} /></View>;
 
   const totalPaid = paymentRecords.filter(r => r.status === 'approved').reduce((sum, r) => sum + (r.amount || 0), 0);
@@ -236,6 +253,19 @@ export default function BookingDetail({ route, navigation }: any) {
             <TouchableOpacity style={s.contactBtn} onPress={callCustomer}><Ionicons name="call" size={15} color={colors.info} /><Text style={s.contactText}>Call</Text></TouchableOpacity>
             <TouchableOpacity style={s.contactBtn} onPress={whatsApp}><Ionicons name="logo-whatsapp" size={15} color={colors.success} /><Text style={s.contactText}>WhatsApp</Text></TouchableOpacity>
           </View>
+          {/* WhatsApp Payment Reminder */}
+          {remaining > 0 && booking.amount > 0 ? (
+            <TouchableOpacity style={s.waReminderBtn} onPress={sendPaymentReminder} activeOpacity={0.8}>
+              <Ionicons name="logo-whatsapp" size={16} color="#fff" />
+              <Text style={s.waReminderText}>Send Payment Reminder</Text>
+              <Text style={s.waReminderAmount}>₹{remaining.toLocaleString('en-IN')} pending</Text>
+            </TouchableOpacity>
+          ) : booking.amount > 0 ? (
+            <View style={s.payCompleteBadge}>
+              <Ionicons name="checkmark-circle" size={14} color={colors.success} />
+              <Text style={s.payCompleteText}>Payment Completed ✅</Text>
+            </View>
+          ) : null}
         </Section>
 
         {/* ═══ EVENT ═══ */}
@@ -396,6 +426,12 @@ const s = StyleSheet.create({
   contactRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.md },
   contactBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingVertical: spacing.sm + 2, borderRadius: radius.sm, backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border },
   contactText: { ...typography.labelMd, color: colors.text },
+  // WhatsApp Reminder
+  waReminderBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, marginTop: spacing.md, paddingVertical: spacing.md, borderRadius: radius.md, backgroundColor: '#25D366' },
+  waReminderText: { ...typography.labelMd, color: '#fff', fontWeight: '600' },
+  waReminderAmount: { ...typography.caption, color: 'rgba(255,255,255,0.7)', marginLeft: spacing.xs },
+  payCompleteBadge: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, marginTop: spacing.md, paddingVertical: spacing.sm + 2, borderRadius: radius.sm, backgroundColor: 'rgba(16,185,129,0.06)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.15)' },
+  payCompleteText: { ...typography.labelMd, color: colors.success },
   payRecord: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
   payRecordLeft: { flex: 1 },
   payRecordType: { ...typography.labelMd, color: colors.text, textTransform: 'capitalize' },
