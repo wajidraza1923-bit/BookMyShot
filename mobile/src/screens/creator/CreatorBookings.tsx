@@ -164,61 +164,51 @@ export default function CreatorBookings({ navigation }: any) {
         {/* ═══ EXPANDED VIEW ═══ */}
         {isExpanded && (
           <View style={styles.expanded}>
-            {/* Quick Actions — hide payment controls for completed bookings */}
-            {item.status === 'Completed' || item.status === 'completed' ? (
-              <View style={styles.quickActions}>
-                <ActionBtn icon="chatbubble-outline" label="Chat" onPress={() => navigation.navigate('BookingChat', { bookingId: item._id })} />
-                <ActionBtn icon="download-outline" label="Invoice" onPress={async () => {
-                  try {
-                    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-                    const Print = require('expo-print');
-                    const tkn = await AsyncStorage.getItem('bms_token');
-                    const resp = await fetch(`https://site--bookmyshot--ykz2mr8mzlrv.code.run/api/invoice/${item._id}?token=${encodeURIComponent(tkn || '')}`, { headers: { 'Authorization': `Bearer ${tkn}`, 'x-access-token': tkn || '' } });
-                    const htm = await resp.text();
-                    if (!resp.ok || htm.includes('"success":false')) { setToast({ visible: true, type: 'error', title: 'Invoice Error', message: 'Failed to load invoice' }); return; }
-                    await Print.printAsync({ html: htm });
-                  } catch { setToast({ visible: true, type: 'error', title: 'Error', message: 'Invoice download failed' }); }
-                }} />
-                <ActionBtn icon="logo-whatsapp" label="Send" onPress={async () => {
-                  try {
-                    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-                    const Print = require('expo-print');
-                    const Sharing = require('expo-sharing');
-                    const FileSystem = require('expo-file-system');
-                    const tkn = await AsyncStorage.getItem('bms_token');
-                    const resp = await fetch(`https://site--bookmyshot--ykz2mr8mzlrv.code.run/api/invoice/${item._id}?token=${encodeURIComponent(tkn || '')}`, { headers: { 'Authorization': `Bearer ${tkn}`, 'x-access-token': tkn || '' } });
-                    let htm = await resp.text();
-                    if (!resp.ok || htm.includes('"success":false')) { setToast({ visible: true, type: 'error', title: 'Error', message: 'Failed to generate invoice' }); return; }
-                    htm = htm.replace(/<button[^>]*class="print-btn"[^>]*>.*?<\/button>/gi, '');
-                    const { uri } = await Print.printToFileAsync({ html: htm, base64: false });
-                    const pdfName = `BookMyShot-Invoice-${item.invoiceNumber || item._id.slice(-8)}.pdf`;
-                    const newUri = FileSystem.documentDirectory + pdfName;
-                    await FileSystem.moveAsync({ from: uri, to: newUri });
-                    if (await Sharing.isAvailableAsync()) {
-                      await Sharing.shareAsync(newUri, { mimeType: 'application/pdf', dialogTitle: 'Send Invoice via WhatsApp', UTI: 'com.adobe.pdf' });
-                    } else { setToast({ visible: true, type: 'error', title: 'Error', message: 'Sharing not available' }); }
-                  } catch (e: any) { setToast({ visible: true, type: 'error', title: 'Error', message: 'Failed to share invoice' }); }
-                }} />
-              </View>
-            ) : (
-              <View style={styles.quickActions}>
-                <ActionBtn icon="cash-outline" label="Set Amount" onPress={() => { setActiveBookingId(item._id); setAmountInput(String(item.amount || '')); setShowAmountModal(true); }} />
-                <ActionBtn icon="card-outline" label="Record Pay" onPress={() => { setActiveBookingId(item._id); setShowPaymentModal(true); }} />
-                <ActionBtn icon="checkmark-done" label="Mark Paid" onPress={() => markPaid(item._id)} />
-                {['Creator Accepted', 'Payment Submitted', 'Payment Approved', 'Event Scheduled'].includes(item.status) && (
-                  <ActionBtn icon="chatbubble-outline" label="Chat" onPress={() => navigation.navigate('BookingChat', { bookingId: item._id })} />
-                )}
-                {(item.amount || 0) > 0 && ((item.amount || 0) - (item.advancePaid || 0)) > 0 && (
-                  <ActionBtn icon="logo-whatsapp" label="Remind" onPress={() => {
-                    const phone = (item.clientPhone || '').replace(/\D/g, '').slice(-10);
-                    if (!phone) return;
-                    const pending = (item.amount || 0) - (item.advancePaid || 0);
-                    const msg = `Hi ${item.clientName || 'there'},\n\nThis is a payment reminder from *${user?.name || 'Creator'}* via BookMyShot.\n\n• Booking: ${item.invoiceNumber || item._id?.slice(-8)}\n• Event: ${item.eventType || 'Booking'}\n• Total: \u20B9${(item.amount || 0).toLocaleString('en-IN')}\n• Paid: \u20B9${(item.advancePaid || 0).toLocaleString('en-IN')}\n• *Pending: \u20B9${pending.toLocaleString('en-IN')}*\n\nKindly clear your pending amount.\n\nThank you \uD83D\uDE4F\nBookMyShot`;
-                    Linking.openURL(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`);
-                  }} />
-                )}
-              </View>
-            )}
+            {/* Quick Actions — ALL buttons always visible */}
+            <View style={styles.quickActions}>
+              <ActionBtn icon="cash-outline" label="Set Amount" onPress={() => { setActiveBookingId(item._id); setAmountInput(String(item.amount || '')); setShowAmountModal(true); }} />
+              <ActionBtn icon="card-outline" label="Record Pay" onPress={() => { setActiveBookingId(item._id); setShowPaymentModal(true); }} />
+              <ActionBtn icon="checkmark-done" label="Mark Paid" onPress={() => markPaid(item._id)} />
+              <ActionBtn icon="chatbubble-outline" label="Chat" onPress={() => navigation.navigate('BookingChat', { bookingId: item._id })} />
+            </View>
+            <View style={[styles.quickActions, { marginTop: 6 }]}>
+              <ActionBtn icon="logo-whatsapp" label="Remind" onPress={() => {
+                const phone = (item.clientPhone || '').replace(/\D/g, '').slice(-10);
+                if (!phone) return;
+                const pending = Math.max(0, (item.amount || 0) - (item.advancePaid || 0));
+                const msg = `Hi ${item.clientName || 'there'},\n\nPayment reminder from *${user?.name || 'Creator'}* via BookMyShot.\n\n\u2022 Booking: ${item.invoiceNumber || item._id?.slice(-8)}\n\u2022 Event: ${item.eventType || 'Booking'}\n\u2022 Total: \u20B9${(item.amount || 0).toLocaleString('en-IN')}\n\u2022 Paid: \u20B9${(item.advancePaid || 0).toLocaleString('en-IN')}\n\u2022 *Pending: \u20B9${pending.toLocaleString('en-IN')}*\n\nThank you \uD83D\uDE4F\nBookMyShot`;
+                Linking.openURL(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`);
+              }} />
+              <ActionBtn icon="download-outline" label="Invoice" onPress={async () => {
+                try {
+                  const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+                  const Print = require('expo-print');
+                  const tkn = await AsyncStorage.getItem('bms_token');
+                  const resp = await fetch(`https://site--bookmyshot--ykz2mr8mzlrv.code.run/api/invoice/${item._id}?token=${encodeURIComponent(tkn || '')}`, { headers: { 'Authorization': `Bearer ${tkn}`, 'x-access-token': tkn || '' } });
+                  const htm = await resp.text();
+                  if (!resp.ok || htm.includes('"success":false')) { setToast({ visible: true, type: 'error', title: 'Error', message: 'Invoice not available' }); return; }
+                  await Print.printAsync({ html: htm });
+                } catch { setToast({ visible: true, type: 'error', title: 'Error', message: 'Invoice failed' }); }
+              }} />
+              <ActionBtn icon="share-social-outline" label="Send Invoice" onPress={async () => {
+                try {
+                  const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+                  const Print = require('expo-print');
+                  const Sharing = require('expo-sharing');
+                  const FileSystem = require('expo-file-system');
+                  const tkn = await AsyncStorage.getItem('bms_token');
+                  const resp = await fetch(`https://site--bookmyshot--ykz2mr8mzlrv.code.run/api/invoice/${item._id}?token=${encodeURIComponent(tkn || '')}`, { headers: { 'Authorization': `Bearer ${tkn}`, 'x-access-token': tkn || '' } });
+                  let htm = await resp.text();
+                  if (!resp.ok || htm.includes('"success":false')) { setToast({ visible: true, type: 'error', title: 'Error', message: 'Invoice not available' }); return; }
+                  htm = htm.replace(/<button[^>]*class="print-btn"[^>]*>.*?<\/button>/gi, '');
+                  const { uri } = await Print.printToFileAsync({ html: htm, base64: false });
+                  const newUri = FileSystem.documentDirectory + `BookMyShot-Invoice-${item.invoiceNumber || item._id.slice(-8)}.pdf`;
+                  await FileSystem.moveAsync({ from: uri, to: newUri });
+                  if (await Sharing.isAvailableAsync()) { await Sharing.shareAsync(newUri, { mimeType: 'application/pdf', dialogTitle: 'Send Invoice via WhatsApp' }); }
+                } catch { setToast({ visible: true, type: 'error', title: 'Error', message: 'Share failed' }); }
+              }} />
+              <ActionBtn icon="calendar-outline" label="Add Event" onPress={() => { setActiveBookingId(item._id); setShowEventModal(true); }} />
+            </View>
 
             {/* Status Actions — only for non-completed */}
             {item.status === 'Booking Created' && (
