@@ -208,40 +208,53 @@ export default function BookingDetail({ route, navigation }: any) {
       const baseUrl = 'https://site--bookmyshot--ykz2mr8mzlrv.code.run/api';
       const invoiceUrl = `${baseUrl}/invoice/${bookingId}?token=${encodeURIComponent(token || '')}`;
 
-      // Try native PDF sharing (works in EAS builds)
+      // Try native PDF sharing
       let shared = false;
       try {
         const Print = require('expo-print');
         const Sharing = require('expo-sharing');
-        const FileSystem = require('expo-file-system');
 
-        if (Print?.printToFileAsync && Sharing?.isAvailableAsync && FileSystem?.moveAsync) {
+        if (Print?.printToFileAsync && Sharing?.shareAsync) {
+          console.log('[Invoice] Fetching invoice HTML...');
           const response = await fetch(invoiceUrl, { headers: { 'Authorization': `Bearer ${token}`, 'x-access-token': token || '' } });
           let html = await response.text();
-          if (response.ok && html && !html.includes('"success":false')) {
+          
+          if (!response.ok || !html || html.includes('"success":false')) {
+            console.log('[Invoice] Server returned error:', html.substring(0, 100));
+            // Fall through to fallback
+          } else {
+            console.log('[Invoice] HTML received, generating PDF...');
             html = html.replace(/<button[^>]*class="print-btn"[^>]*>.*?<\/button>/gi, '');
-            const { uri } = await Print.printToFileAsync({ html, base64: false });
-            const pdfName = `BookMyShot-Invoice-${booking.invoiceNumber || bookingId.slice(-8)}.pdf`;
-            const newUri = FileSystem.documentDirectory + pdfName;
-            await FileSystem.moveAsync({ from: uri, to: newUri });
+            
+            // Generate PDF — printToFileAsync returns { uri: 'file:///...' }
+            const result = await Print.printToFileAsync({ html });
+            console.log('[Invoice] PDF generated at:', result.uri);
+
+            // Share directly from the generated URI (no moveAsync needed)
             if (await Sharing.isAvailableAsync()) {
-              await Sharing.shareAsync(newUri, { mimeType: 'application/pdf', dialogTitle: 'Send Invoice via WhatsApp' });
+              console.log('[Invoice] Sharing available, opening share sheet...');
+              await Sharing.shareAsync(result.uri, {
+                mimeType: 'application/pdf',
+                dialogTitle: 'Send Invoice via WhatsApp',
+              });
               shared = true;
+              console.log('[Invoice] Share completed successfully');
+            } else {
+              console.log('[Invoice] Sharing not available on this device');
             }
           }
         }
       } catch (e: any) {
-        console.log('[Invoice] Native share failed, using fallback:', e.message);
+        console.log('[Invoice] Native share error:', e.message);
       }
 
-      // Fallback: Open WhatsApp with invoice link + message
+      // Fallback: Open WhatsApp with invoice link
       if (!shared) {
         const phone = (booking.clientPhone || '').replace(/\D/g, '').slice(-10);
-        const msg = `Hi ${booking.clientName || 'there'},\n\nYour booking invoice is ready.\n\nDownload here: ${invoiceUrl}\n\nThank you!\nBookMyShot`;
+        const msg = `Hi ${booking.clientName || 'there'},\n\nYour booking invoice is ready.\n\nView/Download: ${invoiceUrl}\n\nThank you!\nBookMyShot`;
         if (phone) {
           Linking.openURL(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`);
         } else {
-          // No phone — just share the link
           Linking.openURL(invoiceUrl);
         }
       }

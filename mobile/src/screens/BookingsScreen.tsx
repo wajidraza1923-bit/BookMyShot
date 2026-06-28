@@ -195,16 +195,13 @@ export default function BookingsScreen({ navigation }: any) {
                         try {
                           const Print = require('expo-print');
                           const Sharing = require('expo-sharing');
-                          const FileSystem = require('expo-file-system');
-                          if (Print?.printToFileAsync && Sharing?.isAvailableAsync && FileSystem?.moveAsync) {
+                          if (Print?.printToFileAsync && Sharing?.shareAsync) {
                             const resp = await fetch(invoiceUrl, { headers: { 'Authorization': `Bearer ${tkn}`, 'x-access-token': tkn || '' } });
                             let htm = await resp.text();
                             if (resp.ok && htm && !htm.includes('"success":false')) {
                               htm = htm.replace(/<button[^>]*class="print-btn"[^>]*>.*?<\/button>/gi, '');
-                              const { uri } = await Print.printToFileAsync({ html: htm, base64: false });
-                              const newUri = FileSystem.documentDirectory + `BookMyShot-Invoice-${b.invoiceNumber || b._id.slice(-8)}.pdf`;
-                              await FileSystem.moveAsync({ from: uri, to: newUri });
-                              if (await Sharing.isAvailableAsync()) { await Sharing.shareAsync(newUri, { mimeType: 'application/pdf', dialogTitle: 'Share Invoice' }); shared = true; }
+                              const result = await Print.printToFileAsync({ html: htm });
+                              if (await Sharing.isAvailableAsync()) { await Sharing.shareAsync(result.uri, { mimeType: 'application/pdf', dialogTitle: 'Share Invoice' }); shared = true; }
                             }
                           }
                         } catch {}

@@ -185,16 +185,18 @@ export default function CreatorBookings({ navigation }: any) {
                     const AsyncStorage = require('@react-native-async-storage/async-storage').default;
                     const Print = require('expo-print');
                     const Sharing = require('expo-sharing');
-                    const FileSystem = require('expo-file-system');
                     const tkn = await AsyncStorage.getItem('bms_token');
                     const resp = await fetch(`https://site--bookmyshot--ykz2mr8mzlrv.code.run/api/invoice/${item._id}?token=${encodeURIComponent(tkn || '')}`, { headers: { 'Authorization': `Bearer ${tkn}`, 'x-access-token': tkn || '' } });
                     let htm = await resp.text();
                     if (!resp.ok || htm.includes('"success":false')) { setToast({ visible: true, type: 'error', title: 'Error', message: 'Invoice not available' }); return; }
                     htm = htm.replace(/<button[^>]*class="print-btn"[^>]*>.*?<\/button>/gi, '');
-                    const { uri } = await Print.printToFileAsync({ html: htm, base64: false });
-                    const newUri = FileSystem.documentDirectory + `BookMyShot-Invoice-${item.invoiceNumber || item._id.slice(-8)}.pdf`;
-                    await FileSystem.moveAsync({ from: uri, to: newUri });
-                    if (await Sharing.isAvailableAsync()) { await Sharing.shareAsync(newUri, { mimeType: 'application/pdf', dialogTitle: 'Send Invoice via WhatsApp' }); }
+                    const result = await Print.printToFileAsync({ html: htm });
+                    if (await Sharing.isAvailableAsync()) {
+                      await Sharing.shareAsync(result.uri, { mimeType: 'application/pdf', dialogTitle: 'Send Invoice via WhatsApp' });
+                    } else {
+                      const phone = (item.clientPhone || '').replace(/\D/g, '').slice(-10);
+                      if (phone) Linking.openURL(`https://wa.me/91${phone}?text=${encodeURIComponent('Invoice ready: https://site--bookmyshot--ykz2mr8mzlrv.code.run/api/invoice/' + item._id + '?token=' + encodeURIComponent(tkn || ''))}`);
+                    }
                   } catch { setToast({ visible: true, type: 'error', title: 'Error', message: 'Share failed' }); }
                 }} />
               </View>
