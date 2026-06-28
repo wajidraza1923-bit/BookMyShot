@@ -169,6 +169,47 @@ export default function BookingsScreen({ navigation }: any) {
                   </TouchableOpacity>
                 )}
 
+                {/* Invoice buttons — only for completed bookings */}
+                {(b.status === 'Completed' || b.status === 'completed') && (
+                  <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+                    <TouchableOpacity style={[s.chatBtn, { flex: 1 }]} onPress={async () => {
+                      try {
+                        const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+                        const Print = require('expo-print');
+                        const tkn = await AsyncStorage.getItem('bms_token');
+                        const resp = await fetch(`https://site--bookmyshot--ykz2mr8mzlrv.code.run/api/invoice/${b._id}?token=${encodeURIComponent(tkn || '')}`, { headers: { 'Authorization': `Bearer ${tkn}`, 'x-access-token': tkn || '' } });
+                        const htm = await resp.text();
+                        if (!resp.ok || htm.includes('"success":false')) { Alert.alert('Error', 'Failed to load invoice'); return; }
+                        await Print.printAsync({ html: htm });
+                      } catch { Alert.alert('Error', 'Invoice download failed'); }
+                    }} activeOpacity={0.7}>
+                      <Ionicons name="document-text-outline" size={16} color={colors.primary} />
+                      <Text style={s.chatBtnText}>Download Invoice</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[s.chatBtn, { flex: 1, borderColor: 'rgba(34,197,94,0.3)', backgroundColor: 'rgba(34,197,94,0.04)' }]} onPress={async () => {
+                      try {
+                        const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+                        const Print = require('expo-print');
+                        const Sharing = require('expo-sharing');
+                        const FileSystem = require('expo-file-system');
+                        const tkn = await AsyncStorage.getItem('bms_token');
+                        const resp = await fetch(`https://site--bookmyshot--ykz2mr8mzlrv.code.run/api/invoice/${b._id}?token=${encodeURIComponent(tkn || '')}`, { headers: { 'Authorization': `Bearer ${tkn}`, 'x-access-token': tkn || '' } });
+                        let htm = await resp.text();
+                        if (!resp.ok || htm.includes('"success":false')) { Alert.alert('Error', 'Failed to generate invoice'); return; }
+                        htm = htm.replace(/<button[^>]*class="print-btn"[^>]*>.*?<\/button>/gi, '');
+                        const { uri } = await Print.printToFileAsync({ html: htm, base64: false });
+                        const pdfName = `BookMyShot-Invoice-${b.invoiceNumber || b._id.slice(-8)}.pdf`;
+                        const newUri = FileSystem.documentDirectory + pdfName;
+                        await FileSystem.moveAsync({ from: uri, to: newUri });
+                        if (await Sharing.isAvailableAsync()) { await Sharing.shareAsync(newUri, { mimeType: 'application/pdf', dialogTitle: 'Share Invoice' }); }
+                      } catch { Alert.alert('Error', 'Share failed'); }
+                    }} activeOpacity={0.7}>
+                      <Ionicons name="share-outline" size={16} color="#22C55E" />
+                      <Text style={[s.chatBtnText, { color: '#22C55E' }]}>Share PDF</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
                 {/* Booking meta */}
                 <View style={s.meta}>
                   <Text style={s.metaText}>ID: {b.invoiceNumber || b._id?.slice(-8)}</Text>
