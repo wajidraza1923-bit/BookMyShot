@@ -58,7 +58,7 @@ export default function CreatorProfileScreen({ route, navigation }: any) {
   const user = creator.user || {};
   const name = user.name || 'Creator';
   const avatar = user.avatar || '';
-  const portfolio = creator.portfolio || [];
+  const portfolio = (creator.portfolio || []).map((item: any) => typeof item === 'string' ? item : item?.url || item?.secure_url || '').filter(Boolean);
   const videos = creator.videos || [];
   const packages = creator.packages || [];
   const social = creator.social || {};
@@ -76,7 +76,7 @@ export default function CreatorProfileScreen({ route, navigation }: any) {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* HERO */}
         <View style={s.hero}>
-          <Image source={{ uri: portfolio[0] || avatar || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=800' }} style={s.heroImg} />
+          <Image source={{ uri: (typeof portfolio[0] === 'string' ? portfolio[0] : '') || avatar || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=800' }} style={s.heroImg} />
           <View style={s.heroGrad} />
           {/* Nav */}
           <View style={s.heroNav}>

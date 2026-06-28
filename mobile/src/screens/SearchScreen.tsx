@@ -36,6 +36,10 @@ const DEFAULT_INSPIRATION = [
   { title: 'Cinematic Films', imageUrl: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=400' },
 ];
 
+
+// Helper: safely extract image URI from portfolio item (can be string or object)
+function _img(item: any): string { if (!item) return ''; if (typeof item === 'string') return item; return item?.url || item?.secure_url || item?.uri || ''; }
+
 export default function SearchScreen({ navigation, route }: any) {
   const [query, setQuery] = useState('');
   const [creators, setCreators] = useState<any[]>([]);
@@ -160,7 +164,7 @@ function DiscoverContent({ districts, trendingSearches, categories, inspiration,
         <FlatList horizontal showsHorizontalScrollIndicator={false} data={featuredCreators} contentContainerStyle={{ paddingHorizontal: 20 }} keyExtractor={(i: any) => i._id}
           renderItem={({ item }: any) => (
             <TouchableOpacity style={s.fcCard} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })}>
-              <Image source={{ uri: item.portfolio?.[0] || item.user?.avatar || 'https://via.placeholder.com/300x180' }} style={s.fcImg} />
+              <Image source={{ uri: _img(item.portfolio?.[0]) || item.user?.avatar || 'https://via.placeholder.com/300x180' }} style={s.fcImg} />
               <View style={s.fcOverlay} />
               <View style={s.fcBadge}><Ionicons name="star" size={8} color="#000" /><Text style={s.fcBadgeText}>FEATURED</Text></View>
               {item.verified && <View style={s.fcVerified}><Ionicons name="checkmark" size={9} color="#fff" /></View>}
@@ -194,7 +198,7 @@ function DiscoverContent({ districts, trendingSearches, categories, inspiration,
           renderItem={({ item, index }: any) => (
             <TouchableOpacity style={s.trCard} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })}>
               <View style={s.trRank}><Text style={s.trRankText}>#{index + 1}</Text></View>
-              <Image source={{ uri: item.user?.avatar || item.portfolio?.[0] || 'https://via.placeholder.com/100' }} style={s.trAvatar} />
+              <Image source={{ uri: _img(item.user?.avatar) || _img(item.portfolio?.[0]) || 'https://via.placeholder.com/100' }} style={s.trAvatar} />
               <Text style={s.trName} numberOfLines={1}>{item.user?.name}</Text>
               <Text style={s.trCity}>{item.city || item.specialty}</Text>
               <View style={s.trRatingRow}><Ionicons name="star" size={9} color="#FF8C2B" /><Text style={s.trRatingText}>{item.rating || '5.0'}</Text></View>
@@ -245,7 +249,7 @@ function ResultsList({ creators, navigation, districts, selectedCity, setSelecte
       keyExtractor={(i: any) => i._id}
       renderItem={({ item }: any) => (
         <TouchableOpacity style={s.resCard} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })} activeOpacity={0.85}>
-          <Image source={{ uri: item.portfolio?.[0] || item.user?.avatar || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=300' }} style={s.resImg} />
+          <Image source={{ uri: _img(item.portfolio?.[0]) || item.user?.avatar || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=300' }} style={s.resImg} />
           <View style={s.resInfo}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <Text style={s.resName} numberOfLines={1}>{item.user?.name || 'Creator'}</Text>

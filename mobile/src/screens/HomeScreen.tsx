@@ -53,6 +53,10 @@ function Counter({ end, suffix = '+' }: { end: number; suffix?: string }) {
   return <Text style={s.counterNum}>{val.toLocaleString('en-IN')}{suffix}</Text>;
 }
 
+
+// Helper: safely extract image URI from portfolio item (can be string or object)
+function _img(item: any): string { if (!item) return ''; if (typeof item === 'string') return item; return item?.url || item?.secure_url || item?.uri || ''; }
+
 export default function HomeScreen({ navigation }: any) {
   const { isAuthenticated } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
@@ -297,7 +301,7 @@ export default function HomeScreen({ navigation }: any) {
           <FlatList horizontal showsHorizontalScrollIndicator={false} data={topRated.slice(0, 4)} contentContainerStyle={{ paddingHorizontal: 20 }} keyExtractor={i => i._id}
             renderItem={({ item, index }) => (
               <TouchableOpacity style={s.brCard} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })} activeOpacity={0.85}>
-                <Image source={{ uri: item.portfolio?.[0] || item.user?.avatar || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=300' }} style={s.brImg} />
+                <Image source={{ uri: _img(item.portfolio?.[0]) || item.user?.avatar || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=300' }} style={s.brImg} />
                 <View style={s.brRank}><Text style={s.brRankText}>#{index + 1}</Text></View>
                 <View style={s.brInfo}>
                   <Text style={s.brName} numberOfLines={1}>{item.user?.name || 'Creator'}</Text>
@@ -344,7 +348,7 @@ export default function HomeScreen({ navigation }: any) {
           <View style={{ paddingHorizontal: 20, marginTop: 36, marginBottom: 14 }}><Text style={s.secLabel}>DISCOVER</Text><Text style={s.secTitle2}>All Creators</Text></View>
           <View style={s.grid}>{creators.slice(0, 4).map(item => (
             <TouchableOpacity key={item._id} style={s.gCard} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })} activeOpacity={0.85}>
-              <Image source={{ uri: item.portfolio?.[0] || item.user?.avatar || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=300' }} style={s.gImg} />
+              <Image source={{ uri: _img(item.portfolio?.[0]) || item.user?.avatar || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=300' }} style={s.gImg} />
               <View style={s.gInfo}><Text style={s.gName} numberOfLines={1}>{item.user?.name || 'Creator'}</Text><Text style={s.gMeta}>{item.specialty} • {item.city}</Text>
               <View style={s.gRow}><Ionicons name="star" size={10} color="#FF8C2B" /><Text style={s.gRating}>{item.rating || '5.0'}</Text>{item.startingPrice > 0 && <Text style={s.gPrice}>₹{item.startingPrice?.toLocaleString('en-IN')}</Text>}</View></View>
             </TouchableOpacity>
@@ -509,7 +513,7 @@ function PremiumCard({ item, onPress, badge }: any) {
       <TouchableOpacity style={s.pCard} onPress={onPress} activeOpacity={1}
         onPressIn={() => Animated.spring(scale, { toValue: 1.035, useNativeDriver: true, tension: 300, friction: 10 }).start()}
         onPressOut={() => Animated.spring(scale, { toValue: 1, useNativeDriver: true, tension: 300, friction: 10 }).start()}>
-        <Image source={{ uri: item.portfolio?.[0] || item.user?.avatar || WEDDING_IMGS[1] }} style={s.pImg} />
+        <Image source={{ uri: _img(item.portfolio?.[0]) || item.user?.avatar || WEDDING_IMGS[1] }} style={s.pImg} />
         <View style={s.pOverlay} />
         {/* Badge */}
         <View style={s.pBadgeRow}>

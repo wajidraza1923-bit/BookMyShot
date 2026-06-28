@@ -10,6 +10,10 @@ import api from '../services/api';
 
 const { width } = Dimensions.get('window');
 
+
+// Helper: safely extract image URI from portfolio item (can be string or object)
+function _img(item: any): string { if (!item) return ''; if (typeof item === 'string') return item; return item?.url || item?.secure_url || item?.uri || ''; }
+
 export default function AllCreatorsScreen({ navigation }: any) {
   const [creators, setCreators] = useState<any[]>([]);
   const [districts, setDistricts] = useState<any[]>([]);
@@ -77,7 +81,7 @@ export default function AllCreatorsScreen({ navigation }: any) {
           ListEmptyComponent={<View style={st.empty}><Ionicons name="people-outline" size={32} color="rgba(255,255,255,0.08)" /><Text style={st.emptyTitle}>No creators found{selectedDistrict ? ` in ${selectedDistrict}` : ''}</Text><Text style={st.emptySub}>Try a different district or search term</Text></View>}
           renderItem={({ item }: any) => (
             <TouchableOpacity style={st.card} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })} activeOpacity={0.85}>
-              <Image source={{ uri: item.portfolio?.[0] || item.user?.avatar || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=300' }} style={st.cardImg} />
+              <Image source={{ uri: _img(item.portfolio?.[0]) || item.user?.avatar || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=300' }} style={st.cardImg} />
               <View style={st.cardBody}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <Text style={st.cardName} numberOfLines={1}>{item.user?.name || 'Creator'}</Text>

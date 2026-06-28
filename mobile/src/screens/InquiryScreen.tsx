@@ -9,6 +9,10 @@ import { Ionicons } from '@expo/vector-icons';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
+
+// Helper: safely extract image URI from portfolio item (can be string or object)
+function _img(item: any): string { if (!item) return ''; if (typeof item === 'string') return item; return item?.url || item?.secure_url || item?.uri || ''; }
+
 export default function InquiryScreen({ route, navigation }: any) {
   const { isAuthenticated, user } = useAuth();
   const creatorId = route?.params?.creatorId;
@@ -234,7 +238,7 @@ export default function InquiryScreen({ route, navigation }: any) {
             {allCreators.length === 0 ? <ActivityIndicator color="#FF8C2B" style={{ marginTop: 30 }} /> :
               allCreators.map(c => (
                 <TouchableOpacity key={c._id} style={[s.creatorRow, selectedCreatorId === c._id && s.creatorRowActive]} onPress={() => setSelectedCreatorId(c._id)}>
-                  <Image source={{ uri: c.user?.avatar || c.portfolio?.[0] }} style={s.creatorAvatar} />
+                  <Image source={{ uri: _img(c.user?.avatar) || _img(c.portfolio?.[0]) }} style={s.creatorAvatar} />
                   <View style={{ flex: 1 }}>
                     <Text style={s.creatorName}>{c.user?.name || 'Creator'}</Text>
                     <Text style={s.creatorMeta}>{c.specialty || 'Photographer'} • {c.city || 'J&K'}</Text>
