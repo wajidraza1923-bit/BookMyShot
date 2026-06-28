@@ -86,7 +86,11 @@ export default function CreatorBookings({ navigation }: any) {
     finally { setSavingPayment(false); }
   };
 
-  const markPaid = (id: string) => setConfirmModal({ visible: true, title: 'Mark Fully Paid', message: 'Are you sure this booking is fully paid?', confirmText: 'Confirm', onConfirm: async () => { setConfirmModal({ ...confirmModal, visible: false }); try { await api.patch(`/payment-records/booking/${id}/mark-paid`); await load(); setToast({ visible: true, type: 'success', title: 'Marked Paid' }); } catch (e: any) { setToast({ visible: true, type: 'error', title: 'Failed', message: e.response?.data?.message || 'Failed' }); } } });
+  const markPaid = (id: string) => {
+    // Navigate to BookingDetail where the proper Mark Paid → Mark Complete flow exists
+    navigation.navigate('BookingDetail', { bookingId: id });
+    setToast({ visible: true, type: 'info', title: 'Open Booking', message: 'Use Mark Paid in the full booking view' });
+  };
 
   const addEvent = async () => {
     if (!eventForm.name || !eventForm.date) { setToast({ visible: true, type: 'error', title: 'Missing Fields', message: 'Event name and date are required' }); return; }
