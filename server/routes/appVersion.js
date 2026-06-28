@@ -1,15 +1,13 @@
 /**
- * App Version & Force Update API — Production
+ * App Version & Update API — GitHub Releases Based
  * 
  * PUBLIC (no auth):
  *   GET  /api/app-version          — Mobile checks on every startup
- *   GET  /api/app-version/download — Redirects to latest APK
+ *   GET  /api/app-version/download — Redirects to latest APK (GitHub Release URL)
  * 
  * ADMIN (auth required):
- *   GET  /api/app-version/history  — All versions
- *   POST /api/app-version/get-upload-params — Get Cloudinary direct upload params
- *   POST /api/app-version/publish  — Publish version with pre-uploaded APK URL
- *   POST /api/app-version          — Legacy: Publish with server-side upload (small files only)
+ *   GET  /api/app-version/history  — All published versions
+ *   POST /api/app-version/publish  — Publish new version (GitHub Release URL + metadata)
  *   PUT  /api/app-version/:id      — Edit existing version
  *   DELETE /api/app-version/:id    — Remove version
  */
@@ -17,22 +15,6 @@ const express = require("express");
 const router = express.Router();
 const AppVersion = require("../models/AppVersion");
 const { protect, authorize } = require("../middleware/auth");
-const multer = require("multer");
-const crypto = require("crypto");
-
-// Use memory storage for APK — only for small files as fallback
-const apkUpload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 500 * 1024 * 1024 }, // 500MB
-  fileFilter: (req, file, cb) => {
-    const ext = require("path").extname(file.originalname).toLowerCase();
-    if (ext === '.apk' || ext === '.aab' || file.mimetype === 'application/vnd.android.package-archive' || file.mimetype === 'application/octet-stream') {
-      cb(null, true);
-    } else {
-      cb(new Error("Only .apk and .aab files are allowed"), false);
-    }
-  },
-});
 
 // ═══════════════════════════════════════════════════════════════
 // PUBLIC: Mobile app calls this on EVERY startup
@@ -46,20 +28,17 @@ router.get("/", async (req, res) => {
     }
     res.json({
       success: true,
-      // Standard fields (used by mobile app)
       version: latest.version,
       versionCode: latest.versionCode,
       title: latest.title || "Update Available",
       description: latest.description || "",
       downloadUrl: latest.downloadUrl,
-      playStoreUrl: latest.playStoreUrl,
       forceUpdate: latest.forceUpdate,
       optionalUpdate: latest.optionalUpdate,
       minVersionCode: latest.minVersionCode,
       publishedAt: latest.createdAt,
-      fileSize: latest.fileSize || 0,
       releaseNotes: latest.releaseNotes || latest.description || "",
-      // Snake_case aliases (for external consumers)
+      // Aliases for compatibility
       latest_version: latest.version,
       version_code: latest.versionCode,
       force_update: latest.forceUpdate,
@@ -73,17 +52,18 @@ router.get("/", async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════
-// PUBLIC: Direct APK download
+// PUBLIC: Redirect to latest APK download (GitHub Release URL)
+// Used by website "Download App" button
 // ═══════════════════════════════════════════════════════════════
 router.get("/download", async (req, res) => {
   try {
     const latest = await AppVersion.findOne({ published: true, downloadUrl: { $ne: "" } }).sort("-versionCode").lean();
     if (!latest || !latest.downloadUrl) {
-      return res.status(404).json({ success: false, message: "No APK available" });
+      return res.status(404).json({ success: false, message: "No APK available. Please check back later." });
     }
     res.redirect(302, latest.downloadUrl);
   } catch (e) {
-    res.status(500).json({ success: false, message: "Error" });
+    res.status(500).json({ success: false, message: "Error fetching download link" });
   }
 });
 
@@ -100,197 +80,78 @@ router.get("/history", protect, authorize("admin"), async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════
-// ADMIN: Get Cloudinary direct upload params (browser uploads directly)
-// ═══════════════════════════════════════════════════════════════
-router.post("/get-upload-params", protect, authorize("admin"), (req, res) => {
-  try {
-    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-    const apiKey = process.env.CLOUDINARY_API_KEY;
-    const apiSecret = process.env.CLOUDINARY_API_SECRET;
-    if (!cloudName || !apiKey || !apiSecret) {
-      return res.status(503).json({ success: false, message: "Cloudinary not configured on server" });
-    }
-    const timestamp = Math.round(Date.now() / 1000);
-    const folder = "bookmyshot/releases";
-    const paramsToSign = `folder=${folder}&resource_type=raw&timestamp=${timestamp}`;
-    const signature = crypto.createHash("sha1").update(paramsToSign + apiSecret).digest("hex");
-
-    res.json({
-      success: true,
-      cloudName,
-      apiKey,
-      timestamp,
-      signature,
-      folder,
-    });
-  } catch (e) {
-    res.status(500).json({ success: false, message: e.message });
-  }
-});
-
-// ═══════════════════════════════════════════════════════════════
-// ADMIN: Publish version (APK already uploaded to Cloudinary)
-// No file upload — just metadata + the Cloudinary URL
+// ADMIN: Publish new version (GitHub Release URL + metadata only)
+// No file upload — admin pastes the GitHub Release APK URL
 // ═══════════════════════════════════════════════════════════════
 router.post("/publish", protect, authorize("admin"), async (req, res) => {
   try {
-    const { version, versionCode, title, description, downloadUrl, forceUpdate, optionalUpdate, minVersionCode, fileSize } = req.body;
+    const { version, versionCode, title, description, downloadUrl, forceUpdate, optionalUpdate, minVersionCode } = req.body;
+
+    // Validation
     if (!version || !versionCode) {
-      return res.status(400).json({ success: false, message: "Version name and code are required" });
+      return res.status(400).json({ success: false, message: "Version name and version code are required" });
     }
-    if (!downloadUrl) {
-      return res.status(400).json({ success: false, message: "Download URL is required (upload APK first)" });
+    if (!downloadUrl || !downloadUrl.trim()) {
+      return res.status(400).json({ success: false, message: "APK Download URL is required. Upload APK to GitHub Releases and paste the direct download link." });
     }
+
     const code = parseInt(versionCode);
-    const existing = await AppVersion.findOne({ versionCode: code });
-    if (existing) {
-      return res.status(400).json({ success: false, message: `Version code ${code} already exists` });
+    if (isNaN(code) || code < 1) {
+      return res.status(400).json({ success: false, message: "Version code must be a positive number" });
+    }
+
+    // Check duplicates
+    const existingCode = await AppVersion.findOne({ versionCode: code });
+    if (existingCode) {
+      return res.status(400).json({ success: false, message: `Version code ${code} already exists. Use a higher number.` });
+    }
+    const existingName = await AppVersion.findOne({ version: version.trim() });
+    if (existingName) {
+      return res.status(400).json({ success: false, message: `Version "${version}" already exists.` });
+    }
+
+    // Check version code is greater than latest
+    const latest = await AppVersion.findOne({ published: true }).sort("-versionCode").lean();
+    if (latest && code <= latest.versionCode) {
+      return res.status(400).json({ success: false, message: `Version code must be greater than current (${latest.versionCode}). Use ${latest.versionCode + 1} or higher.` });
     }
 
     const record = await AppVersion.create({
-      version,
+      version: version.trim(),
       versionCode: code,
       title: title || `BookMyShot v${version}`,
       description: description || "",
-      releaseNotes: req.body.releaseNotes || description || "",
-      downloadUrl,
-      fileSize: parseInt(fileSize) || 0,
+      releaseNotes: description || "",
+      downloadUrl: downloadUrl.trim(),
       forceUpdate: forceUpdate === "true" || forceUpdate === true,
       optionalUpdate: optionalUpdate !== "false" && optionalUpdate !== false,
       minVersionCode: parseInt(minVersionCode) || 1,
       published: true,
     });
 
-    // Real-time notify
+    // Real-time notify admin panel
     try {
       const socketService = require("../services/socketService");
-      socketService.emitToRole("admin", "appVersion:published", { version, versionCode: code, downloadUrl, forceUpdate: record.forceUpdate });
+      socketService.emitToRole("admin", "appVersion:published", {
+        version: record.version,
+        versionCode: code,
+        downloadUrl: record.downloadUrl,
+        forceUpdate: record.forceUpdate,
+      });
     } catch (e) {}
 
-    // Push notification to all users
+    // Push notification to all app users
     try {
       const pushService = require("../services/pushService");
-      const updateTitle = record.forceUpdate ? "🔴 Critical App Update" : "📲 App Update Available";
-      const updateBody = record.forceUpdate
-        ? `BookMyShot v${version} is required. Please update now.`
-        : `BookMyShot v${version} is available. Update now!`;
-      await pushService.broadcast(updateTitle, updateBody, { type: "app_update", targetScreen: "Settings" });
-    } catch (e) {}
-
-    console.log(`[AppVersion] ✅ Published v${version} (code ${code}) via direct upload`);
-    res.status(201).json({ success: true, message: `v${version} published successfully`, data: record });
-  } catch (e) {
-    console.error("[AppVersion] Publish error:", e.message);
-    res.status(500).json({ success: false, message: e.message });
-  }
-});
-
-// ═══════════════════════════════════════════════════════════════
-// ADMIN: Publish new version (LEGACY — server-side upload, may timeout for large files)
-// ═══════════════════════════════════════════════════════════════
-router.post("/", protect, authorize("admin"), (req, res, next) => {
-  // Handle multer upload with explicit error handling
-  apkUpload.single("apk")(req, res, (multerErr) => {
-    if (multerErr) {
-      console.error("[AppVersion] Multer upload error:", multerErr.message);
-      if (multerErr.code === 'LIMIT_FILE_SIZE') {
-        return res.status(413).json({ success: false, message: "APK file too large. Maximum size is 500MB." });
-      }
-      return res.status(400).json({ success: false, message: "Upload error: " + multerErr.message });
-    }
-    next();
-  });
-}, async (req, res) => {
-  try {
-    const { version, versionCode, title, description, forceUpdate, optionalUpdate, downloadUrl, playStoreUrl, minVersionCode } = req.body;
-
-    if (!version || !versionCode) {
-      return res.status(400).json({ success: false, message: "Version name and code are required" });
-    }
-
-    const code = parseInt(versionCode);
-    const existing = await AppVersion.findOne({ versionCode: code });
-    if (existing) {
-      return res.status(400).json({ success: false, message: `Version code ${code} already exists` });
-    }
-
-    // Upload APK — try Cloudinary first, fallback to disk
-    let apkUrl = downloadUrl || "";
-    let fileSize = 0;
-    if (req.file) {
-      fileSize = req.file.size || 0;
-      console.log(`[AppVersion] Processing APK: ${req.file.originalname} (${(fileSize / 1024 / 1024).toFixed(1)} MB)`);
-      
-      // Try Cloudinary for smaller files (< 100MB), disk for larger
-      const { uploadBuffer, isConfigured } = require("../services/cloudinaryService");
-      const useCloudinary = isConfigured() && fileSize < 100 * 1024 * 1024; // 100MB limit for Cloudinary
-      
-      if (useCloudinary) {
-        try {
-          console.log(`[AppVersion] Uploading to Cloudinary (raw)...`);
-          const result = await uploadBuffer(req.file.buffer, {
-            folder: "bookmyshot/releases",
-            resourceType: "raw",
-            publicId: `bookmyshot-v${version}-${code}`,
-          });
-          apkUrl = result.url;
-          console.log(`[AppVersion] ✅ APK uploaded to Cloudinary: ${apkUrl}`);
-        } catch (cloudErr) {
-          console.error("[AppVersion] Cloudinary failed, falling back to disk:", cloudErr.message);
-          // Fall through to disk storage
-        }
-      }
-      
-      // Disk fallback (or primary for large files)
-      if (!apkUrl) {
-        try {
-          const fs = require("fs");
-          const path = require("path");
-          const dir = path.join(__dirname, "../../public/releases");
-          if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-          const filename = `bookmyshot-v${version}-${code}.apk`;
-          fs.writeFileSync(path.join(dir, filename), req.file.buffer);
-          apkUrl = `/releases/${filename}`;
-          console.log(`[AppVersion] ✅ APK saved to disk: ${filename}`);
-        } catch (diskErr) {
-          console.error("[AppVersion] Disk save also failed:", diskErr.message);
-          return res.status(500).json({ success: false, message: "APK storage failed. Both Cloudinary and disk storage unavailable. Error: " + diskErr.message });
-        }
-      }
-    }
-
-    const record = await AppVersion.create({
-      version,
-      versionCode: code,
-      title: title || `BookMyShot v${version}`,
-      description: description || "",
-      releaseNotes: req.body.releaseNotes || description || "",
-      downloadUrl: apkUrl,
-      playStoreUrl: playStoreUrl || "",
-      fileSize,
-      forceUpdate: forceUpdate === "true" || forceUpdate === true,
-      optionalUpdate: optionalUpdate !== "false" && optionalUpdate !== false,
-      minVersionCode: parseInt(minVersionCode) || 1,
-      published: true,
-    });
-
-    // Real-time: notify all admin clients about the new version
-    try {
-      const socketService = require("../services/socketService");
-      socketService.emitToRole("admin", "appVersion:published", { version, versionCode: code, downloadUrl: apkUrl, forceUpdate: record.forceUpdate });
-    } catch (e) {}
-
-    // ═══ NOTIFICATION: App Update Available (to all users with push tokens) ═══
-    try {
-      const pushService = require("../services/pushService");
-      const updateTitle = record.forceUpdate ? "🔴 Critical App Update" : "📲 App Update Available";
+      const updateTitle = record.forceUpdate ? "🔴 Critical App Update Required" : "📲 App Update Available";
       const updateBody = record.forceUpdate
         ? `BookMyShot v${version} is required. Please update now for continued access.`
         : `BookMyShot v${version} is available with new features and improvements. Update now!`;
       await pushService.broadcast(updateTitle, updateBody, { type: "app_update", targetScreen: "Settings" });
-    } catch (e) { console.log("[AppVersion] Broadcast notification failed (non-fatal):", e.message); }
+    } catch (e) { console.log("[AppVersion] Push broadcast failed (non-fatal):", e.message); }
 
-    res.status(201).json({ success: true, message: `v${version} published`, data: record });
+    console.log(`[AppVersion] ✅ Published v${version} (code ${code}) — ${downloadUrl}`);
+    res.status(201).json({ success: true, message: `v${version} published successfully!`, data: record });
   } catch (e) {
     console.error("[AppVersion] Publish error:", e.message);
     res.status(500).json({ success: false, message: e.message });
@@ -298,54 +159,33 @@ router.post("/", protect, authorize("admin"), (req, res, next) => {
 });
 
 // ═══════════════════════════════════════════════════════════════
-// ADMIN: Edit version
+// ADMIN: Edit existing version
 // ═══════════════════════════════════════════════════════════════
-router.put("/:id", protect, authorize("admin"), apkUpload.single("apk"), async (req, res) => {
+router.put("/:id", protect, authorize("admin"), async (req, res) => {
   try {
     const record = await AppVersion.findById(req.params.id);
-    if (!record) return res.status(404).json({ success: false, message: "Not found" });
+    if (!record) return res.status(404).json({ success: false, message: "Version not found" });
 
-    const { version, versionCode, title, description, forceUpdate, optionalUpdate, downloadUrl, playStoreUrl, minVersionCode, published } = req.body;
+    const { version, versionCode, title, description, forceUpdate, optionalUpdate, downloadUrl, minVersionCode, published } = req.body;
 
     if (version) record.version = version;
     if (versionCode) record.versionCode = parseInt(versionCode);
     if (title !== undefined) record.title = title;
-    if (description !== undefined) record.description = description;
+    if (description !== undefined) { record.description = description; record.releaseNotes = description; }
     if (forceUpdate !== undefined) record.forceUpdate = forceUpdate === "true" || forceUpdate === true;
     if (optionalUpdate !== undefined) record.optionalUpdate = optionalUpdate === "true" || optionalUpdate === true;
     if (downloadUrl) record.downloadUrl = downloadUrl;
-    if (playStoreUrl !== undefined) record.playStoreUrl = playStoreUrl;
     if (minVersionCode) record.minVersionCode = parseInt(minVersionCode);
     if (published !== undefined) record.published = published === "true" || published === true;
 
-    if (req.file) {
-      // Upload new APK to Cloudinary
-      try {
-        const { uploadBuffer, isConfigured } = require("../services/cloudinaryService");
-        if (isConfigured()) {
-          const result = await uploadBuffer(req.file.buffer, {
-            folder: "bookmyshot/releases",
-            resourceType: "raw",
-            publicId: `bookmyshot-v${record.version}-${record.versionCode}`,
-          });
-          record.downloadUrl = result.url;
-          record.fileSize = req.file.size || 0;
-          console.log(`[AppVersion] APK updated on Cloudinary: ${result.url}`);
-        }
-      } catch (uploadErr) {
-        console.error("[AppVersion] APK update upload error:", uploadErr.message);
-      }
-    }
-
     await record.save();
 
-    // Real-time sync
     try {
       const socketService = require("../services/socketService");
       socketService.emitToRole("admin", "appVersion:published", { version: record.version, versionCode: record.versionCode, forceUpdate: record.forceUpdate });
     } catch (e) {}
 
-    res.json({ success: true, message: "Updated", data: record });
+    res.json({ success: true, message: "Version updated", data: record });
   } catch (e) {
     res.status(500).json({ success: false, message: e.message });
   }
@@ -357,7 +197,7 @@ router.put("/:id", protect, authorize("admin"), apkUpload.single("apk"), async (
 router.delete("/:id", protect, authorize("admin"), async (req, res) => {
   try {
     await AppVersion.findByIdAndDelete(req.params.id);
-    res.json({ success: true, message: "Deleted" });
+    res.json({ success: true, message: "Version deleted" });
   } catch (e) {
     res.status(500).json({ success: false, message: e.message });
   }
