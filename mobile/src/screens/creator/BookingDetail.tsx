@@ -20,6 +20,8 @@ export default function BookingDetail({ route, navigation }: any) {
   const [amountInput, setAmountInput] = useState('');
   const [payForm, setPayForm] = useState({ amount: '', type: 'advance', notes: '' });
   const [eventForm, setEventForm] = useState({ name: '', date: '', location: '', notes: '' });
+  const [savingPayment, setSavingPayment] = useState(false);
+  const [completing, setCompleting] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -57,6 +59,8 @@ export default function BookingDetail({ route, navigation }: any) {
 
   // ═══ RECORD PAYMENT (same as website: advance/partial/final) ═══
   const recordPayment = async () => {
+    if (savingPayment) return; // Prevent double-clicks
+    
     const amount = Number(payForm.amount);
     if (!amount || amount <= 0 || isNaN(amount)) { Alert.alert('Invalid Amount', 'Please enter a valid amount greater than 0'); return; }
     
@@ -76,6 +80,7 @@ export default function BookingDetail({ route, navigation }: any) {
       return;
     }
 
+    setSavingPayment(true);
     try {
       console.log('[Payment] Recording:', { bookingId, amount, type: payForm.type, notes: payForm.notes });
       const res = await api.post('/payment-records/creator', {
@@ -93,6 +98,8 @@ export default function BookingDetail({ route, navigation }: any) {
       console.log('[Payment] Error:', e.response?.status, e.response?.data);
       const msg = e.response?.data?.message || e.message || 'Network error';
       Alert.alert('Payment Failed', msg);
+    } finally {
+      setSavingPayment(false);
     }
   };
 
@@ -129,12 +136,24 @@ export default function BookingDetail({ route, navigation }: any) {
   ]);
 
   // ═══ COMPLETE ═══
-  const completeBooking = () => Alert.alert('Complete', 'Mark as completed?', [
-    { text: 'Cancel' },
-    { text: 'Complete', onPress: async () => {
-      try { await api.patch(`/creator/bookings/${bookingId}/complete`); await load(); } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
-    }}
-  ]);
+  const completeBooking = () => {
+    if (completing) return;
+    Alert.alert('Complete Booking', 'Mark this booking as completed?', [
+      { text: 'Cancel' },
+      { text: 'Complete', onPress: async () => {
+        setCompleting(true);
+        try {
+          await api.patch(`/creator/bookings/${bookingId}/complete`);
+          await load();
+          Alert.alert('Done! 🎉', 'Booking marked as completed successfully.');
+        } catch (e: any) {
+          Alert.alert('Error', e.response?.data?.message || e.message || 'Failed to complete booking');
+        } finally {
+          setCompleting(false);
+        }
+      }}
+    ]);
+  };
 
   // ═══ ADD EVENT ═══
   const addEvent = async () => {
@@ -191,7 +210,9 @@ export default function BookingDetail({ route, navigation }: any) {
           <ActionBtn icon="cash-outline" label="Set Amount" onPress={() => { setAmountInput(String(booking.amount || '')); setShowAmountModal(true); }} />
           <ActionBtn icon="card-outline" label="Record Pay" onPress={() => setShowPaymentModal(true)} />
           <ActionBtn icon="checkmark-done" label="Mark Paid" onPress={markPaid} />
-          <ActionBtn icon="calendar-outline" label="Add Event" onPress={() => setShowEventModal(true)} />
+          {['Creator Accepted', 'Payment Submitted', 'Payment Approved', 'Event Scheduled', 'Completed', 'completed'].includes(booking.status) && (
+            <ActionBtn icon="chatbubble-outline" label="Chat" onPress={() => navigation.navigate('BookingChat', { bookingId })} />
+          )}
         </View>
 
         {/* ═══ CUSTOMER ═══ */}
@@ -258,7 +279,7 @@ export default function BookingDetail({ route, navigation }: any) {
           <TouchableOpacity style={s.btnReject} onPress={rejectBooking}><Text style={s.btnRejectText}>Reject</Text></TouchableOpacity>
           <TouchableOpacity style={s.btnAccept} onPress={() => { setAmountInput(String(booking.amount || booking.budget || '')); setShowAmountModal(true); }}><Text style={s.btnAcceptText}>Accept</Text></TouchableOpacity>
         </>}
-        {['Creator Accepted', 'Event Scheduled'].includes(booking.status) && <TouchableOpacity style={s.btnComplete} onPress={completeBooking}><Text style={s.btnCompleteText}>Mark Complete</Text></TouchableOpacity>}
+        {['Creator Accepted', 'Event Scheduled', 'Payment Submitted', 'Payment Approved'].includes(booking.status) && <TouchableOpacity style={[s.btnComplete, completing && { opacity: 0.6 }]} onPress={completeBooking} disabled={completing}>{completing ? <ActivityIndicator size="small" color={colors.textInverse} /> : <Text style={s.btnCompleteText}>Mark Complete</Text>}</TouchableOpacity>}
       </View>
 
       {/* ═══ SET AMOUNT MODAL ═══ */}
@@ -280,16 +301,18 @@ export default function BookingDetail({ route, navigation }: any) {
           <Text style={s.modalTitle}>Record Payment</Text>
           <View style={s.payTypeRow}>
             {['advance', 'partial', 'final'].map(t => (
-              <TouchableOpacity key={t} style={[s.payTypeBtn, payForm.type === t && s.payTypeBtnActive]} onPress={() => setPayForm({ ...payForm, type: t })}>
+              <TouchableOpacity key={t} style={[s.payTypeBtn, payForm.type === t && s.payTypeBtnActive]} onPress={() => setPayForm({ ...payForm, type: t })} disabled={savingPayment}>
                 <Text style={[s.payTypeText, payForm.type === t && s.payTypeTextActive]}>{t.charAt(0).toUpperCase() + t.slice(1)}</Text>
               </TouchableOpacity>
             ))}
           </View>
-          <TextInput style={s.modalInput} value={payForm.amount} onChangeText={v => setPayForm({ ...payForm, amount: v })} keyboardType="numeric" placeholder="₹ Amount" placeholderTextColor={colors.textMuted} selectionColor={colors.primary} />
-          <TextInput style={[s.modalInput, { height: 60 }]} value={payForm.notes} onChangeText={v => setPayForm({ ...payForm, notes: v })} placeholder="Notes (optional)" placeholderTextColor={colors.textMuted} selectionColor={colors.primary} multiline />
+          <TextInput style={s.modalInput} value={payForm.amount} onChangeText={v => setPayForm({ ...payForm, amount: v })} keyboardType="numeric" placeholder="₹ Amount" placeholderTextColor={colors.textMuted} selectionColor={colors.primary} editable={!savingPayment} />
+          <TextInput style={[s.modalInput, { height: 60 }]} value={payForm.notes} onChangeText={v => setPayForm({ ...payForm, notes: v })} placeholder="Notes (optional)" placeholderTextColor={colors.textMuted} selectionColor={colors.primary} multiline editable={!savingPayment} />
           <View style={s.modalBtns}>
-            <TouchableOpacity style={s.modalCancel} onPress={() => setShowPaymentModal(false)}><Text style={s.modalCancelText}>Cancel</Text></TouchableOpacity>
-            <TouchableOpacity style={s.modalConfirm} onPress={recordPayment}><Text style={s.modalConfirmText}>Record</Text></TouchableOpacity>
+            <TouchableOpacity style={s.modalCancel} onPress={() => setShowPaymentModal(false)} disabled={savingPayment}><Text style={s.modalCancelText}>Cancel</Text></TouchableOpacity>
+            <TouchableOpacity style={[s.modalConfirm, savingPayment && { opacity: 0.6 }]} onPress={recordPayment} disabled={savingPayment}>
+              {savingPayment ? <ActivityIndicator size="small" color={colors.textInverse} /> : <Text style={s.modalConfirmText}>Record</Text>}
+            </TouchableOpacity>
           </View>
         </View></View>
       </Modal>

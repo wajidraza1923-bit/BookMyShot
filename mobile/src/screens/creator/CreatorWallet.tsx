@@ -138,8 +138,9 @@ export default function CreatorWallet({ navigation }: any) {
               <Text style={s.subTitle}>Subscription · Basic Plan</Text>
               <View style={s.subGrid}>
                 <Text style={s.subGridItem}><Text style={s.subGridLabel}>Status: </Text><Text style={{ color: subscriptionStatus === 'active' ? colors.success : subscriptionStatus === 'trial' ? colors.primary : colors.error, fontWeight: '600' }}>{subscriptionStatus === 'active' ? 'Active' : subscriptionStatus === 'trial' ? 'Free Trial' : subscriptionStatus === 'expired' ? 'Expired' : subscriptionStatus || 'N/A'}</Text></Text>
-                <Text style={s.subGridItem}><Text style={s.subGridLabel}>Auto Renew: </Text>{data?.autoRenew ? 'ON' : 'OFF'}</Text>
+                <Text style={s.subGridItem}><Text style={s.subGridLabel}>AutoPay: </Text><Text style={{ color: data?.autoRenew ? colors.success : colors.error, fontWeight: '600' }}>{data?.autoRenew ? 'ON' : 'OFF'}</Text></Text>
                 <Text style={s.subGridItem}><Text style={s.subGridLabel}>Days Left: </Text><Text style={{ color: (data?.subscriptionDaysLeft || 0) <= 5 ? colors.warning : colors.text, fontWeight: (data?.subscriptionDaysLeft || 0) <= 5 ? '700' : '400' }}>{data?.subscriptionDaysLeft ?? '—'}</Text></Text>
+                {data?.subscriptionExpiry && <Text style={s.subGridItem}><Text style={s.subGridLabel}>Expiry: </Text>{new Date(data.subscriptionExpiry).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</Text>}
               </View>
             </View>
             <View style={s.subPriceBox}>
@@ -147,10 +148,17 @@ export default function CreatorWallet({ navigation }: any) {
               <Text style={s.subPriceUnit}>per month</Text>
             </View>
           </View>
-          <TouchableOpacity style={[s.subPayBtn, subscriptionStatus === 'active' && s.subPayBtnOutline]} onPress={() => navigation.navigate('CreatorSubscription')} activeOpacity={0.8}>
-            <Ionicons name="card-outline" size={14} color={subscriptionStatus === 'active' ? colors.primary : colors.textInverse} />
-            <Text style={[s.subPayText, subscriptionStatus === 'active' && { color: colors.primary }]}>
-              {subscriptionStatus === 'expired' || subscriptionStatus === 'overdue' ? 'Renew Subscription' : 'Manage Subscription'}
+          {/* AutoPay OFF message */}
+          {!data?.autoRenew && (subscriptionStatus === 'active' || subscriptionStatus === 'trial') && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, padding: 8, backgroundColor: 'rgba(245,158,11,0.06)', borderRadius: 8, borderWidth: 1, borderColor: 'rgba(245,158,11,0.15)' }}>
+              <Ionicons name="alert-circle-outline" size={14} color={colors.warning} />
+              <Text style={{ flex: 1, fontSize: 11, color: colors.warning }}>AutoPay is OFF. Subscription active until expiry. Enable AutoPay to avoid interruption.</Text>
+            </View>
+          )}
+          <TouchableOpacity style={[s.subPayBtn, subscriptionStatus === 'active' && data?.autoRenew && s.subPayBtnOutline]} onPress={() => navigation.navigate('CreatorSubscription')} activeOpacity={0.8}>
+            <Ionicons name={!data?.autoRenew && subscriptionStatus === 'active' ? "refresh-circle-outline" : "card-outline"} size={14} color={!data?.autoRenew && subscriptionStatus === 'active' ? colors.primary : subscriptionStatus === 'active' ? colors.primary : colors.textInverse} />
+            <Text style={[s.subPayText, (subscriptionStatus === 'active') && { color: colors.primary }]}>
+              {!data?.autoRenew && subscriptionStatus === 'active' ? 'Enable AutoPay' : subscriptionStatus === 'expired' || subscriptionStatus === 'overdue' ? 'Renew Subscription' : 'Manage Subscription'}
             </Text>
           </TouchableOpacity>
         </View>

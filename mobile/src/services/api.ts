@@ -189,9 +189,12 @@ export const creatorAPI = {
 
 // ═══ MESSAGES API ═══
 export const messagesAPI = {
-  getConversations: () => api.get('/messages'),
-  getMessages: (userId: string) => api.get(`/messages/${userId}`),
-  sendMessage: (userId: string, content: string) => api.post(`/messages/${userId}`, { content }),
+  getConversations: () => api.get('/messages/conversations'),
+  getBookingMessages: (bookingId: string) => api.get(`/messages/booking/${bookingId}`),
+  sendBookingMessage: (bookingId: string, content: string) => api.post(`/messages/booking/${bookingId}`, { content }),
+  markRead: (bookingId: string) => api.post(`/messages/booking/${bookingId}/read`),
+  getUnreadTotal: () => api.get('/messages/unread-total'),
+  sendTyping: (bookingId: string, isTyping: boolean) => api.post('/messages/typing', { bookingId, isTyping }),
 };
 
 // ═══ BOOKINGS API ═══

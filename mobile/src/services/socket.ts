@@ -69,6 +69,10 @@ export async function connect(): Promise<void> {
       'payment:updated',
       'dashboard:refresh',
       'admin:update',
+      'subscription:updated',
+      'chat:message',
+      'chat:read',
+      'chat:typing',
     ];
 
     events.forEach(event => {

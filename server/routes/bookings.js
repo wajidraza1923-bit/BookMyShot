@@ -255,10 +255,10 @@ router.patch("/:id/status", protect, async (req, res, next) => {
     let notifMsg = `Your booking status is now: ${booking.status}`;
     
     if (status === "Creator Accepted") {
-      notifTitle = "âœ… Inquiry Accepted";
-      notifMsg = `${creatorName} accepted your inquiry. Amount: â‚¹${booking.amount?.toLocaleString('en-IN') || booking.budget}`;
+      notifTitle = "✅ Inquiry Accepted";
+      notifMsg = `${creatorName} accepted your inquiry. Amount: ₹${booking.amount?.toLocaleString('en-IN') || booking.budget}`;
     } else if (status === "rejected") {
-      notifTitle = "âŒ Inquiry Rejected";
+      notifTitle = "❌ Inquiry Rejected";
       notifMsg = `${creatorName} has rejected your inquiry.${booking.creatorNotes ? ' Reason: ' + booking.creatorNotes : ''}`;
     } else if (status === "Completed") {
       notifTitle = "ðŸŽ‰ Booking Completed";
@@ -286,6 +286,24 @@ router.patch("/:id/status", protect, async (req, res, next) => {
       socketService.emitToRole("admin", "dashboard:refresh", { type: "booking" });
     } catch (e) {}
 
+    // ═══ AUTO-CREATE CHAT: System message when booking is accepted ═══
+    if (status === "Creator Accepted") {
+      try {
+        const Message = require("../models/Message");
+        const creatorUserId = booking.creator?.user?._id || booking.creator?.user;
+        const bookingUserId = booking.user._id || booking.user;
+        if (creatorUserId && bookingUserId) {
+          await Message.create({
+            booking: booking._id,
+            sender: creatorUserId,
+            receiver: bookingUserId,
+            content: `Booking accepted! You can now chat about ${booking.eventType || "this booking"} details here.`,
+            messageType: "system",
+          });
+        }
+      } catch (e) { console.log("[Chat] System message creation failed (non-fatal):", e.message); }
+    }
+
     res.json({ success: true, booking });
   } catch (e) {
     next(e);
@@ -305,16 +323,30 @@ router.patch("/:id/schedule", protect, authorize("creator"), async (req, res, ne
     booking.scheduledDate = scheduledDate;
     booking.scheduledTime = scheduledTime || "";
     booking.scheduledLocation = scheduledLocation || booking.eventLocation || "";
+    const isReschedule = booking.scheduledDate != null;
+
     booking.status = "Event Scheduled";
     if (creatorNotes) booking.creatorNotes = creatorNotes;
     await booking.save();
 
-    await createNotification(
+    if (isReschedule) {
+      const Notification = require("../models/Notification");
+      await Notification.create({
+        user: booking.user._id,
+        type: "booking",
+        title: "📅 Booking Rescheduled",
+        message: `Your ${booking.eventType} has been rescheduled to ${new Date(scheduledDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })} at ${scheduledTime || "TBD"}`,
+        targetScreen: "BookingDetail",
+        targetId: booking._id.toString(),
+      });
+    } else {
+      await createNotification(
       booking.user._id,
       "ðŸ“… Event Scheduled",
       `Your ${booking.eventType} has been scheduled for ${new Date(scheduledDate).toLocaleDateString()} at ${scheduledTime || "TBD"}`,
       "booking"
     );
+    }
 
     res.json({ success: true, booking });
   } catch (e) {
@@ -335,7 +367,7 @@ router.patch("/:id/complete", protect, authorize("creator"), async (req, res, ne
 
     await createNotification(
       booking.user._id,
-      "âœ… Booking Completed",
+      "✅ Booking Completed",
       `Your ${booking.eventType} has been marked as completed. Thank you!`,
       "booking"
     );

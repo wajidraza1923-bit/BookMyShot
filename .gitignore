@@ -16,3 +16,6 @@ android/local.properties
 # IDE
 .idea/
 *.iml
+
+# Firebase Admin SDK key (sensitive - never commit)
+*firebase-adminsdk*.json

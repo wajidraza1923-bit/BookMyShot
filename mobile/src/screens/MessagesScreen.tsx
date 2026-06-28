@@ -65,7 +65,7 @@ export default function MessagesScreen({ navigation }: any) {
             const unread = item.unreadCount || 0;
 
             return (
-              <TouchableOpacity style={styles.chatItem} activeOpacity={0.7}>
+              <TouchableOpacity style={styles.chatItem} activeOpacity={0.7} onPress={() => navigation.navigate('BookingChat', { bookingId: item.bookingId || item._id })}>
                 <Image source={{ uri: avatar || 'https://via.placeholder.com/50' }} style={styles.avatar} />
                 <View style={styles.chatInfo}>
                   <View style={styles.chatTop}>
@@ -73,7 +73,7 @@ export default function MessagesScreen({ navigation }: any) {
                     <Text style={[styles.chatTime, unread > 0 && { color: colors.primary }]}>{time}</Text>
                   </View>
                   <View style={styles.chatBottom}>
-                    <Text style={[styles.chatMsg, unread > 0 && styles.chatMsgBold]} numberOfLines={1}>{lastMsg}</Text>
+                    <Text style={[styles.chatMsg, unread > 0 && styles.chatMsgBold]} numberOfLines={1}>{lastMsg || (item.eventType ? `📷 ${item.eventType}` : 'Start chatting...')}</Text>
                     {unread > 0 && <View style={styles.unreadBadge}><Text style={styles.unreadText}>{unread}</Text></View>}
                   </View>
                 </View>

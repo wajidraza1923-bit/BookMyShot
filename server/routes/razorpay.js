@@ -28,96 +28,81 @@ router.get("/config", (req, res) => {
 // Uses Razorpay Subscriptions API (not Orders API).
 // Creator authorizes AutoPay once, then gets charged automatically.
 // ═══════════════════════════════════════════════════════════════
-
-// GET /autopay-status — Check real Razorpay subscription status
+// CREATOR: Get AutoPay status — ALWAYS checks LIVE Razorpay API
+// Single source of truth for subscription/autopay status
+// ═══════════════════════════════════════════════════════════════
 router.get("/autopay-status", protect, authorize("creator"), async (req, res, next) => {
   try {
     const creator = await Creator.findOne({ user: req.user._id });
     if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
 
-    // Default: no active AutoPay
+    const now = new Date();
+    const subscriptionEndDate = creator.subscriptionEndDate;
+    const daysRemaining = subscriptionEndDate ? Math.max(0, Math.ceil((subscriptionEndDate - now) / 86400000)) : 0;
+    const subscriptionActive = creator.subscriptionStatus === "active" || creator.subscriptionStatus === "trial";
+
+    // Default response
     const result = {
       autopayActive: false,
       razorpayStatus: "none",
       razorpaySubscriptionId: creator.razorpaySubscriptionId || null,
+      subscriptionStatus: creator.subscriptionStatus,
+      subscriptionEndDate: creator.subscriptionEndDate,
+      subscriptionStartDate: creator.subscriptionStartDate,
       nextBillingDate: creator.nextBillingDate,
       lastPaymentDate: creator.lastPaymentDate,
-      subscriptionStatus: creator.subscriptionStatus,
       autoRenew: creator.autoRenew !== false,
+      daysRemaining,
+      subscriptionActive,
+      message: "",
     };
 
-    // If we have a Razorpay subscription ID, check its real status
+    // If we have a Razorpay subscription ID, check its REAL status from Razorpay API
     if (creator.razorpaySubscriptionId && razorpayService.isConfigured()) {
       try {
         const rpSub = await razorpayService.fetchSubscription(creator.razorpaySubscriptionId);
-        result.razorpayStatus = rpSub.status; // active, authenticated, pending, halted, cancelled, completed
+        result.razorpayStatus = rpSub.status; // active, authenticated, pending, halted, cancelled, completed, paused
         result.autopayActive = rpSub.status === "active" || rpSub.status === "authenticated";
-        result.currentStart = rpSub.current_start;
-        result.currentEnd = rpSub.current_end;
-        result.chargeAt = rpSub.charge_at;
+        result.currentStart = rpSub.current_start ? new Date(rpSub.current_start * 1000) : null;
+        result.currentEnd = rpSub.current_end ? new Date(rpSub.current_end * 1000) : null;
+        result.chargeAt = rpSub.charge_at ? new Date(rpSub.charge_at * 1000) : null;
+
+        // Sync autoRenew with real Razorpay status (live truth)
+        const rpAutoPayOn = rpSub.status === "active" || rpSub.status === "authenticated";
+        if (creator.autoRenew !== rpAutoPayOn) {
+          // DB is stale — update silently
+          creator.autoRenew = rpAutoPayOn;
+          await creator.save();
+          result.autoRenew = rpAutoPayOn;
+        }
+
+        // Build user-friendly message
+        if (result.autopayActive) {
+          result.message = "AutoPay is active. Your subscription renews automatically each month.";
+        } else if (rpSub.status === "cancelled" || rpSub.status === "completed") {
+          if (subscriptionActive && daysRemaining > 0) {
+            result.message = `AutoPay is OFF. Your subscription remains active until ${subscriptionEndDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}. Auto-renewal has been turned off. You can enable AutoPay again anytime.`;
+          } else {
+            result.message = "Subscription has ended. Subscribe again to restore your profile.";
+          }
+        } else if (rpSub.status === "halted") {
+          result.message = "AutoPay is suspended due to payment failures. Please set up AutoPay again.";
+        } else if (rpSub.status === "paused") {
+          result.message = "AutoPay is paused. Your subscription will not renew until resumed.";
+        } else {
+          result.message = `AutoPay status: ${rpSub.status}. Contact support if this seems incorrect.`;
+        }
       } catch (rpErr) {
-        // Razorpay fetch failed — subscription might be invalid/deleted
+        console.log("[AutoPay] Razorpay fetch failed:", rpErr.message);
         result.razorpayStatus = "error";
         result.autopayActive = false;
+        result.message = "Unable to verify AutoPay status with Razorpay. Showing last known status.";
       }
+    } else if (!creator.razorpaySubscriptionId) {
+      result.message = "No AutoPay subscription linked. Set up AutoPay to enable automatic renewal.";
     }
 
     res.json({ success: true, data: result });
-  } catch (e) { next(e); }
-});
-
-// ═══════════════════════════════════════════════════════════════
-// CREATOR: Get AutoPay status (checks Razorpay API in real-time)
-// ═══════════════════════════════════════════════════════════════
-router.get("/autopay-status", protect, authorize("creator"), async (req, res, next) => {
-  try {
-    const creator = await Creator.findOne({ user: req.user._id });
-    if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
-
-    // If no Razorpay subscription ID stored, AutoPay is inactive
-    if (!creator.razorpaySubscriptionId) {
-      return res.json({
-        success: true,
-        data: {
-          autoPayActive: false,
-          razorpayStatus: "none",
-          subscriptionId: null,
-          nextBillingDate: null,
-          message: "No AutoPay subscription linked. Set up AutoPay to enable automatic renewal.",
-        },
-      });
-    }
-
-    // Check Razorpay API for real status
-    let razorpayStatus = "unknown";
-    let currentPeriodEnd = null;
-    try {
-      if (razorpayService.isConfigured()) {
-        const rpSub = await razorpayService.fetchSubscription(creator.razorpaySubscriptionId);
-        razorpayStatus = rpSub.status || "unknown"; // active, authenticated, pending, halted, cancelled, completed
-        currentPeriodEnd = rpSub.current_end ? new Date(rpSub.current_end * 1000) : null;
-      }
-    } catch (e) {
-      // If fetch fails, use DB status
-      razorpayStatus = creator.subscriptionStatus === "active" ? "active" : "inactive";
-    }
-
-    const isActive = ["active", "authenticated"].includes(razorpayStatus);
-
-    res.json({
-      success: true,
-      data: {
-        autoPayActive: isActive,
-        razorpayStatus,
-        subscriptionId: creator.razorpaySubscriptionId,
-        nextBillingDate: currentPeriodEnd || creator.nextBillingDate || creator.subscriptionEndDate,
-        lastPaymentDate: creator.lastPaymentDate,
-        autoRenew: creator.autoRenew !== false,
-        message: isActive
-          ? "AutoPay is active. Your subscription renews automatically."
-          : `AutoPay is ${razorpayStatus}. Your subscription will NOT renew automatically.`,
-      },
-    });
   } catch (e) { next(e); }
 });
 
@@ -295,6 +280,24 @@ router.post("/verify-subscription", protect, async (req, res, next) => {
       paymentId: razorpay_payment_id,
     }).catch(e => console.error("[Email] sendAdminNewSubscription failed:", e.message));
 
+    // Real-time Socket.IO update — UI refreshes instantly
+    try {
+      const socketService = require("../services/socketService");
+      socketService.emitToUser(req.user._id, "subscription:updated", {
+        subscriptionStatus: creator.subscriptionStatus,
+        autoRenew: true,
+        autopayActive: true,
+        razorpayStatus: "active",
+        subscriptionEndDate: endDate,
+        lastPaymentDate: now,
+      });
+      socketService.emitToRole("admin", "subscription:updated", {
+        creatorId: creator._id,
+        subscriptionStatus: creator.subscriptionStatus,
+        autoRenew: true,
+      });
+    } catch (e) {}
+
     res.json({ 
       success: true, 
       message: trialDays > 0 ? `Trial started! ${trialDays} free days.` : "Subscription activated!",
@@ -341,7 +344,10 @@ router.get("/subscription-status", protect, authorize("creator"), async (req, re
 });
 
 // ═══════════════════════════════════════════════════════════════
-// CREATOR: Cancel subscription
+// CREATOR: Cancel AutoPay (turn OFF auto-renewal)
+// IMPORTANT: This does NOT cancel the current subscription period!
+// The creator keeps all premium features until subscriptionEndDate.
+// Only future renewals are disabled.
 // ═══════════════════════════════════════════════════════════════
 router.post("/cancel-subscription", protect, authorize("creator"), async (req, res, next) => {
   try {
@@ -350,29 +356,68 @@ router.post("/cancel-subscription", protect, authorize("creator"), async (req, r
       return res.status(400).json({ success: false, message: "No active subscription found" });
     }
 
-    // Cancel at end of current billing period
+    // Cancel at end of current billing period (NOT immediately)
+    // Razorpay cancel_at_cycle_end=true means the subscription runs until current period ends
     await razorpayService.cancelSubscription(creator.razorpaySubscriptionId, true);
+    
+    // Mark autoRenew as false — but keep subscriptionStatus as "active"
+    // The subscription remains active until subscriptionEndDate
     creator.autoRenew = false;
+    // DO NOT change subscriptionStatus here — creator keeps premium access
     await creator.save();
 
-    // Send immediate reminder since AutoPay is now off
     const daysLeft = creator.subscriptionEndDate ? Math.ceil((creator.subscriptionEndDate - new Date()) / 86400000) : 0;
-    if (daysLeft > 0) {
-      const Notification = require("../models/Notification");
-      await Notification.create({
-        user: req.user._id,
-        type: "subscription",
-        title: "📢 AutoPay Cancelled",
-        message: `AutoPay has been turned off. Your subscription expires in ${daysLeft} day${daysLeft > 1 ? "s" : ""}. After that, your profile will be hidden from search and you won't receive bookings or inquiries. Renew manually before expiry.`,
-      });
-      // Send email
-      const emailService = require("../services/emailService");
-      if (req.user.email) {
-        emailService.sendSubscriptionExpiryReminder({ email: req.user.email, name: req.user.name, daysLeft, endDate: creator.subscriptionEndDate, creatorId: creator._id, userId: req.user._id }).catch(() => {});
-      }
+    const expiryDateStr = creator.subscriptionEndDate 
+      ? creator.subscriptionEndDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+      : "unknown";
+
+    // Notification — clearly state subscription stays active
+    await Notification.create({
+      user: req.user._id,
+      type: "subscription",
+      title: "⏹️ AutoPay Turned Off",
+      message: `Auto-renewal has been disabled. Your subscription remains active until ${expiryDateStr} (${daysLeft} day${daysLeft > 1 ? "s" : ""} remaining). You can enable AutoPay again anytime before expiry.`,
+    });
+
+    // Email
+    if (req.user.email) {
+      emailService.sendSubscriptionExpiryReminder({ 
+        email: req.user.email, 
+        name: req.user.name, 
+        daysLeft, 
+        endDate: creator.subscriptionEndDate, 
+        creatorId: creator._id, 
+        userId: req.user._id 
+      }).catch(() => {});
     }
 
-    res.json({ success: true, message: "Subscription will be cancelled at the end of current period" });
+    // Real-time Socket.IO update
+    try {
+      const socketService = require("../services/socketService");
+      socketService.emitToUser(req.user._id, "subscription:updated", {
+        subscriptionStatus: creator.subscriptionStatus,
+        autoRenew: false,
+        autopayActive: false,
+        razorpayStatus: "cancelled",
+        subscriptionEndDate: creator.subscriptionEndDate,
+        daysRemaining: daysLeft,
+        message: `Your subscription will remain active until ${expiryDateStr}. Auto-renewal has been turned off.`,
+      });
+      socketService.emitToRole("admin", "subscription:updated", {
+        creatorId: creator._id,
+        autoRenew: false,
+        subscriptionStatus: creator.subscriptionStatus,
+      });
+    } catch (e) {}
+
+    res.json({ 
+      success: true, 
+      message: `AutoPay has been turned off. Your subscription remains active until ${expiryDateStr}. You can enable AutoPay again anytime.`,
+      subscriptionStatus: creator.subscriptionStatus,
+      subscriptionEndDate: creator.subscriptionEndDate,
+      autoRenew: false,
+      daysRemaining: daysLeft,
+    });
   } catch (e) {
     next(e);
   }
@@ -665,6 +710,7 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
             creator.subscriptionEndDate = end;
             creator.nextBillingDate = end;
             creator.lastPaymentDate = new Date();
+            creator.autoRenew = true;
             await creator.save();
             console.log("[Razorpay] ✅ Creator auto-approved via webhook:", creator._id);
             // Notify creator
@@ -675,6 +721,18 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
                 title: "✅ Account Approved!",
                 message: "Your subscription is active and your creator account has been approved. Welcome to BookMyShot!",
               });
+              // Real-time Socket.IO
+              try {
+                const socketService = require("../services/socketService");
+                socketService.emitToUser(creator.user, "subscription:updated", {
+                  subscriptionStatus: "active",
+                  autoRenew: true,
+                  autopayActive: true,
+                  razorpayStatus: "authenticated",
+                  subscriptionEndDate: end,
+                });
+                socketService.emitToRole("admin", "subscription:updated", { creatorId: creator._id, subscriptionStatus: "active", autoRenew: true });
+              } catch (e) {}
             }
           }
         }
@@ -686,6 +744,7 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
         const creator = await Creator.findOne({ razorpaySubscriptionId: subId }).populate("user");
         if (creator) {
           creator.subscriptionStatus = "active";
+          creator.autoRenew = true;
           // AUTO-UNSUSPEND only if no critical overdue commission (>30 days)
           if (creator.status === "suspended" || creator.status === "pending") {
             const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
@@ -699,6 +758,20 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
           creator.nextBillingDate = end;
           await creator.save();
           console.log("[Razorpay] Subscription activated for creator:", creator._id);
+
+          // Real-time Socket.IO
+          try {
+            const socketService = require("../services/socketService");
+            const userId = creator.user?._id || creator.user;
+            socketService.emitToUser(userId, "subscription:updated", {
+              subscriptionStatus: "active",
+              autoRenew: true,
+              autopayActive: true,
+              razorpayStatus: "active",
+              subscriptionEndDate: end,
+            });
+            socketService.emitToRole("admin", "subscription:updated", { creatorId: creator._id, subscriptionStatus: "active", autoRenew: true });
+          } catch (e) {}
 
           if (creator.user?.email) {
             const subSettings = await configService.getSubscriptionSettings();
@@ -733,6 +806,7 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
         const creator = await Creator.findOne({ razorpaySubscriptionId: subId }).populate("user");
         if (creator) {
           creator.subscriptionStatus = "active";
+          creator.autoRenew = true;
           // AUTO-UNSUSPEND on recurring payment only if no critical overdue commission
           if (creator.status === "suspended") {
             const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
@@ -746,6 +820,21 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
           creator.subscriptionEndDate = end;
           creator.nextBillingDate = end;
           await creator.save();
+
+          // Real-time Socket.IO
+          try {
+            const socketService = require("../services/socketService");
+            const userId = creator.user?._id || creator.user;
+            socketService.emitToUser(userId, "subscription:updated", {
+              subscriptionStatus: "active",
+              autoRenew: true,
+              autopayActive: true,
+              razorpayStatus: "active",
+              subscriptionEndDate: end,
+              lastPaymentDate: new Date(),
+            });
+            socketService.emitToRole("admin", "subscription:updated", { creatorId: creator._id, subscriptionStatus: "active", autoRenew: true, charged: amount });
+          } catch (e) {}
 
           // Create invoice for this recurring charge
           const chargedAmount = amount || (await configService.getSubscriptionSettings()).monthlyPlanPrice || 99;
@@ -818,8 +907,22 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
         const creator = await Creator.findOne({ razorpaySubscriptionId: subId }).populate("user");
         if (creator) {
           creator.subscriptionStatus = "suspended";
+          creator.autoRenew = false;
           await creator.save();
           console.log("[Razorpay] Subscription HALTED for creator:", creator._id);
+
+          // Real-time Socket.IO
+          try {
+            const socketService = require("../services/socketService");
+            const userId = creator.user?._id || creator.user;
+            socketService.emitToUser(userId, "subscription:updated", {
+              subscriptionStatus: "suspended",
+              autoRenew: false,
+              autopayActive: false,
+              razorpayStatus: "halted",
+            });
+            socketService.emitToRole("admin", "subscription:updated", { creatorId: creator._id, subscriptionStatus: "suspended", razorpayStatus: "halted" });
+          } catch (e) {}
 
           await Notification.create({
             user: creator.user._id || creator.user,
@@ -851,27 +954,73 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
 
       case "subscription.cancelled":
       case "subscription.completed": {
+        // AutoPay cancelled/completed — but subscription STAYS ACTIVE until end date
+        // DO NOT expire immediately. Only mark autoRenew=false.
+        // The scheduler will expire it when subscriptionEndDate passes.
         const subId = payload.subscription?.entity?.id;
         const creator = await Creator.findOne({ razorpaySubscriptionId: subId }).populate("user");
         if (creator) {
-          creator.subscriptionStatus = "expired";
+          const now = new Date();
+          const daysRemaining = creator.subscriptionEndDate ? Math.max(0, Math.ceil((creator.subscriptionEndDate - now) / 86400000)) : 0;
+
+          // Only expire if the subscription end date has already passed
+          if (daysRemaining <= 0) {
+            creator.subscriptionStatus = "expired";
+          }
+          // Always mark autoRenew false — no future charges
           creator.autoRenew = false;
           await creator.save();
-          console.log("[Razorpay] Subscription cancelled/completed for creator:", creator._id);
+          
+          console.log(`[Razorpay] Subscription ${eventType} for creator: ${creator._id}. Days remaining: ${daysRemaining}. Status kept: ${creator.subscriptionStatus}`);
 
-          if (creator.user?.email) {
-            emailService.sendSubscriptionExpired({
-              email: creator.user.email,
-              name: creator.user.name,
-              creatorId: creator._id,
-              userId: creator.user._id,
-            }).catch(e => console.error("[Email] webhook sub expired:", e.message));
-
-            emailService.sendAdminSubscriptionExpired({
-              creatorName: creator.user.name,
-              creatorEmail: creator.user.email,
-            }).catch(e => console.error("[Email] admin webhook sub expired:", e.message));
+          // Notification
+          const expiryStr = creator.subscriptionEndDate 
+            ? creator.subscriptionEndDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+            : "N/A";
+          
+          if (daysRemaining > 0) {
+            await Notification.create({
+              user: creator.user._id || creator.user,
+              type: "subscription",
+              title: "⏹️ AutoPay Cancelled",
+              message: `Auto-renewal is now off. Your subscription remains active until ${expiryStr} (${daysRemaining} days). Enable AutoPay again before then to continue without interruption.`,
+            });
+          } else {
+            await Notification.create({
+              user: creator.user._id || creator.user,
+              type: "subscription",
+              title: "⚠️ Subscription Expired",
+              message: "Your subscription has expired. Profile is hidden from search. Subscribe again to restore access.",
+            });
+            if (creator.user?.email) {
+              emailService.sendSubscriptionExpired({
+                email: creator.user.email,
+                name: creator.user.name,
+                creatorId: creator._id,
+                userId: creator.user._id,
+              }).catch(e => console.error("[Email] webhook sub expired:", e.message));
+            }
           }
+
+          // Real-time Socket.IO update
+          try {
+            const socketService = require("../services/socketService");
+            const userId = creator.user._id || creator.user;
+            socketService.emitToUser(userId, "subscription:updated", {
+              subscriptionStatus: creator.subscriptionStatus,
+              autoRenew: false,
+              autopayActive: false,
+              razorpayStatus: eventType === "subscription.cancelled" ? "cancelled" : "completed",
+              subscriptionEndDate: creator.subscriptionEndDate,
+              daysRemaining,
+            });
+            socketService.emitToRole("admin", "subscription:updated", {
+              creatorId: creator._id,
+              autoRenew: false,
+              subscriptionStatus: creator.subscriptionStatus,
+              razorpayStatus: eventType.replace("subscription.", ""),
+            });
+          } catch (e) {}
         }
         break;
       }
@@ -895,6 +1044,19 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
               message: `Your subscription payment of ₹${amount} failed. Razorpay will retry automatically.`,
             });
             console.log("[Razorpay] Payment failed for creator:", creator._id, "Fail count:", creator.paymentFailCount);
+
+            // Real-time Socket.IO
+            try {
+              const socketService = require("../services/socketService");
+              const userId = creator.user?._id || creator.user;
+              socketService.emitToUser(userId, "subscription:updated", {
+                subscriptionStatus: "overdue",
+                autoRenew: creator.autoRenew,
+                razorpayStatus: "payment_failed",
+                paymentFailCount: creator.paymentFailCount,
+              });
+              socketService.emitToRole("admin", "subscription:updated", { creatorId: creator._id, subscriptionStatus: "overdue", paymentFailCount: creator.paymentFailCount });
+            } catch (e) {}
 
             if (creator.user?.email) {
               emailService.sendPaymentFailed({
@@ -930,9 +1092,23 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
           await Notification.create({
             user: creator.user._id || creator.user,
             type: "subscription",
-            title: "⏸️ Subscription Paused",
-            message: "Your subscription AutoPay has been paused. You'll need to resume or renew manually before expiry.",
+            title: "⏸️ AutoPay Paused",
+            message: "Your AutoPay has been paused. Subscription will not renew automatically. Resume or pay manually before expiry.",
           });
+
+          // Real-time Socket.IO
+          try {
+            const socketService = require("../services/socketService");
+            const userId = creator.user._id || creator.user;
+            socketService.emitToUser(userId, "subscription:updated", {
+              subscriptionStatus: creator.subscriptionStatus,
+              autoRenew: false,
+              autopayActive: false,
+              razorpayStatus: "paused",
+              subscriptionEndDate: creator.subscriptionEndDate,
+            });
+            socketService.emitToRole("admin", "subscription:updated", { creatorId: creator._id, autoRenew: false, razorpayStatus: "paused" });
+          } catch (e) {}
         }
         break;
       }
@@ -941,6 +1117,7 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
       case "mandate.revoked": {
         // UPI/bank mandate revoked — AutoPay is no longer authorized
         // This means the bank/UPI app cancelled the recurring mandate
+        // IMPORTANT: Subscription stays active until end date, only autoRenew is OFF
         const tokenEntity = payload.token?.entity || payload.payment?.entity || {};
         const customerId = tokenEntity.customer_id || "";
         console.log("[Razorpay] Mandate/token revoked. Customer:", customerId);
@@ -956,21 +1133,44 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
 
         if (creator) {
           creator.autoRenew = false;
+          // DO NOT change subscriptionStatus — premium access continues until end date
           await creator.save();
-          console.log("[Razorpay] Mandate revoked — AutoPay OFF for creator:", creator._id);
+          
+          const daysRemaining = creator.subscriptionEndDate ? Math.max(0, Math.ceil((creator.subscriptionEndDate - new Date()) / 86400000)) : 0;
+          const expiryStr = creator.subscriptionEndDate
+            ? creator.subscriptionEndDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+            : "N/A";
+          
+          console.log(`[Razorpay] Mandate revoked — AutoPay OFF for creator: ${creator._id}. Days remaining: ${daysRemaining}`);
 
           await Notification.create({
             user: creator.user._id || creator.user,
             type: "subscription",
             title: "🔴 AutoPay Mandate Revoked",
-            message: "Your bank/UPI has revoked the AutoPay mandate. Subscription will not renew automatically. Please set up AutoPay again or pay manually before expiry.",
+            message: `Your bank/UPI has revoked the AutoPay mandate. Subscription remains active until ${expiryStr}. Enable AutoPay again before expiry to avoid interruption.`,
           });
+
+          // Real-time Socket.IO
+          try {
+            const socketService = require("../services/socketService");
+            const userId = creator.user._id || creator.user;
+            socketService.emitToUser(userId, "subscription:updated", {
+              subscriptionStatus: creator.subscriptionStatus,
+              autoRenew: false,
+              autopayActive: false,
+              razorpayStatus: "mandate_revoked",
+              subscriptionEndDate: creator.subscriptionEndDate,
+              daysRemaining,
+              message: `AutoPay mandate revoked. Subscription active until ${expiryStr}.`,
+            });
+            socketService.emitToRole("admin", "subscription:updated", { creatorId: creator._id, autoRenew: false, razorpayStatus: "mandate_revoked" });
+          } catch (e) {}
 
           if (creator.user?.email) {
             emailService.sendSubscriptionExpiryReminder({
               email: creator.user.email,
               name: creator.user.name,
-              daysLeft: creator.subscriptionEndDate ? Math.max(0, Math.ceil((creator.subscriptionEndDate - new Date()) / 86400000)) : 0,
+              daysLeft: daysRemaining,
               endDate: creator.subscriptionEndDate,
               creatorId: creator._id,
               userId: creator.user._id,

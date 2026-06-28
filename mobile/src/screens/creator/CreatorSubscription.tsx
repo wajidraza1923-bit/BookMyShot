@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, radius } from '../../theme';
 import api from '../../services/api';
 import RazorpayWebCheckout from '../../components/RazorpayWebCheckout';
+import useRealTime from '../../hooks/useRealTime';
 
 export default function CreatorSubscription({ navigation }: any) {
   const [creator, setCreator] = useState<any>(null);
@@ -11,6 +12,7 @@ export default function CreatorSubscription({ navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   // WebView Razorpay state for subscription
   const [showRazorpay, setShowRazorpay] = useState(false);
   const [rpSubConfig, setRpSubConfig] = useState<{ keyId: string; subscriptionId: string; name: string; email: string }>({ keyId: '', subscriptionId: '', name: '', email: '' });
@@ -37,6 +39,27 @@ export default function CreatorSubscription({ navigation }: any) {
 
   useEffect(() => { load(); }, []);
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
+
+  // ═══ REAL-TIME: Listen for subscription status changes via Socket.IO ═══
+  useRealTime('subscription:updated', (data: any) => {
+    console.log('[Subscription] Real-time update received:', data);
+    // Merge the real-time data into creator state
+    setCreator((prev: any) => ({
+      ...prev,
+      subscriptionStatus: data.subscriptionStatus || prev?.subscriptionStatus,
+      autoRenew: data.autoRenew ?? prev?.autoRenew,
+      subscriptionExpiry: data.subscriptionEndDate || prev?.subscriptionExpiry,
+      _autopay: {
+        ...prev?._autopay,
+        autopayActive: data.autopayActive ?? false,
+        razorpayStatus: data.razorpayStatus || prev?._autopay?.razorpayStatus,
+        autoRenew: data.autoRenew ?? false,
+        subscriptionEndDate: data.subscriptionEndDate || prev?._autopay?.subscriptionEndDate,
+        daysRemaining: data.daysRemaining ?? prev?._autopay?.daysRemaining,
+        message: data.message || prev?._autopay?.message,
+      },
+    }));
+  });
 
   const handleSubscribe = async () => {
     setSubscribing(true);
@@ -111,6 +134,40 @@ export default function CreatorSubscription({ navigation }: any) {
     } finally {
       setSubscribing(false);
     }
+  };
+
+  // ═══ CANCEL AUTOPAY (turn off auto-renewal, keep subscription active) ═══
+  const handleCancelAutoPay = async () => {
+    Alert.alert(
+      'Turn Off AutoPay?',
+      'Auto-renewal will be disabled. Your subscription will remain active until the expiry date. You can enable AutoPay again anytime.',
+      [
+        { text: 'Keep AutoPay', style: 'cancel' },
+        {
+          text: 'Turn Off',
+          style: 'destructive',
+          onPress: async () => {
+            setCancelling(true);
+            try {
+              const res = await api.post('/razorpay/cancel-subscription', {});
+              if (res.data?.success) {
+                Alert.alert(
+                  'AutoPay Turned Off',
+                  res.data.message || 'Your subscription remains active until expiry. Auto-renewal has been disabled.',
+                );
+                await load();
+              } else {
+                Alert.alert('Error', res.data?.message || 'Failed to turn off AutoPay');
+              }
+            } catch (e: any) {
+              Alert.alert('Error', e.response?.data?.message || e.message || 'Failed to cancel AutoPay');
+            } finally {
+              setCancelling(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (loading) {
@@ -252,30 +309,97 @@ export default function CreatorSubscription({ navigation }: any) {
           </View>
         </View>
 
-        {/* AutoPay Info — shows REAL Razorpay status */}
+        {/* AutoPay Info — shows REAL Razorpay status + Enable/Disable controls */}
         {(() => {
           const ap = creator?._autopay;
           const rpActive = ap?.autopayActive === true;
           const rpStatus = ap?.razorpayStatus || 'none';
+          const apMessage = ap?.message || '';
+          const apDaysRemaining = ap?.daysRemaining ?? daysRemaining;
+
           if (rpActive) {
             return (
-              <View style={s.infoCard}>
-                <Ionicons name="shield-checkmark-outline" size={16} color={colors.success} />
-                <Text style={s.infoText}>AutoPay Active ({rpStatus}). Your subscription renews automatically each month via Razorpay.</Text>
+              <View>
+                <View style={s.infoCard}>
+                  <Ionicons name="shield-checkmark-outline" size={16} color={colors.success} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.infoText}>AutoPay: ON ({rpStatus})</Text>
+                    <Text style={[s.infoText, { color: colors.textMuted, marginTop: 4 }]}>Your subscription renews automatically each month via Razorpay.</Text>
+                  </View>
+                </View>
+                {/* Turn OFF AutoPay button */}
+                <TouchableOpacity
+                  style={[s.autoPayBtn, { borderColor: 'rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.06)' }]}
+                  onPress={handleCancelAutoPay}
+                  disabled={cancelling}
+                  activeOpacity={0.8}
+                >
+                  {cancelling ? (
+                    <ActivityIndicator size="small" color={colors.error} />
+                  ) : (
+                    <>
+                      <Ionicons name="pause-circle-outline" size={16} color={colors.error} />
+                      <Text style={[s.autoPayBtnText, { color: colors.error }]}>Turn Off AutoPay</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
               </View>
             );
-          } else if (rpStatus !== 'none' && rpStatus !== 'error') {
+          } else if (isActive && (rpStatus === 'cancelled' || rpStatus === 'completed' || rpStatus === 'paused' || rpStatus === 'mandate_revoked' || !autoRenew)) {
+            // AutoPay OFF but subscription still active — show "Enable AutoPay Again" button
             return (
-              <View style={[s.infoCard, { borderColor: 'rgba(245,158,11,0.15)', backgroundColor: 'rgba(245,158,11,0.04)' }]}>
-                <Ionicons name="alert-circle-outline" size={16} color={colors.warning} />
-                <Text style={[s.infoText, { color: colors.warning }]}>AutoPay is NOT active (status: {rpStatus}). Your subscription will NOT renew automatically. Tap "Pay Subscription" to re-enable.</Text>
+              <View>
+                <View style={[s.infoCard, { borderColor: 'rgba(245,158,11,0.2)', backgroundColor: 'rgba(245,158,11,0.04)' }]}>
+                  <Ionicons name="alert-circle-outline" size={16} color={colors.warning} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.infoText, { color: colors.warning }]}>AutoPay: OFF</Text>
+                    <Text style={[s.infoText, { color: colors.textMuted, marginTop: 4 }]}>
+                      {apMessage || `Your subscription remains active until ${subEndDate ? formatDate(subEndDate) : 'expiry'}. Auto-renewal has been turned off. You can enable AutoPay again anytime.`}
+                    </Text>
+                    <View style={s.statusRow}>
+                      <Text style={s.statusLabel}>Subscription:</Text>
+                      <Text style={[s.statusValue, { color: colors.success }]}>Active (until {subEndDate ? formatDate(subEndDate) : '—'})</Text>
+                    </View>
+                    <View style={s.statusRow}>
+                      <Text style={s.statusLabel}>AutoPay:</Text>
+                      <Text style={[s.statusValue, { color: colors.error }]}>OFF</Text>
+                    </View>
+                    <View style={s.statusRow}>
+                      <Text style={s.statusLabel}>Renewal:</Text>
+                      <Text style={[s.statusValue, { color: colors.error }]}>Disabled</Text>
+                    </View>
+                  </View>
+                </View>
+                {/* Enable AutoPay Again button */}
+                <TouchableOpacity
+                  style={[s.autoPayBtn, { borderColor: colors.borderGold, backgroundColor: colors.primaryMuted }]}
+                  onPress={handleSubscribe}
+                  disabled={subscribing}
+                  activeOpacity={0.8}
+                >
+                  {subscribing ? (
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  ) : (
+                    <>
+                      <Ionicons name="refresh-circle-outline" size={16} color={colors.primary} />
+                      <Text style={[s.autoPayBtnText, { color: colors.primary }]}>Enable AutoPay Again</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
               </View>
             );
-          } else if (isActive) {
+          } else if (rpStatus !== 'none' && rpStatus !== 'error' && !isActive) {
+            return (
+              <View style={[s.infoCard, { borderColor: 'rgba(239,68,68,0.15)', backgroundColor: 'rgba(239,68,68,0.04)' }]}>
+                <Ionicons name="close-circle-outline" size={16} color={colors.error} />
+                <Text style={[s.infoText, { color: colors.error }]}>AutoPay: OFF (Subscription Expired). Subscribe again to restore your profile.</Text>
+              </View>
+            );
+          } else if (rpStatus === 'none' && isActive) {
             return (
               <View style={[s.infoCard, { borderColor: 'rgba(255,255,255,0.06)', backgroundColor: 'rgba(255,255,255,0.02)' }]}>
                 <Ionicons name="information-circle-outline" size={16} color={colors.textMuted} />
-                <Text style={[s.infoText, { color: colors.textMuted }]}>AutoPay status unknown. If your subscription doesn't renew automatically, use the Pay button below.</Text>
+                <Text style={[s.infoText, { color: colors.textMuted }]}>AutoPay status unknown. If your subscription doesn't renew automatically, use the Pay button above.</Text>
               </View>
             );
           }
@@ -393,4 +517,10 @@ const s = StyleSheet.create({
   // Info cards
   infoCard: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, marginHorizontal: spacing.xl, marginTop: spacing.xl, backgroundColor: 'rgba(34,197,94,0.04)', borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, borderColor: 'rgba(34,197,94,0.15)' },
   infoText: { ...typography.bodySm, color: colors.success, flex: 1, lineHeight: 18 },
+  // AutoPay controls
+  autoPayBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, marginHorizontal: spacing.xl, marginTop: spacing.md, paddingVertical: spacing.md, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border },
+  autoPayBtnText: { ...typography.labelMd, fontWeight: '600' },
+  statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 6 },
+  statusLabel: { ...typography.caption, color: colors.textMuted, width: 80 },
+  statusValue: { ...typography.bodySm, color: colors.text, fontWeight: '600' },
 });

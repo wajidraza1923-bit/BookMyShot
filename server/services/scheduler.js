@@ -225,6 +225,66 @@ function initScheduler() {
   console.log("[Scheduler] ✅ All cron jobs registered (8AM/9AM/10AM/11AM IST daily)");
 
   // ═══════════════════════════════════════════════════════════════
+  // CREATOR AVAILABILITY REMINDER — Every Monday at 10:30 AM IST
+  // Reminds creators who haven't updated their calendar in 14+ days
+  // ═══════════════════════════════════════════════════════════════
+  cron.schedule("30 10 * * 1", async () => {
+    console.log("[Scheduler] Running creator availability reminders...");
+    try {
+      const Creator = require("../models/Creator");
+      const CalendarEvent = require("../models/CalendarEvent");
+      const Notification = require("../models/Notification");
+      const now = new Date();
+      const twoWeeksAgo = new Date(now - 14 * 86400000);
+      let sent = 0;
+
+      const activeCreators = await Creator.find({
+        status: "approved",
+        subscriptionStatus: { $in: ["active", "trial"] },
+      }).populate("user", "_id name");
+
+      for (const creator of activeCreators) {
+        if (!creator.user?._id) continue;
+
+        // Check if creator has any recent calendar activity
+        const recentEvent = await CalendarEvent.findOne({
+          creator: creator._id,
+          $or: [
+            { createdAt: { $gte: twoWeeksAgo } },
+            { date: { $gte: now } },
+          ],
+        });
+
+        if (!recentEvent) {
+          // No recent calendar activity — remind them
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          const existing = await Notification.findOne({
+            user: creator.user._id,
+            type: "info",
+            title: { $regex: "Calendar" },
+            createdAt: { $gte: today },
+          });
+          if (!existing) {
+            await Notification.create({
+              user: creator.user._id,
+              type: "info",
+              title: "📅 Update Your Availability",
+              message: "Your calendar hasn't been updated recently. Keep your availability up-to-date so clients know when you're free for bookings.",
+              targetScreen: "CreatorCalendar",
+            });
+            sent++;
+          }
+        }
+      }
+      console.log(`[Scheduler] Availability reminders sent: ${sent}`);
+    } catch (e) {
+      console.error("[Scheduler] Availability reminder error:", e.message);
+    }
+  }, { timezone: "Asia/Kolkata" });
+
+  console.log("[Scheduler] ✅ Creator availability reminder registered (Monday 10:30 AM IST)");
+
+  // ═══════════════════════════════════════════════════════════════
   // DATA RETENTION POLICY — Daily cleanup at 3:00 AM IST
   // ═══════════════════════════════════════════════════════════════
   cron.schedule("0 3 * * *", async () => {
@@ -334,6 +394,100 @@ function initScheduler() {
   }, { timezone: "Asia/Kolkata" });
 
   console.log("[Scheduler] ✅ Monthly creator statements registered (1st of month, 10AM IST)");
+
+  // ═══════════════════════════════════════════════════════════════
+  // RAZORPAY SUBSCRIPTION SYNC — Every 6 hours
+  // Fallback for missed webhooks: verifies real Razorpay subscription status
+  // and syncs autoRenew/subscriptionStatus with live API data
+  // ═══════════════════════════════════════════════════════════════
+  cron.schedule("0 */6 * * *", async () => {
+    console.log("[Scheduler] Running Razorpay subscription sync...");
+    try {
+      const razorpayService = require("./razorpayService");
+      if (!razorpayService.isConfigured()) {
+        console.log("[Scheduler] Razorpay not configured — skipping sync");
+        return;
+      }
+
+      const Creator = require("../models/Creator");
+      const Notification = require("../models/Notification");
+      const socketService = require("./socketService");
+
+      // Find all creators with a Razorpay subscription ID and active/trial status
+      const creators = await Creator.find({
+        razorpaySubscriptionId: { $exists: true, $ne: "" },
+        subscriptionStatus: { $in: ["active", "trial", "overdue"] },
+      }).populate("user", "_id name email");
+
+      let synced = 0;
+      let errors = 0;
+
+      for (const creator of creators) {
+        try {
+          const rpSub = await razorpayService.fetchSubscription(creator.razorpaySubscriptionId);
+          const rpAutoPayOn = rpSub.status === "active" || rpSub.status === "authenticated";
+          let changed = false;
+
+          // Sync autoRenew
+          if (creator.autoRenew !== rpAutoPayOn) {
+            creator.autoRenew = rpAutoPayOn;
+            changed = true;
+          }
+
+          // If Razorpay says halted/cancelled/completed but we still show active
+          if (rpSub.status === "halted" && creator.subscriptionStatus === "active") {
+            creator.subscriptionStatus = "suspended";
+            changed = true;
+          }
+
+          // If Razorpay says cancelled/completed and subscription end date has passed
+          if ((rpSub.status === "cancelled" || rpSub.status === "completed") && creator.subscriptionEndDate && creator.subscriptionEndDate < new Date()) {
+            if (creator.subscriptionStatus !== "expired") {
+              creator.subscriptionStatus = "expired";
+              changed = true;
+              // Notify
+              if (creator.user?._id) {
+                await Notification.create({
+                  user: creator.user._id,
+                  type: "subscription",
+                  title: "⚠️ Subscription Expired",
+                  message: "Your subscription has expired (detected via sync). Renew to restore your profile.",
+                });
+              }
+            }
+          }
+
+          if (changed) {
+            await creator.save();
+            synced++;
+
+            // Real-time Socket.IO update
+            if (creator.user?._id) {
+              socketService.emitToUser(creator.user._id, "subscription:updated", {
+                subscriptionStatus: creator.subscriptionStatus,
+                autoRenew: creator.autoRenew,
+                autopayActive: rpAutoPayOn,
+                razorpayStatus: rpSub.status,
+                subscriptionEndDate: creator.subscriptionEndDate,
+              });
+            }
+          }
+        } catch (e) {
+          errors++;
+          // Don't log individual errors to avoid noise — count them
+        }
+
+        // Rate limit: small delay between API calls to avoid hitting Razorpay limits
+        await new Promise(r => setTimeout(r, 200));
+      }
+
+      console.log(`[Scheduler] Razorpay sync: ${creators.length} checked, ${synced} updated, ${errors} errors`);
+    } catch (e) {
+      console.error("[Scheduler] Razorpay sync error:", e.message);
+    }
+  }, { timezone: "Asia/Kolkata" });
+
+  console.log("[Scheduler] ✅ Razorpay subscription sync registered (every 6 hours)");
 }
 
 module.exports = { initScheduler };

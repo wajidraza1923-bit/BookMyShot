@@ -830,14 +830,14 @@ router.patch("/inquiries/:id/reply", async (req, res, next) => {
               creatorEarning,
               status: "pending",
             });
-            console.log(`[COMMISSION] âœ… Generated for booking ${createdBooking._id}: â‚¹${commAmount} (${commPercent}% of â‚¹${bookingAmount})`);
+            console.log(`[COMMISSION] ✅ Generated for booking ${createdBooking._id}: ₹${commAmount} (${commPercent}% of ₹${bookingAmount})`);
 
             // Notify creator about commission
             await Notification.create({
               user: req.user._id,
               type: "commission",
               title: "ðŸ“Š Commission Generated",
-              message: `Commission of â‚¹${commAmount.toLocaleString('en-IN')} (${commPercent}%) has been generated for booking â‚¹${bookingAmount.toLocaleString('en-IN')}. Due in 30 days.`,
+              message: `Commission of ₹${commAmount.toLocaleString('en-IN')} (${commPercent}%) has been generated for booking ₹${bookingAmount.toLocaleString('en-IN')}. Due in 30 days.`,
               targetScreen: "CreatorWallet",
             });
           }
@@ -852,9 +852,9 @@ router.patch("/inquiries/:id/reply", async (req, res, next) => {
       await Notification.create({
         user: inquiry.user,
         title: inquiry.status === "accepted"
-          ? "âœ… Inquiry Accepted"
+          ? "✅ Inquiry Accepted"
           : inquiry.status === "rejected"
-            ? "âŒ Inquiry Declined"
+            ? "❌ Inquiry Declined"
             : "ðŸ“© Inquiry Update",
         message: inquiry.status === "accepted"
           ? `Your inquiry for ${inquiry.eventType} has been accepted! A booking has been created.`
@@ -969,11 +969,11 @@ router.patch("/payment-proofs/:id/verify", async (req, res, next) => {
     await Notification.create({
       user: proof.user,
       title: req.body.status === "verified"
-        ? "âœ… Payment Approved"
-        : "âŒ Payment Rejected",
+        ? "✅ Payment Approved"
+        : "❌ Payment Rejected",
       message: req.body.status === "verified"
-        ? `Your payment of â‚¹${proof.amount} has been approved.`
-        : `Your payment of â‚¹${proof.amount} has been rejected. Please upload a new payment proof.`,
+        ? `Your payment of ₹${proof.amount} has been approved.`
+        : `Your payment of ₹${proof.amount} has been rejected. Please upload a new payment proof.`,
       type: "payment",
     });
     res.json({ success: true, proof, booking });
@@ -989,16 +989,23 @@ router.patch("/bookings/:id/complete", async (req, res, next) => {
     const creator = await getCreator(req.user._id);
     const booking = await Booking.findOne({ _id: req.params.id, creator: creator._id });
     if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
-    booking.status = "completed";
+    booking.status = "Completed";
     booking.bookingStatus = "completed";
     await booking.save();
     const Notification = require("../models/Notification");
     await Notification.create({
       user: booking.user,
-      title: "âœ… Booking Completed",
+      title: "✅ Booking Completed",
       message: `Your ${booking.eventType} has been marked as completed. Thank you!`,
       type: "booking",
+      targetScreen: "Bookings",
+      targetId: booking._id.toString(),
     });
+    // Real-time update
+    try {
+      const socketService = require("../services/socketService");
+      socketService.notifyBookingUpdate(booking.user.toString(), req.user._id.toString(), { bookingId: booking._id, status: "Completed" });
+    } catch (e) {}
     res.json({ success: true, booking });
   } catch (e) {
     next(e);

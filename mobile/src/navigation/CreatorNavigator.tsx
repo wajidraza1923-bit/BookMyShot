@@ -21,6 +21,7 @@ import CreatorSubscription from '../screens/creator/CreatorSubscription';
 import CreatorPromotions from '../screens/creator/CreatorPromotions';
 import CreatorPaymentVerification from '../screens/creator/CreatorPaymentVerification';
 import ChatDetailScreen from '../screens/ChatDetailScreen';
+import BookingChatScreen from '../screens/BookingChatScreen';
 import BookingsScreen from '../screens/BookingsScreen';
 import MessagesScreen from '../screens/MessagesScreen';
 import ProfileScreen from '../screens/ProfileScreen';
@@ -75,6 +76,7 @@ export default function CreatorNavigator() {
       <Stack.Screen name="CreatorNotifications" component={CreatorNotifications} />
       <Stack.Screen name="CreatorCalendar" component={CreatorCalendar} />
       <Stack.Screen name="ChatDetail" component={ChatDetailScreen} />
+      <Stack.Screen name="BookingChat" component={BookingChatScreen} />
       <Stack.Screen name="CreatorProfile" component={CreatorProfileScreen} options={{ animation: 'slide_from_bottom' }} />
       <Stack.Screen name="Inquiry" component={InquiryScreen} />
       <Stack.Screen name="WriteReview" component={WriteReviewScreen} />

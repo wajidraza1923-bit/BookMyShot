@@ -98,6 +98,19 @@ router.post("/", optionalAuth, async (req, res, next) => {
       const review = await Review.create({ user: req.user._id, creator: creatorId, name: req.user.name, ...reviewFields });
 
       await recalcCreatorRating(creatorId);
+
+      // ═══ NOTIFICATION: New Review Received (to creator) ═══
+      try {
+        const Notification = require("../models/Notification");
+        await Notification.create({
+          user: creator.user,
+          type: "review",
+          title: "⭐ New Review Received",
+          message: `${req.user.name} left a ${rating}★ review${reviewFields.eventType ? ` for ${reviewFields.eventType}` : ''}: "${text.substring(0, 60)}${text.length > 60 ? '...' : ''}"`,
+          targetScreen: "CreatorReviews",
+        });
+      } catch (e) { /* non-fatal */ }
+
       // Log activity
       try { const LA = require("../models/LiveActivity"); await LA.create({ type: "review", text: `New ${rating}★ review in ${creator.city || 'India'}`, icon: "⭐", city: creator.city }); } catch {}
       return res.status(201).json({ success: true, data: review });
@@ -114,6 +127,19 @@ router.post("/", optionalAuth, async (req, res, next) => {
     const review = await Review.create({ creator: creatorId, phone, name: name.trim(), ...reviewFields });
 
     await recalcCreatorRating(creatorId);
+
+    // ═══ NOTIFICATION: New Review Received (guest review → creator) ═══
+    try {
+      const Notification = require("../models/Notification");
+      await Notification.create({
+        user: creator.user,
+        type: "review",
+        title: "⭐ New Review Received",
+        message: `${name.trim()} left a ${rating}★ review${reviewFields.eventType ? ` for ${reviewFields.eventType}` : ''}: "${text.substring(0, 60)}${text.length > 60 ? '...' : ''}"`,
+        targetScreen: "CreatorReviews",
+      });
+    } catch (e) { /* non-fatal */ }
+
     try { const LA = require("../models/LiveActivity"); await LA.create({ type: "review", text: `New ${rating}★ review in ${creator.city || 'India'}`, icon: "⭐", city: creator.city }); } catch {}
     res.status(201).json({ success: true, data: review });
   } catch (e) {

@@ -76,12 +76,17 @@ router.patch("/creators/:id/status", async (req, res, next) => {
     ).populate("user");
     if (creator?.user) {
       const note = req.body.note || `Your application has been ${req.body.status}`;
-      await createNotification(
-        creator.user._id,
-        req.body.status === "approved" ? "âœ… Creator Approved!" : "âŒ Creator Application Update",
-        note,
-        "creator"
-      );
+      let title = "Account Update";
+      let type = "creator";
+      if (req.body.status === "approved") {
+        title = "Creator Approved!";
+      } else if (req.body.status === "rejected") {
+        title = "Creator Application Update";
+      } else if (req.body.status === "suspended") {
+        title = "Account Suspended";
+        type = "warning";
+      }
+      await createNotification(creator.user._id, title, note, type);
     }
     res.json({ success: true, creator });
   } catch (e) {
@@ -171,7 +176,7 @@ router.delete("/creators/:id", async (req, res, next) => {
 // RESTORE deleted creator
 router.patch("/creators/:id/restore", async (req, res, next) => {
   try {
-    const creator = await Creator.findById(req.params.id);
+    const creator = await Creator.findById(req.params.id).populate("user", "_id name");
     if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
     if (creator.status !== "deleted") return res.status(400).json({ success: false, message: "Creator is not deleted" });
 
@@ -180,6 +185,17 @@ router.patch("/creators/:id/restore", async (req, res, next) => {
     creator.deletedBy = null;
     creator.deleteReason = "";
     await creator.save();
+
+    // ═══ NOTIFICATION: Account Reactivated ═══
+    if (creator.user?._id) {
+      await Notification.create({
+        user: creator.user._id,
+        type: "info",
+        title: "✅ Account Reactivated",
+        message: "Your creator account has been reactivated. All features are now accessible again. Welcome back!",
+        targetScreen: "CreatorHome",
+      });
+    }
 
     res.json({ success: true, message: "Creator restored successfully", data: creator });
   } catch (e) {
@@ -479,8 +495,8 @@ router.patch("/payment-proofs/:id/verify", async (req, res, next) => {
     if (!proof) return res.status(404).json({ success: false, message: "Payment proof not found" });
     await Notification.create({
       user: proof.user,
-      title: "âœ… Payment Proof " + (req.body.status === "verified" ? "Verified" : "Rejected"),
-      message: `Your payment proof of â‚¹${proof.amount} has been ${req.body.status}`,
+      title: "✅ Payment Proof " + (req.body.status === "verified" ? "Verified" : "Rejected"),
+      message: `Your payment proof of ₹${proof.amount} has been ${req.body.status}`,
       type: "payment",
     });
     res.json({ success: true, proof });
@@ -618,7 +634,7 @@ router.post("/payment-records", async (req, res, next) => {
       amount, paymentType: paymentType || "other", notes: notes || "Admin manual payment",
       addedBy: "creator", status: "approved",
     });
-    await logAction(req.user._id, "payment_add", "booking", bookingId, `â‚¹${amount}`, req.ip);
+    await logAction(req.user._id, "payment_add", "booking", bookingId, `₹${amount}`, req.ip);
     res.status(201).json({ success: true, record });
   } catch (e) { next(e); }
 });
@@ -717,7 +733,7 @@ router.post("/subscription-alerts", async (req, res, next) => {
         await c.save();
         await Notification.create({
           user: c.user._id, type: "subscription",
-          title: "âš ï¸ Subscription Expired",
+          title: "⚠ï¸ Subscription Expired",
           message: "Your BookMyShot subscription has expired. Please renew to continue using all features.",
         });
 
@@ -900,7 +916,7 @@ router.post("/commission-alerts", async (req, res, next) => {
               <p style="color:#b9aa98">Hello ${creator.user.name},</p>
               <p style="color:#d4c8bc">Your account has been temporarily suspended because the commission payment was not completed within the required period.</p>
               <table style="width:100%;margin:1rem 0;font-size:0.85rem;border-collapse:collapse">
-                <tr><td style="padding:0.4rem 0;color:#8a7e72">Outstanding Amount</td><td style="color:#ef4444;text-align:right;font-weight:700">â‚¹${comm.commissionAmount}</td></tr>
+                <tr><td style="padding:0.4rem 0;color:#8a7e72">Outstanding Amount</td><td style="color:#ef4444;text-align:right;font-weight:700">₹${comm.commissionAmount}</td></tr>
                 <tr><td style="padding:0.4rem 0;color:#8a7e72">Booking</td><td style="color:#f6eee7;text-align:right">${comm.booking?.clientName || 'â€”'} (${comm.booking?.eventType || 'â€”'})</td></tr>
                 <tr><td style="padding:0.4rem 0;color:#8a7e72">Due Date</td><td style="color:#ef4444;text-align:right">${new Date(comm.dueDate).toLocaleDateString("en-IN")}</td></tr>
                 <tr><td style="padding:0.4rem 0;color:#8a7e72">Suspended On</td><td style="color:#f6eee7;text-align:right">${now.toLocaleDateString("en-IN")}</td></tr>
@@ -913,7 +929,7 @@ router.post("/commission-alerts", async (req, res, next) => {
             meta: { action: "commission_suspension", amount: comm.commissionAmount },
           }).catch(() => {});
 
-          await Notification.create({ user: creator.user._id, type: "payment", title: "ðŸš« Account Suspended", message: `Unpaid commission of â‚¹${comm.commissionAmount}. Pay to reactivate.` });
+          await Notification.create({ user: creator.user._id, type: "payment", title: "ðŸš« Account Suspended", message: `Unpaid commission of ₹${comm.commissionAmount}. Pay to reactivate.` });
           suspended++;
         }
         continue;
@@ -932,13 +948,13 @@ router.post("/commission-alerts", async (req, res, next) => {
         if (!alreadySent) {
           await emailService.sendEmail({
             to: comm.creator.user.email,
-            subject: `â° Commission due in ${daysUntilDue} day${daysUntilDue > 1 ? 's' : ''} â€” â‚¹${comm.commissionAmount}`,
+            subject: `â° Commission due in ${daysUntilDue} day${daysUntilDue > 1 ? 's' : ''} â€” ₹${comm.commissionAmount}`,
             html: `<div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:2rem;background:#111;color:#f6eee7;border-radius:12px">
               <h2 style="color:${daysUntilDue <= 1 ? '#ef4444' : '#f59e0b'};margin:0 0 1rem">â° Commission Payment Due</h2>
               <p style="color:#b9aa98">Hi ${comm.creator.user.name},</p>
-              <p style="color:#d4c8bc">Your commission payment of <strong style="color:#DAAF37">â‚¹${comm.commissionAmount}</strong> is due in <strong>${daysUntilDue} day${daysUntilDue > 1 ? 's' : ''}</strong>.</p>
+              <p style="color:#d4c8bc">Your commission payment of <strong style="color:#DAAF37">₹${comm.commissionAmount}</strong> is due in <strong>${daysUntilDue} day${daysUntilDue > 1 ? 's' : ''}</strong>.</p>
               <table style="width:100%;margin:1rem 0;font-size:0.85rem;border-collapse:collapse">
-                <tr><td style="padding:0.4rem 0;color:#8a7e72">Amount</td><td style="color:#DAAF37;text-align:right;font-weight:600">â‚¹${comm.commissionAmount}</td></tr>
+                <tr><td style="padding:0.4rem 0;color:#8a7e72">Amount</td><td style="color:#DAAF37;text-align:right;font-weight:600">₹${comm.commissionAmount}</td></tr>
                 <tr><td style="padding:0.4rem 0;color:#8a7e72">Booking</td><td style="color:#f6eee7;text-align:right">${comm.booking?.clientName || 'â€”'}</td></tr>
                 <tr><td style="padding:0.4rem 0;color:#8a7e72">Due Date</td><td style="color:#ef4444;text-align:right">${new Date(comm.dueDate).toLocaleDateString("en-IN")}</td></tr>
               </table>
@@ -950,7 +966,7 @@ router.post("/commission-alerts", async (req, res, next) => {
             meta: { action: "commission_reminder", daysUntilDue, amount: comm.commissionAmount },
           }).catch(() => {});
 
-          await Notification.create({ user: comm.creator.user._id, type: "payment", title: `â° Commission due in ${daysUntilDue} day${daysUntilDue > 1 ? 's' : ''}`, message: `â‚¹${comm.commissionAmount} commission payment due on ${new Date(comm.dueDate).toLocaleDateString("en-IN")}.` });
+          await Notification.create({ user: comm.creator.user._id, type: "payment", title: `â° Commission due in ${daysUntilDue} day${daysUntilDue > 1 ? 's' : ''}`, message: `₹${comm.commissionAmount} commission payment due on ${new Date(comm.dueDate).toLocaleDateString("en-IN")}.` });
           comm.lastReminderSent = now;
           comm.reminderCount = (comm.reminderCount || 0) + 1;
           await comm.save();
@@ -980,9 +996,9 @@ router.post("/creators/:id/reactivate", async (req, res, next) => {
     if (creator.user?.email) {
       await emailService.sendEmail({
         to: creator.user.email,
-        subject: "âœ… Account Reactivated â€” BookMyShot",
+        subject: "✅ Account Reactivated â€” BookMyShot",
         html: `<div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:2rem;background:#111;color:#f6eee7;border-radius:12px">
-          <h2 style="color:#10b981;margin:0 0 1rem">âœ… Account Reactivated</h2>
+          <h2 style="color:#10b981;margin:0 0 1rem">✅ Account Reactivated</h2>
           <p style="color:#b9aa98">Hello ${creator.user.name},</p>
           <p style="color:#d4c8bc">Your BookMyShot creator account has been reactivated by our team. All your data (listings, leads, bookings, promotions) remains intact.</p>
           <p style="color:#d4c8bc">You can now access all features from your Creator Dashboard.</p>
@@ -994,7 +1010,7 @@ router.post("/creators/:id/reactivate", async (req, res, next) => {
       }).catch(() => {});
     }
 
-    await Notification.create({ user: creator.user._id, type: "info", title: "âœ… Account Reactivated", message: "Your account has been reactivated. All features are restored." });
+    await Notification.create({ user: creator.user._id, type: "info", title: "✅ Account Reactivated", message: "Your account has been reactivated. All features are restored." });
     await logAction(req.user._id, "reactivate_creator", "creator", creator._id.toString(), "Account reactivated from suspended", req.ip);
 
     res.json({ success: true, message: "Creator reactivated" });

@@ -83,6 +83,20 @@ router.post("/user", async (req, res, next) => {
       return res.status(403).json({ success: false, message: "Not your booking" });
     }
 
+    // ═══ IDEMPOTENCY: Prevent duplicate records from rapid/double-clicks ═══
+    const tenSecondsAgo = new Date(Date.now() - 10000);
+    const duplicate = await PaymentRecord.findOne({
+      booking: bookingId,
+      user: req.user._id,
+      amount: Number(amount),
+      paymentType: paymentType || "other",
+      addedBy: "user",
+      createdAt: { $gte: tenSecondsAgo },
+    });
+    if (duplicate) {
+      return res.status(200).json({ success: true, record: duplicate, deduplicated: true, message: "Payment already recorded" });
+    }
+
     // â•â•â• VALIDATION: Total received must NEVER exceed booking amount â•â•â•
     const bookingTotal = booking.amount || booking.budget || 0;
     if (bookingTotal > 0) {
@@ -92,7 +106,7 @@ router.post("/user", async (req, res, next) => {
         const maxAllowed = Math.max(0, bookingTotal - totalAlreadyRecorded);
         return res.status(400).json({
           success: false,
-          message: `Payment exceeds booking amount. Booking total: â‚¹${bookingTotal}, Already recorded: â‚¹${totalAlreadyRecorded}, Maximum allowed: â‚¹${maxAllowed}`,
+          message: `Payment exceeds booking amount. Booking total: ₹${bookingTotal}, Already recorded: ₹${totalAlreadyRecorded}, Maximum allowed: ₹${maxAllowed}`,
         });
       }
     }
@@ -121,9 +135,11 @@ router.post("/user", async (req, res, next) => {
     if (creator && creator.user) {
       await Notification.create({
         user: creator.user,
-        title: "ðŸ’° New Payment Record",
-        message: `â‚¹${amount} ${paymentType || "payment"} recorded for ${booking.eventType}`,
+        title: "💰 Payment Received",
+        message: `₹${Number(amount).toLocaleString("en-IN")} ${paymentType || "payment"} received from ${booking.clientName || "client"} for ${booking.eventType || "booking"}`,
         type: "payment",
+        targetScreen: "CreatorPaymentVerification",
+        targetId: booking._id.toString(),
       });
     }
 
@@ -153,6 +169,22 @@ router.post("/creator", async (req, res, next) => {
       return res.status(403).json({ success: false, message: "Not your booking" });
     }
 
+    // ═══ IDEMPOTENCY: Prevent duplicate records from rapid/double-clicks ═══
+    // Check if an identical payment was recorded in the last 10 seconds
+    const tenSecondsAgo = new Date(Date.now() - 10000);
+    const duplicate = await PaymentRecord.findOne({
+      booking: bookingId,
+      creator: creator._id,
+      amount: Number(amount),
+      paymentType: paymentType || "other",
+      addedBy: "creator",
+      createdAt: { $gte: tenSecondsAgo },
+    });
+    if (duplicate) {
+      // Return success with existing record (idempotent response — no duplicate created)
+      return res.status(200).json({ success: true, record: duplicate, deduplicated: true, message: "Payment already recorded" });
+    }
+
     // â•â•â• VALIDATION: Total received must NEVER exceed booking amount â•â•â•
     const bookingTotal = booking.amount || booking.budget || 0;
     if (bookingTotal <= 0) {
@@ -164,7 +196,7 @@ router.post("/creator", async (req, res, next) => {
       const maxAllowed = bookingTotal - totalAlreadyPaid;
       return res.status(400).json({
         success: false,
-        message: `Payment exceeds booking amount. Booking total: â‚¹${bookingTotal}, Already received: â‚¹${totalAlreadyPaid}, Maximum you can add: â‚¹${maxAllowed}`,
+        message: `Payment exceeds booking amount. Booking total: ₹${bookingTotal}, Already received: ₹${totalAlreadyPaid}, Maximum you can add: ₹${maxAllowed}`,
       });
     }
 
@@ -187,9 +219,11 @@ router.post("/creator", async (req, res, next) => {
     // Notify user
     await Notification.create({
       user: booking.user,
-      title: "ðŸ’° Payment Recorded",
-      message: `Creator recorded â‚¹${amount} ${paymentType || "payment"} for ${booking.eventType}`,
+      title: "💰 Payment Recorded",
+      message: `₹${Number(amount).toLocaleString("en-IN")} ${paymentType || "payment"} has been recorded for your ${booking.eventType || "booking"}`,
       type: "payment",
+      targetScreen: "Bookings",
+      targetId: booking._id.toString(),
     });
 
     res.status(201).json({ success: true, record });
@@ -216,9 +250,11 @@ router.patch("/:id/approve", async (req, res, next) => {
     // Notify user
     await Notification.create({
       user: record.user,
-      title: "âœ… Payment Approved",
-      message: `Your payment of â‚¹${record.amount} has been approved.`,
+      title: "✅ Payment Approved",
+      message: `Your payment of ₹${Number(record.amount).toLocaleString("en-IN")} has been verified and approved.`,
       type: "payment",
+      targetScreen: "Bookings",
+      targetId: (record.booking || "").toString(),
     });
 
     res.json({ success: true, record, booking });
@@ -243,9 +279,11 @@ router.patch("/:id/reject", async (req, res, next) => {
     // Notify user
     await Notification.create({
       user: record.user,
-      title: "âŒ Payment Rejected",
-      message: `Your payment of â‚¹${record.amount} was rejected. ${req.body.reason || "Please resubmit."}`,
+      title: "❌ Payment Rejected",
+      message: `Your payment of ₹${Number(record.amount).toLocaleString("en-IN")} was not approved.${req.body.reason ? " Reason: " + req.body.reason : " Please contact the creator or resubmit."}`,
       type: "payment",
+      targetScreen: "Bookings",
+      targetId: (record.booking || "").toString(),
     });
 
     res.json({ success: true, record });
@@ -359,9 +397,11 @@ router.patch("/booking/:bookingId/mark-paid", async (req, res, next) => {
     // Notify user
     await Notification.create({
       user: booking.user,
-      title: "âœ… Booking Fully Paid",
-      message: `Your booking for ${booking.eventType} has been marked as fully paid.`,
+      title: "✅ Booking Fully Paid",
+      message: `Your ${booking.eventType || "booking"} with invoice ${booking.invoiceNumber || ""} has been marked as fully paid. Thank you!`,
       type: "payment",
+      targetScreen: "Bookings",
+      targetId: booking._id.toString(),
     });
 
     res.json({ success: true, booking });

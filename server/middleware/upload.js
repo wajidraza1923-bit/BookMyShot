@@ -50,19 +50,33 @@ const upload = multer({
   fileFilter: anyMediaFilter,
 });
 
-// APK upload: max 150MB
+// APK upload: max 500MB — uses DISK storage to avoid memory issues with large files
 const apkFilter = (req, file, cb) => {
   const ext = path.extname(file.originalname).toLowerCase();
-  if (ext === '.apk' || file.mimetype === 'application/vnd.android.package-archive' || file.mimetype === 'application/octet-stream') {
+  if (ext === '.apk' || ext === '.aab' || file.mimetype === 'application/vnd.android.package-archive' || file.mimetype === 'application/octet-stream') {
     cb(null, true);
   } else {
-    cb(new Error("Only .apk files are allowed"), false);
+    cb(new Error("Only .apk and .aab files are allowed"), false);
   }
 };
 
+const fs = require("fs");
+const apkDir = path.join(__dirname, "../../public/releases");
+if (!fs.existsSync(apkDir)) fs.mkdirSync(apkDir, { recursive: true });
+
+const apkDiskStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, apkDir),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const ver = req.body.version || 'unknown';
+    const code = req.body.versionCode || Date.now();
+    cb(null, `bookmyshot-v${ver}-${code}${ext}`);
+  },
+});
+
 const uploadApk = multer({
-  storage,
-  limits: { fileSize: 150 * 1024 * 1024 }, // 150MB
+  storage: apkDiskStorage,
+  limits: { fileSize: 500 * 1024 * 1024 }, // 500MB
   fileFilter: apkFilter,
 });
 

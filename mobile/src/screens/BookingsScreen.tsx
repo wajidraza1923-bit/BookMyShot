@@ -153,6 +153,14 @@ export default function BookingsScreen({ navigation }: any) {
                   </View>
                 )}
 
+                {/* Chat Button — only for accepted bookings */}
+                {['Creator Accepted', 'Payment Submitted', 'Payment Approved', 'Event Scheduled'].includes(b.status) && (
+                  <TouchableOpacity style={s.chatBtn} onPress={() => navigation.navigate('BookingChat', { bookingId: b._id })} activeOpacity={0.7}>
+                    <Ionicons name="chatbubble-outline" size={16} color={colors.primary} />
+                    <Text style={s.chatBtnText}>Chat with Creator</Text>
+                  </TouchableOpacity>
+                )}
+
                 {/* Upload Proof Button */}
                 {b.paymentStatus !== 'paid' && b.paymentStatus !== 'verified' && b.status !== 'rejected' && b.status !== 'cancelled' && (
                   <TouchableOpacity style={s.uploadBtn} onPress={() => navigation.navigate('PaymentProof', { bookingId: b._id, totalAmount: amount, paidAmount: paid, creatorName })}>
@@ -223,6 +231,9 @@ const s = StyleSheet.create({
   // Upload
   uploadBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#F97316', borderRadius: 10, paddingVertical: 10, marginBottom: 8 },
   uploadText: { fontSize: 12, fontWeight: '700', color: '#000' },
+  // Chat
+  chatBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: colors.primaryMuted, borderRadius: 10, paddingVertical: 10, marginBottom: 8, borderWidth: 1, borderColor: colors.borderGold },
+  chatBtnText: { fontSize: 12, fontWeight: '600', color: colors.primary },
   // Meta
   meta: { flexDirection: 'row', justifyContent: 'space-between' },
   metaText: { fontSize: 9, color: 'rgba(255,255,255,0.2)' },

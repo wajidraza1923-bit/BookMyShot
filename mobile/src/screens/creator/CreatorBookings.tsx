@@ -22,6 +22,7 @@ export default function CreatorBookings({ navigation }: any) {
   const [amountInput, setAmountInput] = useState('');
   const [payForm, setPayForm] = useState({ amount: '', type: 'advance', notes: '' });
   const [eventForm, setEventForm] = useState({ name: '', date: '', location: '' });
+  const [savingPayment, setSavingPayment] = useState(false);
 
   // Premium feedback states (replacing Alert.alert)
   const [toast, setToast] = useState<{ visible: boolean; type: 'success' | 'error' | 'info' | 'warning'; title: string; message?: string }>({ visible: false, type: 'info', title: '' });
@@ -71,13 +72,16 @@ export default function CreatorBookings({ navigation }: any) {
   };
 
   const recordPayment = async () => {
+    if (savingPayment) return; // Prevent double-clicks
     const amount = parseInt(payForm.amount);
     if (!amount || amount <= 0) { setToast({ visible: true, type: 'error', title: 'Invalid Amount', message: 'Enter a valid amount' }); return; }
+    setSavingPayment(true);
     try {
       await api.post('/payment-records/creator', { bookingId: activeBookingId, amount, paymentType: payForm.type, notes: payForm.notes });
       setShowPaymentModal(false); setPayForm({ amount: '', type: 'advance', notes: '' }); await load();
       setToast({ visible: true, type: 'success', title: 'Payment Recorded', message: `₹${amount.toLocaleString('en-IN')} recorded` });
     } catch (e: any) { setToast({ visible: true, type: 'error', title: 'Failed', message: e.response?.data?.message || 'Could not record payment' }); }
+    finally { setSavingPayment(false); }
   };
 
   const markPaid = (id: string) => setConfirmModal({ visible: true, title: 'Mark Fully Paid', message: 'Are you sure this booking is fully paid?', confirmText: 'Confirm', onConfirm: async () => { setConfirmModal({ ...confirmModal, visible: false }); try { await api.patch(`/payment-records/booking/${id}/mark-paid`); await load(); setToast({ visible: true, type: 'success', title: 'Marked Paid' }); } catch (e: any) { setToast({ visible: true, type: 'error', title: 'Failed', message: e.response?.data?.message || 'Failed' }); } } });
@@ -163,7 +167,9 @@ export default function CreatorBookings({ navigation }: any) {
               <ActionBtn icon="cash-outline" label="Set Amount" onPress={() => { setActiveBookingId(item._id); setAmountInput(String(item.amount || '')); setShowAmountModal(true); }} />
               <ActionBtn icon="card-outline" label="Record Pay" onPress={() => { setActiveBookingId(item._id); setShowPaymentModal(true); }} />
               <ActionBtn icon="checkmark-done" label="Mark Paid" onPress={() => markPaid(item._id)} />
-              <ActionBtn icon="calendar-outline" label="Add Event" onPress={() => { setActiveBookingId(item._id); setShowEventModal(true); }} />
+              {['Creator Accepted', 'Payment Submitted', 'Payment Approved', 'Event Scheduled', 'Completed', 'completed'].includes(item.status) && (
+                <ActionBtn icon="chatbubble-outline" label="Chat" onPress={() => navigation.navigate('BookingChat', { bookingId: item._id })} />
+              )}
             </View>
 
             {/* Status Actions */}
@@ -236,12 +242,14 @@ export default function CreatorBookings({ navigation }: any) {
       <Modal visible={showPaymentModal} transparent animationType="fade">
         <View style={styles.modalBg}><View style={styles.modal}>
           <Text style={styles.modalTitle}>Record Payment</Text>
-          <View style={styles.payTypeRow}>{['advance', 'partial', 'final'].map(t => (<TouchableOpacity key={t} style={[styles.payTypeBtn, payForm.type === t && styles.payTypeBtnActive]} onPress={() => setPayForm({ ...payForm, type: t })}><Text style={[styles.payTypeText, payForm.type === t && styles.payTypeTextActive]}>{t.charAt(0).toUpperCase() + t.slice(1)}</Text></TouchableOpacity>))}</View>
-          <TextInput style={styles.modalInput} value={payForm.amount} onChangeText={v => setPayForm({ ...payForm, amount: v })} keyboardType="numeric" placeholder="₹ Amount" placeholderTextColor={colors.textMuted} selectionColor={colors.primary} />
-          <TextInput style={[styles.modalInput, { height: 50 }]} value={payForm.notes} onChangeText={v => setPayForm({ ...payForm, notes: v })} placeholder="Notes (optional)" placeholderTextColor={colors.textMuted} selectionColor={colors.primary} multiline />
+          <View style={styles.payTypeRow}>{['advance', 'partial', 'final'].map(t => (<TouchableOpacity key={t} style={[styles.payTypeBtn, payForm.type === t && styles.payTypeBtnActive]} onPress={() => setPayForm({ ...payForm, type: t })} disabled={savingPayment}><Text style={[styles.payTypeText, payForm.type === t && styles.payTypeTextActive]}>{t.charAt(0).toUpperCase() + t.slice(1)}</Text></TouchableOpacity>))}</View>
+          <TextInput style={styles.modalInput} value={payForm.amount} onChangeText={v => setPayForm({ ...payForm, amount: v })} keyboardType="numeric" placeholder="₹ Amount" placeholderTextColor={colors.textMuted} selectionColor={colors.primary} editable={!savingPayment} />
+          <TextInput style={[styles.modalInput, { height: 50 }]} value={payForm.notes} onChangeText={v => setPayForm({ ...payForm, notes: v })} placeholder="Notes (optional)" placeholderTextColor={colors.textMuted} selectionColor={colors.primary} multiline editable={!savingPayment} />
           <View style={styles.modalBtns}>
-            <TouchableOpacity style={styles.modalCancel} onPress={() => setShowPaymentModal(false)}><Text style={styles.modalCancelText}>Cancel</Text></TouchableOpacity>
-            <TouchableOpacity style={styles.modalConfirm} onPress={recordPayment}><Text style={styles.modalConfirmText}>Record</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.modalCancel} onPress={() => setShowPaymentModal(false)} disabled={savingPayment}><Text style={styles.modalCancelText}>Cancel</Text></TouchableOpacity>
+            <TouchableOpacity style={[styles.modalConfirm, savingPayment && { opacity: 0.6 }]} onPress={recordPayment} disabled={savingPayment}>
+              {savingPayment ? <ActivityIndicator size="small" color="#000" /> : <Text style={styles.modalConfirmText}>Record</Text>}
+            </TouchableOpacity>
           </View>
         </View></View>
       </Modal>

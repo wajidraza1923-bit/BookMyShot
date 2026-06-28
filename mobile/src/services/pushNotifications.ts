@@ -217,9 +217,15 @@ export function getNavigationTarget(data: any): { screen: string; params?: any }
     case 'review':
       return { screen: 'CreatorReviews' };
     case 'message':
-      return { screen: 'Messages' };
+      return { screen: 'BookingChat', params: targetId ? { bookingId: targetId } : undefined };
     case 'admin':
       return { screen: 'AdminDashboard' };
+    case 'warning':
+      return { screen: 'CreatorSettings' };
+    case 'app_update':
+      return { screen: 'CreatorSettings' };
+    case 'info':
+      return { screen: 'CreatorNotifications' };
     default:
       return { screen: 'CreatorNotifications' };
   }

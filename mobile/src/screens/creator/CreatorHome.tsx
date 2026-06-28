@@ -233,14 +233,26 @@ export default function CreatorHome({ navigation }: any) {
           </View>
         </View>
 
-        {/* Subscription Status */}
-        <View style={styles.subCard}>
+        {/* Subscription Status — Real-time from dashboard API */}
+        <TouchableOpacity style={styles.subCard} activeOpacity={0.8} onPress={() => navigation.navigate('CreatorSubscription')}>
           <View style={styles.subInfo}>
             <Ionicons name="diamond" size={16} color={colors.primary} />
-            <Text style={styles.subTitle}>Pro Subscription</Text>
+            <View>
+              <Text style={styles.subTitle}>Subscription</Text>
+              <Text style={{ fontSize: 10, color: colors.textMuted, marginTop: 1 }}>
+                {(stats as any).autoRenew !== false ? 'AutoPay: ON' : 'AutoPay: OFF'}
+              </Text>
+            </View>
           </View>
-          <Text style={styles.subStatus}>Active</Text>
-        </View>
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text style={[styles.subStatus, { color: (stats as any).subscriptionStatus === 'active' || (stats as any).subscriptionStatus === 'trial' ? colors.success : colors.error }]}>
+              {(stats as any).subscriptionStatus === 'active' ? 'Active' : (stats as any).subscriptionStatus === 'trial' ? 'Trial' : (stats as any).subscriptionStatus === 'expired' ? 'Expired' : 'Active'}
+            </Text>
+            {(stats as any).autoRenew === false && (stats as any).subscriptionStatus === 'active' && (
+              <Text style={{ fontSize: 9, color: colors.warning, marginTop: 2 }}>Tap to enable AutoPay</Text>
+            )}
+          </View>
+        </TouchableOpacity>
 
         <View style={{ height: 100 }} />
       </ScrollView>

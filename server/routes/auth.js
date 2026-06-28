@@ -106,6 +106,20 @@ router.post("/register", async (req, res, next) => {
       requiresVerification: !user.emailVerified,
     });
 
+    // ═══ WELCOME NOTIFICATION ═══
+    try {
+      const Notification = require("../models/Notification");
+      await Notification.create({
+        user: user._id,
+        type: "info",
+        title: "🎉 Welcome to BookMyShot!",
+        message: user.role === "creator"
+          ? "Welcome! Complete your profile and subscription to start receiving bookings."
+          : "Welcome to BookMyShot! Explore verified photographers and cinematographers near you.",
+        targetScreen: user.role === "creator" ? "CreatorSettings" : "Home",
+      });
+    } catch (e) { /* non-fatal */ }
+
     // Send verification OTP in background (don't block response)
     if (email && !user.emailVerified) {
       const otp = generateOTP();
@@ -294,6 +308,17 @@ router.post("/send-otp", async (req, res, next) => {
     if (!result.success) {
       return res.status(500).json({ success: false, message: "Failed to send OTP. Please try again." });
     }
+
+    // ═══ OTP PUSH NOTIFICATION ═══
+    try {
+      const Notification = require("../models/Notification");
+      await Notification.create({
+        user: user._id,
+        type: "info",
+        title: "🔐 Verification Code Sent",
+        message: "A verification OTP has been sent to your email. Check your inbox.",
+      });
+    } catch (e) { /* non-fatal */ }
 
     res.json({ success: true, message: "Verification OTP sent to your email" });
   } catch (e) {

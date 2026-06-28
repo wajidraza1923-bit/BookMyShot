@@ -12,6 +12,7 @@ import MessagesScreen from '../screens/MessagesScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import CreatorProfileScreen from '../screens/CreatorProfileScreen';
 import ChatDetailScreen from '../screens/ChatDetailScreen';
+import BookingChatScreen from '../screens/BookingChatScreen';
 import SavedCreatorsScreen from '../screens/SavedCreatorsScreen';
 import InfoScreen from '../screens/InfoScreen';
 import InquiryScreen from '../screens/InquiryScreen';
@@ -56,6 +57,7 @@ export default function CustomerNavigator() {
       <Stack.Screen name="CreatorProfile" component={CreatorProfileScreen} options={{ animation: 'slide_from_bottom' }} />
       <Stack.Screen name="Search" component={SearchScreen} />
       <Stack.Screen name="ChatDetail" component={ChatDetailScreen} />
+      <Stack.Screen name="BookingChat" component={BookingChatScreen} />
       <Stack.Screen name="SavedCreators" component={SavedCreatorsScreen} />
       <Stack.Screen name="Info" component={InfoScreen} />
       <Stack.Screen name="Inquiry" component={InquiryScreen} />

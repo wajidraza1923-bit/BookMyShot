@@ -103,29 +103,10 @@ router.post("/", protect, authorize("admin"), uploadApk.single("apk"), async (re
     let apkUrl = downloadUrl || "";
     let fileSize = 0;
     if (req.file) {
+      // APK is already saved to disk by multer (disk storage)
       fileSize = req.file.size || 0;
-      try {
-        const { uploadBuffer, isConfigured } = require("../services/cloudinaryService");
-        if (isConfigured()) {
-          const result = await uploadBuffer(req.file.buffer, {
-            folder: "bookmyshot/releases",
-            resourceType: "raw",
-            format: "apk",
-            publicId: `bookmyshot-v${version}-code${code}`,
-          });
-          apkUrl = result.url;
-        } else {
-          const fs = require("fs");
-          const path = require("path");
-          const dir = path.join(__dirname, "../../public/releases");
-          if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-          const fname = `bookmyshot-v${version}-${code}.apk`;
-          fs.writeFileSync(path.join(dir, fname), req.file.buffer);
-          apkUrl = `/releases/${fname}`;
-        }
-      } catch (err) {
-        console.error("[AppVersion] Upload error:", err.message);
-      }
+      apkUrl = `/releases/${req.file.filename}`;
+      console.log(`[AppVersion] APK saved: ${req.file.filename} (${(fileSize / 1024 / 1024).toFixed(1)} MB)`);
     }
 
     const record = await AppVersion.create({
@@ -148,6 +129,16 @@ router.post("/", protect, authorize("admin"), uploadApk.single("apk"), async (re
       const socketService = require("../services/socketService");
       socketService.emitToRole("admin", "appVersion:published", { version, versionCode: code, downloadUrl: apkUrl, forceUpdate: record.forceUpdate });
     } catch (e) {}
+
+    // ═══ NOTIFICATION: App Update Available (to all users with push tokens) ═══
+    try {
+      const pushService = require("../services/pushService");
+      const updateTitle = record.forceUpdate ? "🔴 Critical App Update" : "📲 App Update Available";
+      const updateBody = record.forceUpdate
+        ? `BookMyShot v${version} is required. Please update now for continued access.`
+        : `BookMyShot v${version} is available with new features and improvements. Update now!`;
+      await pushService.broadcast(updateTitle, updateBody, { type: "app_update", targetScreen: "Settings" });
+    } catch (e) { console.log("[AppVersion] Broadcast notification failed (non-fatal):", e.message); }
 
     res.status(201).json({ success: true, message: `v${version} published`, data: record });
   } catch (e) {
@@ -177,28 +168,10 @@ router.put("/:id", protect, authorize("admin"), uploadApk.single("apk"), async (
     if (published !== undefined) record.published = published === "true" || published === true;
 
     if (req.file) {
-      try {
-        const { uploadBuffer, isConfigured } = require("../services/cloudinaryService");
-        if (isConfigured()) {
-          const result = await uploadBuffer(req.file.buffer, {
-            folder: "bookmyshot/releases",
-            resourceType: "raw",
-            format: "apk",
-            publicId: `bookmyshot-v${record.version}-code${record.versionCode}`,
-          });
-          record.downloadUrl = result.url;
-        } else {
-          const fs = require("fs");
-          const path = require("path");
-          const dir = path.join(__dirname, "../../public/releases");
-          if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-          const fname = `bookmyshot-v${record.version}-${record.versionCode}.apk`;
-          fs.writeFileSync(path.join(dir, fname), req.file.buffer);
-          record.downloadUrl = `/releases/${fname}`;
-        }
-      } catch (err) {
-        console.error("[AppVersion] Upload error:", err.message);
-      }
+      // APK saved to disk by multer
+      record.downloadUrl = `/releases/${req.file.filename}`;
+      record.fileSize = req.file.size || 0;
+      console.log(`[AppVersion] APK updated: ${req.file.filename} (${(record.fileSize / 1024 / 1024).toFixed(1)} MB)`);
     }
 
     await record.save();

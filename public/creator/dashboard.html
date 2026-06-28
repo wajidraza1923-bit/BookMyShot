@@ -3886,15 +3886,25 @@
       container.innerHTML = '<div class="loader"></div>';
 
       try {
-        var [bookingsRes, meRes, rpConfigRes, configRes] = await Promise.all([
+        var [bookingsRes, meRes, rpConfigRes, configRes, autopayRes] = await Promise.all([
           API.get('/bookings/creator'),
           API.get('/auth/me'),
           API.get('/razorpay/config'),
           API.get('/config/public'),
+          API.get('/razorpay/autopay-status').catch(function() { return { data: {} }; }),
         ]);
 
         var bookings = bookingsRes.bookings || [];
         var creator = meRes.creator || {};
+        
+        // Override autoRenew with LIVE Razorpay status (single source of truth)
+        var liveAutopay = autopayRes.data || autopayRes || {};
+        if (liveAutopay.autopayActive !== undefined) {
+          creator.autoRenew = liveAutopay.autopayActive;
+        }
+        if (liveAutopay.autoRenew !== undefined) {
+          creator.autoRenew = liveAutopay.autoRenew;
+        }
 
         var validBookings = bookings.filter(function(b) { return b.status !== 'rejected' && b.status !== 'cancelled'; });
         var bmsLeads = validBookings.filter(function(b) { return b.leadSource === 'bookmyshot' || !b.leadSource; });
@@ -3958,7 +3968,7 @@
               '<h3 style="font-family:Playfair Display,serif;color:var(--gold-light);margin:0 0 0.4rem;font-size:1rem"><i class="fas fa-crown" style="color:var(--gold);margin-right:0.4rem"></i>Subscription · Basic Plan</h3>' +
               '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.4rem 1.5rem;font-size:0.78rem;margin-top:0.4rem">' +
                 '<div><span style="color:rgba(255,255,255,0.35)">Status:</span> <span style="color:' + subStatusColor + ';font-weight:600">' + subLabel + '</span></div>' +
-                '<div><span style="color:rgba(255,255,255,0.35)">Auto Renew:</span> <span style="color:var(--text)">' + (autoRenew ? 'ON' : 'OFF') + '</span></div>' +
+                '<div><span style="color:rgba(255,255,255,0.35)">AutoPay:</span> <span style="color:' + (autoRenew ? '#10b981' : '#f59e0b') + ';font-weight:600">' + (autoRenew ? '✓ ON' : '✗ OFF') + '</span></div>' +
                 '<div><span style="color:rgba(255,255,255,0.35)">Next Billing:</span> <span style="color:var(--text)">' + (subEnd ? subEnd.toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'}) : '—') + '</span></div>' +
                 '<div><span style="color:rgba(255,255,255,0.35)">Last Payment:</span> <span style="color:var(--text)">' + (lastPay ? lastPay.toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'}) : '—') + '</span></div>' +
                 '<div><span style="color:rgba(255,255,255,0.35)">Start Date:</span> <span style="color:var(--text)">' + (subStart ? subStart.toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'}) : '—') + '</span></div>' +
@@ -3971,7 +3981,16 @@
               (priceChanged && (subStatus === 'active' || subStatus === 'trial') ? '<div style="font-size:0.6rem;color:#f59e0b;margin-top:0.2rem">Renewal: ₹' + renewalPrice + '/mo</div>' : '') +
             '</div>' +
           '</div>' +
-          (subStatus === 'expired' || subStatus === 'overdue' || subStatus === 'suspended' || !subStatus ? '<button class="btn btn-primary btn-sm" style="margin-top:0.75rem;width:100%" onclick="window.renewSubscription()"><i class="fas fa-credit-card"></i> Pay Subscription ₹' + subscriptionAmount + '</button>' : '<button class="btn btn-outline btn-sm" style="margin-top:0.75rem;width:100%" onclick="window.renewSubscription()"><i class="fas fa-credit-card"></i> Pay Subscription ₹' + subscriptionAmount + '</button>') +
+          // AutoPay status banner
+          (!autoRenew && (subStatus === 'active' || subStatus === 'trial') ?
+            '<div style="margin-top:0.6rem;padding:0.5rem 0.75rem;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.15);border-radius:8px;display:flex;align-items:center;gap:0.4rem">' +
+              '<i class="fas fa-exclamation-circle" style="color:#f59e0b;font-size:0.8rem"></i>' +
+              '<span style="font-size:0.7rem;color:#f59e0b;flex:1">AutoPay is OFF. Subscription active until ' + (subEnd ? subEnd.toLocaleDateString('en-IN', {day:'2-digit',month:'short'}) : 'expiry') + '. Enable AutoPay to avoid interruption.</span>' +
+            '</div>' +
+            '<button class="btn btn-primary btn-sm" style="margin-top:0.6rem;width:100%" onclick="window.renewSubscription()"><i class="fas fa-sync-alt"></i> Enable AutoPay</button>'
+          :
+            (subStatus === 'expired' || subStatus === 'overdue' || subStatus === 'suspended' || !subStatus ? '<button class="btn btn-primary btn-sm" style="margin-top:0.75rem;width:100%" onclick="window.renewSubscription()"><i class="fas fa-credit-card"></i> Pay Subscription ₹' + subscriptionAmount + '</button>' : '<button class="btn btn-outline btn-sm" style="margin-top:0.75rem;width:100%" onclick="window.renewSubscription()"><i class="fas fa-credit-card"></i> Pay Subscription ₹' + subscriptionAmount + '</button>')
+          ) +
         '</div>';
 
         // Commission Section (separate)
