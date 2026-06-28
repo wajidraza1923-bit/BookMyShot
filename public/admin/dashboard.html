@@ -570,6 +570,23 @@
       <!-- Subscription Settings Panel -->
       <div class="panel" id="panel-subscription-settings">
         <div class="panel-header"><h2>Subscription Settings</h2><p>Configure subscription pricing, trial, and manage creator notifications</p></div>
+        
+        <!-- Subscription Analytics -->
+        <div class="stats-grid" id="subAnalytics" style="margin-bottom:1rem">
+          <div class="stat-card"><div class="label">Monthly Subs</div><div class="value gold" id="subStatMonthly">0</div></div>
+          <div class="stat-card"><div class="label">Yearly Subs</div><div class="value gold" id="subStatYearly">0</div></div>
+          <div class="stat-card"><div class="label">Active</div><div class="value success" id="subStatActive">0</div></div>
+          <div class="stat-card"><div class="label">Expired</div><div class="value danger" id="subStatExpired">0</div></div>
+          <div class="stat-card"><div class="label">AutoPay ON</div><div class="value" id="subStatAutoPayOn">0</div></div>
+          <div class="stat-card"><div class="label">AutoPay OFF</div><div class="value" id="subStatAutoPayOff">0</div></div>
+        </div>
+
+        <!-- Razorpay Status -->
+        <div class="card" style="margin-bottom:1rem;border-left:3px solid var(--gold)">
+          <h4 style="color:var(--gold-light);font-family:var(--font-display);margin-bottom:0.5rem;font-size:0.85rem">⚡ Razorpay Connection</h4>
+          <div style="display:flex;gap:1rem;font-size:0.78rem;color:var(--text-muted)" id="rpStatusInfo">Checking...</div>
+        </div>
+
         <!-- Trial & Pricing Card -->
         <div class="card" style="margin-bottom:1rem">
           <h4 style="color:var(--gold-light);font-family:var(--font-display);margin-bottom:1rem">💰 Trial & Pricing</h4>
@@ -2100,7 +2117,7 @@
         document.getElementById("ssTrialDays").value = s.trialDays ?? 60;
         document.getElementById("ssMonthlyPrice").value = s.monthlyPlanPrice ?? 299;
         document.getElementById("ssFuturePrice").value = s.futureMonthlyPrice || 0;
-        document.getElementById("ssYearlyPrice").value = s.yearlyPlanPrice ?? 2999;
+        document.getElementById("ssYearlyPrice").value = s.yearlyPlanPrice ?? 2990;
         document.getElementById("ssPriceChangeMode").value = s.priceChangeMode || "";
         document.getElementById("ssFeaturedPrice").value = s.featuredPortfolioPrice ?? 999;
         document.getElementById("ssBoostPrice").value = s.searchBoostPrice ?? 499;
@@ -2119,6 +2136,32 @@
         document.getElementById("ssYearlySaveBadge").checked = s.yearlyShowSaveBadge !== false;
         // Auto-calculate yearly price hint
         document.getElementById("ssYearlyAutoCalc").textContent = ((s.monthlyPlanPrice || 299) * 10).toLocaleString('en-IN');
+
+        // Load subscription analytics
+        try {
+          var crData = await API.get("/admin/creators");
+          var creators = crData.creators || [];
+          var monthly = creators.filter(function(c) { return c.subscriptionPlanType !== 'yearly' && (c.subscriptionStatus === 'active' || c.subscriptionStatus === 'trial'); }).length;
+          var yearly = creators.filter(function(c) { return c.subscriptionPlanType === 'yearly' && (c.subscriptionStatus === 'active' || c.subscriptionStatus === 'trial'); }).length;
+          var active = creators.filter(function(c) { return c.subscriptionStatus === 'active' || c.subscriptionStatus === 'trial'; }).length;
+          var expired = creators.filter(function(c) { return c.subscriptionStatus === 'expired' || c.subscriptionStatus === 'overdue'; }).length;
+          var autoOn = creators.filter(function(c) { return c.autoRenew === true && c.subscriptionStatus === 'active'; }).length;
+          var autoOff = creators.filter(function(c) { return c.autoRenew === false && c.subscriptionStatus === 'active'; }).length;
+          document.getElementById("subStatMonthly").textContent = monthly;
+          document.getElementById("subStatYearly").textContent = yearly;
+          document.getElementById("subStatActive").textContent = active;
+          document.getElementById("subStatExpired").textContent = expired;
+          document.getElementById("subStatAutoPayOn").textContent = autoOn;
+          document.getElementById("subStatAutoPayOff").textContent = autoOff;
+        } catch(e) {}
+
+        // Razorpay status
+        try {
+          var rpCfg = await API.get("/razorpay/config");
+          document.getElementById("rpStatusInfo").innerHTML = rpCfg.configured
+            ? '<span style="color:var(--success)">✅ Connected</span> <span style="color:var(--text-dim)">Key: ' + (rpCfg.keyId || '').substring(0, 12) + '...</span>'
+            : '<span style="color:var(--danger)">❌ Not Configured</span> <span style="color:var(--text-dim)">Add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in .env</span>';
+        } catch(e) { document.getElementById("rpStatusInfo").textContent = "Failed to check"; }
       } catch { }
     }
 
