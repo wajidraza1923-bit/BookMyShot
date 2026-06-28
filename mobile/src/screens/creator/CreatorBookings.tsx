@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, TextInput, Modal } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, TextInput, Modal, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, radius } from '../../theme';
 import api from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import PremiumModal from '../../components/PremiumModal';
 import Toast from '../../components/Toast';
 
 export default function CreatorBookings({ navigation }: any) {
+  const { user } = useAuth();
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -166,7 +168,7 @@ export default function CreatorBookings({ navigation }: any) {
             {item.status === 'Completed' || item.status === 'completed' ? (
               <View style={styles.quickActions}>
                 <ActionBtn icon="chatbubble-outline" label="Chat" onPress={() => navigation.navigate('BookingChat', { bookingId: item._id })} />
-                <ActionBtn icon="download-outline" label="Invoice" onPress={() => { const url = `https://site--bookmyshot--ykz2mr8mzlrv.code.run/api/invoice/${item._id}`; require('react-native').Linking.openURL(url); }} />
+                <ActionBtn icon="download-outline" label="Invoice" onPress={() => Linking.openURL(`https://site--bookmyshot--ykz2mr8mzlrv.code.run/api/invoice/${item._id}`)} />
               </View>
             ) : (
               <View style={styles.quickActions}>
@@ -175,6 +177,15 @@ export default function CreatorBookings({ navigation }: any) {
                 <ActionBtn icon="checkmark-done" label="Mark Paid" onPress={() => markPaid(item._id)} />
                 {['Creator Accepted', 'Payment Submitted', 'Payment Approved', 'Event Scheduled'].includes(item.status) && (
                   <ActionBtn icon="chatbubble-outline" label="Chat" onPress={() => navigation.navigate('BookingChat', { bookingId: item._id })} />
+                )}
+                {(item.amount || 0) > 0 && ((item.amount || 0) - (item.advancePaid || 0)) > 0 && (
+                  <ActionBtn icon="logo-whatsapp" label="Remind" onPress={() => {
+                    const phone = (item.clientPhone || '').replace(/\D/g, '').slice(-10);
+                    if (!phone) return;
+                    const pending = (item.amount || 0) - (item.advancePaid || 0);
+                    const msg = `Hi ${item.clientName || 'there'},\n\nThis is a payment reminder from *${user?.name || 'Creator'}* via BookMyShot.\n\n• Booking: ${item.invoiceNumber || item._id?.slice(-8)}\n• Event: ${item.eventType || 'Booking'}\n• Total: \u20B9${(item.amount || 0).toLocaleString('en-IN')}\n• Paid: \u20B9${(item.advancePaid || 0).toLocaleString('en-IN')}\n• *Pending: \u20B9${pending.toLocaleString('en-IN')}*\n\nKindly clear your pending amount.\n\nThank you \uD83D\uDE4F\nBookMyShot`;
+                    Linking.openURL(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`);
+                  }} />
                 )}
               </View>
             )}
@@ -189,13 +200,6 @@ export default function CreatorBookings({ navigation }: any) {
             {['Creator Accepted', 'Event Scheduled', 'Payment Submitted', 'Payment Approved'].includes(item.status) && (
               <TouchableOpacity style={styles.completeBtn} onPress={() => completeBooking(item._id)}><Ionicons name="checkmark-done" size={14} color={colors.success} /><Text style={styles.completeText}>Mark Complete</Text></TouchableOpacity>
             )}
-
-            {/* View Full Details */}
-            <TouchableOpacity style={styles.detailsBtn} onPress={() => navigation.navigate('BookingDetail', { bookingId: item._id })}>
-              <Text style={styles.detailsBtnText}>View Full Details</Text><Ionicons name="arrow-forward" size={14} color={colors.primary} />
-            </TouchableOpacity>
-          </View>
-        )}
 
             {/* View Full Details */}
             <TouchableOpacity style={styles.detailsBtn} onPress={() => navigation.navigate('BookingDetail', { bookingId: item._id })}>
