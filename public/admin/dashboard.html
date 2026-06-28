@@ -964,9 +964,22 @@
         <select id="bcPriority"><option value="normal">Normal (Notification only)</option><option value="important">Important (Notification + Popup)</option></select>
       </div>
       <div class="form-group"><label>Send To</label>
-        <select id="bcTarget" onchange="document.getElementById('bcCreatorId').style.display=this.value==='selected'?'block':'none'"><option value="all">All Creators</option><option value="selected">Selected Creator</option></select>
+        <select id="bcTarget" onchange="bcTargetChanged()"><option value="all">All Creators</option><option value="selected">Selected Creator</option></select>
       </div>
-      <div class="form-group" id="bcCreatorId" style="display:none"><label>Creator ID</label><input type="text" id="bcSelectedId" placeholder="Paste creator ID"></div>
+      <div class="form-group" id="bcCreatorSearch" style="display:none">
+        <label>Search Creator</label>
+        <div style="position:relative">
+          <input type="text" id="bcSearchInput" placeholder="Type name, email, or phone..." autocomplete="off" oninput="bcSearchCreators(this.value)" style="width:100%;padding:0.6rem 0.8rem;background:rgba(255,255,255,0.04);border:1px solid var(--border-light);border-radius:10px;color:var(--text);font-size:0.85rem">
+          <div id="bcSearchResults" style="position:absolute;top:100%;left:0;right:0;max-height:200px;overflow-y:auto;background:#1a1a1a;border:1px solid var(--border);border-radius:8px;z-index:10;display:none;margin-top:4px"></div>
+        </div>
+        <div id="bcSelectedCreator" style="display:none;margin-top:0.5rem;padding:0.5rem 0.75rem;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:8px;display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div><span id="bcSelectedName" style="color:#10b981;font-weight:600;font-size:0.82rem"></span><span id="bcSelectedMeta" style="color:#888;font-size:0.72rem;margin-left:0.5rem"></span></div>
+            <button onclick="bcClearSelection()" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:0.75rem;font-weight:600">✕ Remove</button>
+          </div>
+        </div>
+        <input type="hidden" id="bcSelectedId" value="">
+      </div>
       <div class="modal-actions">
         <button class="btn btn-outline" onclick="closeModal('broadcastModal')">Cancel</button>
         <button class="btn btn-primary" onclick="sendBroadcastFromModal()">Send Broadcast</button>
@@ -1934,9 +1947,74 @@
       document.getElementById("bcMessage").value = "";
       document.getElementById("bcPriority").value = "normal";
       document.getElementById("bcTarget").value = "all";
-      document.getElementById("bcCreatorId").style.display = "none";
+      document.getElementById("bcCreatorSearch").style.display = "none";
+      document.getElementById("bcSearchInput").value = "";
+      document.getElementById("bcSelectedId").value = "";
+      document.getElementById("bcSelectedCreator").style.display = "none";
+      document.getElementById("bcSearchResults").style.display = "none";
       document.getElementById("broadcastModal").classList.add("active");
+      // Ensure creators are loaded for search
+      if (!allCreators || allCreators.length === 0) {
+        API.get("/admin/creators").then(function(data) { allCreators = data.creators || []; }).catch(function(){});
+      }
     }
+
+    function bcTargetChanged() {
+      const val = document.getElementById("bcTarget").value;
+      document.getElementById("bcCreatorSearch").style.display = val === "selected" ? "block" : "none";
+      if (val !== "selected") {
+        document.getElementById("bcSelectedId").value = "";
+        document.getElementById("bcSelectedCreator").style.display = "none";
+      }
+    }
+
+    let bcSearchTimeout = null;
+    function bcSearchCreators(query) {
+      clearTimeout(bcSearchTimeout);
+      const resultsEl = document.getElementById("bcSearchResults");
+      if (!query || query.length < 2) { resultsEl.style.display = "none"; return; }
+      bcSearchTimeout = setTimeout(function() {
+        const q = query.toLowerCase();
+        let matches = (allCreators || []).filter(function(c) {
+          const name = (c.user && c.user.name ? c.user.name : c.name || '').toLowerCase();
+          const email = (c.user && c.user.email ? c.user.email : c.email || '').toLowerCase();
+          const phone = (c.user && c.user.phone ? c.user.phone : c.phone || '').toLowerCase();
+          return name.includes(q) || email.includes(q) || phone.includes(q);
+        }).slice(0, 8);
+
+        if (matches.length === 0) {
+          resultsEl.innerHTML = '<div style="padding:0.6rem 0.8rem;color:#888;font-size:0.78rem">No creators found</div>';
+        } else {
+          resultsEl.innerHTML = matches.map(function(c) {
+            var name = c.user && c.user.name ? c.user.name : c.name || 'Unknown';
+            var email = c.user && c.user.email ? c.user.email : c.email || '';
+            var phone = c.user && c.user.phone ? c.user.phone : c.phone || '';
+            var id = c._id;
+            var userId = typeof c.user === 'object' ? c.user._id : c.user;
+            return '<div onclick="bcSelectCreator(\'' + id + '\',\'' + userId + '\',\'' + name.replace(/'/g, "") + '\',\'' + (email || phone) + '\')" style="padding:0.5rem 0.8rem;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.04);transition:background 0.15s" onmouseover="this.style.background=\'rgba(218,175,55,0.06)\'" onmouseout="this.style.background=\'transparent\'">'
+              + '<div style="font-size:0.82rem;color:#fff;font-weight:500">' + name + '</div>'
+              + '<div style="font-size:0.7rem;color:#888">' + email + (phone ? ' • ' + phone : '') + '</div>'
+              + '</div>';
+          }).join('');
+        }
+        resultsEl.style.display = "block";
+      }, 200);
+    }
+
+    window.bcSelectCreator = function(creatorId, userId, name, meta) {
+      document.getElementById("bcSelectedId").value = userId || creatorId;
+      document.getElementById("bcSelectedName").textContent = name;
+      document.getElementById("bcSelectedMeta").textContent = meta;
+      document.getElementById("bcSelectedCreator").style.display = "block";
+      document.getElementById("bcSearchResults").style.display = "none";
+      document.getElementById("bcSearchInput").value = "";
+    };
+
+    window.bcClearSelection = function() {
+      document.getElementById("bcSelectedId").value = "";
+      document.getElementById("bcSelectedCreator").style.display = "none";
+      document.getElementById("bcSearchInput").value = "";
+    };
 
     async function sendBroadcastFromModal() {
       const title = document.getElementById("bcTitle").value.trim();
@@ -1945,28 +2023,16 @@
       const target = document.getElementById("bcTarget").value;
       if (!title || !message) { toast("Title and message required", "error"); return; }
 
-      // Use "announcement" type for important (triggers popup), "system" for normal
       const type = priority === "important" ? "announcement" : "system";
       let userIds = [];
-      let audience = "creators";
 
       if (target === "selected") {
         const selectedId = document.getElementById("bcSelectedId").value.trim();
-        if (!selectedId) { toast("Please enter a creator ID", "error"); return; }
-        // Find the creator's user ID
-        const creator = allCreators.find(c => c._id === selectedId);
-        if (creator && creator.user) {
-          userIds = [typeof creator.user === 'object' ? creator.user._id : creator.user];
-        } else {
-          userIds = [selectedId];
-        }
-        audience = undefined;
+        if (!selectedId) { toast("Please search and select a creator", "error"); return; }
+        userIds = [selectedId];
       }
 
       try {
-        const body = { title, message, audience };
-        if (userIds.length > 0) body.userIds = userIds;
-        // Use broadcast endpoint for audience, notifications/send for specific
         let res;
         if (target === "selected") {
           res = await API.post("/admin/notifications/send", { title, message, type, creatorIds: userIds });
