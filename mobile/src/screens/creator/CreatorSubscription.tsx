@@ -346,13 +346,17 @@ export default function CreatorSubscription({ navigation }: any) {
               <Text style={s.priceAmount}>
                 {isViewingYearlyPreview
                   ? `\u20B9${yearlyPlanPrice}`
-                  : isActive
-                    ? `\u20B9${creatorPlanPrice}`
-                    : selectedPlan === 'yearly' ? `\u20B9${yearlyPlanPrice}` : `\u20B9${monthlyPlanPrice}`
+                  : isActive && currentPlanType === 'yearly' && selectedPlan !== 'monthly'
+                    ? `\u20B9${creatorPlanPrice || yearlyPlanPrice}`
+                    : isActive && selectedPlan === 'monthly'
+                      ? `\u20B9${monthlyPlanPrice}`
+                      : selectedPlan === 'yearly'
+                        ? `\u20B9${yearlyPlanPrice}`
+                        : `\u20B9${monthlyPlanPrice}`
                 }
               </Text>
               <Text style={s.priceUnit}>
-                {isViewingYearlyPreview || (isActive && currentPlanType === 'yearly') ? 'per year' : 'per month'}
+                {isViewingYearlyPreview || (isActive && currentPlanType === 'yearly' && selectedPlan !== 'monthly') ? 'per year' : 'per month'}
               </Text>
             </View>
           </View>
