@@ -14,27 +14,37 @@ const Creator = require("../models/Creator");
 const User = require("../models/User");
 const PaymentRecord = require("../models/PaymentRecord");
 
-// Custom auth that supports both header and query token
+// Custom auth that supports multiple token sources
 async function authenticateRequest(req) {
   let token = null;
 
-  // Try Authorization header first
+  // Method 1: Authorization header
   if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
     token = req.headers.authorization.split(" ")[1];
   }
 
-  // Fallback to query parameter (for browser links)
+  // Method 2: x-access-token header (proxy-friendly)
+  if (!token && req.headers["x-access-token"]) {
+    token = req.headers["x-access-token"];
+  }
+
+  // Method 3: Query parameter (for browser links)
   if (!token && req.query.token) {
     token = req.query.token;
   }
 
-  if (!token) return null;
+  if (!token) {
+    console.log("[Invoice] No token found in any source");
+    return null;
+  }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id).select("-password");
+    if (!user) console.log("[Invoice] User not found for decoded ID:", decoded.id);
     return user;
   } catch (e) {
+    console.log("[Invoice] Token verification failed:", e.message);
     return null;
   }
 }

@@ -164,12 +164,30 @@ export default function BookingDetail({ route, navigation }: any) {
   // ═══ DOWNLOAD INVOICE ═══
   const downloadInvoice = async () => {
     try {
-      // Fetch invoice HTML via authenticated API call (not browser)
-      const res = await api.get(`/invoice/${bookingId}`, { responseType: 'text', transformResponse: [(data: any) => data] } as any);
-      const html = typeof res.data === 'string' ? res.data : '';
+      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+      const token = await AsyncStorage.getItem('bms_token');
       
-      if (!html || html.includes('"success":false')) {
-        Alert.alert('Error', 'Failed to generate invoice. Please try again.');
+      // Use direct fetch with token as both header AND query param (proxy-proof)
+      const baseUrl = 'https://site--bookmyshot--ykz2mr8mzlrv.code.run/api';
+      const url = `${baseUrl}/invoice/${bookingId}?token=${encodeURIComponent(token || '')}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'x-access-token': token || '',
+        },
+      });
+      
+      const html = await response.text();
+      
+      if (!response.ok || !html || html.includes('"success":false') || html.includes('"success": false')) {
+        try {
+          const err = JSON.parse(html);
+          Alert.alert('Error', err.message || 'Failed to generate invoice');
+        } catch {
+          Alert.alert('Error', 'Failed to generate invoice. Please try again.');
+        }
         return;
       }
 
@@ -177,8 +195,8 @@ export default function BookingDetail({ route, navigation }: any) {
       const Print = require('expo-print');
       await Print.printAsync({ html });
     } catch (e: any) {
-      console.log('[Invoice] Download error:', e.response?.status, e.response?.data?.message || e.message);
-      Alert.alert('Error', e.response?.data?.message || 'Failed to download invoice. Please try again.');
+      console.log('[Invoice] Download error:', e.message);
+      Alert.alert('Error', 'Failed to download invoice. Check your connection and try again.');
     }
   };
 
@@ -188,40 +206,52 @@ export default function BookingDetail({ route, navigation }: any) {
       const Print = require('expo-print');
       const Sharing = require('expo-sharing');
       const FileSystem = require('expo-file-system');
+      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+      const token = await AsyncStorage.getItem('bms_token');
 
-      // Fetch invoice HTML via authenticated API call
-      const res = await api.get(`/invoice/${bookingId}`, { responseType: 'text', transformResponse: [(data: any) => data] } as any);
-      let html = typeof res.data === 'string' ? res.data : '';
+      // Fetch invoice HTML with full auth
+      const baseUrl = 'https://site--bookmyshot--ykz2mr8mzlrv.code.run/api';
+      const url = `${baseUrl}/invoice/${bookingId}?token=${encodeURIComponent(token || '')}`;
       
-      if (!html || html.includes('"success":false')) {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'x-access-token': token || '',
+        },
+      });
+      
+      let html = await response.text();
+      
+      if (!response.ok || !html || html.includes('"success":false')) {
         Alert.alert('Error', 'Failed to generate invoice. Please try again.');
         return;
       }
 
-      // Remove the print button from the HTML
+      // Remove the print button from HTML
       html = html.replace(/<button[^>]*class="pb"[^>]*>.*?<\/button>/gi, '');
 
       // Generate PDF from HTML
       const { uri } = await Print.printToFileAsync({ html, base64: false });
 
-      // Rename file to a meaningful name
+      // Rename file
       const pdfName = `BookMyShot-Invoice-${booking.invoiceNumber || bookingId.slice(-8)}.pdf`;
       const newUri = FileSystem.documentDirectory + pdfName;
       await FileSystem.moveAsync({ from: uri, to: newUri });
 
-      // Share via native share sheet (WhatsApp, Email, etc.)
+      // Share via native share sheet
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(newUri, {
           mimeType: 'application/pdf',
-          dialogTitle: 'Share Invoice via WhatsApp',
+          dialogTitle: 'Send Invoice via WhatsApp',
           UTI: 'com.adobe.pdf',
         });
       } else {
         Alert.alert('Sharing Unavailable', 'Sharing is not available on this device.');
       }
     } catch (e: any) {
-      console.log('[Invoice] Share error:', e.response?.status, e.message);
-      Alert.alert('Error', e.response?.data?.message || 'Failed to generate/share invoice PDF.');
+      console.log('[Invoice] Share error:', e.message);
+      Alert.alert('Error', 'Failed to generate/share invoice PDF.');
     }
   };
 
