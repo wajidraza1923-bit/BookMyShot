@@ -66,17 +66,34 @@ export default function CreatorSubscription({ navigation }: any) {
     try {
       const { getRazorpayConfig, createSubscription, openRazorpaySubscription, verifySubscription, isNativeRazorpayAvailable } = require('../../services/payment');
 
+      // Check if AutoPay is already ON — don't create duplicate
+      const ap = creator?._autopay;
+      if (ap?.autopayActive === true) {
+        Alert.alert('AutoPay Already Enabled', 'Your AutoPay is already active. Future subscription payments will be deducted automatically.');
+        setSubscribing(false);
+        return;
+      }
+
       const rpConfig = await getRazorpayConfig();
       if (!rpConfig.configured) {
         Alert.alert('Unavailable', 'Payment gateway not configured. Contact admin.');
         return;
       }
 
-      // Create subscription on backend (same as website POST /razorpay/create-subscription)
+      // Create subscription on backend
       const subRes = await createSubscription();
 
-      if (subRes.status === 'active' || subRes.message === 'Subscription already active') {
-        Alert.alert('Active', 'Your subscription is already active!');
+      // If backend says subscription already active AND autopay is ON, show success
+      if ((subRes.status === 'active' || subRes.message === 'Subscription already active') && ap?.autopayActive === true) {
+        Alert.alert('AutoPay Already Enabled', 'Your AutoPay is already active. No action needed.');
+        await load();
+        return;
+      }
+
+      // If subscription exists but AutoPay is OFF, we still need the subscriptionId to proceed
+      if (!subRes.subscriptionId && (subRes.status === 'active' || subRes.message === 'Subscription already active')) {
+        // Backend returned active but no new subscription — this means AutoPay is already linked
+        Alert.alert('AutoPay Active', 'AutoPay is already linked to your account.');
         await load();
         return;
       }
@@ -345,7 +362,7 @@ export default function CreatorSubscription({ navigation }: any) {
                 </TouchableOpacity>
               </View>
             );
-          } else if (isActive && (rpStatus === 'cancelled' || rpStatus === 'completed' || rpStatus === 'paused' || rpStatus === 'mandate_revoked' || !autoRenew)) {
+          } else if (isActive && (rpStatus === 'cancelled' || rpStatus === 'completed' || rpStatus === 'paused' || rpStatus === 'mandate_revoked' || !autoRenew || rpStatus === 'none')) {
             // AutoPay OFF but subscription still active — show "Enable AutoPay Again" button
             return (
               <View>

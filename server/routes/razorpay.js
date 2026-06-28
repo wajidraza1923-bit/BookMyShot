@@ -119,14 +119,29 @@ router.post("/create-subscription", protect, authorize("creator"), async (req, r
     const creator = await Creator.findOne({ user: req.user._id });
     if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
 
-    // If creator already has an active Razorpay subscription, don't create new one
+    // If creator already has an active Razorpay subscription, check if AutoPay is truly active
     if (creator.razorpaySubscriptionId && creator.subscriptionStatus === "active") {
-      return res.json({
-        success: true,
-        message: "Subscription already active",
-        subscriptionId: creator.razorpaySubscriptionId,
-        status: "active",
-      });
+      // Verify with Razorpay if the subscription is ACTUALLY active (not cancelled)
+      let rpAutoPayActive = false;
+      try {
+        if (razorpayService.isConfigured()) {
+          const rpSub = await razorpayService.fetchSubscription(creator.razorpaySubscriptionId);
+          rpAutoPayActive = rpSub.status === "active" || rpSub.status === "authenticated";
+        }
+      } catch (e) { /* Razorpay check failed — allow creating new */ }
+
+      if (rpAutoPayActive) {
+        // AutoPay is genuinely active in Razorpay — don't create duplicate
+        return res.json({
+          success: true,
+          message: "Subscription already active",
+          subscriptionId: creator.razorpaySubscriptionId,
+          status: "active",
+          autopayActive: true,
+        });
+      }
+      // AutoPay was cancelled/halted in Razorpay — allow creating new subscription for re-enabling
+      console.log("[Razorpay] Existing subscription cancelled in Razorpay — creating new one for AutoPay re-enable");
     }
 
     // Step 1: Always create a fresh Razorpay Plan with LATEST admin-configured price
