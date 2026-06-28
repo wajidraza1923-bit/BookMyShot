@@ -167,13 +167,16 @@
       .header { padding:0 1rem; }
       .panel { padding:1rem; }
       .stats-grid { grid-template-columns:1fr 1fr; gap:0.6rem; }
+      .dash-recent-grid { grid-template-columns:1fr !important; }
       .table-wrap { border-radius:10px; }
       table { font-size:0.75rem; }
       th, td { padding:0.6rem 0.5rem; }
       #menuToggle { display:inline-flex !important; }
     }
     @media(max-width:480px) {
-      .stats-grid { grid-template-columns:1fr; }
+      .stats-grid { grid-template-columns:1fr 1fr; gap:0.5rem; }
+      .stat-card { padding:0.9rem 1rem; }
+      .stat-card .value { font-size:1.2rem; }
     }
   </style>
   <script src="/js/ga.js"></script>
@@ -237,18 +240,73 @@
 
       <!-- Dashboard -->
       <div class="panel active" id="panel-dashboard">
-        <div class="panel-header"><h2>Dashboard</h2><p>BookMyShot Platform Overview</p></div>
+        <!-- Welcome Header -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:0.75rem">
+          <div>
+            <h2 style="font-family:var(--font-display);color:var(--gold-light);font-size:1.3rem;font-weight:500;margin:0">Welcome back</h2>
+            <p style="color:var(--text-dim);font-size:0.82rem;margin-top:0.15rem" id="dashGreeting">Super Admin • BookMyShot</p>
+          </div>
+          <div style="display:flex;gap:0.5rem">
+            <a href="/admin/app-updates.html" class="btn btn-primary" style="font-size:0.72rem;padding:0.4rem 0.8rem"><i class="fas fa-mobile-screen"></i> Publish Update</a>
+            <button class="btn btn-outline" style="font-size:0.72rem;padding:0.4rem 0.8rem" onclick="showPanel('notifications')"><i class="fas fa-bell"></i> Notifications</button>
+          </div>
+        </div>
+
+        <!-- Stats Grid -->
         <div class="stats-grid" id="dashStats">
-          <div class="stat-card"><div class="label">Total Creators</div><div class="value gold" id="statCreators">0</div></div>
-          <div class="stat-card"><div class="label">Active Creators</div><div class="value success" id="statActiveCreators">0</div></div>
-          <div class="stat-card"><div class="label">Pending Approvals</div><div class="value danger" id="statPending">0</div></div>
-          <div class="stat-card"><div class="label">Total Users</div><div class="value" id="statUsers">0</div></div>
-          <div class="stat-card"><div class="label">Total Inquiries</div><div class="value" id="statInquiries">0</div></div>
-          <div class="stat-card"><div class="label">Total Bookings</div><div class="value" id="statBookings">0</div></div>
-          <div class="stat-card"><div class="label">Total Revenue</div><div class="value gold" id="statRevenue">₹0</div></div>
-          <div class="stat-card"><div class="label">Subscription Revenue</div><div class="value" id="statSubRevenue">₹0</div></div>
-          <div class="stat-card"><div class="label">BMS Lead Revenue</div><div class="value" id="statBmsRevenue">₹0</div></div>
-          <div class="stat-card"><div class="label">Creator Lead Revenue</div><div class="value" id="statCrtRevenue">₹0</div></div>
+          <div class="stat-card"><div style="display:flex;align-items:center;gap:0.5rem"><span style="font-size:1.2rem">📸</span><div><div class="label">Total Creators</div><div class="value gold" id="statCreators">0</div></div></div></div>
+          <div class="stat-card"><div style="display:flex;align-items:center;gap:0.5rem"><span style="font-size:1.2rem">✅</span><div><div class="label">Active Creators</div><div class="value success" id="statActiveCreators">0</div></div></div></div>
+          <div class="stat-card"><div style="display:flex;align-items:center;gap:0.5rem"><span style="font-size:1.2rem">⏳</span><div><div class="label">Pending Approvals</div><div class="value danger" id="statPending">0</div></div></div></div>
+          <div class="stat-card"><div style="display:flex;align-items:center;gap:0.5rem"><span style="font-size:1.2rem">👥</span><div><div class="label">Total Users</div><div class="value" id="statUsers">0</div></div></div></div>
+          <div class="stat-card"><div style="display:flex;align-items:center;gap:0.5rem"><span style="font-size:1.2rem">📩</span><div><div class="label">Total Inquiries</div><div class="value" id="statInquiries">0</div></div></div></div>
+          <div class="stat-card"><div style="display:flex;align-items:center;gap:0.5rem"><span style="font-size:1.2rem">📅</span><div><div class="label">Total Bookings</div><div class="value" id="statBookings">0</div></div></div></div>
+          <div class="stat-card"><div style="display:flex;align-items:center;gap:0.5rem"><span style="font-size:1.2rem">💰</span><div><div class="label">Total Revenue</div><div class="value gold" id="statRevenue">₹0</div></div></div></div>
+          <div class="stat-card"><div style="display:flex;align-items:center;gap:0.5rem"><span style="font-size:1.2rem">💳</span><div><div class="label">Commission</div><div class="value" id="statSubRevenue">₹0</div></div></div></div>
+          <div class="stat-card"><div style="display:flex;align-items:center;gap:0.5rem"><span style="font-size:1.2rem">🏆</span><div><div class="label">BMS Leads</div><div class="value" id="statBmsRevenue">₹0</div></div></div></div>
+          <div class="stat-card"><div style="display:flex;align-items:center;gap:0.5rem"><span style="font-size:1.2rem">⭐</span><div><div class="label">Creator Leads</div><div class="value" id="statCrtRevenue">₹0</div></div></div></div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div style="margin-bottom:1.25rem">
+          <h4 style="font-family:var(--font-display);color:var(--gold-light);font-size:0.95rem;margin-bottom:0.75rem;font-weight:500">Quick Actions</h4>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.6rem">
+            <div onclick="showPanel('creators')" style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;text-align:center;transition:all 0.2s" onmouseover="this.style.borderColor='rgba(218,175,55,0.3)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='';this.style.transform=''">
+              <div style="font-size:1.5rem;margin-bottom:0.3rem">📸</div><div style="font-size:0.72rem;color:var(--text-muted)">Manage Creators</div>
+            </div>
+            <div onclick="showPanel('users')" style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;text-align:center;transition:all 0.2s" onmouseover="this.style.borderColor='rgba(218,175,55,0.3)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='';this.style.transform=''">
+              <div style="font-size:1.5rem;margin-bottom:0.3rem">👥</div><div style="font-size:0.72rem;color:var(--text-muted)">Manage Users</div>
+            </div>
+            <div onclick="showPanel('bookings')" style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;text-align:center;transition:all 0.2s" onmouseover="this.style.borderColor='rgba(218,175,55,0.3)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='';this.style.transform=''">
+              <div style="font-size:1.5rem;margin-bottom:0.3rem">📅</div><div style="font-size:0.72rem;color:var(--text-muted)">Bookings</div>
+            </div>
+            <div onclick="showPanel('payments')" style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;text-align:center;transition:all 0.2s" onmouseover="this.style.borderColor='rgba(218,175,55,0.3)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='';this.style.transform=''">
+              <div style="font-size:1.5rem;margin-bottom:0.3rem">💰</div><div style="font-size:0.72rem;color:var(--text-muted)">Payments</div>
+            </div>
+            <div onclick="showPanel('commissions')" style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;text-align:center;transition:all 0.2s" onmouseover="this.style.borderColor='rgba(218,175,55,0.3)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='';this.style.transform=''">
+              <div style="font-size:1.5rem;margin-bottom:0.3rem">💳</div><div style="font-size:0.72rem;color:var(--text-muted)">Commission</div>
+            </div>
+            <div onclick="window.location='/admin/app-updates.html'" style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;text-align:center;transition:all 0.2s" onmouseover="this.style.borderColor='rgba(218,175,55,0.3)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='';this.style.transform=''">
+              <div style="font-size:1.5rem;margin-bottom:0.3rem">📱</div><div style="font-size:0.72rem;color:var(--text-muted)">App Updates</div>
+            </div>
+            <div onclick="showPanel('notifications')" style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;text-align:center;transition:all 0.2s" onmouseover="this.style.borderColor='rgba(218,175,55,0.3)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='';this.style.transform=''">
+              <div style="font-size:1.5rem;margin-bottom:0.3rem">📢</div><div style="font-size:0.72rem;color:var(--text-muted)">Notifications</div>
+            </div>
+            <div onclick="showPanel('platform-settings')" style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;text-align:center;transition:all 0.2s" onmouseover="this.style.borderColor='rgba(218,175,55,0.3)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='';this.style.transform=''">
+              <div style="font-size:1.5rem;margin-bottom:0.3rem">⚙️</div><div style="font-size:0.72rem;color:var(--text-muted)">Settings</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem" class="dash-recent-grid">
+          <div class="card" style="margin:0">
+            <h4 style="display:flex;align-items:center;gap:0.4rem;font-size:0.85rem"><i class="fas fa-clock" style="color:var(--gold);font-size:0.75rem"></i> Recent Bookings</h4>
+            <div id="recentBookings" style="margin-top:0.5rem"><p style="color:var(--text-dim);font-size:0.78rem">Loading...</p></div>
+          </div>
+          <div class="card" style="margin:0">
+            <h4 style="display:flex;align-items:center;gap:0.4rem;font-size:0.85rem"><i class="fas fa-user-plus" style="color:var(--gold);font-size:0.75rem"></i> Recent Creators</h4>
+            <div id="recentCreators" style="margin-top:0.5rem"><p style="color:var(--text-dim);font-size:0.78rem">Loading...</p></div>
+          </div>
         </div>
       </div>
 
@@ -975,6 +1033,21 @@
         document.getElementById("statSubRevenue").textContent = "₹" + subRevenue.toLocaleString('en-IN');
         document.getElementById("statBmsRevenue").textContent = "₹" + bmsComm.toLocaleString('en-IN');
         document.getElementById("statCrtRevenue").textContent = "₹" + crtComm.toLocaleString('en-IN');
+
+        // Recent Bookings (last 5)
+        var recentB = validBookings.slice(0, 5);
+        document.getElementById("recentBookings").innerHTML = recentB.length
+          ? recentB.map(function(b) { return '<div style="display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0;border-bottom:1px solid rgba(255,255,255,0.03)"><div><span style="font-size:0.78rem;color:var(--text)">' + (b.clientName||'Client') + '</span><span style="font-size:0.65rem;color:var(--text-dim);margin-left:0.4rem">' + (b.eventType||'') + '</span></div><span class="status-badge status-' + (b.status||'').toLowerCase().replace(/\s/g,'-') + '" style="font-size:0.6rem">' + (b.status||'') + '</span></div>'; }).join('')
+          : '<p style="color:var(--text-dim);font-size:0.78rem">No bookings yet</p>';
+
+        // Recent Creators (last 5)
+        var recentC = creators.slice(0, 5);
+        document.getElementById("recentCreators").innerHTML = recentC.length
+          ? recentC.map(function(c) { return '<div style="display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0;border-bottom:1px solid rgba(255,255,255,0.03)"><span style="font-size:0.78rem;color:var(--text)">' + (c.user?.name||'Creator') + '</span><span class="status-badge status-' + (c.status||'') + '" style="font-size:0.6rem">' + (c.status||'') + '</span></div>'; }).join('')
+          : '<p style="color:var(--text-dim);font-size:0.78rem">No creators yet</p>';
+
+        // Update greeting
+        document.getElementById("dashGreeting").textContent = "Super Admin • " + new Date().toLocaleDateString('en-IN', {weekday:'long', day:'numeric', month:'short'});
       } catch { }
     }
 
