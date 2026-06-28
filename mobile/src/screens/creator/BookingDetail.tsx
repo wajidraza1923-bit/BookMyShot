@@ -162,9 +162,15 @@ export default function BookingDetail({ route, navigation }: any) {
   };
 
   // ═══ DOWNLOAD INVOICE ═══
-  const downloadInvoice = () => {
-    const url = `https://site--bookmyshot--ykz2mr8mzlrv.code.run/api/invoice/${bookingId}`;
-    import('react-native').then(({ Linking }) => Linking.openURL(url));
+  const downloadInvoice = async () => {
+    try {
+      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+      const token = await AsyncStorage.getItem('bms_token');
+      const url = `https://site--bookmyshot--ykz2mr8mzlrv.code.run/api/invoice/${bookingId}${token ? '?token=' + token : ''}`;
+      Linking.openURL(url);
+    } catch {
+      Linking.openURL(`https://site--bookmyshot--ykz2mr8mzlrv.code.run/api/invoice/${bookingId}`);
+    }
   };
 
   // ═══ ADD EVENT ═══
@@ -235,14 +241,23 @@ export default function BookingDetail({ route, navigation }: any) {
         </View>
 
         {/* ═══ QUICK ACTIONS ═══ */}
-        <View style={s.actionsRow}>
-          <ActionBtn icon="cash-outline" label="Set Amount" onPress={() => { setAmountInput(String(booking.amount || '')); setShowAmountModal(true); }} />
-          <ActionBtn icon="card-outline" label="Record Pay" onPress={() => setShowPaymentModal(true)} />
-          <ActionBtn icon="checkmark-done" label="Mark Paid" onPress={markPaid} />
-          {['Creator Accepted', 'Payment Submitted', 'Payment Approved', 'Event Scheduled', 'Completed', 'completed'].includes(booking.status) && (
+        {booking.status === 'Completed' || booking.status === 'completed' ? (
+          /* Completed booking: only Chat + Download Invoice */
+          <View style={s.actionsRow}>
             <ActionBtn icon="chatbubble-outline" label="Chat" onPress={() => navigation.navigate('BookingChat', { bookingId })} />
-          )}
-        </View>
+            <ActionBtn icon="download-outline" label="Invoice" onPress={downloadInvoice} />
+          </View>
+        ) : (
+          /* Active booking: full payment controls */
+          <View style={s.actionsRow}>
+            <ActionBtn icon="cash-outline" label="Set Amount" onPress={() => { setAmountInput(String(booking.amount || '')); setShowAmountModal(true); }} />
+            <ActionBtn icon="card-outline" label="Record Pay" onPress={() => setShowPaymentModal(true)} />
+            <ActionBtn icon="checkmark-done" label="Mark Paid" onPress={markPaid} />
+            {['Creator Accepted', 'Payment Submitted', 'Payment Approved', 'Event Scheduled'].includes(booking.status) && (
+              <ActionBtn icon="chatbubble-outline" label="Chat" onPress={() => navigation.navigate('BookingChat', { bookingId })} />
+            )}
+          </View>
+        )}
 
         {/* ═══ CUSTOMER ═══ */}
         <Section title="Customer">

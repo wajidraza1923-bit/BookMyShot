@@ -162,26 +162,40 @@ export default function CreatorBookings({ navigation }: any) {
         {/* ═══ EXPANDED VIEW ═══ */}
         {isExpanded && (
           <View style={styles.expanded}>
-            {/* Quick Actions */}
-            <View style={styles.quickActions}>
-              <ActionBtn icon="cash-outline" label="Set Amount" onPress={() => { setActiveBookingId(item._id); setAmountInput(String(item.amount || '')); setShowAmountModal(true); }} />
-              <ActionBtn icon="card-outline" label="Record Pay" onPress={() => { setActiveBookingId(item._id); setShowPaymentModal(true); }} />
-              <ActionBtn icon="checkmark-done" label="Mark Paid" onPress={() => markPaid(item._id)} />
-              {['Creator Accepted', 'Payment Submitted', 'Payment Approved', 'Event Scheduled', 'Completed', 'completed'].includes(item.status) && (
+            {/* Quick Actions — hide payment controls for completed bookings */}
+            {item.status === 'Completed' || item.status === 'completed' ? (
+              <View style={styles.quickActions}>
                 <ActionBtn icon="chatbubble-outline" label="Chat" onPress={() => navigation.navigate('BookingChat', { bookingId: item._id })} />
-              )}
-            </View>
+                <ActionBtn icon="download-outline" label="Invoice" onPress={() => { const url = `https://site--bookmyshot--ykz2mr8mzlrv.code.run/api/invoice/${item._id}`; require('react-native').Linking.openURL(url); }} />
+              </View>
+            ) : (
+              <View style={styles.quickActions}>
+                <ActionBtn icon="cash-outline" label="Set Amount" onPress={() => { setActiveBookingId(item._id); setAmountInput(String(item.amount || '')); setShowAmountModal(true); }} />
+                <ActionBtn icon="card-outline" label="Record Pay" onPress={() => { setActiveBookingId(item._id); setShowPaymentModal(true); }} />
+                <ActionBtn icon="checkmark-done" label="Mark Paid" onPress={() => markPaid(item._id)} />
+                {['Creator Accepted', 'Payment Submitted', 'Payment Approved', 'Event Scheduled'].includes(item.status) && (
+                  <ActionBtn icon="chatbubble-outline" label="Chat" onPress={() => navigation.navigate('BookingChat', { bookingId: item._id })} />
+                )}
+              </View>
+            )}
 
-            {/* Status Actions */}
+            {/* Status Actions — only for non-completed */}
             {item.status === 'Booking Created' && (
               <View style={styles.statusActions}>
                 <TouchableOpacity style={styles.rejectBtn} onPress={() => rejectBooking(item._id)}><Ionicons name="close" size={14} color={colors.error} /><Text style={styles.rejectText}>Reject</Text></TouchableOpacity>
                 <TouchableOpacity style={styles.acceptBtn} onPress={() => { setActiveBookingId(item._id); setAmountInput(String(item.budget || '')); setShowAmountModal(true); }}><Ionicons name="checkmark" size={14} color={colors.textInverse} /><Text style={styles.acceptText}>Accept</Text></TouchableOpacity>
               </View>
             )}
-            {['Creator Accepted', 'Event Scheduled'].includes(item.status) && (
+            {['Creator Accepted', 'Event Scheduled', 'Payment Submitted', 'Payment Approved'].includes(item.status) && (
               <TouchableOpacity style={styles.completeBtn} onPress={() => completeBooking(item._id)}><Ionicons name="checkmark-done" size={14} color={colors.success} /><Text style={styles.completeText}>Mark Complete</Text></TouchableOpacity>
             )}
+
+            {/* View Full Details */}
+            <TouchableOpacity style={styles.detailsBtn} onPress={() => navigation.navigate('BookingDetail', { bookingId: item._id })}>
+              <Text style={styles.detailsBtnText}>View Full Details</Text><Ionicons name="arrow-forward" size={14} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
+        )}
 
             {/* View Full Details */}
             <TouchableOpacity style={styles.detailsBtn} onPress={() => navigation.navigate('BookingDetail', { bookingId: item._id })}>

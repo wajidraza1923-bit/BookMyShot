@@ -9,10 +9,33 @@ const Creator = require("../models/Creator");
 const PaymentRecord = require("../models/PaymentRecord");
 const { protect } = require("../middleware/auth");
 
-router.use(protect);
+router.use(async (req, res, next) => {
+  // Optional protect — try to authenticate but don't block if token is in query
+  try {
+    await new Promise((resolve, reject) => {
+      protect(req, res, (err) => { if (err) reject(err); else resolve(undefined); });
+    });
+  } catch (e) {
+    // Will be handled inside the route with query token fallback
+  }
+  next();
+});
 
 router.get("/:id", async (req, res, next) => {
   try {
+    // Support auth via query param (for browser/download links)
+    if (!req.user && req.query.token) {
+      try {
+        const jwt = require("jsonwebtoken");
+        const User = require("../models/User");
+        const decoded = jwt.verify(req.query.token, process.env.JWT_SECRET);
+        req.user = await User.findById(decoded.id).select("-password");
+      } catch (e) {
+        return res.status(401).json({ success: false, message: "Invalid token" });
+      }
+    }
+    if (!req.user) return res.status(401).json({ success: false, message: "Authentication required. Add ?token=YOUR_TOKEN to the URL." });
+
     const booking = await Booking.findById(req.params.id)
       .populate("user", "name email phone")
       .populate({ path: "creator", populate: { path: "user", select: "name email phone" } });
