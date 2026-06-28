@@ -290,53 +290,58 @@ export default function CreatorSubscription({ navigation }: any) {
             </View>
           </View>
 
-          {/* Plan Selection — only show when subscribing/renewing */}
-          {(isExpired || !subStatus || subStatus === 'inactive' || subStatus === 'pending_payment') && (
-            <View style={{ marginTop: spacing.lg }}>
-              <Text style={{ ...typography.labelMd, color: colors.textMuted, marginBottom: spacing.sm }}>Choose Plan</Text>
-              <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-                <TouchableOpacity
-                  style={[s.planOption, selectedPlan === 'monthly' && s.planOptionActive]}
-                  onPress={() => setSelectedPlan('monthly')}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[s.planOptionTitle, selectedPlan === 'monthly' && { color: colors.primary }]}>Monthly</Text>
-                  <Text style={s.planOptionPrice}>₹{monthlyPlanPrice}/mo</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[s.planOption, selectedPlan === 'yearly' && s.planOptionActive, { position: 'relative' }]}
-                  onPress={() => setSelectedPlan('yearly')}
-                  activeOpacity={0.8}
-                >
+          {/* Plan Selection — ALWAYS visible */}
+          <View style={{ marginTop: spacing.lg }}>
+            <Text style={{ ...typography.labelMd, color: colors.textMuted, marginBottom: spacing.sm }}>Available Plans</Text>
+            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+              <TouchableOpacity
+                style={[s.planOption, selectedPlan === 'monthly' && s.planOptionActive]}
+                onPress={() => setSelectedPlan('monthly')}
+                activeOpacity={0.8}
+              >
+                <Text style={[s.planOptionTitle, selectedPlan === 'monthly' && { color: colors.primary }]}>Monthly</Text>
+                <Text style={s.planOptionPrice}>₹{monthlyPlanPrice}/mo</Text>
+                <Text style={{ fontSize: 9, color: colors.textMuted, marginTop: 2 }}>1 Month</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.planOption, selectedPlan === 'yearly' && s.planOptionActive, { position: 'relative' }]}
+                onPress={() => setSelectedPlan('yearly')}
+                activeOpacity={0.8}
+              >
+                {(config?.subscription?.yearlyShowSaveBadge !== false) && (
                   <View style={s.bestValueBadge}><Text style={s.bestValueText}>SAVE 2 MONTHS</Text></View>
-                  <Text style={[s.planOptionTitle, selectedPlan === 'yearly' && { color: colors.primary }]}>Yearly ⭐</Text>
-                  <Text style={s.planOptionPrice}>₹{monthlyPlanPrice * 10}/yr</Text>
-                  <Text style={{ fontSize: 9, color: colors.success, marginTop: 2 }}>12 months for price of 10</Text>
-                </TouchableOpacity>
-              </View>
+                )}
+                <Text style={[s.planOptionTitle, selectedPlan === 'yearly' && { color: colors.primary }]}>
+                  {config?.subscription?.yearlyShowRecommended !== false ? 'Yearly ⭐' : 'Yearly'}
+                </Text>
+                <Text style={s.planOptionPrice}>₹{config?.subscription?.yearlyPlanPrice || (monthlyPlanPrice * 10)}/yr</Text>
+                <Text style={{ fontSize: 9, color: colors.success, marginTop: 2 }}>
+                  {config?.subscription?.yearlyPlanDescription || '12 months for price of 10'}
+                </Text>
+              </TouchableOpacity>
             </View>
-          )}
+          </View>
 
-          {/* Subscribe/Renew Button */}
-          {(isExpired || !subStatus || subStatus === 'inactive' || subStatus === 'pending_payment') && (
+          {/* Subscribe/Renew/Enable Button */}
+          {(isExpired || !subStatus || subStatus === 'inactive' || subStatus === 'pending_payment') ? (
             <TouchableOpacity style={s.payBtn} onPress={handleSubscribe} disabled={subscribing} activeOpacity={0.85}>
               {subscribing ? (
                 <ActivityIndicator size="small" color={colors.textInverse} />
               ) : (
-                <Text style={s.payBtnText}>Pay {selectedPlan === 'yearly' ? 'Yearly' : 'Monthly'} — ₹{selectedPlan === 'yearly' ? (monthlyPlanPrice * 10) : monthlyPlanPrice}</Text>
+                <Text style={s.payBtnText}>Subscribe {selectedPlan === 'yearly' ? 'Yearly' : 'Monthly'} — ₹{selectedPlan === 'yearly' ? (config?.subscription?.yearlyPlanPrice || monthlyPlanPrice * 10) : monthlyPlanPrice}</Text>
               )}
             </TouchableOpacity>
-          )}
-
-          {isActive && (
+          ) : isActive ? (
             <TouchableOpacity style={[s.payBtn, s.payBtnOutline]} onPress={handleSubscribe} disabled={subscribing} activeOpacity={0.85}>
               {subscribing ? (
                 <ActivityIndicator size="small" color={colors.primary} />
               ) : (
-                <Text style={[s.payBtnText, { color: colors.primary }]}>Pay Subscription ₹{renewalPrice}</Text>
+                <Text style={[s.payBtnText, { color: colors.primary }]}>
+                  {autoRenew ? 'Switch Plan' : 'Enable AutoPay'} — ₹{selectedPlan === 'yearly' ? (config?.subscription?.yearlyPlanPrice || monthlyPlanPrice * 10) : monthlyPlanPrice}
+                </Text>
               )}
             </TouchableOpacity>
-          )}
+          ) : null}
         </View>
 
         {/* Features */}
