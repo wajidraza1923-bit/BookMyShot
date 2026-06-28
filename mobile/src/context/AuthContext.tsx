@@ -319,8 +319,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await authAPI.me();
       const freshUser = res.data?.user;
+      const freshCreator = res.data?.creator;
       if (freshUser) {
         const normalized = normalizeUser(freshUser);
+        // Include creatorStatus and subscriptionStatus from creator document
+        if (freshCreator && freshCreator.status) {
+          normalized.creatorStatus = freshCreator.status;
+          normalized.subscriptionStatus = freshCreator.subscriptionStatus;
+        }
         setUser(normalized);
         await AsyncStorage.setItem('bms_user', JSON.stringify(normalized));
       }

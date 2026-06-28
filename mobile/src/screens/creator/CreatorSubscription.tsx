@@ -5,8 +5,10 @@ import { colors, spacing, typography, radius } from '../../theme';
 import api from '../../services/api';
 import RazorpayWebCheckout from '../../components/RazorpayWebCheckout';
 import useRealTime from '../../hooks/useRealTime';
+import { useAuth } from '../../context/AuthContext';
 
 export default function CreatorSubscription({ navigation }: any) {
+  const { refreshUser } = useAuth();
   const [creator, setCreator] = useState<any>(null);
   const [config, setConfig] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -108,6 +110,7 @@ export default function CreatorSubscription({ navigation }: any) {
             if (verifyRes.data?.success) {
               Alert.alert('Success! 🎉', verifyRes.data.message || 'Yearly subscription activated!');
               await load();
+              await refreshUser();
             } else {
               Alert.alert('Verification Failed', 'Payment made but verification failed. Contact support.');
             }
@@ -161,6 +164,7 @@ export default function CreatorSubscription({ navigation }: any) {
           if (verified) {
             Alert.alert('Success! 🎉', 'Subscription activated successfully!');
             await load();
+            await refreshUser();
           } else {
             Alert.alert('Verification Failed', 'Payment made but verification failed. Contact support if charged.');
           }
@@ -589,7 +593,7 @@ export default function CreatorSubscription({ navigation }: any) {
               paymentData.razorpay_payment_id,
               paymentData.razorpay_signature
             );
-            if (verified) { Alert.alert('Success! 🎉', 'Subscription activated!'); await load(); }
+            if (verified) { Alert.alert('Success! 🎉', 'Subscription activated!'); await load(); await refreshUser(); }
             else Alert.alert('Verification Failed', 'Contact support if charged.');
           } catch (e: any) { Alert.alert('Error', e.message || 'Verification failed'); }
           setSubscribing(false);
