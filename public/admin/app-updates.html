@@ -175,7 +175,7 @@ textarea{resize:vertical;min-height:90px}
 <div class="toast" id="toast"></div>
 
 <script>
-let token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
+let token = localStorage.getItem('bms_token') || localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
 let forceUpdate = false;
 let optionalUpdate = true;
 

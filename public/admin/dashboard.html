@@ -249,8 +249,8 @@
             <h2 style="font-family:var(--font-display);color:var(--gold-light);font-size:1.3rem;font-weight:500;margin:0">Welcome back</h2>
             <p style="color:var(--text-dim);font-size:0.82rem;margin-top:0.15rem" id="dashGreeting">Super Admin • BookMyShot</p>
           </div>
-          <div style="display:flex;gap:0.5rem">
-            <a href="/admin/app-updates.html" class="btn btn-primary" style="font-size:0.72rem;padding:0.4rem 0.8rem"><i class="fas fa-mobile-screen"></i> Publish Update</a>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+            <button class="btn btn-primary" style="font-size:0.72rem;padding:0.4rem 0.8rem" onclick="showPanel('app-updates')"><i class="fas fa-mobile-screen"></i> Publish Update</button>
             <button class="btn btn-outline" style="font-size:0.72rem;padding:0.4rem 0.8rem" onclick="showPanel('notifications')"><i class="fas fa-bell"></i> Notifications</button>
           </div>
         </div>
@@ -1055,9 +1055,15 @@
     // Dashboard
     async function loadDashboard() {
       try {
-        const { stats } = await API.get("/admin/analytics");
-        const { creators } = await API.get("/admin/creators");
-        const { bookings } = await API.get("/bookings/all");
+        const [analyticsData, creatorsData, bookingsData] = await Promise.all([
+          API.get("/admin/analytics").catch(function() { return { stats: {} }; }),
+          API.get("/admin/creators").catch(function() { return { creators: [] }; }),
+          API.get("/bookings/all").catch(function() { return { bookings: [] }; }),
+        ]);
+
+        var stats = analyticsData.stats || {};
+        var creators = creatorsData.creators || [];
+        var bookings = bookingsData.bookings || [];
 
         const activeCreators = creators.filter(c => c.status === 'approved').length;
         const validBookings = bookings.filter(b => b.status !== 'rejected');
@@ -1092,7 +1098,9 @@
 
         // Update greeting
         document.getElementById("dashGreeting").textContent = "Super Admin • " + new Date().toLocaleDateString('en-IN', {weekday:'long', day:'numeric', month:'short'});
-      } catch { }
+      } catch(e) {
+        console.error("[Dashboard] Load error:", e);
+      }
     }
 
     // Creators
