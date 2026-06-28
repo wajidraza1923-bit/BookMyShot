@@ -17,7 +17,7 @@ router.get("/", async (req, res, next) => {
     const { city, category, budget, search, featured } = req.query;
     const filter = { status: "approved", subscriptionStatus: { $in: ["active", "trial"] } };
     if (city) filter.city = new RegExp(city, "i");
-    if (category) filter.category = category;
+    if (category) filter.category = new RegExp(category.replace(/[-\s]+/g, '.*'), "i");
     if (featured === "true") filter.featured = true;
     if (budget) filter.budgetMax = { $gte: Number(budget) };
 
@@ -143,6 +143,10 @@ router.put("/profile", protect, authorize("creator"), async (req, res, next) => 
 // Public: single creator with full user data (alternate URL used by portfolio page)
 router.get("/:id/public", async (req, res, next) => {
   try {
+    const mongoose = require("mongoose");
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ success: false, message: "Invalid creator ID" });
+    }
     const creator = await Creator.findById(req.params.id)
       .populate("user", "name email avatar phone")
       .select("-__v");
