@@ -200,6 +200,31 @@ export default function BookingDetail({ route, navigation }: any) {
     }
   };
 
+  // ═══ DOWNLOAD PARTIAL PAYMENT RECEIPT ═══
+  const downloadPartialInvoice = async () => {
+    try {
+      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+      const token = await AsyncStorage.getItem('bms_token');
+      const baseUrl = 'https://site--bookmyshot--ykz2mr8mzlrv.code.run/api';
+      const url = `${baseUrl}/invoice/${bookingId}/partial?token=${encodeURIComponent(token || '')}`;
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${token}`, 'x-access-token': token || '' },
+      });
+      const html = await response.text();
+      if (!response.ok || !html || html.includes('"success":false')) {
+        try {
+          const err = JSON.parse(html);
+          Alert.alert('Error', err.message || 'Failed to generate payment receipt');
+        } catch { Alert.alert('Error', 'Failed to generate payment receipt.'); }
+        return;
+      }
+      const Print = require('expo-print');
+      await Print.printAsync({ html });
+    } catch (e: any) {
+      Alert.alert('Error', 'Failed to download payment receipt.');
+    }
+  };
+
   // ═══ SEND INVOICE PDF VIA SHARE SHEET (WhatsApp etc.) ═══
   const shareInvoicePDF = async () => {
     try {
@@ -358,6 +383,12 @@ export default function BookingDetail({ route, navigation }: any) {
             {remaining > 0 && booking.amount > 0 && (
               <View style={[s.actionsRow, { marginTop: 0 }]}>
                 <ActionBtn icon="logo-whatsapp" label="Remind" onPress={sendPaymentReminder} />
+                {totalPaid > 0 && <ActionBtn icon="receipt-outline" label="Payment Invoice" onPress={downloadPartialInvoice} />}
+              </View>
+            )}
+            {remaining <= 0 && totalPaid > 0 && booking.amount > 0 && (
+              <View style={[s.actionsRow, { marginTop: 0 }]}>
+                <ActionBtn icon="receipt-outline" label="Payment Invoice" onPress={downloadPartialInvoice} />
               </View>
             )}
           </>
