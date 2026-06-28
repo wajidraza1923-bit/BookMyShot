@@ -323,19 +323,29 @@ export default function BookingDetail({ route, navigation }: any) {
         </View>
 
         {/* ═══ QUICK ACTIONS ═══ */}
-        <View style={s.actionsRow}>
-          <ActionBtn icon="cash-outline" label="Set Amount" onPress={() => { setAmountInput(String(booking.amount || '')); setShowAmountModal(true); }} />
-          <ActionBtn icon="card-outline" label="Record Pay" onPress={() => setShowPaymentModal(true)} />
-          <ActionBtn icon="checkmark-done" label="Mark Paid" onPress={markPaid} />
-          <ActionBtn icon="chatbubble-outline" label="Chat" onPress={() => navigation.navigate('BookingChat', { bookingId })} />
-        </View>
-        {/* ═══ SECOND ROW: WhatsApp + Invoice ═══ */}
-        <View style={[s.actionsRow, { marginTop: 0 }]}>
-          <ActionBtn icon="logo-whatsapp" label="Remind" onPress={sendPaymentReminder} />
-          <ActionBtn icon="download-outline" label="Invoice" onPress={downloadInvoice} />
-          <ActionBtn icon="share-social-outline" label="Send Invoice" onPress={shareInvoicePDF} />
-          <ActionBtn icon="calendar-outline" label="Add Event" onPress={() => setShowEventModal(true)} />
-        </View>
+        {booking.status === 'Completed' || booking.status === 'completed' ? (
+          /* COMPLETED MODE: Only Chat + Invoice + Send Invoice */
+          <View style={s.actionsRow}>
+            <ActionBtn icon="chatbubble-outline" label="Chat" onPress={() => navigation.navigate('BookingChat', { bookingId })} />
+            <ActionBtn icon="download-outline" label="Invoice" onPress={downloadInvoice} />
+            <ActionBtn icon="share-social-outline" label="Send Invoice" onPress={shareInvoicePDF} />
+          </View>
+        ) : (
+          /* ACTIVE MODE: Payment controls + conditional Remind */
+          <>
+            <View style={s.actionsRow}>
+              <ActionBtn icon="cash-outline" label="Set Amount" onPress={() => { setAmountInput(String(booking.amount || '')); setShowAmountModal(true); }} />
+              <ActionBtn icon="card-outline" label="Record Pay" onPress={() => setShowPaymentModal(true)} />
+              <ActionBtn icon="checkmark-done" label="Mark Paid" onPress={markPaid} />
+              <ActionBtn icon="chatbubble-outline" label="Chat" onPress={() => navigation.navigate('BookingChat', { bookingId })} />
+            </View>
+            {remaining > 0 && booking.amount > 0 && (
+              <View style={[s.actionsRow, { marginTop: 0 }]}>
+                <ActionBtn icon="logo-whatsapp" label="Remind" onPress={sendPaymentReminder} />
+              </View>
+            )}
+          </>
+        )}
 
         {/* ═══ CUSTOMER ═══ */}
         <Section title="Customer">
