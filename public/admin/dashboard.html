@@ -613,6 +613,9 @@
                 <div class="form-group" style="display:flex;align-items:center;gap:0.75rem;padding-top:0.3rem">
                   <label style="margin:0;cursor:pointer;display:flex;align-items:center;gap:0.5rem"><input type="checkbox" id="ssYearlySaveBadge" style="width:auto" checked> Show "Save 2 Months" Badge</label>
                 </div>
+                <div class="form-group"><label>Button Text</label><input type="text" id="ssYearlyBtnText" placeholder="Buy Yearly Plan"></div>
+                <div class="form-group" style="grid-column:span 2"><label>Benefits (comma separated)</label><input type="text" id="ssYearlyBenefits" placeholder="Unlimited invoices, Priority ranking, Premium badge, 12 months access"></div>
+                <div class="form-group"><label>Reminder Days (comma separated)</label><input type="text" id="ssYearlyReminderDays" placeholder="30,15,7,3,1"></div>
                 <div class="form-group" style="padding-top:0.3rem">
                   <span style="font-size:0.72rem;color:var(--gold)">Auto-calculated: ₹<span id="ssYearlyAutoCalc">0</span> (Monthly × 10)</span>
                 </div>
@@ -2134,6 +2137,9 @@
         document.getElementById("ssYearlyActive").checked = s.yearlyPlanActive !== false;
         document.getElementById("ssYearlyRecommended").checked = s.yearlyShowRecommended !== false;
         document.getElementById("ssYearlySaveBadge").checked = s.yearlyShowSaveBadge !== false;
+        document.getElementById("ssYearlyBtnText").value = s.yearlyButtonText || "Buy Yearly Plan";
+        document.getElementById("ssYearlyBenefits").value = s.yearlyBenefits || "";
+        document.getElementById("ssYearlyReminderDays").value = s.yearlyReminderDays || "30,15,7,3,1";
         // Auto-calculate yearly price hint
         document.getElementById("ssYearlyAutoCalc").textContent = ((s.monthlyPlanPrice || 299) * 10).toLocaleString('en-IN');
 
@@ -2185,6 +2191,9 @@
         yearlyPlanActive: document.getElementById("ssYearlyActive").checked,
         yearlyShowRecommended: document.getElementById("ssYearlyRecommended").checked,
         yearlyShowSaveBadge: document.getElementById("ssYearlySaveBadge").checked,
+        yearlyButtonText: document.getElementById("ssYearlyBtnText").value || "Buy Yearly Plan",
+        yearlyBenefits: document.getElementById("ssYearlyBenefits").value || "",
+        yearlyReminderDays: document.getElementById("ssYearlyReminderDays").value || "30,15,7,3,1",
         priceChangeMode: document.getElementById("ssPriceChangeMode").value,
         featuredPortfolioPrice: Number(document.getElementById("ssFeaturedPrice").value),
         searchBoostPrice: Number(document.getElementById("ssBoostPrice").value),
