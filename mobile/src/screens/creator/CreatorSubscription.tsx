@@ -13,6 +13,7 @@ export default function CreatorSubscription({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('monthly');
   // WebView Razorpay state for subscription
   const [showRazorpay, setShowRazorpay] = useState(false);
   const [rpSubConfig, setRpSubConfig] = useState<{ keyId: string; subscriptionId: string; name: string; email: string }>({ keyId: '', subscriptionId: '', name: '', email: '' });
@@ -81,7 +82,7 @@ export default function CreatorSubscription({ navigation }: any) {
       }
 
       // Create subscription on backend
-      const subRes = await createSubscription();
+      const subRes = await createSubscription(selectedPlan);
 
       // If backend says subscription already active AND autopay is ON, show success
       if ((subRes.status === 'active' || subRes.message === 'Subscription already active') && ap?.autopayActive === true) {
@@ -281,13 +282,40 @@ export default function CreatorSubscription({ navigation }: any) {
 
             {/* Price */}
             <View style={s.priceBox}>
-              <Text style={s.priceAmount}>₹{isActive ? creatorPlanPrice : renewalPrice}</Text>
-              <Text style={s.priceUnit}>per month</Text>
+              <Text style={s.priceAmount}>₹{isActive ? creatorPlanPrice : (selectedPlan === 'yearly' ? (monthlyPlanPrice * 10) : monthlyPlanPrice)}</Text>
+              <Text style={s.priceUnit}>{creator?.subscriptionPlanType === 'yearly' || selectedPlan === 'yearly' ? 'per year' : 'per month'}</Text>
               {priceChanged && isActive && (
                 <Text style={s.renewalNote}>Renewal: ₹{renewalPrice}/mo</Text>
               )}
             </View>
           </View>
+
+          {/* Plan Selection — only show when subscribing/renewing */}
+          {(isExpired || !subStatus || subStatus === 'inactive' || subStatus === 'pending_payment') && (
+            <View style={{ marginTop: spacing.lg }}>
+              <Text style={{ ...typography.labelMd, color: colors.textMuted, marginBottom: spacing.sm }}>Choose Plan</Text>
+              <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                <TouchableOpacity
+                  style={[s.planOption, selectedPlan === 'monthly' && s.planOptionActive]}
+                  onPress={() => setSelectedPlan('monthly')}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[s.planOptionTitle, selectedPlan === 'monthly' && { color: colors.primary }]}>Monthly</Text>
+                  <Text style={s.planOptionPrice}>₹{monthlyPlanPrice}/mo</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[s.planOption, selectedPlan === 'yearly' && s.planOptionActive, { position: 'relative' }]}
+                  onPress={() => setSelectedPlan('yearly')}
+                  activeOpacity={0.8}
+                >
+                  <View style={s.bestValueBadge}><Text style={s.bestValueText}>SAVE 2 MONTHS</Text></View>
+                  <Text style={[s.planOptionTitle, selectedPlan === 'yearly' && { color: colors.primary }]}>Yearly ⭐</Text>
+                  <Text style={s.planOptionPrice}>₹{monthlyPlanPrice * 10}/yr</Text>
+                  <Text style={{ fontSize: 9, color: colors.success, marginTop: 2 }}>12 months for price of 10</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
 
           {/* Subscribe/Renew Button */}
           {(isExpired || !subStatus || subStatus === 'inactive' || subStatus === 'pending_payment') && (
@@ -295,7 +323,7 @@ export default function CreatorSubscription({ navigation }: any) {
               {subscribing ? (
                 <ActivityIndicator size="small" color={colors.textInverse} />
               ) : (
-                <Text style={s.payBtnText}>Pay Subscription ₹{renewalPrice}</Text>
+                <Text style={s.payBtnText}>Pay {selectedPlan === 'yearly' ? 'Yearly' : 'Monthly'} — ₹{selectedPlan === 'yearly' ? (monthlyPlanPrice * 10) : monthlyPlanPrice}</Text>
               )}
             </TouchableOpacity>
           )}
@@ -537,6 +565,13 @@ const s = StyleSheet.create({
   // AutoPay controls
   autoPayBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, marginHorizontal: spacing.xl, marginTop: spacing.md, paddingVertical: spacing.md, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border },
   autoPayBtnText: { ...typography.labelMd, fontWeight: '600' },
+  // Plan selection
+  planOption: { flex: 1, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.md, alignItems: 'center' },
+  planOptionActive: { borderColor: colors.primary, backgroundColor: colors.primaryMuted },
+  planOptionTitle: { ...typography.headlineSm, color: colors.text },
+  planOptionPrice: { ...typography.bodySm, color: colors.textMuted, marginTop: 2 },
+  bestValueBadge: { position: 'absolute', top: -8, right: -4, backgroundColor: colors.success, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  bestValueText: { fontSize: 8, fontWeight: '800', color: '#fff', letterSpacing: 0.5 },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 6 },
   statusLabel: { ...typography.caption, color: colors.textMuted, width: 80 },
   statusValue: { ...typography.bodySm, color: colors.text, fontWeight: '600' },

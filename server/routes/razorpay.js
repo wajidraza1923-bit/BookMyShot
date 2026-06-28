@@ -113,7 +113,14 @@ router.post("/create-subscription", protect, authorize("creator"), async (req, r
     }
 
     const subSettings = await configService.getSubscriptionSettings();
-    const amount = subSettings.monthlyPlanPrice || 99;
+    const { planType } = req.body; // 'monthly' or 'yearly'
+    const isYearly = planType === 'yearly';
+    
+    const monthlyPrice = subSettings.monthlyPlanPrice || 299;
+    const yearlyPrice = subSettings.yearlyPlanPrice || Math.round(monthlyPrice * 10);
+    const amount = isYearly ? yearlyPrice : monthlyPrice;
+    const period = isYearly ? 'yearly' : 'monthly';
+    const periodMonths = isYearly ? 12 : 1;
     const trialDays = subSettings.trialDays || 0;
 
     const creator = await Creator.findOne({ user: req.user._id });
@@ -149,8 +156,8 @@ router.post("/create-subscription", protect, authorize("creator"), async (req, r
     const isRenewal = creator.subscriptionStatus === "expired" || creator.subscriptionStatus === "suspended" || creator.subscriptionStatus === "overdue";
     const applyTrial = !isRenewal && !creator.subscriptionStartDate; // Trial only for first-time subscribers
 
-    console.log("[Razorpay] Creating new monthly plan: ₹" + amount + (isRenewal ? " (RENEWAL)" : " (NEW)"));
-    const plan = await razorpayService.createPlan("BookMyShot Creator Monthly ₹" + amount, amount, "monthly", 1);
+    console.log(`[Razorpay] Creating ${period} plan: ₹${amount}${isRenewal ? " (RENEWAL)" : " (NEW)"}`);
+    const plan = await razorpayService.createPlan(`BookMyShot Creator ${isYearly ? 'Yearly' : 'Monthly'} ₹${amount}`, amount, period, 1);
     const planId = plan.id;
     console.log("[Razorpay] Plan created:", planId);
 
@@ -167,6 +174,7 @@ router.post("/create-subscription", protect, authorize("creator"), async (req, r
     creator.razorpaySubscriptionId = subscription.id;
     creator.razorpayPlanId = planId;
     creator.subscriptionPlanPrice = amount; // Lock the price this creator subscribed at
+    creator.subscriptionPlanType = isYearly ? 'yearly' : 'monthly'; // Track plan type
     if (effectiveTrialDays > 0) {
       creator.subscriptionStatus = "trial";
       creator.subscriptionStartDate = new Date();
@@ -185,6 +193,8 @@ router.post("/create-subscription", protect, authorize("creator"), async (req, r
       subscription,
       keyId: process.env.RAZORPAY_KEY_ID,
       amount,
+      planType: isYearly ? 'yearly' : 'monthly',
+      periodMonths,
       trialDays,
     });
   } catch (e) {
@@ -246,7 +256,9 @@ router.post("/verify-subscription", protect, async (req, res, next) => {
     if (trialDays > 0) {
       endDate.setDate(endDate.getDate() + trialDays);
     } else {
-      endDate.setMonth(endDate.getMonth() + 1);
+      // Set end date based on plan type (monthly = 1 month, yearly = 12 months)
+      const planMonths = creator.subscriptionPlanType === 'yearly' ? 12 : 1;
+      endDate.setMonth(endDate.getMonth() + planMonths);
     }
     creator.subscriptionEndDate = endDate;
     creator.nextBillingDate = endDate;

@@ -45,8 +45,8 @@ export function isNativeRazorpayAvailable(): boolean {
 // ═══════════════════════════════════════════════════════════════
 
 // Step 1: Create subscription on backend
-export async function createSubscription(): Promise<SubscriptionResult> {
-  const res = await api.post('/razorpay/create-subscription', {});
+export async function createSubscription(planType: 'monthly' | 'yearly' = 'monthly'): Promise<SubscriptionResult> {
+  const res = await api.post('/razorpay/create-subscription', { planType });
   return {
     subscriptionId: res.data?.subscriptionId || res.data?.subscription?.id || '',
     status: res.data?.status || res.data?.subscription?.status,
