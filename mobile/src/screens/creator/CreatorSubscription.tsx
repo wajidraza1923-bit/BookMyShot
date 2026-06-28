@@ -232,25 +232,29 @@ export default function CreatorSubscription({ navigation }: any) {
     );
   }
 
-  // Parse subscription data (same fields as website uses)
+  // Parse subscription data
   const subStatus = creator?.subscriptionStatus || 'inactive';
-  const subEndDate = creator?.subscriptionExpiry ? new Date(creator.subscriptionExpiry) : null;
+  const subEndDate = creator?.subscriptionExpiry ? new Date(creator.subscriptionExpiry) : (creator?.subscriptionEndDate ? new Date(creator.subscriptionEndDate) : null);
   const subStartDate = creator?.subscriptionStartDate ? new Date(creator.subscriptionStartDate) : null;
   const lastPaymentDate = creator?.lastPaymentDate ? new Date(creator.lastPaymentDate) : null;
   const autoRenew = creator?._autopay?.autopayActive === true || (creator?._autopay?.autoRenew === true) || false;
   const daysRemaining = subEndDate ? Math.max(0, Math.ceil((subEndDate.getTime() - Date.now()) / 86400000)) : 0;
+  const currentPlanType = creator?.subscriptionPlanType || 'monthly';
 
-  // Price from platform settings database (NOT hardcoded)
+  // Prices from admin panel (NOT hardcoded)
   const monthlyPlanPrice = config?.subscription?.monthlyPlanPrice || 0;
+  const yearlyPlanPrice = config?.subscription?.yearlyPlanPrice || (monthlyPlanPrice * 10);
   const creatorPlanPrice = creator?.subscriptionPlanPrice || monthlyPlanPrice;
-  const renewalPrice = monthlyPlanPrice; // Current DB price for renewal
-  const priceChanged = creatorPlanPrice > 0 && renewalPrice > 0 && creatorPlanPrice !== renewalPrice;
 
-  // Status display
+  // Status
   const isActive = subStatus === 'active' || subStatus === 'trial';
   const isTrial = subStatus === 'trial';
   const isExpired = subStatus === 'expired' || subStatus === 'suspended' || subStatus === 'overdue';
   const isOverdue = subStatus === 'overdue';
+
+  // Is the user viewing the yearly preview (selected yearly but doesn't have it yet)
+  const isViewingYearlyPreview = selectedPlan === 'yearly' && !(isActive && currentPlanType === 'yearly');
+  const isViewingMonthlyPreview = selectedPlan === 'monthly' && !(isActive && currentPlanType === 'monthly');
 
   const statusColor = subStatus === 'active' ? colors.success
     : subStatus === 'trial' ? colors.primary
@@ -297,32 +301,58 @@ export default function CreatorSubscription({ navigation }: any) {
               <View style={s.planRow}>
                 <Ionicons name="diamond" size={16} color={colors.primary} />
                 <Text style={s.planName}>
-                  {isActive ? (creator?.subscriptionPlanType === 'yearly' ? 'Yearly Plan' : 'Monthly Plan') : 'Subscription'}
+                  {isViewingYearlyPreview ? 'Yearly Premium Plan' : (isActive && currentPlanType === 'yearly') ? 'Yearly Plan' : isActive ? 'Monthly Plan' : 'Subscription'}
                 </Text>
               </View>
 
-              {/* Details Grid — all real-time data from backend */}
+              {/* Details Grid — switches between current plan data and yearly preview */}
               <View style={s.detailsGrid}>
-                <DetailRow label="Status" value={statusLabel} valueColor={statusColor} bold />
-                <DetailRow label="Plan Type" value={isActive ? (creator?.subscriptionPlanType === 'yearly' ? 'Yearly (12 Months)' : 'Monthly (AutoPay)') : 'No Active Plan'} />
-                <DetailRow label="AutoPay" value={creator?.subscriptionPlanType === 'yearly' ? 'OFF (One-time payment)' : (autoRenew ? 'ON' : 'OFF')} valueColor={creator?.subscriptionPlanType === 'yearly' ? colors.textMuted : (autoRenew ? colors.success : colors.error)} />
-                <DetailRow label="Start Date" value={subStartDate ? formatDate(subStartDate) : '—'} />
-                <DetailRow label="Expiry Date" value={subEndDate ? formatDate(subEndDate) : '—'} valueColor={daysRemaining <= 7 ? colors.warning : undefined} />
-                <DetailRow label="Days Remaining" value={isActive ? String(daysRemaining) : '—'} valueColor={daysRemaining <= 5 ? colors.error : daysRemaining <= 15 ? colors.warning : undefined} bold={daysRemaining <= 7} />
-                <DetailRow label="Last Payment" value={lastPaymentDate ? formatDate(lastPaymentDate) : '—'} />
+                {isViewingYearlyPreview && !isActive ? (
+                  <>
+                    <DetailRow label="Status" value="Available" valueColor={colors.primary} />
+                    <DetailRow label="Plan Type" value="Yearly (12 Months)" />
+                    <DetailRow label="AutoPay" value="Not Required (One-time)" valueColor={colors.textMuted} />
+                    <DetailRow label="Start Date" value="Today (after purchase)" />
+                    <DetailRow label="Expiry Date" value={formatDate(new Date(Date.now() + 365 * 86400000))} />
+                    <DetailRow label="Days" value="365 days" />
+                    <DetailRow label="Offer" value={config?.subscription?.yearlyPlanDescription || '12 months for price of 10'} valueColor={colors.success} />
+                  </>
+                ) : isViewingYearlyPreview && isActive ? (
+                  <>
+                    <DetailRow label="Current" value={`${statusLabel} (Monthly)`} valueColor={statusColor} />
+                    <DetailRow label="Upgrade To" value="Yearly (12 Months)" valueColor={colors.primary} bold />
+                    <DetailRow label="AutoPay" value="Not Required" valueColor={colors.textMuted} />
+                    <DetailRow label="New Start" value="Today (after payment)" />
+                    <DetailRow label="New Expiry" value={formatDate(new Date(Date.now() + 365 * 86400000))} />
+                    <DetailRow label="Duration" value="365 days" />
+                    <DetailRow label="Offer" value={config?.subscription?.yearlyPlanDescription || '12 months for price of 10'} valueColor={colors.success} />
+                  </>
+                ) : (
+                  <>
+                    <DetailRow label="Status" value={statusLabel} valueColor={statusColor} bold />
+                    <DetailRow label="Plan Type" value={currentPlanType === 'yearly' ? 'Yearly (12 Months)' : 'Monthly (AutoPay)'} />
+                    <DetailRow label="AutoPay" value={currentPlanType === 'yearly' ? 'OFF (One-time)' : (autoRenew ? 'ON' : 'OFF')} valueColor={currentPlanType === 'yearly' ? colors.textMuted : (autoRenew ? colors.success : colors.error)} />
+                    <DetailRow label="Start Date" value={subStartDate ? formatDate(subStartDate) : '\u2014'} />
+                    <DetailRow label="Expiry Date" value={subEndDate ? formatDate(subEndDate) : '\u2014'} valueColor={daysRemaining <= 7 ? colors.warning : undefined} />
+                    <DetailRow label="Days Remaining" value={isActive ? String(daysRemaining) : '\u2014'} valueColor={daysRemaining <= 5 ? colors.error : daysRemaining <= 15 ? colors.warning : undefined} bold={daysRemaining <= 7} />
+                    <DetailRow label="Last Payment" value={lastPaymentDate ? formatDate(lastPaymentDate) : '\u2014'} />
+                  </>
+                )}
               </View>
             </View>
 
-            {/* Price — shows real price from DB */}
+            {/* Price — updates based on selection */}
             <View style={s.priceBox}>
               <Text style={s.priceAmount}>
-                {isActive
-                  ? `₹${creatorPlanPrice || (creator?.subscriptionPlanType === 'yearly' ? (config?.subscription?.yearlyPlanPrice || monthlyPlanPrice * 10) : monthlyPlanPrice)}`
-                  : `₹${selectedPlan === 'yearly' ? (config?.subscription?.yearlyPlanPrice || monthlyPlanPrice * 10) : monthlyPlanPrice}`
+                {isViewingYearlyPreview
+                  ? `\u20B9${yearlyPlanPrice}`
+                  : isActive
+                    ? `\u20B9${creatorPlanPrice}`
+                    : selectedPlan === 'yearly' ? `\u20B9${yearlyPlanPrice}` : `\u20B9${monthlyPlanPrice}`
                 }
               </Text>
               <Text style={s.priceUnit}>
-                {(isActive && creator?.subscriptionPlanType === 'yearly') || (!isActive && selectedPlan === 'yearly') ? 'per year' : 'per month'}
+                {isViewingYearlyPreview || (isActive && currentPlanType === 'yearly') ? 'per year' : 'per month'}
               </Text>
             </View>
           </View>
@@ -403,9 +433,9 @@ export default function CreatorSubscription({ navigation }: any) {
           })()}
         </View>
 
-        {/* Features */}
+        {/* Features — different for Monthly vs Yearly */}
         <View style={s.featuresCard}>
-          <Text style={s.featuresTitle}>Plan Benefits</Text>
+          <Text style={s.featuresTitle}>{selectedPlan === 'yearly' ? 'Yearly Premium Benefits' : 'Plan Benefits'}</Text>
           <View style={s.featuresList}>
             <Feature text="Profile visible in search & listings" />
             <Feature text="Receive inquiries & bookings" />
@@ -415,6 +445,16 @@ export default function CreatorSubscription({ navigation }: any) {
             <Feature text="Commission-based earnings" />
             <Feature text="Featured listing eligibility" />
             <Feature text="Priority support" />
+            {selectedPlan === 'yearly' && (
+              <>
+                <Feature text="Unlimited booking invoices & PDF generation" />
+                <Feature text="Unlimited WhatsApp invoice sharing" />
+                <Feature text="Priority search ranking boost" />
+                <Feature text="Premium verified badge" />
+                <Feature text="12 months uninterrupted access" />
+                <Feature text="No AutoPay required (one-time payment)" />
+              </>
+            )}
           </View>
         </View>
 
