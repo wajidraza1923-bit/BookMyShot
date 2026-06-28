@@ -179,6 +179,26 @@ export default function CreatorBookings({ navigation }: any) {
                     await Print.printAsync({ html: htm });
                   } catch { setToast({ visible: true, type: 'error', title: 'Error', message: 'Invoice download failed' }); }
                 }} />
+                <ActionBtn icon="logo-whatsapp" label="Send" onPress={async () => {
+                  try {
+                    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+                    const Print = require('expo-print');
+                    const Sharing = require('expo-sharing');
+                    const FileSystem = require('expo-file-system');
+                    const tkn = await AsyncStorage.getItem('bms_token');
+                    const resp = await fetch(`https://site--bookmyshot--ykz2mr8mzlrv.code.run/api/invoice/${item._id}?token=${encodeURIComponent(tkn || '')}`, { headers: { 'Authorization': `Bearer ${tkn}`, 'x-access-token': tkn || '' } });
+                    let htm = await resp.text();
+                    if (!resp.ok || htm.includes('"success":false')) { setToast({ visible: true, type: 'error', title: 'Error', message: 'Failed to generate invoice' }); return; }
+                    htm = htm.replace(/<button[^>]*class="print-btn"[^>]*>.*?<\/button>/gi, '');
+                    const { uri } = await Print.printToFileAsync({ html: htm, base64: false });
+                    const pdfName = `BookMyShot-Invoice-${item.invoiceNumber || item._id.slice(-8)}.pdf`;
+                    const newUri = FileSystem.documentDirectory + pdfName;
+                    await FileSystem.moveAsync({ from: uri, to: newUri });
+                    if (await Sharing.isAvailableAsync()) {
+                      await Sharing.shareAsync(newUri, { mimeType: 'application/pdf', dialogTitle: 'Send Invoice via WhatsApp', UTI: 'com.adobe.pdf' });
+                    } else { setToast({ visible: true, type: 'error', title: 'Error', message: 'Sharing not available' }); }
+                  } catch (e: any) { setToast({ visible: true, type: 'error', title: 'Error', message: 'Failed to share invoice' }); }
+                }} />
               </View>
             ) : (
               <View style={styles.quickActions}>
