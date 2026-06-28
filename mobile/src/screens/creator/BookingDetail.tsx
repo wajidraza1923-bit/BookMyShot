@@ -106,28 +106,34 @@ export default function BookingDetail({ route, navigation }: any) {
 
   // ═══ MARK PAID ═══
   const markPaid = () => {
-    Alert.alert('Mark Fully Paid', 'Mark this booking as fully paid?', [
-      { text: 'Cancel' },
-      { text: 'Mark Paid', onPress: async () => {
-        try {
-          await api.patch(`/payment-records/booking/${bookingId}/mark-paid`);
-          await load();
-          // After mark paid: if due was 0 → auto-complete. If due > 0 → show Mark Complete step.
-          const updatedRemaining = (booking.amount || 0) - paymentRecords.filter((r: any) => r.status === 'approved').reduce((s: number, r: any) => s + (r.amount || 0), 0);
-          if (updatedRemaining <= 0) {
-            // Auto-complete (fully paid)
-            try {
-              await api.patch(`/creator/bookings/${bookingId}/complete`);
-              await load();
-              Alert.alert('Done! 🎉', 'Booking completed and invoice is ready.');
-            } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed to complete'); }
-          } else {
-            // Due > 0 — show Mark Complete confirmation step
+    const currentRemaining = (booking.amount || 0) - paymentRecords.filter((r: any) => r.status === 'approved').reduce((s: number, r: any) => s + (r.amount || 0), 0);
+    
+    if (currentRemaining <= 0) {
+      // Fully paid — auto-complete immediately
+      Alert.alert('Complete Booking', 'Payment is complete. Mark booking as completed?', [
+        { text: 'Cancel' },
+        { text: 'Complete', onPress: async () => {
+          try {
+            await api.patch(`/payment-records/booking/${bookingId}/mark-paid`);
+            await api.patch(`/creator/bookings/${bookingId}/complete`);
+            await load();
+            Alert.alert('Done! 🎉', 'Booking completed. Invoice is ready.');
+          } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
+        }}
+      ]);
+    } else {
+      // Due > 0 — go to pending complete state
+      Alert.alert('Mark Paid', `There is still ₹${currentRemaining.toLocaleString('en-IN')} pending. Mark as paid and proceed to completion?`, [
+        { text: 'Cancel' },
+        { text: 'Proceed', onPress: async () => {
+          try {
+            await api.patch(`/payment-records/booking/${bookingId}/mark-paid`);
+            // Don't reload — just switch to pending complete state
             setPendingComplete(true);
-          }
-        } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
-      }}
-    ]);
+          } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
+        }}
+      ]);
+    }
   };
 
   // ═══ CANCEL PENDING COMPLETE (go back to payment buttons) ═══
