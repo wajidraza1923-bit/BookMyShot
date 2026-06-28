@@ -7,7 +7,9 @@
  * 
  * ADMIN (auth required):
  *   GET  /api/app-version/history  — All versions
- *   POST /api/app-version          — Publish new version (with APK upload)
+ *   POST /api/app-version/get-upload-params — Get Cloudinary direct upload params
+ *   POST /api/app-version/publish  — Publish version with pre-uploaded APK URL
+ *   POST /api/app-version          — Legacy: Publish with server-side upload (small files only)
  *   PUT  /api/app-version/:id      — Edit existing version
  *   DELETE /api/app-version/:id    — Remove version
  */
@@ -16,8 +18,9 @@ const router = express.Router();
 const AppVersion = require("../models/AppVersion");
 const { protect, authorize } = require("../middleware/auth");
 const multer = require("multer");
+const crypto = require("crypto");
 
-// Use memory storage for APK — upload to Cloudinary as raw file
+// Use memory storage for APK — only for small files as fallback
 const apkUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 500 * 1024 * 1024 }, // 500MB
@@ -97,7 +100,93 @@ router.get("/history", protect, authorize("admin"), async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════
-// ADMIN: Publish new version
+// ADMIN: Get Cloudinary direct upload params (browser uploads directly)
+// ═══════════════════════════════════════════════════════════════
+router.post("/get-upload-params", protect, authorize("admin"), (req, res) => {
+  try {
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    const apiKey = process.env.CLOUDINARY_API_KEY;
+    const apiSecret = process.env.CLOUDINARY_API_SECRET;
+    if (!cloudName || !apiKey || !apiSecret) {
+      return res.status(503).json({ success: false, message: "Cloudinary not configured on server" });
+    }
+    const timestamp = Math.round(Date.now() / 1000);
+    const folder = "bookmyshot/releases";
+    const paramsToSign = `folder=${folder}&resource_type=raw&timestamp=${timestamp}`;
+    const signature = crypto.createHash("sha1").update(paramsToSign + apiSecret).digest("hex");
+
+    res.json({
+      success: true,
+      cloudName,
+      apiKey,
+      timestamp,
+      signature,
+      folder,
+    });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// ADMIN: Publish version (APK already uploaded to Cloudinary)
+// No file upload — just metadata + the Cloudinary URL
+// ═══════════════════════════════════════════════════════════════
+router.post("/publish", protect, authorize("admin"), async (req, res) => {
+  try {
+    const { version, versionCode, title, description, downloadUrl, forceUpdate, optionalUpdate, minVersionCode, fileSize } = req.body;
+    if (!version || !versionCode) {
+      return res.status(400).json({ success: false, message: "Version name and code are required" });
+    }
+    if (!downloadUrl) {
+      return res.status(400).json({ success: false, message: "Download URL is required (upload APK first)" });
+    }
+    const code = parseInt(versionCode);
+    const existing = await AppVersion.findOne({ versionCode: code });
+    if (existing) {
+      return res.status(400).json({ success: false, message: `Version code ${code} already exists` });
+    }
+
+    const record = await AppVersion.create({
+      version,
+      versionCode: code,
+      title: title || `BookMyShot v${version}`,
+      description: description || "",
+      releaseNotes: req.body.releaseNotes || description || "",
+      downloadUrl,
+      fileSize: parseInt(fileSize) || 0,
+      forceUpdate: forceUpdate === "true" || forceUpdate === true,
+      optionalUpdate: optionalUpdate !== "false" && optionalUpdate !== false,
+      minVersionCode: parseInt(minVersionCode) || 1,
+      published: true,
+    });
+
+    // Real-time notify
+    try {
+      const socketService = require("../services/socketService");
+      socketService.emitToRole("admin", "appVersion:published", { version, versionCode: code, downloadUrl, forceUpdate: record.forceUpdate });
+    } catch (e) {}
+
+    // Push notification to all users
+    try {
+      const pushService = require("../services/pushService");
+      const updateTitle = record.forceUpdate ? "🔴 Critical App Update" : "📲 App Update Available";
+      const updateBody = record.forceUpdate
+        ? `BookMyShot v${version} is required. Please update now.`
+        : `BookMyShot v${version} is available. Update now!`;
+      await pushService.broadcast(updateTitle, updateBody, { type: "app_update", targetScreen: "Settings" });
+    } catch (e) {}
+
+    console.log(`[AppVersion] ✅ Published v${version} (code ${code}) via direct upload`);
+    res.status(201).json({ success: true, message: `v${version} published successfully`, data: record });
+  } catch (e) {
+    console.error("[AppVersion] Publish error:", e.message);
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// ADMIN: Publish new version (LEGACY — server-side upload, may timeout for large files)
 // ═══════════════════════════════════════════════════════════════
 router.post("/", protect, authorize("admin"), (req, res, next) => {
   // Handle multer upload with explicit error handling

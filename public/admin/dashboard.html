@@ -3145,7 +3145,8 @@
         if (!fileInput.files[0]) { toast("Please select an APK file to upload", "error"); return; }
 
         btn.disabled = true;
-        const totalSize = fileInput.files[0].size;
+        const file = fileInput.files[0];
+        const totalSize = file.size;
         const totalMB = (totalSize / 1024 / 1024).toFixed(1);
 
         // Create progress UI
@@ -3159,7 +3160,7 @@
         progressContainer.innerHTML = `
           <div style="background:#0a0a0a;border:1px solid #333;border-radius:10px;padding:1rem;margin-bottom:0.75rem">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
-              <span id="auProgressStatus" style="color:var(--gold);font-weight:600;font-size:0.82rem">Preparing Upload...</span>
+              <span id="auProgressStatus" style="color:var(--gold);font-weight:600;font-size:0.82rem">Getting upload params...</span>
               <span id="auProgressPercent" style="color:#fff;font-weight:700;font-size:0.9rem">0%</span>
             </div>
             <div style="background:#222;border-radius:6px;height:8px;overflow:hidden;margin-bottom:0.5rem">
@@ -3183,18 +3184,28 @@
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
 
         try {
-          const fd = new FormData();
-          fd.append("version", document.getElementById("auVersion").value);
-          fd.append("versionCode", document.getElementById("auVersionCode").value);
-          fd.append("title", document.getElementById("auTitle").value);
-          fd.append("description", document.getElementById("auDescription").value);
-          fd.append("minVersionCode", document.getElementById("auMinCode").value || "1");
-          fd.append("forceUpdate", document.getElementById("auForceUpdate").checked.toString());
-          fd.append("optionalUpdate", document.getElementById("auOptionalUpdate").checked.toString());
-          fd.append("apk", fileInput.files[0]);
+          // STEP 1: Get Cloudinary upload signature from backend
+          progressStatus.textContent = "🔐 Getting upload credentials...";
+          const paramsRes = await fetch("/api/app-version/get-upload-params", {
+            method: "POST",
+            headers: { "Authorization": "Bearer " + API.getToken(), "Content-Type": "application/json" },
+            body: JSON.stringify({})
+          });
+          const params = await paramsRes.json();
+          if (!params.success) throw new Error(params.message || "Failed to get upload params");
 
-          // Use XMLHttpRequest for real progress tracking
-          const result = await new Promise(function(resolve, reject) {
+          // STEP 2: Upload APK directly to Cloudinary (bypasses server completely)
+          progressStatus.textContent = "⬆️ Uploading APK to cloud...";
+          const cloudUrl = "https://api.cloudinary.com/v1_1/" + params.cloudName + "/raw/upload";
+          const fd = new FormData();
+          fd.append("file", file);
+          fd.append("api_key", params.apiKey);
+          fd.append("timestamp", params.timestamp);
+          fd.append("signature", params.signature);
+          fd.append("folder", params.folder);
+          fd.append("resource_type", "raw");
+
+          const uploadResult = await new Promise(function(resolve, reject) {
             const xhr = new XMLHttpRequest();
             let startTime = Date.now();
 
@@ -3213,62 +3224,74 @@
                 progressETA.textContent = "ETA: " + (remaining < 60 ? Math.ceil(remaining) + "s" : Math.ceil(remaining/60) + "m");
 
                 if (pct < 100) {
-                  progressStatus.textContent = "⬆️ Uploading APK...";
+                  progressStatus.textContent = "⬆️ Uploading APK to cloud...";
                 } else {
-                  progressStatus.textContent = "⏳ Processing...";
+                  progressStatus.textContent = "⏳ Processing on cloud...";
                   progressSpeed.textContent = "";
-                  progressETA.textContent = "Verifying APK...";
+                  progressETA.textContent = "Almost done...";
                 }
               }
             });
 
             xhr.addEventListener("load", function() {
-              try {
-                const data = JSON.parse(xhr.responseText);
-                resolve(data);
-              } catch(e) { reject(new Error("Server returned invalid JSON. Status: " + xhr.status + ". Response: " + (xhr.responseText || "empty").substring(0, 200))); }
+              try { resolve(JSON.parse(xhr.responseText)); }
+              catch(e) { reject(new Error("Cloud storage error. Status: " + xhr.status)); }
             });
-            xhr.addEventListener("error", function() { reject(new Error("Network error - connection failed")); });
+            xhr.addEventListener("error", function() { reject(new Error("Network error uploading to cloud")); });
             xhr.addEventListener("abort", function() { reject(new Error("Upload cancelled")); });
 
-            xhr.open("POST", "/api/app-version");
-            xhr.setRequestHeader("Authorization", "Bearer " + API.getToken());
+            xhr.open("POST", cloudUrl);
             xhr.send(fd);
           });
 
-          if (result.success) {
-            progressStatus.textContent = "✅ Upload Complete!";
-            progressBar.style.width = "100%";
-            progressBar.style.background = "linear-gradient(90deg,#10b981,#34d399)";
-            progressPercent.textContent = "100%";
-            progressSpeed.textContent = "";
-            progressETA.textContent = "Saving...";
+          if (!uploadResult.secure_url) throw new Error("Cloud upload failed: " + (uploadResult.error?.message || "No URL returned"));
 
-            setTimeout(function() {
-              progressContainer.style.display = "none";
-              toast("✅ v" + document.getElementById("auVersion").value + " published! APK uploaded.", "success");
-              form.reset();
-              document.getElementById("auOptionalUpdate").checked = true;
-              document.getElementById("auFileLabel").innerHTML = `<div onclick="document.getElementById('auApkFile').click()" style="cursor:pointer"><div style="font-size:1.8rem;margin-bottom:0.4rem">📦</div><div style="color:var(--gold);font-weight:600;font-size:0.9rem">Choose APK File</div><div style="color:#666;font-size:0.75rem;margin-top:0.25rem">or drag & drop .apk file here</div></div>`;
-              document.getElementById("auDropZone").style.borderColor = "#333";
-              auFileReady = false;
-              auLoadLiveVersion();
-              auLoadHistory();
-            }, 1000);
-          } else {
-            progressStatus.textContent = "❌ Upload Failed";
-            progressBar.style.background = "linear-gradient(90deg,#dc2626,#ef4444)";
-            progressETA.textContent = "";
-            progressSpeed.textContent = result.message || "Failed";
-            // Show retry button
-            progressContainer.innerHTML += `<button onclick="document.getElementById('auUploadProgress').style.display='none'" class="btn btn-outline btn-sm" style="margin-top:0.5rem">Dismiss</button>`;
-            toast("❌ " + (result.message || "Failed"), "error");
-          }
+          // STEP 3: Publish version to backend (just URL + metadata, no file)
+          progressStatus.textContent = "📝 Publishing version...";
+          progressBar.style.width = "100%";
+          const publishRes = await fetch("/api/app-version/publish", {
+            method: "POST",
+            headers: { "Authorization": "Bearer " + API.getToken(), "Content-Type": "application/json" },
+            body: JSON.stringify({
+              version: document.getElementById("auVersion").value,
+              versionCode: document.getElementById("auVersionCode").value,
+              title: document.getElementById("auTitle").value,
+              description: document.getElementById("auDescription").value,
+              minVersionCode: document.getElementById("auMinCode").value || "1",
+              forceUpdate: document.getElementById("auForceUpdate").checked,
+              optionalUpdate: document.getElementById("auOptionalUpdate").checked,
+              downloadUrl: uploadResult.secure_url,
+              fileSize: totalSize,
+            })
+          });
+          const publishData = await publishRes.json();
+          if (!publishData.success) throw new Error(publishData.message || "Failed to publish version");
+
+          // SUCCESS
+          progressStatus.textContent = "✅ Published Successfully!";
+          progressBar.style.background = "linear-gradient(90deg,#10b981,#34d399)";
+          progressPercent.textContent = "Done!";
+          progressSpeed.textContent = "";
+          progressETA.textContent = "";
+
+          setTimeout(function() {
+            progressContainer.style.display = "none";
+            toast("✅ v" + document.getElementById("auVersion").value + " published! APK uploaded.", "success");
+            form.reset();
+            document.getElementById("auOptionalUpdate").checked = true;
+            document.getElementById("auFileLabel").innerHTML = '<div onclick="document.getElementById(\'auApkFile\').click()" style="cursor:pointer"><div style="font-size:1.8rem;margin-bottom:0.4rem">📦</div><div style="color:var(--gold);font-weight:600;font-size:0.9rem">Choose APK File</div><div style="color:#666;font-size:0.75rem;margin-top:0.25rem">or drag & drop .apk file here</div></div>';
+            document.getElementById("auDropZone").style.borderColor = "#333";
+            auFileReady = false;
+            auLoadLiveVersion();
+            auLoadHistory();
+          }, 1000);
+
         } catch (err) {
           progressStatus.textContent = "❌ " + err.message;
           progressBar.style.background = "linear-gradient(90deg,#dc2626,#ef4444)";
           progressETA.textContent = "";
-          progressSpeed.textContent = "Retry upload";
+          progressSpeed.textContent = "";
+          progressContainer.innerHTML += '<button onclick="document.getElementById(\'auPublishForm\').dispatchEvent(new Event(\'submit\'))" class="btn btn-primary btn-sm" style="margin-top:0.5rem;margin-right:0.5rem">🔄 Retry Upload</button><button onclick="document.getElementById(\'auUploadProgress\').style.display=\'none\'" class="btn btn-outline btn-sm" style="margin-top:0.5rem">Dismiss</button>';
           toast("❌ " + err.message, "error");
         }
         finally { btn.disabled = false; btn.innerHTML = "Publish Update"; }
