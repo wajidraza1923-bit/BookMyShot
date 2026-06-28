@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, RefreshControl, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, RefreshControl, ActivityIndicator, Alert, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { colors, spacing, typography, radius } from '../theme';
@@ -189,19 +189,26 @@ export default function BookingsScreen({ navigation }: any) {
                     <TouchableOpacity style={[s.chatBtn, { flex: 1, borderColor: 'rgba(34,197,94,0.3)', backgroundColor: 'rgba(34,197,94,0.04)' }]} onPress={async () => {
                       try {
                         const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-                        const Print = require('expo-print');
-                        const Sharing = require('expo-sharing');
-                        const FileSystem = require('expo-file-system');
                         const tkn = await AsyncStorage.getItem('bms_token');
-                        const resp = await fetch(`https://site--bookmyshot--ykz2mr8mzlrv.code.run/api/invoice/${b._id}?token=${encodeURIComponent(tkn || '')}`, { headers: { 'Authorization': `Bearer ${tkn}`, 'x-access-token': tkn || '' } });
-                        let htm = await resp.text();
-                        if (!resp.ok || htm.includes('"success":false')) { Alert.alert('Error', 'Failed to generate invoice'); return; }
-                        htm = htm.replace(/<button[^>]*class="print-btn"[^>]*>.*?<\/button>/gi, '');
-                        const { uri } = await Print.printToFileAsync({ html: htm, base64: false });
-                        const pdfName = `BookMyShot-Invoice-${b.invoiceNumber || b._id.slice(-8)}.pdf`;
-                        const newUri = FileSystem.documentDirectory + pdfName;
-                        await FileSystem.moveAsync({ from: uri, to: newUri });
-                        if (await Sharing.isAvailableAsync()) { await Sharing.shareAsync(newUri, { mimeType: 'application/pdf', dialogTitle: 'Share Invoice' }); }
+                        const invoiceUrl = `https://site--bookmyshot--ykz2mr8mzlrv.code.run/api/invoice/${b._id}?token=${encodeURIComponent(tkn || '')}`;
+                        let shared = false;
+                        try {
+                          const Print = require('expo-print');
+                          const Sharing = require('expo-sharing');
+                          const FileSystem = require('expo-file-system');
+                          if (Print?.printToFileAsync && Sharing?.isAvailableAsync && FileSystem?.moveAsync) {
+                            const resp = await fetch(invoiceUrl, { headers: { 'Authorization': `Bearer ${tkn}`, 'x-access-token': tkn || '' } });
+                            let htm = await resp.text();
+                            if (resp.ok && htm && !htm.includes('"success":false')) {
+                              htm = htm.replace(/<button[^>]*class="print-btn"[^>]*>.*?<\/button>/gi, '');
+                              const { uri } = await Print.printToFileAsync({ html: htm, base64: false });
+                              const newUri = FileSystem.documentDirectory + `BookMyShot-Invoice-${b.invoiceNumber || b._id.slice(-8)}.pdf`;
+                              await FileSystem.moveAsync({ from: uri, to: newUri });
+                              if (await Sharing.isAvailableAsync()) { await Sharing.shareAsync(newUri, { mimeType: 'application/pdf', dialogTitle: 'Share Invoice' }); shared = true; }
+                            }
+                          }
+                        } catch {}
+                        if (!shared) { Linking.openURL(invoiceUrl); }
                       } catch { Alert.alert('Error', 'Share failed'); }
                     }} activeOpacity={0.7}>
                       <Ionicons name="share-outline" size={16} color="#22C55E" />

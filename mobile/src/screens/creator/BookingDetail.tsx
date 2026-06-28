@@ -203,55 +203,51 @@ export default function BookingDetail({ route, navigation }: any) {
   // ═══ SEND INVOICE PDF VIA SHARE SHEET (WhatsApp etc.) ═══
   const shareInvoicePDF = async () => {
     try {
-      const Print = require('expo-print');
-      const Sharing = require('expo-sharing');
-      const FileSystem = require('expo-file-system');
       const AsyncStorage = require('@react-native-async-storage/async-storage').default;
       const token = await AsyncStorage.getItem('bms_token');
-
-      // Fetch invoice HTML with full auth
       const baseUrl = 'https://site--bookmyshot--ykz2mr8mzlrv.code.run/api';
-      const url = `${baseUrl}/invoice/${bookingId}?token=${encodeURIComponent(token || '')}`;
-      
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'x-access-token': token || '',
-        },
-      });
-      
-      let html = await response.text();
-      
-      if (!response.ok || !html || html.includes('"success":false')) {
-        Alert.alert('Error', 'Failed to generate invoice. Please try again.');
-        return;
+      const invoiceUrl = `${baseUrl}/invoice/${bookingId}?token=${encodeURIComponent(token || '')}`;
+
+      // Try native PDF sharing (works in EAS builds)
+      let shared = false;
+      try {
+        const Print = require('expo-print');
+        const Sharing = require('expo-sharing');
+        const FileSystem = require('expo-file-system');
+
+        if (Print?.printToFileAsync && Sharing?.isAvailableAsync && FileSystem?.moveAsync) {
+          const response = await fetch(invoiceUrl, { headers: { 'Authorization': `Bearer ${token}`, 'x-access-token': token || '' } });
+          let html = await response.text();
+          if (response.ok && html && !html.includes('"success":false')) {
+            html = html.replace(/<button[^>]*class="print-btn"[^>]*>.*?<\/button>/gi, '');
+            const { uri } = await Print.printToFileAsync({ html, base64: false });
+            const pdfName = `BookMyShot-Invoice-${booking.invoiceNumber || bookingId.slice(-8)}.pdf`;
+            const newUri = FileSystem.documentDirectory + pdfName;
+            await FileSystem.moveAsync({ from: uri, to: newUri });
+            if (await Sharing.isAvailableAsync()) {
+              await Sharing.shareAsync(newUri, { mimeType: 'application/pdf', dialogTitle: 'Send Invoice via WhatsApp' });
+              shared = true;
+            }
+          }
+        }
+      } catch (e: any) {
+        console.log('[Invoice] Native share failed, using fallback:', e.message);
       }
 
-      // Remove the print button from HTML
-      html = html.replace(/<button[^>]*class="pb"[^>]*>.*?<\/button>/gi, '');
-
-      // Generate PDF from HTML
-      const { uri } = await Print.printToFileAsync({ html, base64: false });
-
-      // Rename file
-      const pdfName = `BookMyShot-Invoice-${booking.invoiceNumber || bookingId.slice(-8)}.pdf`;
-      const newUri = FileSystem.documentDirectory + pdfName;
-      await FileSystem.moveAsync({ from: uri, to: newUri });
-
-      // Share via native share sheet
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(newUri, {
-          mimeType: 'application/pdf',
-          dialogTitle: 'Send Invoice via WhatsApp',
-          UTI: 'com.adobe.pdf',
-        });
-      } else {
-        Alert.alert('Sharing Unavailable', 'Sharing is not available on this device.');
+      // Fallback: Open WhatsApp with invoice link + message
+      if (!shared) {
+        const phone = (booking.clientPhone || '').replace(/\D/g, '').slice(-10);
+        const msg = `Hi ${booking.clientName || 'there'},\n\nYour booking invoice is ready.\n\nDownload here: ${invoiceUrl}\n\nThank you!\nBookMyShot`;
+        if (phone) {
+          Linking.openURL(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`);
+        } else {
+          // No phone — just share the link
+          Linking.openURL(invoiceUrl);
+        }
       }
     } catch (e: any) {
       console.log('[Invoice] Share error:', e.message);
-      Alert.alert('Error', 'Failed to generate/share invoice PDF.');
+      Alert.alert('Error', 'Failed to share invoice. Please try Download Invoice instead.');
     }
   };
 
