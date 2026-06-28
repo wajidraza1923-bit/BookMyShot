@@ -578,8 +578,30 @@
               <div class="form-group"><label>Trial Amount (₹)</label><input type="number" id="ssTrialAmount" min="0" step="1" placeholder="1"></div>
               <div class="form-group"><label>Trial Days</label><input type="number" id="ssTrialDays" min="0" placeholder="60"></div>
               <div class="form-group"><label>Monthly Plan Price (₹)</label><input type="number" id="ssMonthlyPrice" min="0" step="1"></div>
-              <div class="form-group"><label>Future Monthly Price (₹)</label><input type="number" id="ssFuturePrice" min="0" step="1" placeholder="0 = no change planned"></div>
               <div class="form-group"><label>Yearly Plan Price (₹)</label><input type="number" id="ssYearlyPrice" min="0" step="1"></div>
+              <div class="form-group"><label>Yearly Duration (Days)</label><input type="number" id="ssYearlyDuration" min="1" value="365" placeholder="365"></div>
+            </div>
+            <!-- Yearly Plan Configuration -->
+            <div style="border-top:1px solid var(--border-light);margin:1rem 0;padding-top:1rem">
+              <h4 style="color:var(--text-muted);font-size:0.8rem;margin-bottom:0.75rem">YEARLY PLAN SETTINGS</h4>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.85rem">
+                <div class="form-group"><label>Yearly Plan Name</label><input type="text" id="ssYearlyPlanName" placeholder="Yearly Pro"></div>
+                <div class="form-group"><label>Yearly Plan Description</label><input type="text" id="ssYearlyPlanDesc" placeholder="12 months for the price of 10"></div>
+                <div class="form-group" style="display:flex;align-items:center;gap:0.75rem;padding-top:1.2rem">
+                  <label style="margin:0;cursor:pointer;display:flex;align-items:center;gap:0.5rem"><input type="checkbox" id="ssYearlyActive" style="width:auto" checked> Yearly Plan Active</label>
+                </div>
+                <div class="form-group" style="display:flex;align-items:center;gap:0.75rem;padding-top:1.2rem">
+                  <label style="margin:0;cursor:pointer;display:flex;align-items:center;gap:0.5rem"><input type="checkbox" id="ssYearlyRecommended" style="width:auto" checked> Show "Recommended" Badge</label>
+                </div>
+                <div class="form-group" style="display:flex;align-items:center;gap:0.75rem;padding-top:0.3rem">
+                  <label style="margin:0;cursor:pointer;display:flex;align-items:center;gap:0.5rem"><input type="checkbox" id="ssYearlySaveBadge" style="width:auto" checked> Show "Save 2 Months" Badge</label>
+                </div>
+                <div class="form-group" style="padding-top:0.3rem">
+                  <span style="font-size:0.72rem;color:var(--gold)">Auto-calculated: ₹<span id="ssYearlyAutoCalc">0</span> (Monthly × 10)</span>
+                </div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.85rem">
               <div class="form-group"><label>Price Change Mode</label>
                 <select id="ssPriceChangeMode">
                   <option value="">No future price change</option>
@@ -587,6 +609,7 @@
                   <option value="all_creators">Apply to all creators at renewal</option>
                 </select>
               </div>
+              <div class="form-group"><label>Future Monthly Price (₹)</label><input type="number" id="ssFuturePrice" min="0" step="1" placeholder="0 = no change planned"></div>
               <div class="form-group" style="display:flex;align-items:center;gap:0.75rem;padding-top:1.2rem">
                 <label style="margin:0;cursor:pointer;display:flex;align-items:center;gap:0.5rem"><input type="checkbox" id="ssAutoRenew" style="width:auto"> Auto Renew Default</label>
               </div>
@@ -2087,8 +2110,22 @@
         document.getElementById("ssRank3Price").value = s.rank3Price ?? 999;
         document.getElementById("ssRank4Price").value = s.rank4Price ?? 799;
         document.getElementById("ssAutoRenew").checked = s.autoRenewDefault !== false;
+        // Yearly plan fields
+        document.getElementById("ssYearlyDuration").value = s.yearlyPlanDuration ?? 365;
+        document.getElementById("ssYearlyPlanName").value = s.yearlyPlanName || "Yearly Pro";
+        document.getElementById("ssYearlyPlanDesc").value = s.yearlyPlanDescription || "12 months for the price of 10";
+        document.getElementById("ssYearlyActive").checked = s.yearlyPlanActive !== false;
+        document.getElementById("ssYearlyRecommended").checked = s.yearlyShowRecommended !== false;
+        document.getElementById("ssYearlySaveBadge").checked = s.yearlyShowSaveBadge !== false;
+        // Auto-calculate yearly price hint
+        document.getElementById("ssYearlyAutoCalc").textContent = ((s.monthlyPlanPrice || 299) * 10).toLocaleString('en-IN');
       } catch { }
     }
+
+    // Auto-update yearly price hint when monthly changes
+    document.getElementById("ssMonthlyPrice").addEventListener("input", function() {
+      document.getElementById("ssYearlyAutoCalc").textContent = ((Number(this.value) || 0) * 10).toLocaleString('en-IN');
+    });
 
     document.getElementById("subscriptionSettingsForm").addEventListener("submit", async e => {
       e.preventDefault();
@@ -2099,6 +2136,12 @@
         monthlyPlanPrice: Number(document.getElementById("ssMonthlyPrice").value),
         futureMonthlyPrice: Number(document.getElementById("ssFuturePrice").value) || 0,
         yearlyPlanPrice: Number(document.getElementById("ssYearlyPrice").value),
+        yearlyPlanDuration: Number(document.getElementById("ssYearlyDuration").value) || 365,
+        yearlyPlanName: document.getElementById("ssYearlyPlanName").value || "Yearly Pro",
+        yearlyPlanDescription: document.getElementById("ssYearlyPlanDesc").value || "",
+        yearlyPlanActive: document.getElementById("ssYearlyActive").checked,
+        yearlyShowRecommended: document.getElementById("ssYearlyRecommended").checked,
+        yearlyShowSaveBadge: document.getElementById("ssYearlySaveBadge").checked,
         priceChangeMode: document.getElementById("ssPriceChangeMode").value,
         featuredPortfolioPrice: Number(document.getElementById("ssFeaturedPrice").value),
         searchBoostPrice: Number(document.getElementById("ssBoostPrice").value),

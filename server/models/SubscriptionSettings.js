@@ -3,7 +3,14 @@ const mongoose = require("mongoose");
 const subscriptionSettingsSchema = new mongoose.Schema(
   {
     monthlyPlanPrice: { type: Number, default: 299 },
-    yearlyPlanPrice: { type: Number, default: 2999 },
+    yearlyPlanPrice: { type: Number, default: 2990 },
+    yearlyPlanDuration: { type: Number, default: 365 }, // days
+    yearlyPlanActive: { type: Boolean, default: true },
+    yearlyPlanName: { type: String, default: "Yearly Pro" },
+    yearlyPlanDescription: { type: String, default: "12 months for the price of 10" },
+    yearlyShowRecommended: { type: Boolean, default: true },
+    yearlyShowSaveBadge: { type: Boolean, default: true },
+    yearlyPriceManualOverride: { type: Boolean, default: false },
     trialDays: { type: Number, default: 30 },
     trialAmount: { type: Number, default: 1 },
     freeTrialEnabled: { type: Boolean, default: true },

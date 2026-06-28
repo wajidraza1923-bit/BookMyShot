@@ -430,6 +430,12 @@ app.get("/api/config/public", async (req, res) => {
       subscription: {
         monthlyPlanPrice: subSettings.monthlyPlanPrice,
         yearlyPlanPrice: subSettings.yearlyPlanPrice,
+        yearlyPlanDuration: subSettings.yearlyPlanDuration || 365,
+        yearlyPlanActive: subSettings.yearlyPlanActive !== false,
+        yearlyPlanName: subSettings.yearlyPlanName || "Yearly Pro",
+        yearlyPlanDescription: subSettings.yearlyPlanDescription || "12 months for the price of 10",
+        yearlyShowRecommended: subSettings.yearlyShowRecommended !== false,
+        yearlyShowSaveBadge: subSettings.yearlyShowSaveBadge !== false,
         trialDays: subSettings.trialDays,
         freeTrialEnabled: subSettings.freeTrialEnabled !== false,
         featuredPortfolioPrice: subSettings.featuredPortfolioPrice,
