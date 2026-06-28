@@ -457,15 +457,6 @@ export default function BookingDetail({ route, navigation }: any) {
           <TouchableOpacity style={s.btnReject} onPress={rejectBooking}><Text style={s.btnRejectText}>Reject</Text></TouchableOpacity>
           <TouchableOpacity style={s.btnAccept} onPress={() => { setAmountInput(String(booking.amount || booking.budget || '')); setShowAmountModal(true); }}><Text style={s.btnAcceptText}>Accept</Text></TouchableOpacity>
         </>}
-        {['Creator Accepted', 'Event Scheduled', 'Payment Submitted', 'Payment Approved'].includes(booking.status) && (
-          <TouchableOpacity
-            style={[s.btnComplete, (remaining > 0 && booking.amount > 0) && { opacity: 0.4 }, completing && { opacity: 0.6 }]}
-            onPress={completeBooking}
-            disabled={completing}
-          >
-            {completing ? <ActivityIndicator size="small" color={colors.textInverse} /> : <Text style={s.btnCompleteText}>{remaining > 0 && booking.amount > 0 ? `₹${remaining.toLocaleString('en-IN')} Pending` : 'Mark Complete'}</Text>}
-          </TouchableOpacity>
-        )}
         {(booking.status === 'Completed' || booking.status === 'completed') && (
           <TouchableOpacity style={[s.btnComplete, { backgroundColor: colors.primary }]} onPress={downloadInvoice}>
             <Text style={s.btnCompleteText}>📥 Download Invoice</Text>

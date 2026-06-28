@@ -230,9 +230,6 @@ export default function CreatorBookings({ navigation }: any) {
                 <TouchableOpacity style={styles.acceptBtn} onPress={() => { setActiveBookingId(item._id); setAmountInput(String(item.budget || '')); setShowAmountModal(true); }}><Ionicons name="checkmark" size={14} color={colors.textInverse} /><Text style={styles.acceptText}>Accept</Text></TouchableOpacity>
               </View>
             )}
-            {['Creator Accepted', 'Event Scheduled', 'Payment Submitted', 'Payment Approved'].includes(item.status) && (
-              <TouchableOpacity style={styles.completeBtn} onPress={() => completeBooking(item._id)}><Ionicons name="checkmark-done" size={14} color={colors.success} /><Text style={styles.completeText}>Mark Complete</Text></TouchableOpacity>
-            )}
 
             {/* View Full Details */}
             <TouchableOpacity style={styles.detailsBtn} onPress={() => navigation.navigate('BookingDetail', { bookingId: item._id })}>
