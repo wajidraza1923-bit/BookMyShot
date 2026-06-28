@@ -66,7 +66,12 @@ export default function AdminDashboard({ navigation }: any) {
             <Text style={s.greeting}>Admin Panel</Text>
             <Text style={s.name}>{user?.name || 'Super Admin'}</Text>
           </View>
-          <TouchableOpacity style={s.logoutBtn} onPress={logout}><Ionicons name="log-out-outline" size={18} color={colors.error} /></TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <TouchableOpacity style={s.notifBtn} onPress={() => navigation.navigate('AdminNotifications')}>
+              <Ionicons name="notifications-outline" size={18} color={colors.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity style={s.logoutBtn} onPress={logout}><Ionicons name="log-out-outline" size={18} color={colors.error} /></TouchableOpacity>
+          </View>
         </View>
 
         {/* Stats Grid */}
@@ -108,6 +113,7 @@ const s = StyleSheet.create({
   greeting: { ...typography.bodySm, color: colors.textMuted },
   name: { ...typography.displaySm, color: colors.text, marginTop: 2 },
   logoutBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(239,68,68,0.08)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(239,68,68,0.15)' },
+  notifBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(212,175,55,0.08)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(212,175,55,0.15)' },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: spacing.xl, gap: spacing.sm },
   statCard: { width: '31%', backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, borderWidth: 1, borderColor: colors.border, alignItems: 'center', flexGrow: 1 },
   statValue: { ...typography.headlineMd, color: colors.text, marginTop: spacing.sm },
