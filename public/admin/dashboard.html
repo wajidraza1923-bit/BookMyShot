@@ -244,6 +244,7 @@
         <a href="#" data-panel="report-management"><span class="icon"><i class="fa-solid fa-file-lines"></i></span> Creator Reports</a>
         <a href="#" data-panel="overdue-management" style="color:#f59e0b"><span class="icon"><i class="fa-solid fa-exclamation-triangle"></i></span> Overdue Management</a>
         <a href="#" data-panel="app-updates" style="color:#D4AF37"><span class="icon"><i class="fa-solid fa-mobile-screen"></i></span> App Updates</a>
+        <a href="#" data-panel="category-management" style="color:#10b981"><span class="icon"><i class="fa-solid fa-layer-group"></i></span> Categories</a>
       </nav>
       <div class="sidebar-footer">
         <a href="/" target="_blank"><span class="icon"><i class="fa-solid fa-globe"></i></span> View Site</a>
@@ -920,6 +921,17 @@
     </div>
   </div>
 
+      <!-- Category Management Panel -->
+      <div class="panel" id="panel-category-management">
+        <div class="panel-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:0.5rem">
+          <div><h2>Category Management</h2><p>Manage service categories for the wedding marketplace</p></div>
+          <div style="display:flex;gap:0.5rem">
+            <button class="btn btn-primary" onclick="catSeedAll()"><i class="fas fa-seedling"></i> Seed All Categories</button>
+          </div>
+        </div>
+        <div id="categoryPanel"><div class="loader"></div></div>
+      </div>
+
     </div><!-- /.main-content -->
   </div><!-- /.dash-layout -->
 
@@ -1062,6 +1074,7 @@
         else if (panelName === "creator-accounts") loadCreatorAccounts();
         else if (panelName === "app-updates") loadAppUpdatesPanel();
         else if (panelName === "overdue-management") loadOverduePanel();
+        else if (panelName === "category-management") loadCategoryPanel();
       } catch(e) {}
       // Close mobile sidebar + overlay
       document.getElementById("sidebar").classList.remove("open");
@@ -1113,6 +1126,7 @@
           else if (p === "report-management") loadReportMgmtPanel();
           else if (p === "overdue-management") loadOverduePanel();
           else if (p === "app-updates") loadAppUpdatesPanel();
+          else if (p === "category-management") loadCategoryPanel();
         } catch (err) { /* panel load error */ }
         // Close mobile sidebar + overlay
         document.getElementById("sidebar").classList.remove("open");
@@ -3269,6 +3283,68 @@
       } catch (e) {
         el.innerHTML = '<p style="color:#dc2626">Network error: ' + e.message + '</p>';
       }
+    };
+
+    // ═══════════════════════════════════════════════════════════════
+    // CATEGORY MANAGEMENT PANEL
+    // ═══════════════════════════════════════════════════════════════
+    async function loadCategoryPanel() {
+      const el = document.getElementById("categoryPanel");
+      try {
+        const data = await API.get("/admin/categories");
+        const cats = data.categories || [];
+        if (!cats.length) {
+          el.innerHTML = '<div class="empty-state"><i class="fa-solid fa-layer-group"></i><p>No categories yet</p><p class="sub">Click "Seed All Categories" to add 60+ wedding service categories</p></div>';
+          return;
+        }
+        // Group by group field
+        const groups = {};
+        cats.forEach(c => { const g = c.group || 'Other'; if (!groups[g]) groups[g] = []; groups[g].push(c); });
+        let html = '';
+        for (const [group, items] of Object.entries(groups)) {
+          html += `<div style="margin-bottom:1rem"><h4 style="color:var(--gold);font-size:0.85rem;margin-bottom:0.5rem;display:flex;align-items:center;gap:0.4rem"><i class="fa-solid fa-folder" style="font-size:0.7rem"></i> ${group} <span style="color:#666;font-weight:400">(${items.length})</span></h4>`;
+          html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:0.5rem">';
+          items.forEach(c => {
+            html += `<div style="background:#0a0a0a;border:1px solid #222;border-radius:8px;padding:0.6rem 0.8rem;display:flex;align-items:center;gap:0.5rem">
+              <span style="font-size:0.8rem;color:var(--gold)">${c.isActive ? '●' : '○'}</span>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:0.78rem;color:#fff;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name}</div>
+                <div style="font-size:0.65rem;color:#666">${c.slug} • ${(c.fields||[]).length} fields</div>
+              </div>
+              <button onclick="catToggle('${c._id}',${!c.isActive})" style="background:none;border:none;color:${c.isActive?'#10b981':'#f59e0b'};cursor:pointer;font-size:0.65rem">${c.isActive?'Active':'Off'}</button>
+              <button onclick="catDelete('${c._id}')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:0.7rem">✕</button>
+            </div>`;
+          });
+          html += '</div></div>';
+        }
+        html += `<div style="margin-top:1rem;padding:0.75rem;background:#0a0a0a;border:1px solid #222;border-radius:8px;font-size:0.75rem;color:#888"><strong style="color:var(--gold)">Total:</strong> ${cats.length} categories in ${Object.keys(groups).length} groups</div>`;
+        el.innerHTML = html;
+      } catch (e) { el.innerHTML = '<p style="color:#dc2626">Error: ' + (e.message || 'Failed') + '</p>'; }
+    }
+
+    async function catSeedAll() {
+      if (!confirm("Seed all 60+ wedding marketplace categories? This will add any missing categories.")) return;
+      try {
+        const res = await API.post("/admin/categories/seed", {});
+        toast("✅ " + (res.message || "Categories seeded"), "success");
+        loadCategoryPanel();
+      } catch (e) { toast(e.message || "Failed to seed", "error"); }
+    }
+
+    window.catToggle = async function(id, active) {
+      try {
+        await fetch("/api/admin/categories/" + id, { method: "PUT", headers: { "Authorization": "Bearer " + API.getToken(), "Content-Type": "application/json" }, body: JSON.stringify({ isActive: active }) });
+        loadCategoryPanel();
+      } catch { toast("Failed", "error"); }
+    };
+
+    window.catDelete = async function(id) {
+      if (!confirm("Delete this category permanently?")) return;
+      try {
+        await fetch("/api/admin/categories/" + id, { method: "DELETE", headers: { "Authorization": "Bearer " + API.getToken() } });
+        toast("Deleted", "success");
+        loadCategoryPanel();
+      } catch { toast("Failed", "error"); }
     };
 
     // Auto-refresh app updates every 10s for real-time sync with mobile admin
