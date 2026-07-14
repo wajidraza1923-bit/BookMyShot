@@ -926,8 +926,22 @@
         <div class="panel-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:0.5rem">
           <div><h2>Category Management</h2><p>Manage service categories for the wedding marketplace</p></div>
           <div style="display:flex;gap:0.5rem">
-            <button class="btn btn-primary" onclick="catSeedAll()"><i class="fas fa-seedling"></i> Seed All Categories</button>
+            <button class="btn btn-outline" onclick="document.getElementById('catAddForm').style.display=document.getElementById('catAddForm').style.display==='none'?'block':'none'"><i class="fas fa-plus"></i> Add Category</button>
+            <button class="btn btn-primary" onclick="catSeedAll()"><i class="fas fa-seedling"></i> Seed All (60+)</button>
           </div>
+        </div>
+        <!-- Add Category Form -->
+        <div id="catAddForm" class="card" style="display:none;margin-bottom:1rem">
+          <h4 style="margin-bottom:0.75rem">Add New Category</h4>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem" class="au-form-grid">
+            <div class="form-group"><label>Name *</label><input type="text" id="catAddName" placeholder="e.g. Wedding Planner"></div>
+            <div class="form-group"><label>Group *</label><input type="text" id="catAddGroup" placeholder="e.g. Wedding Management" list="catGroupList">
+              <datalist id="catGroupList"><option value="Photography & Video"><option value="Beauty"><option value="Clothing"><option value="Decoration"><option value="Food"><option value="Entertainment"><option value="Transport"><option value="Venue"><option value="Wedding Management"><option value="Religious Services"><option value="Others"></datalist>
+            </div>
+            <div class="form-group"><label>Icon (Ionicons)</label><input type="text" id="catAddIcon" placeholder="e.g. camera-outline"></div>
+          </div>
+          <div class="form-group"><label>Description</label><input type="text" id="catAddDesc" placeholder="Short description of this service"></div>
+          <button class="btn btn-primary" onclick="catAddNew()">Add Category</button>
         </div>
         <div id="categoryPanel"><div class="loader"></div></div>
       </div>
@@ -3331,20 +3345,39 @@
       } catch (e) { toast(e.message || "Failed to seed", "error"); }
     }
 
+    async function catAddNew() {
+      const name = document.getElementById("catAddName").value.trim();
+      const group = document.getElementById("catAddGroup").value.trim();
+      const icon = document.getElementById("catAddIcon").value.trim() || "storefront-outline";
+      const description = document.getElementById("catAddDesc").value.trim();
+      if (!name || !group) { toast("Name and Group are required", "error"); return; }
+      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      try {
+        await API.post("/admin/categories", { name, slug, group, icon, description, isActive: true, sortOrder: 999 });
+        toast("✅ Category added: " + name, "success");
+        document.getElementById("catAddName").value = "";
+        document.getElementById("catAddGroup").value = "";
+        document.getElementById("catAddIcon").value = "";
+        document.getElementById("catAddDesc").value = "";
+        document.getElementById("catAddForm").style.display = "none";
+        loadCategoryPanel();
+      } catch (e) { toast(e.message || "Failed to add", "error"); }
+    }
+
     window.catToggle = async function(id, active) {
       try {
-        await fetch("/api/admin/categories/" + id, { method: "PUT", headers: { "Authorization": "Bearer " + API.getToken(), "Content-Type": "application/json" }, body: JSON.stringify({ isActive: active }) });
+        await API.put("/admin/categories/" + id, { isActive: active });
         loadCategoryPanel();
-      } catch { toast("Failed", "error"); }
+      } catch (e) { toast(e.message || "Failed", "error"); }
     };
 
     window.catDelete = async function(id) {
       if (!confirm("Delete this category permanently?")) return;
       try {
-        await fetch("/api/admin/categories/" + id, { method: "DELETE", headers: { "Authorization": "Bearer " + API.getToken() } });
+        await API.delete("/admin/categories/" + id);
         toast("Deleted", "success");
         loadCategoryPanel();
-      } catch { toast("Failed", "error"); }
+      } catch (e) { toast(e.message || "Failed", "error"); }
     };
 
     // Auto-refresh app updates every 10s for real-time sync with mobile admin
