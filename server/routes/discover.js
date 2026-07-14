@@ -33,8 +33,18 @@ router.get("/categories", async (req, res, next) => {
       cats = await Category.find({ isActive: true }).sort("sortOrder").lean();
     }
     const withCounts = await Promise.all(cats.map(async (c) => {
-      const count = await Creator.countDocuments({ category: new RegExp(c.slug || c.name, "i"), status: "approved", subscriptionStatus: { $in: ["active", "trial"] } });
-      return { ...c, creatorCount: count };
+      const count = await Creator.countDocuments({
+        categorySlug: c.slug,
+        status: "approved",
+        subscriptionStatus: { $in: ["active", "trial"] }
+      });
+      // Fallback to category text match for legacy creators without categorySlug
+      const legacyCount = count === 0 ? await Creator.countDocuments({
+        category: new RegExp(c.slug.replace(/-/g, '.*'), "i"),
+        status: "approved",
+        subscriptionStatus: { $in: ["active", "trial"] }
+      }) : 0;
+      return { ...c, creatorCount: count + legacyCount };
     }));
     res.json({ success: true, data: withCounts });
   } catch (e) { next(e); }

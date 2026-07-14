@@ -314,6 +314,7 @@ app.use("/api/admin/rankings", protect, authorize("admin"), require("./routes/ad
 app.use("/api/admin/ranking-management", protect, authorize("admin"), require("./routes/admin/rankingManagement"));
 app.use("/api/admin/analytics", protect, authorize("admin"), require("./routes/admin/analytics"));
 app.use("/api/admin/creator-ledger", protect, authorize("admin"), require("./routes/admin/creatorLedger"));
+app.use("/api/admin/categories", protect, authorize("admin"), require("./routes/admin/categories"));
 
 // Public rankings API (used by website + app)
 app.use("/api/rankings", require("./routes/rankings"));

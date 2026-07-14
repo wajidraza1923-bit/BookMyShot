@@ -80,9 +80,13 @@ router.post("/register", async (req, res, next) => {
       // Load subscription settings from database
       const configService = require("../services/configService");
       const subSettings = await configService.getSubscriptionSettings();
+      const { categorySlug, categoryGroup, category: catField } = req.body;
       await Creator.create({
         user: user._id,
         status: "pending",
+        category: catField || categorySlug || "wedding",
+        categorySlug: categorySlug || "wedding-photographer",
+        categoryGroup: categoryGroup || "Photography & Video",
         subscriptionPlan: "basic",
         subscriptionAmount: subSettings.monthlyPlanPrice || 0,
         subscriptionStatus: "pending_payment",

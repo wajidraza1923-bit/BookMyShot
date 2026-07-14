@@ -18,6 +18,9 @@ const creatorSchema = new mongoose.Schema(
     location: { type: String, default: "" },
     city: { type: String, default: "" },
     category: { type: String, default: "wedding" },
+    categorySlug: { type: String, default: "wedding-photographer" }, // matches Category.slug
+    categoryGroup: { type: String, default: "Photography & Video" },
+    categoryData: { type: mongoose.Schema.Types.Mixed, default: {} }, // dynamic fields per category
     budgetMin: { type: Number, default: 0 },
     budgetMax: { type: Number, default: 10000 },
     rating: { type: Number, default: 5 },

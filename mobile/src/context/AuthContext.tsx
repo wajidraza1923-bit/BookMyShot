@@ -30,7 +30,7 @@ interface AuthState {
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
-  register: (name: string, email: string, password: string, role: string) => Promise<{ success: boolean; message?: string; requiresVerification?: boolean; email?: string }>;
+  register: (name: string, email: string, password: string, role: string, creatorData?: any) => Promise<{ success: boolean; message?: string; requiresVerification?: boolean; email?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   setAuthDirect: (token: string, user: any) => void;
@@ -228,18 +228,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const register = async (name: string, email: string, password: string, role: string) => {
+  const register = async (name: string, email: string, password: string, role: string, creatorData?: any) => {
     const REGISTER_URL = `${API_BASE}/auth/register`;
     console.log('═══════════════════════════════════════');
     console.log('REGISTER URL =', REGISTER_URL);
-    console.log('PAYLOAD =', JSON.stringify({ name, email, role, password: '***' }));
+    console.log('PAYLOAD =', JSON.stringify({ name, email, role, password: '***', creatorData }));
     console.log('═══════════════════════════════════════');
 
     try {
       const response = await fetch(REGISTER_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ name, email, password, role }),
+        body: JSON.stringify({ name, email, password, role, ...creatorData }),
       });
 
       console.log('STATUS =', response.status);
