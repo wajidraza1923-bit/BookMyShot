@@ -15,19 +15,16 @@ const router = express.Router();
 router.get("/categories", async (req, res, next) => {
   try {
     let cats = await Category.find({ isActive: true }).sort("sortOrder").lean();
-    // Auto-seed if empty
+    // Auto-seed if empty — 7 main wedding marketplace categories with premium images
     if (cats.length === 0) {
       const seedCats = [
-        { name: "Wedding Photography", slug: "wedding-photography", icon: "camera", imageUrl: "https://images.unsplash.com/photo-1519741497674-611481863552?w=400", sortOrder: 1 },
-        { name: "Cinematography", slug: "cinematography", icon: "film", imageUrl: "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=400", sortOrder: 2 },
-        { name: "Wedding Films", slug: "wedding-films", icon: "videocam", imageUrl: "https://images.unsplash.com/photo-1505932794465-147d1f1b2c97?w=400", sortOrder: 3 },
-        { name: "Drone Coverage", slug: "drone-coverage", icon: "airplane", imageUrl: "https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=400", sortOrder: 4 },
-        { name: "Pre Wedding", slug: "pre-wedding", icon: "heart-circle", imageUrl: "https://images.unsplash.com/photo-1606216794079-73f85bbd57d5?w=400", sortOrder: 5 },
-        { name: "Bridal Shoot", slug: "bridal-shoot", icon: "diamond", imageUrl: "https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=400", sortOrder: 6 },
-        { name: "Candid Photography", slug: "candid-photography", icon: "aperture", imageUrl: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=400", sortOrder: 7 },
-        { name: "Makeup Artist", slug: "makeup-artist", icon: "color-palette", imageUrl: "https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=400", sortOrder: 8 },
-        { name: "Anchors & DJs", slug: "anchors-djs", icon: "mic", imageUrl: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400", sortOrder: 9 },
-        { name: "Destination Wedding", slug: "destination-wedding", icon: "navigate", imageUrl: "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=400", sortOrder: 10 },
+        { name: "Photography & Videography", slug: "photography-videography", group: "Photography & Video", icon: "camera-outline", imageUrl: "https://images.unsplash.com/photo-1519741497674-611481863552?w=600&q=80", sortOrder: 1, description: "Wedding photographers, cinematographers & drone operators" },
+        { name: "Makeup Artists", slug: "makeup-artists", group: "Beauty", icon: "color-palette-outline", imageUrl: "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=600&q=80", sortOrder: 2, description: "Bridal makeup, hair styling & beauty services" },
+        { name: "Decoration & Floral", slug: "decoration-floral", group: "Decoration", icon: "flower-outline", imageUrl: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=600&q=80", sortOrder: 3, description: "Mandap, stage, floral & lighting decoration" },
+        { name: "Wedding Planners", slug: "wedding-planners", group: "Wedding Management", icon: "clipboard-outline", imageUrl: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=600&q=80", sortOrder: 4, description: "Full wedding planning & event coordination" },
+        { name: "Catering Services", slug: "catering-services", group: "Food", icon: "restaurant-outline", imageUrl: "https://images.unsplash.com/photo-1555244162-803834f70033?w=600&q=80", sortOrder: 5, description: "Caterers, bakers & live food counters" },
+        { name: "Venues", slug: "venues", group: "Venue", icon: "business-outline", imageUrl: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=600&q=80", sortOrder: 6, description: "Banquet halls, hotels, resorts & farm houses" },
+        { name: "DJs & Entertainment", slug: "djs-entertainment", group: "Entertainment", icon: "musical-notes-outline", imageUrl: "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=600&q=80", sortOrder: 7, description: "DJs, live bands, singers & anchors" },
       ];
       await Category.insertMany(seedCats);
       cats = await Category.find({ isActive: true }).sort("sortOrder").lean();

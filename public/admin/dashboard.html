@@ -933,14 +933,16 @@
         <!-- Add Category Form -->
         <div id="catAddForm" class="card" style="display:none;margin-bottom:1rem">
           <h4 style="margin-bottom:0.75rem">Add New Category</h4>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem" class="au-form-grid">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem" class="au-form-grid">
             <div class="form-group"><label>Name *</label><input type="text" id="catAddName" placeholder="e.g. Wedding Planner"></div>
             <div class="form-group"><label>Group *</label><input type="text" id="catAddGroup" placeholder="e.g. Wedding Management" list="catGroupList">
               <datalist id="catGroupList"><option value="Photography & Video"><option value="Beauty"><option value="Clothing"><option value="Decoration"><option value="Food"><option value="Entertainment"><option value="Transport"><option value="Venue"><option value="Wedding Management"><option value="Religious Services"><option value="Others"></datalist>
             </div>
             <div class="form-group"><label>Icon (Ionicons)</label><input type="text" id="catAddIcon" placeholder="e.g. camera-outline"></div>
+            <div class="form-group"><label>Image URL</label><input type="url" id="catAddImage" placeholder="https://images.unsplash.com/..."></div>
           </div>
           <div class="form-group"><label>Description</label><input type="text" id="catAddDesc" placeholder="Short description of this service"></div>
+          <div class="form-group"><label>Sort Order</label><input type="number" id="catAddOrder" value="10" min="1"></div>
           <button class="btn btn-primary" onclick="catAddNew()">Add Category</button>
         </div>
         <div id="categoryPanel"><div class="loader"></div></div>
@@ -3308,7 +3310,7 @@
         const data = await API.get("/admin/categories");
         const cats = data.categories || [];
         if (!cats.length) {
-          el.innerHTML = '<div class="empty-state"><i class="fa-solid fa-layer-group"></i><p>No categories yet</p><p class="sub">Click "Seed All Categories" to add 60+ wedding service categories</p></div>';
+          el.innerHTML = '<div class="empty-state"><i class="fa-solid fa-layer-group"></i><p>No categories yet</p><p class="sub">Click "Seed All" to add default categories or "Add Category" to create one</p></div>';
           return;
         }
         // Group by group field
@@ -3316,17 +3318,21 @@
         cats.forEach(c => { const g = c.group || 'Other'; if (!groups[g]) groups[g] = []; groups[g].push(c); });
         let html = '';
         for (const [group, items] of Object.entries(groups)) {
-          html += `<div style="margin-bottom:1rem"><h4 style="color:var(--gold);font-size:0.85rem;margin-bottom:0.5rem;display:flex;align-items:center;gap:0.4rem"><i class="fa-solid fa-folder" style="font-size:0.7rem"></i> ${group} <span style="color:#666;font-weight:400">(${items.length})</span></h4>`;
-          html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:0.5rem">';
+          html += `<div style="margin-bottom:1.25rem"><h4 style="color:var(--gold);font-size:0.85rem;margin-bottom:0.5rem;display:flex;align-items:center;gap:0.4rem"><i class="fa-solid fa-folder" style="font-size:0.7rem"></i> ${group} <span style="color:#666;font-weight:400">(${items.length})</span></h4>`;
+          html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:0.6rem">';
           items.forEach(c => {
-            html += `<div style="background:#0a0a0a;border:1px solid #222;border-radius:8px;padding:0.6rem 0.8rem;display:flex;align-items:center;gap:0.5rem">
-              <span style="font-size:0.8rem;color:var(--gold)">${c.isActive ? '●' : '○'}</span>
+            const img = c.imageUrl ? `<img src="${c.imageUrl}" style="width:40px;height:40px;border-radius:6px;object-fit:cover;border:1px solid #333" onerror="this.style.display='none'">` : '<div style="width:40px;height:40px;border-radius:6px;background:#1a1a1a;display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:0.9rem">●</div>';
+            html += `<div style="background:#0a0a0a;border:1px solid #222;border-radius:8px;padding:0.6rem 0.8rem;display:flex;align-items:center;gap:0.6rem">
+              ${img}
               <div style="flex:1;min-width:0">
                 <div style="font-size:0.78rem;color:#fff;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name}</div>
-                <div style="font-size:0.65rem;color:#666">${c.slug} • ${(c.fields||[]).length} fields</div>
+                <div style="font-size:0.65rem;color:#666">${c.slug} • Order: ${c.sortOrder || 0}</div>
               </div>
-              <button onclick="catToggle('${c._id}',${!c.isActive})" style="background:none;border:none;color:${c.isActive?'#10b981':'#f59e0b'};cursor:pointer;font-size:0.65rem">${c.isActive?'Active':'Off'}</button>
-              <button onclick="catDelete('${c._id}')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:0.7rem">✕</button>
+              <div style="display:flex;gap:3px;align-items:center">
+                <button onclick="catEditPrompt('${c._id}','${c.name.replace(/'/g,'')}')" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:0.7rem" title="Edit">✏️</button>
+                <button onclick="catToggle('${c._id}',${!c.isActive})" style="background:none;border:none;color:${c.isActive?'#10b981':'#f59e0b'};cursor:pointer;font-size:0.65rem;font-weight:600" title="${c.isActive?'Disable':'Enable'}">${c.isActive?'ON':'OFF'}</button>
+                <button onclick="catDelete('${c._id}')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:0.7rem" title="Delete">✕</button>
+              </div>
             </div>`;
           });
           html += '</div></div>';
@@ -3335,6 +3341,17 @@
         el.innerHTML = html;
       } catch (e) { el.innerHTML = '<p style="color:#dc2626">Error: ' + (e.message || 'Failed') + '</p>'; }
     }
+
+    window.catEditPrompt = function(id, name) {
+      const newName = prompt("Edit category name:", name);
+      if (!newName || newName.trim() === name) return;
+      const newImage = prompt("New image URL (leave empty to keep current):", "");
+      const newOrder = prompt("Sort order:", "");
+      var updateData = { name: newName.trim() };
+      if (newImage) updateData.imageUrl = newImage.trim();
+      if (newOrder) updateData.sortOrder = parseInt(newOrder);
+      API.put("/admin/categories/" + id, updateData).then(function() { toast("Updated", "success"); loadCategoryPanel(); }).catch(function(e) { toast(e.message || "Failed", "error"); });
+    };
 
     async function catSeedAll() {
       if (!confirm("Seed all 60+ wedding marketplace categories? This will add any missing categories.")) return;
@@ -3350,15 +3367,19 @@
       const group = document.getElementById("catAddGroup").value.trim();
       const icon = document.getElementById("catAddIcon").value.trim() || "storefront-outline";
       const description = document.getElementById("catAddDesc").value.trim();
+      const imageUrl = document.getElementById("catAddImage").value.trim();
+      const sortOrder = parseInt(document.getElementById("catAddOrder").value) || 10;
       if (!name || !group) { toast("Name and Group are required", "error"); return; }
       const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
       try {
-        await API.post("/admin/categories", { name, slug, group, icon, description, isActive: true, sortOrder: 999 });
+        await API.post("/admin/categories", { name, slug, group, icon, description, imageUrl, isActive: true, sortOrder });
         toast("✅ Category added: " + name, "success");
         document.getElementById("catAddName").value = "";
         document.getElementById("catAddGroup").value = "";
         document.getElementById("catAddIcon").value = "";
         document.getElementById("catAddDesc").value = "";
+        document.getElementById("catAddImage").value = "";
+        document.getElementById("catAddOrder").value = "10";
         document.getElementById("catAddForm").style.display = "none";
         loadCategoryPanel();
       } catch (e) { toast(e.message || "Failed to add", "error"); }
