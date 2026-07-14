@@ -22,12 +22,13 @@ const WEDDING_IMGS = [
 ];
 
 const CATEGORIES_DEFAULT = [
-  { id: 'wedding', icon: 'camera', label: 'Wedding Photography', count: '4.2K+', img: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=200' },
-  { id: 'candid', icon: 'aperture', label: 'Candid Photography', count: '2.3K+', img: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=200' },
-  { id: 'videography', icon: 'videocam', label: 'Wedding Films', count: '1.8K+', img: 'https://images.unsplash.com/photo-1505932794465-147d1f1b2c97?w=200' },
-  { id: 'drone', icon: 'airplane', label: 'Drone Coverage', count: '1.2K+', img: 'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=200' },
-  { id: 'prewedding', icon: 'heart-circle', label: 'Pre Wedding', count: '1.5K+', img: 'https://images.unsplash.com/photo-1606216794079-73f85bbd57d5?w=200' },
-  { id: 'cinematography', icon: 'film', label: 'Cinematography', count: '900+', img: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=200' },
+  { id: 'photography-videography', icon: 'camera-outline', label: 'Photography & Videography', count: '0+', img: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=400' },
+  { id: 'makeup-artists', icon: 'color-palette-outline', label: 'Makeup Artists', count: '0+', img: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=400' },
+  { id: 'decoration-floral', icon: 'flower-outline', label: 'Decoration & Floral', count: '0+', img: 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=400' },
+  { id: 'wedding-planners', icon: 'clipboard-outline', label: 'Wedding Planners', count: '0+', img: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=400' },
+  { id: 'catering-services', icon: 'restaurant-outline', label: 'Catering Services', count: '0+', img: 'https://images.unsplash.com/photo-1555244162-803834f70033?w=400' },
+  { id: 'venues', icon: 'business-outline', label: 'Venues', count: '0+', img: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=400' },
+  { id: 'djs-entertainment', icon: 'musical-notes-outline', label: 'DJs & Entertainment', count: '0+', img: 'https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=400' },
 ];
 
 const WEDDING_MOMENTS = [
@@ -251,7 +252,7 @@ export default function HomeScreen({ navigation }: any) {
 
         {/* WEDDING MOMENTS CAROUSEL */}
         <View style={s.momentsSection}>
-          <Text style={s.momentsTitle}>Featured Wedding Moments</Text>
+          <Text style={s.momentsTitle}>Premium Wedding Moments</Text>
           <FlatList
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -274,7 +275,7 @@ export default function HomeScreen({ navigation }: any) {
         </View>
 
         {/* CATEGORIES */}
-        <View style={s.catHeader}><Text style={s.secTitle}>Browse by Category</Text><TouchableOpacity onPress={() => navigation.navigate('Discover')}><Text style={s.viewAll}>See All →</Text></TouchableOpacity></View>
+        <View style={s.catHeader}><Text style={s.secTitle}>Wedding Services</Text><TouchableOpacity onPress={() => navigation.navigate('Discover')}><Text style={s.viewAll}>See All →</Text></TouchableOpacity></View>
         <FlatList horizontal showsHorizontalScrollIndicator={false} data={categories} contentContainerStyle={{ paddingHorizontal: 20 }} keyExtractor={i => i.id}
           renderItem={({ item }) => (
             <TouchableOpacity style={s.catCard} onPress={() => navigation.navigate('Discover', { category: item.id })} activeOpacity={0.8}>
@@ -337,25 +338,16 @@ export default function HomeScreen({ navigation }: any) {
         <View style={s.whySec}>
           <Text style={s.whyTitle}>Why Couples Choose BookMyShot</Text>
           <View style={s.whyGrid}>
-            {[{i:'shield-checkmark',t:'Verified Creators',d:'Every creator is quality-checked and verified',c:'#10B981'},{i:'lock-closed',t:'Secure Booking',d:'Your data and payments are fully protected',c:'#3B82F6'},{i:'star',t:'Real Reviews',d:'Genuine feedback from real couples',c:'#F59E0B'},{i:'flash',t:'Fast Response',d:'Creators reply within 2 hours',c:'#8B5CF6'}].map((w,idx) => (
+            {[{i:'shield-checkmark',t:'Verified Professionals',d:'Every vendor is manually reviewed and verified',c:'#10B981'},{i:'images',t:'Premium Portfolios',d:'Browse real photos and videos before booking',c:'#FF8C2B'},{i:'chatbubble',t:'Direct Booking',d:'Send requests directly to professionals',c:'#3B82F6'},{i:'lock-closed',t:'Secure Payments',d:'Safe and transparent payment tracking',c:'#8B5CF6'},{i:'flash',t:'Fast Response',d:'Get responses within hours from active vendors',c:'#F59E0B'},{i:'star',t:'Trusted Reviews',d:'Genuine reviews from real couples',c:'#EC4899'}].map((w,idx) => (
               <View key={idx} style={s.whyCard}><View style={[s.whyIc,{backgroundColor:w.c+'15'}]}><Ionicons name={w.i as any} size={20} color={w.c} /></View><Text style={s.whyT}>{w.t}</Text><Text style={s.whyD}>{w.d}</Text></View>
             ))}
           </View>
         </View>
 
-        {/* ═══ ALL CREATORS GRID ═══ */}
-        {creators.length > 0 && (<>
-          <View style={{ paddingHorizontal: 20, marginTop: 36, marginBottom: 14 }}><Text style={s.secLabel}>DISCOVER</Text><Text style={s.secTitle2}>All Creators</Text></View>
-          <View style={s.grid}>{creators.slice(0, 4).map(item => (
-            <TouchableOpacity key={item._id} style={s.gCard} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })} activeOpacity={0.85}>
-              <Image source={{ uri: _img(item.portfolio?.[0]) || item.user?.avatar || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=300' }} style={s.gImg} />
-              <View style={s.gInfo}><Text style={s.gName} numberOfLines={1}>{item.user?.name || 'Creator'}</Text><Text style={s.gMeta}>{item.specialty} • {item.city}</Text>
-              <View style={s.gRow}><Ionicons name="star" size={10} color="#FF8C2B" /><Text style={s.gRating}>{item.rating || '5.0'}</Text>{item.startingPrice > 0 && <Text style={s.gPrice}>₹{item.startingPrice?.toLocaleString('en-IN')}</Text>}</View></View>
-            </TouchableOpacity>
-          ))}</View>
-          {/* View All Creators Button */}
-          <TouchableOpacity style={s.viewAllBtn} onPress={() => navigation.navigate('AllCreators')} activeOpacity={0.85}>
-            <Text style={s.viewAllBtnText}>View All Creators</Text>
+        {/* ═══ EXPLORE BUTTON ═══ */}
+        {creators.length > 0 && (
+          <TouchableOpacity style={s.viewAllBtn} onPress={() => navigation.navigate('Discover')} activeOpacity={0.85}>
+            <Text style={s.viewAllBtnText}>Explore All Categories</Text>
             <Ionicons name="arrow-forward" size={16} color="#fff" />
           </TouchableOpacity>
         </>)}
