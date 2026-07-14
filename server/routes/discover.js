@@ -14,7 +14,7 @@ const router = express.Router();
 // GET /categories — all active categories with creator count
 router.get("/categories", async (req, res, next) => {
   try {
-    let cats = await Category.find({ isActive: true }).sort("sortOrder").lean();
+    let cats = await Category.find({ $or: [{ isActive: true }, { isActive: { $exists: false } }] }).sort("sortOrder").lean();
     // Auto-seed if empty — 7 main wedding marketplace categories with premium images
     if (cats.length === 0) {
       const seedCats = [
@@ -30,18 +30,26 @@ router.get("/categories", async (req, res, next) => {
       cats = await Category.find({ isActive: true }).sort("sortOrder").lean();
     }
     const withCounts = await Promise.all(cats.map(async (c) => {
-      const count = await Creator.countDocuments({
-        categorySlug: c.slug,
-        status: "approved",
-        subscriptionStatus: { $in: ["free", "active", "trial"] }
-      });
-      // Fallback to category text match for legacy creators without categorySlug
-      const legacyCount = count === 0 ? await Creator.countDocuments({
-        category: new RegExp(c.slug.replace(/-/g, '.*'), "i"),
-        status: "approved",
-        subscriptionStatus: { $in: ["free", "active", "trial"] }
-      }) : 0;
-      return { ...c, creatorCount: count + legacyCount };
+      try {
+        let count = 0;
+        if (c.slug) {
+          count = await Creator.countDocuments({
+            categorySlug: c.slug,
+            status: "approved",
+            subscriptionStatus: { $in: ["free", "active", "trial"] }
+          });
+          // Fallback to category text match for legacy creators
+          if (count === 0) {
+            const safeSlug = c.slug.replace(/[-\s]+/g, '.*').replace(/[^a-z0-9.*]/gi, '');
+            count = await Creator.countDocuments({
+              category: new RegExp(safeSlug, "i"),
+              status: "approved",
+              subscriptionStatus: { $in: ["free", "active", "trial"] }
+            });
+          }
+        }
+        return { ...c, creatorCount: count };
+      } catch { return { ...c, creatorCount: 0 }; }
     }));
     res.json({ success: true, data: withCounts });
   } catch (e) { next(e); }
@@ -50,7 +58,7 @@ router.get("/categories", async (req, res, next) => {
 // GET /districts — all active districts with creator count
 router.get("/districts", async (req, res, next) => {
   try {
-    let districts = await District.find({ isActive: true }).sort("sortOrder").lean();
+    let districts = await District.find({ $or: [{ isActive: true }, { isActive: { $exists: false } }] }).sort("sortOrder").lean();
     // Auto-seed if empty
     if (districts.length === 0) {
       const seedDist = [
