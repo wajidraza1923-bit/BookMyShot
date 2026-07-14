@@ -177,12 +177,16 @@ router.get("/dashboard", async (req, res, next) => {
       photos: (creator.portfolio || []).length,
       reviews,
       favorites,
-      subscriptionStatus: creator.subscriptionStatus || "trial",
+      subscriptionStatus: creator.subscriptionStatus || "free",
       subscriptionExpiry: creator.subscriptionEndDate,
       subscriptionStartDate: creator.subscriptionStartDate,
       subscriptionPlanPrice: creator.subscriptionPlanPrice || 0,
       lastPaymentDate: creator.lastPaymentDate,
       autoRenew: creator.autoRenew !== false,
+      // Free leads tracking
+      freeLeadsUsed: creator.freeLeadsUsed || 0,
+      freeLeadsLimit: creator.freeLeadsLimit || 3,
+      requiresSubscription: creator.subscriptionStatus === "free" && (creator.freeLeadsUsed || 0) >= (creator.freeLeadsLimit || 3),
       // Expiry warning for dashboard
       subscriptionDaysLeft: creator.subscriptionEndDate ? Math.max(0, Math.ceil((creator.subscriptionEndDate - now) / 86400000)) : null,
       expiryWarning: (() => {
@@ -387,6 +391,25 @@ router.patch("/booking-requests/:id", async (req, res, next) => {
     if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
 
     const { status, amount } = req.body;
+
+    // ═══ FREE LEADS LIMIT CHECK ═══
+    // If creator is on free plan and trying to accept, check if limit reached
+    if (status === "Creator Accepted" && creator.subscriptionStatus === "free") {
+      const freeLimit = creator.freeLeadsLimit || 3;
+      if ((creator.freeLeadsUsed || 0) >= freeLimit) {
+        return res.status(403).json({
+          success: false,
+          message: `You have used all ${freeLimit} free accepted bookings. Please subscribe to accept more leads.`,
+          requiresSubscription: true,
+          freeLeadsUsed: creator.freeLeadsUsed,
+          freeLeadsLimit: freeLimit,
+        });
+      }
+      // Increment free leads counter
+      creator.freeLeadsUsed = (creator.freeLeadsUsed || 0) + 1;
+      await creator.save();
+    }
+
     booking.status = status;
 
     // If amount is being set, apply commission logic (highest amount wins)
@@ -764,6 +787,20 @@ router.patch("/inquiries/:id/reply", async (req, res, next) => {
     // If accepted AND inquiry has a linked user, create a Booking automatically
     let createdBooking = null;
     if (inquiry.status === "accepted" && inquiry.user) {
+      // ═══ FREE LEADS LIMIT CHECK ═══
+      if (creator.subscriptionStatus === "free") {
+        const freeLimit = creator.freeLeadsLimit || 3;
+        if ((creator.freeLeadsUsed || 0) >= freeLimit) {
+          return res.status(403).json({
+            success: false,
+            message: `You have used all ${freeLimit} free accepted bookings. Please subscribe to accept more leads.`,
+            requiresSubscription: true,
+          });
+        }
+        creator.freeLeadsUsed = (creator.freeLeadsUsed || 0) + 1;
+        await creator.save();
+      }
+
       // Check if a booking already exists for this inquiry's user + creator + date
       const existingBooking = await Booking.findOne({
         user: inquiry.user,

@@ -36,13 +36,13 @@ router.get("/categories", async (req, res, next) => {
       const count = await Creator.countDocuments({
         categorySlug: c.slug,
         status: "approved",
-        subscriptionStatus: { $in: ["active", "trial"] }
+        subscriptionStatus: { $in: ["free", "active", "trial"] }
       });
       // Fallback to category text match for legacy creators without categorySlug
       const legacyCount = count === 0 ? await Creator.countDocuments({
         category: new RegExp(c.slug.replace(/-/g, '.*'), "i"),
         status: "approved",
-        subscriptionStatus: { $in: ["active", "trial"] }
+        subscriptionStatus: { $in: ["free", "active", "trial"] }
       }) : 0;
       return { ...c, creatorCount: count + legacyCount };
     }));
@@ -118,7 +118,7 @@ router.get("/inspiration", async (req, res, next) => {
 // GET /featured-creators — active featured approved verified
 router.get("/featured-creators", async (req, res, next) => {
   try {
-    const creators = await Creator.find({ featured: true, status: "approved", subscriptionStatus: { $in: ["active", "trial"] } })
+    const creators = await Creator.find({ featured: true, status: "approved", subscriptionStatus: { $in: ["free", "active", "trial"] } })
       .populate("user", "name avatar email phone").lean();
     res.json({ success: true, data: creators });
   } catch (e) { next(e); }
@@ -127,7 +127,7 @@ router.get("/featured-creators", async (req, res, next) => {
 // GET /trending — most viewed/booked creators
 router.get("/trending", async (req, res, next) => {
   try {
-    const creators = await Creator.find({ status: "approved", subscriptionStatus: { $in: ["active", "trial"] } })
+    const creators = await Creator.find({ status: "approved", subscriptionStatus: { $in: ["free", "active", "trial"] } })
       .populate("user", "name avatar").sort("-rating").limit(10).lean();
     res.json({ success: true, data: creators });
   } catch (e) { next(e); }

@@ -63,10 +63,12 @@ const creatorSchema = new mongoose.Schema(
     subscriptionEndDate: { type: Date },
     subscriptionStatus: {
       type: String,
-      enum: ["pending_payment", "trial", "active", "expired", "suspended", "overdue"],
-      default: "pending_payment",
+      enum: ["free", "pending_payment", "trial", "active", "expired", "suspended", "overdue"],
+      default: "free",
     },
-    autoRenew: { type: Boolean, default: true },
+    freeLeadsUsed: { type: Number, default: 0 },
+    freeLeadsLimit: { type: Number, default: 3 },
+    autoRenew: { type: Boolean, default: false },
     lastPaymentDate: { type: Date },
     // Payment gateway fields (Razorpay ready)
     razorpaySubscriptionId: { type: String, default: "" },

@@ -77,9 +77,6 @@ router.post("/register", async (req, res, next) => {
     }
 
     if (user.role === "creator") {
-      // Load subscription settings from database
-      const configService = require("../services/configService");
-      const subSettings = await configService.getSubscriptionSettings();
       const { categorySlug, categoryGroup, category: catField } = req.body;
       await Creator.create({
         user: user._id,
@@ -88,16 +85,16 @@ router.post("/register", async (req, res, next) => {
         categorySlug: categorySlug || "wedding-photographer",
         categoryGroup: categoryGroup || "Photography & Video",
         subscriptionPlan: "basic",
-        subscriptionAmount: subSettings.monthlyPlanPrice || 0,
-        subscriptionStatus: "pending_payment",
-        autoRenew: subSettings.autoRenewDefault !== false,
+        subscriptionStatus: "free",
+        freeLeadsUsed: 0,
+        autoRenew: false,
       });
       await Planning.create({ creator: (await Creator.findOne({ user: user._id }))._id });
     }
 
     res.status(201).json({
       success: true,
-      message: user.role === "creator" ? "Registration pending admin approval. Please verify your email." : "Account created. Please verify your email.",
+      message: user.role === "creator" ? "Registration successful! Our admin team will review your profile before approval." : "Account created. Please verify your email.",
       token: user.emailVerified ? generateToken(user._id) : undefined,
       user: {
         id: user._id,
@@ -190,9 +187,7 @@ router.post("/login", async (req, res, next) => {
             creatorStatus: creator.status,
             subscriptionStatus: creator.subscriptionStatus,
           },
-          message: creator.subscriptionStatus === 'pending_payment'
-            ? 'Please complete your subscription payment to continue.'
-            : `Your account is ${creator.status}. Please wait for admin approval.`,
+          message: `Your account is ${creator.status}. Our admin team will review your profile before approval.`,
         });
       }
     }

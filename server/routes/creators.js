@@ -15,7 +15,7 @@ const router = express.Router();
 router.get("/", async (req, res, next) => {
   try {
     const { city, category, budget, search, featured } = req.query;
-    const filter = { status: "approved", subscriptionStatus: { $in: ["active", "trial"] } };
+    const filter = { status: "approved", subscriptionStatus: { $in: ["free", "active", "trial"] } };
     if (city) filter.city = new RegExp(city, "i");
     if (category) {
       // Match on categorySlug first, fallback to category text
