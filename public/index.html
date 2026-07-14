@@ -420,7 +420,7 @@
       var container = document.getElementById('homepageCategoriesGrid');
       if (!container) return;
       try {
-        var res = await fetch('/api/discover/categories');
+        var res = await fetch('/api/discover/categories?homepage=true');
         var data = await res.json();
         var cats = (data.data || []).filter(function(c) { return c.isActive; });
         if (!cats.length) { container.innerHTML = '<p style="color:rgba(255,255,255,0.3);text-align:center;grid-column:1/-1">No categories yet</p>'; return; }

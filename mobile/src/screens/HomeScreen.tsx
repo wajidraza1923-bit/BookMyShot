@@ -99,7 +99,7 @@ export default function HomeScreen({ navigation }: any) {
       const [creatorsRes, featuredRes, catsRes, statsRes, socialRes] = await Promise.all([
         creatorsAPI.getAll(),
         api.get('/promotions/featured-status').catch(() => ({ data: { slots: {} } })),
-        api.get('/discover/categories').catch(() => ({ data: { data: [] } })),
+        api.get('/discover/categories?homepage=true').catch(() => ({ data: { data: [] } })),
         api.get('/live-stats').catch(() => ({ data: { stats: {} } })),
         api.get('/social-links').catch(() => ({ data: { data: {} } })),
       ]);

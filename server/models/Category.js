@@ -34,6 +34,8 @@ const categorySchema = new mongoose.Schema(
     searchFilters: [filterDefSchema],
     // Short description shown in listings
     description: { type: String, default: "" },
+    // Show on website/app homepage (main categories only)
+    showOnHomepage: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

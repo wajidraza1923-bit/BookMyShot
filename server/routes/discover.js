@@ -14,17 +14,22 @@ const router = express.Router();
 // GET /categories — all active categories with creator count
 router.get("/categories", async (req, res, next) => {
   try {
-    let cats = await Category.find({ $or: [{ isActive: true }, { isActive: { $exists: false } }] }).sort("sortOrder").lean();
+    const filter = { $or: [{ isActive: true }, { isActive: { $exists: false } }] };
+    // If homepage=true, only return main categories marked for homepage display
+    if (req.query.homepage === "true") {
+      filter.showOnHomepage = true;
+    }
+    let cats = await Category.find(filter).sort("sortOrder").lean();
     // Auto-seed if empty — 7 main wedding marketplace categories with premium images
     if (cats.length === 0) {
       const seedCats = [
-        { name: "Photography & Videography", slug: "photography-videography", group: "Photography & Video", icon: "camera-outline", imageUrl: "https://images.unsplash.com/photo-1519741497674-611481863552?w=600&q=80", sortOrder: 1, description: "Wedding photographers, cinematographers & drone operators" },
-        { name: "Makeup Artists", slug: "makeup-artists", group: "Beauty", icon: "color-palette-outline", imageUrl: "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=600&q=80", sortOrder: 2, description: "Bridal makeup, hair styling & beauty services" },
-        { name: "Decoration & Floral", slug: "decoration-floral", group: "Decoration", icon: "flower-outline", imageUrl: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=600&q=80", sortOrder: 3, description: "Mandap, stage, floral & lighting decoration" },
-        { name: "Wedding Planners", slug: "wedding-planners", group: "Wedding Management", icon: "clipboard-outline", imageUrl: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=600&q=80", sortOrder: 4, description: "Full wedding planning & event coordination" },
-        { name: "Catering Services", slug: "catering-services", group: "Food", icon: "restaurant-outline", imageUrl: "https://images.unsplash.com/photo-1555244162-803834f70033?w=600&q=80", sortOrder: 5, description: "Caterers, bakers & live food counters" },
-        { name: "Venues", slug: "venues", group: "Venue", icon: "business-outline", imageUrl: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=600&q=80", sortOrder: 6, description: "Banquet halls, hotels, resorts & farm houses" },
-        { name: "DJs & Entertainment", slug: "djs-entertainment", group: "Entertainment", icon: "musical-notes-outline", imageUrl: "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=600&q=80", sortOrder: 7, description: "DJs, live bands, singers & anchors" },
+        { name: "Photography & Videography", slug: "photography-videography", group: "Photography & Video", icon: "camera-outline", imageUrl: "https://images.unsplash.com/photo-1519741497674-611481863552?w=600&q=80", sortOrder: 1, description: "Wedding photographers, cinematographers & drone operators", showOnHomepage: true },
+        { name: "Makeup Artists", slug: "makeup-artists", group: "Beauty", icon: "color-palette-outline", imageUrl: "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=600&q=80", sortOrder: 2, description: "Bridal makeup, hair styling & beauty services", showOnHomepage: true },
+        { name: "Decoration & Floral", slug: "decoration-floral", group: "Decoration", icon: "flower-outline", imageUrl: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=600&q=80", sortOrder: 3, description: "Mandap, stage, floral & lighting decoration", showOnHomepage: true },
+        { name: "Wedding Planners", slug: "wedding-planners", group: "Wedding Management", icon: "clipboard-outline", imageUrl: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=600&q=80", sortOrder: 4, description: "Full wedding planning & event coordination", showOnHomepage: true },
+        { name: "Catering Services", slug: "catering-services", group: "Food", icon: "restaurant-outline", imageUrl: "https://images.unsplash.com/photo-1555244162-803834f70033?w=600&q=80", sortOrder: 5, description: "Caterers, bakers & live food counters", showOnHomepage: true },
+        { name: "Venues", slug: "venues", group: "Venue", icon: "business-outline", imageUrl: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=600&q=80", sortOrder: 6, description: "Banquet halls, hotels, resorts & farm houses", showOnHomepage: true },
+        { name: "DJs & Entertainment", slug: "djs-entertainment", group: "Entertainment", icon: "musical-notes-outline", imageUrl: "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=600&q=80", sortOrder: 7, description: "DJs, live bands, singers & anchors", showOnHomepage: true },
       ];
       await Category.insertMany(seedCats);
       cats = await Category.find({ isActive: true }).sort("sortOrder").lean();
