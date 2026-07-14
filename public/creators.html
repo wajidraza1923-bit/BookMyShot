@@ -34,8 +34,12 @@
   </header>
 
   <div class="creators-page">
-    <h1>All Creators</h1>
-    <p class="subtitle">Browse verified creators available for booking. No login required.</p>
+    <h1 id="pageTitle">All Creators</h1>
+    <p class="subtitle" id="pageSubtitle">Browse verified creators available for booking. No login required.</p>
+    <!-- Subcategories bar (shown when a group is selected) -->
+    <div id="subcategoriesBar" style="display:none;margin-bottom:1.5rem;overflow-x:auto">
+      <div id="subcategoriesList" style="display:flex;gap:0.5rem;padding-bottom:0.5rem"></div>
+    </div>
     <div class="search-bar">
       <input type="text" id="creatorSearch" placeholder="Search by name, city, or category..." oninput="filterCreators()">
     </div>
@@ -49,18 +53,76 @@
   <script>
     var allCreators = [];
     var displayCount = 12;
+    var selectedCategory = '';
+    var selectedGroup = '';
+
+    // Read URL params
+    var urlParams = new URLSearchParams(window.location.search);
+    selectedGroup = urlParams.get('group') || '';
+    selectedCategory = urlParams.get('category') || '';
 
     async function loadCreators() {
       try {
-        var res = await API.get('/creators');
+        // Load subcategories if group is selected
+        if (selectedGroup) {
+          document.getElementById('pageTitle').textContent = selectedGroup;
+          document.getElementById('pageSubtitle').textContent = 'Browse ' + selectedGroup + ' services for your wedding';
+          await loadSubcategories();
+        }
+        if (selectedCategory) {
+          document.getElementById('pageTitle').textContent = selectedCategory.replace(/-/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); });
+        }
+
+        var params = '';
+        if (selectedCategory) params = '?category=' + encodeURIComponent(selectedCategory);
+        var res = await API.get('/creators' + params);
         allCreators = (res.creators || []).filter(function(c) { return c.status === 'approved'; });
-        // Sort: ranked first (ascending), then unranked
+
+        // If group selected but no specific category, filter by group's categories
+        if (selectedGroup && !selectedCategory) {
+          var groupCats = await getGroupCategories(selectedGroup);
+          if (groupCats.length > 0) {
+            var slugs = groupCats.map(function(gc) { return gc.slug; });
+            allCreators = allCreators.filter(function(c) {
+              return slugs.some(function(s) {
+                return (c.categorySlug || '').includes(s) || (c.category || '').toLowerCase().includes(s.replace(/-/g, ' '));
+              });
+            });
+          }
+        }
+
         allCreators.sort(function(a, b) { return (a.rank || 9999) - (b.rank || 9999); });
         renderCreators();
       } catch (e) {
         document.getElementById('emptyMsg').style.display = 'block';
         document.getElementById('emptyMsg').textContent = 'Failed to load creators.';
       }
+    }
+
+    var cachedGroupCats = null;
+    async function getGroupCategories(group) {
+      if (cachedGroupCats) return cachedGroupCats;
+      try {
+        var res = await fetch('/api/discover/categories');
+        var data = await res.json();
+        cachedGroupCats = (data.data || []).filter(function(c) { return c.group === group; });
+        return cachedGroupCats;
+      } catch { return []; }
+    }
+
+    async function loadSubcategories() {
+      try {
+        var cats = await getGroupCategories(selectedGroup);
+        if (cats.length === 0) return;
+        var bar = document.getElementById('subcategoriesBar');
+        var list = document.getElementById('subcategoriesList');
+        bar.style.display = 'block';
+        list.innerHTML = '<a href="/creators.html?group=' + encodeURIComponent(selectedGroup) + '" style="padding:0.5rem 1rem;border-radius:20px;font-size:0.78rem;font-weight:600;text-decoration:none;white-space:nowrap;border:1px solid ' + (!selectedCategory ? 'var(--accent)' : 'rgba(255,255,255,0.08)') + ';color:' + (!selectedCategory ? 'var(--accent)' : 'var(--muted)') + ';background:' + (!selectedCategory ? 'rgba(255,140,39,0.08)' : 'transparent') + '">All</a>' +
+          cats.map(function(c) {
+            var active = selectedCategory === c.slug;
+            return '<a href="/creators.html?group=' + encodeURIComponent(selectedGroup) + '&category=' + encodeURIComponent(c.slug) + '" style="padding:0.5rem 1rem;border-radius:20px;font-size:0.78rem;font-weight:' + (active ? '600' : '400') + ';text-decoration:none;white-space:nowrap;border:1px solid ' + (active ? 'var(--accent)' : 'rgba(255,255,255,0.08)') + ';color:' + (active ? 'var(--accent)' : 'var(--muted)') + ';background:' + (active ? 'rgba(255,140,39,0.08)' : 'transparent') + '">' + c.name + '</a>';
+          }).join('');
+      } catch {}
     }
 
     function renderCreators() {
