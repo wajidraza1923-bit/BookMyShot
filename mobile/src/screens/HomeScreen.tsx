@@ -97,15 +97,30 @@ export default function HomeScreen({ navigation }: any) {
       // Categories from DB
       const dbCats = catsRes.data?.data || [];
       if (dbCats.length > 0) {
-        const mapped = dbCats.map((c: any, idx: number) => ({
-          id: c.slug || c.name?.toLowerCase().replace(/\s+/g, '-'),
-          label: c.name?.length > 14 ? c.name.split(' ')[0] : c.name,
-          icon: CATEGORIES_DEFAULT[idx]?.icon || 'camera-outline',
-          color: CATEGORIES_DEFAULT[idx]?.color || '#EEF2FF',
-          count: c.creatorCount || 0,
-        }));
-        // Add "More" at end if not present
-        if (mapped.length > 8) mapped.splice(9, mapped.length - 9, { id: 'more', label: 'More', emoji: '•••', color: '#F9FAFB', count: 0 });
+        // Map slug to icon/color for reliable matching
+        const iconMap: Record<string, { icon: string; color: string }> = {
+          'photography-videography': { icon: 'camera-outline', color: '#EEF2FF' },
+          'videography': { icon: 'videocam-outline', color: '#FDF2F8' },
+          'makeup-artists': { icon: 'color-palette-outline', color: '#FEF3C7' },
+          'decoration-floral': { icon: 'flower-outline', color: '#ECFDF5' },
+          'catering-services': { icon: 'restaurant-outline', color: '#FFF7ED' },
+          'mehndi-artist': { icon: 'hand-left-outline', color: '#FFF1F2' },
+          'venues': { icon: 'business-outline', color: '#E0F2FE' },
+          'djs-entertainment': { icon: 'musical-notes-outline', color: '#F3E8FF' },
+          'wedding-planners': { icon: 'clipboard-outline', color: '#F0FDF4' },
+        };
+        const mapped = dbCats.map((c: any) => {
+          const slug = c.slug || c.name?.toLowerCase().replace(/\s+/g, '-');
+          const match = iconMap[slug];
+          return {
+            id: slug,
+            label: c.name?.length > 14 ? c.name.split(' ')[0] : c.name,
+            icon: c.icon ? `${c.icon}${c.icon.includes('-outline') ? '' : '-outline'}` : (match?.icon || 'grid-outline'),
+            color: match?.color || '#F3E8FF',
+            count: c.creatorCount || 0,
+          };
+        });
+        if (mapped.length > 9) mapped.splice(9, mapped.length - 9, { id: 'more', label: 'More', icon: 'ellipsis-horizontal', color: '#F9FAFB', count: 0 });
         setCategories(mapped.length > 0 ? mapped : CATEGORIES_DEFAULT);
       }
 
