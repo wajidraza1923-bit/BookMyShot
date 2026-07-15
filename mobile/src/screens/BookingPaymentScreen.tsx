@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Platform, StatusBar, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../services/api';
+import RazorpayWebCheckout from '../components/RazorpayWebCheckout';
 
 export default function BookingPaymentScreen({ route, navigation }: any) {
   const { bookingId } = route.params || {};
@@ -9,6 +10,8 @@ export default function BookingPaymentScreen({ route, navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
   const [paid, setPaid] = useState(false);
+  const [showRazorpay, setShowRazorpay] = useState(false);
+  const [rpConfig, setRpConfig] = useState<any>(null);
 
   useEffect(() => { if (bookingId) loadPaymentDetails(); }, [bookingId]);
 
@@ -27,35 +30,46 @@ export default function BookingPaymentScreen({ route, navigation }: any) {
       const order = orderRes.data?.data;
       if (!order) { Alert.alert('Error', 'Could not create payment order'); setPaying(false); return; }
 
-      // Open Razorpay (using RazorpayWebCheckout or react-native-razorpay)
-      // For now, simulate success — replace with actual Razorpay integration
-      Alert.alert(
-        'Pay Advance',
-        `Pay ₹${order.amount.toLocaleString('en-IN')} via Razorpay?`,
-        [
-          { text: 'Cancel', style: 'cancel', onPress: () => setPaying(false) },
-          { text: 'Pay Now', onPress: async () => {
-            // In production, this would be the Razorpay callback
-            // For now, call verify with mock data
-            try {
-              await api.post(`/booking-fee/verify/${bookingId}`, {
-                razorpay_payment_id: `pay_mock_${Date.now()}`,
-                razorpay_order_id: order.orderId,
-                razorpay_signature: 'mock_signature',
-              });
-              setPaid(true);
-              Alert.alert('✅ Success', 'Booking confirmed! Advance payment received.');
-            } catch (e: any) {
-              Alert.alert('Error', e.response?.data?.message || 'Payment verification failed');
-            }
-            setPaying(false);
-          }},
-        ]
-      );
+      // Open real Razorpay checkout
+      setRpConfig({
+        keyId: order.keyId,
+        orderId: order.orderId,
+        amount: order.amount,
+        name: 'BookMyShot',
+        description: `5% Advance Booking Fee`,
+        prefill: {
+          name: order.customerName || '',
+          email: order.customerEmail || '',
+          contact: order.customerPhone || '',
+        },
+      });
+      setShowRazorpay(true);
     } catch (e: any) {
       Alert.alert('Error', e.response?.data?.message || 'Payment failed');
       setPaying(false);
     }
+  };
+
+  const handleRazorpaySuccess = async (paymentData: any) => {
+    setShowRazorpay(false);
+    try {
+      await api.post(`/booking-fee/verify/${bookingId}`, {
+        razorpay_payment_id: paymentData.razorpay_payment_id,
+        razorpay_order_id: paymentData.razorpay_order_id,
+        razorpay_signature: paymentData.razorpay_signature,
+      });
+      setPaid(true);
+      Alert.alert('✅ Success', 'Booking confirmed! Advance payment received.');
+    } catch (e: any) {
+      Alert.alert('Error', e.response?.data?.message || 'Payment verification failed');
+    }
+    setPaying(false);
+  };
+
+  const handleRazorpayError = () => {
+    setShowRazorpay(false);
+    setPaying(false);
+    Alert.alert('Payment Cancelled', 'You can try again anytime.');
   };
 
   if (loading) return <View style={s.center}><ActivityIndicator size="large" color="#6C3BFF" /></View>;
@@ -132,6 +146,21 @@ export default function BookingPaymentScreen({ route, navigation }: any) {
           </TouchableOpacity>
         )}
       </ScrollView>
+
+      {/* Razorpay Checkout */}
+      {showRazorpay && rpConfig && (
+        <RazorpayWebCheckout
+          keyId={rpConfig.keyId}
+          orderId={rpConfig.orderId}
+          amount={rpConfig.amount}
+          name={rpConfig.name}
+          description={rpConfig.description}
+          prefill={rpConfig.prefill}
+          onSuccess={handleRazorpaySuccess}
+          onError={handleRazorpayError}
+          onDismiss={handleRazorpayError}
+        />
+      )}
     </View>
   );
 }
