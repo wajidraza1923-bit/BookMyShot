@@ -78,7 +78,7 @@ export default function CreatorHome({ navigation }: any) {
     { label: 'Total Earnings', value: `₹${stats.totalEarnings.toLocaleString('en-IN')}`, icon: 'wallet', color: colors.primary },
     { label: 'This Month', value: `₹${stats.monthlyEarnings.toLocaleString('en-IN')}`, icon: 'trending-up', color: colors.success },
     { label: 'Total Bookings', value: String(stats.totalBookings), icon: 'calendar', color: colors.info },
-    { label: 'Pending Payouts', value: String(stats.pendingPayments), icon: 'time', color: colors.warning },
+    { label: 'Platform Fees Paid', value: String(stats.pendingPayments), icon: 'card', color: '#F59E0B' },
   ];
 
   const quickActions = [
@@ -143,16 +143,19 @@ export default function CreatorHome({ navigation }: any) {
           )}
         </View>
 
-        {/* Commission Alert */}
+        {/* Platform Fee Info */}
         {stats.commissionDue > 0 && (
-          <View style={styles.alertCard}>
-            <Ionicons name="alert-circle" size={18} color={colors.error} />
-            <View style={styles.alertContent}>
-              <Text style={styles.alertTitle}>Commission Due: ₹{stats.commissionDue.toLocaleString('en-IN')}</Text>
-              <Text style={styles.alertSubtitle}>Pay before due date to avoid suspension</Text>
+          <View style={styles.platformFeeCard}>
+            <View style={styles.platformFeeHeader}>
+              <Ionicons name="information-circle" size={18} color="#6C3BFF" />
+              <Text style={styles.platformFeeTitle}>Platform Fee Pending</Text>
             </View>
-            <TouchableOpacity style={styles.alertBtn} onPress={handlePayNow} disabled={paying}>
-              {paying ? <ActivityIndicator size="small" color="#000" /> : <Text style={styles.alertBtnText}>Pay Now</Text>}
+            <Text style={styles.platformFeeSub}>You have ₹{stats.commissionDue.toLocaleString('en-IN')} platform fee pending for confirmed bookings. Pay to activate bookings.</Text>
+            <TouchableOpacity style={styles.platformFeeBtn} onPress={handlePayNow} disabled={paying}>
+              {paying ? <ActivityIndicator size="small" color="#fff" /> : <><Ionicons name="card-outline" size={14} color="#fff" /><Text style={styles.platformFeeBtnText}>Pay ₹{stats.commissionDue.toLocaleString('en-IN')}</Text></>}
+            </TouchableOpacity>
+          </View>
+        )}
             </TouchableOpacity>
           </View>
         )}
@@ -323,6 +326,13 @@ const styles = StyleSheet.create({
   leadBar: { height: 6, backgroundColor: '#F3F4F6', borderRadius: 3, overflow: 'hidden' },
   leadBarFill: { height: '100%', backgroundColor: '#6C3BFF', borderRadius: 3 },
   leadRemaining: { fontSize: 9, color: '#6B7280', marginTop: 4, textAlign: 'right' },
+  // Platform Fee Card
+  platformFeeCard: { marginHorizontal: spacing.xl, marginTop: spacing.lg, backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#EDE9FE' },
+  platformFeeHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  platformFeeTitle: { fontSize: 13, fontWeight: '700', color: '#1F2937' },
+  platformFeeSub: { fontSize: 11, color: '#6B7280', lineHeight: 16, marginBottom: 12 },
+  platformFeeBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#6C3BFF', borderRadius: 12, paddingVertical: 12 },
+  platformFeeBtnText: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
   alertCard: { flexDirection: 'row', alignItems: 'center', marginHorizontal: spacing.xl, marginTop: spacing.lg, backgroundColor: 'rgba(239,68,68,0.06)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.15)', borderRadius: radius.lg, padding: spacing.md, gap: spacing.md },
   alertContent: { flex: 1 },
   alertTitle: { ...typography.labelMd, color: colors.error },
