@@ -65,6 +65,11 @@ export const spacing = {
   xl: 20,
   xxl: 24,
   xxxl: 32,
+  '2xl': 24,
+  '3xl': 28,
+  '4xl': 32,
+  '5xl': 48,
+  '6xl': 64,
 };
 
 export const radius = {
@@ -82,6 +87,12 @@ export const typography = {
   h2: { fontSize: 22, fontWeight: '800' as const, color: colors.text, lineHeight: 28 },
   h3: { fontSize: 18, fontWeight: '700' as const, color: colors.text, lineHeight: 24 },
   h4: { fontSize: 15, fontWeight: '700' as const, color: colors.text, lineHeight: 20 },
+
+  // Legacy aliases (used by admin screens)
+  displaySm: { fontSize: 18, fontWeight: '700' as const, color: colors.text },
+  headlineMd: { fontSize: 16, fontWeight: '700' as const, color: colors.text },
+  headlineSm: { fontSize: 14, fontWeight: '600' as const, color: colors.text },
+  caption: { fontSize: 11, fontWeight: '400' as const, color: colors.textMuted },
 
   // Body
   bodyLg: { fontSize: 15, fontWeight: '400' as const, color: colors.textSecondary, lineHeight: 22 },
