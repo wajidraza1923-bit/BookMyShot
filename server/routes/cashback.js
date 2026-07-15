@@ -130,6 +130,95 @@ router.get("/admin/reports", protect, authorize("admin"), async (req, res, next)
   } catch (e) { next(e); }
 });
 
+// ═══ CUSTOMER: Confirm booking completion & trigger cashback ═══
+router.post("/confirm-completion", protect, async (req, res, next) => {
+  try {
+    const { bookingId } = req.body;
+    if (!bookingId) return res.status(400).json({ success: false, message: "bookingId required" });
+
+    const Booking = require("../models/Booking");
+    const booking = await Booking.findById(bookingId);
+    if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
+
+    // Validate eligibility
+    if (!booking.bookingFeePaid) return res.status(400).json({ success: false, message: "Booking fee was not paid" });
+    if (booking.status === "Cancelled" || booking.status === "Refunded") return res.status(400).json({ success: false, message: "Cancelled/refunded bookings are not eligible" });
+
+    // Check if already credited
+    const existing = await CashbackTransaction.findOne({ booking: bookingId });
+    if (existing) return res.json({ success: true, data: existing, message: "Cashback already credited" });
+
+    // Get settings & calculate
+    const settings = await CashbackSettings.getSettings();
+    const now = new Date();
+    const isActive = settings.enabled && (!settings.startDate || new Date(settings.startDate) <= now) && (!settings.endDate || new Date(settings.endDate) >= now);
+
+    if (!isActive) return res.status(400).json({ success: false, message: "Cashback is currently not active" });
+
+    const bookingAmount = booking.totalAmount || booking.quotedAmount || booking.amount || 0;
+    if (bookingAmount < settings.minBookingAmount) return res.status(400).json({ success: false, message: `Minimum ₹${settings.minBookingAmount} required for cashback` });
+
+    let cashbackAmount = Math.round((bookingAmount * settings.percentage) / 100);
+    if (cashbackAmount > settings.maxAmount) cashbackAmount = settings.maxAmount;
+
+    // Credit cashback
+    const transaction = await CashbackTransaction.create({
+      user: req.user._id,
+      booking: bookingId,
+      amount: cashbackAmount,
+      percentage: settings.percentage,
+      bookingAmount,
+      status: "credited",
+      creditedAt: new Date(),
+    });
+
+    // Update booking
+    await Booking.findByIdAndUpdate(bookingId, { $set: { customerConfirmedCompletion: true } });
+
+    res.status(201).json({
+      success: true,
+      message: `🎉 ₹${cashbackAmount} cashback credited to your wallet!`,
+      data: transaction,
+    });
+  } catch (e) {
+    if (e.code === 11000) return res.json({ success: true, message: "Cashback already credited" });
+    next(e);
+  }
+});
+
+// ═══ CUSTOMER: Apply wallet cashback to booking fee ═══
+router.post("/apply-to-booking", protect, async (req, res, next) => {
+  try {
+    const { bookingId, amountToApply } = req.body;
+    if (!bookingId || !amountToApply) return res.status(400).json({ success: false, message: "bookingId and amountToApply required" });
+
+    // Get wallet balance
+    const totals = await CashbackTransaction.aggregate([
+      { $match: { user: req.user._id, status: "credited" } },
+      { $group: { _id: null, total: { $sum: "$amount" } } },
+    ]);
+    const balance = totals[0]?.total || 0;
+
+    // Get already used amount
+    const used = await CashbackTransaction.aggregate([
+      { $match: { user: req.user._id, status: "used" } },
+      { $group: { _id: null, total: { $sum: "$amount" } } },
+    ]);
+    const usedAmount = used[0]?.total || 0;
+    const available = balance - usedAmount;
+
+    if (amountToApply > available) return res.status(400).json({ success: false, message: `Only ₹${available} available in wallet` });
+
+    res.json({
+      success: true,
+      data: {
+        applied: amountToApply,
+        remainingBalance: available - amountToApply,
+      },
+    });
+  } catch (e) { next(e); }
+});
+
 // ═══ INTERNAL: Credit cashback for a completed booking ═══
 router.post("/credit", protect, async (req, res, next) => {
   try {

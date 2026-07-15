@@ -63,6 +63,8 @@ const bookingSchema = new mongoose.Schema(
     bookingFeePaymentId: { type: String, default: "" },
     bookingFeeOrderId: { type: String, default: "" },
     bookingFeePaidAt: { type: Date, default: null },
+    // Completion confirmation
+    customerConfirmedCompletion: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
