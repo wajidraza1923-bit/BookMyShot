@@ -78,7 +78,7 @@ export default function CreatorHome({ navigation }: any) {
     { label: 'Total Earnings', value: `₹${stats.totalEarnings.toLocaleString('en-IN')}`, icon: 'wallet', color: colors.primary },
     { label: 'This Month', value: `₹${stats.monthlyEarnings.toLocaleString('en-IN')}`, icon: 'trending-up', color: colors.success },
     { label: 'Total Bookings', value: String(stats.totalBookings), icon: 'calendar', color: colors.info },
-    { label: 'Platform Fees Paid', value: String(stats.pendingPayments), icon: 'card', color: '#F59E0B' },
+    { label: 'To Collect (95%)', value: `₹${Math.round(stats.totalEarnings * 0.95).toLocaleString('en-IN')}`, icon: 'cash', color: '#10B981' },
   ];
 
   const quickActions = [
@@ -143,17 +143,14 @@ export default function CreatorHome({ navigation }: any) {
           )}
         </View>
 
-        {/* Platform Fee Info */}
+        {/* Booking Info Card */}
         {stats.commissionDue > 0 && (
           <View style={styles.platformFeeCard}>
             <View style={styles.platformFeeHeader}>
-              <Ionicons name="information-circle" size={18} color="#6C3BFF" />
-              <Text style={styles.platformFeeTitle}>Platform Fee Pending</Text>
+              <Ionicons name="checkmark-circle" size={18} color="#10B981" />
+              <Text style={styles.platformFeeTitle}>Booking Advance Received</Text>
             </View>
-            <Text style={styles.platformFeeSub}>You have ₹{stats.commissionDue.toLocaleString('en-IN')} platform fee pending for confirmed bookings. Pay to activate bookings.</Text>
-            <TouchableOpacity style={styles.platformFeeBtn} onPress={handlePayNow} disabled={paying}>
-              {paying ? <ActivityIndicator size="small" color="#fff" /> : <><Ionicons name="card-outline" size={14} color="#fff" /><Text style={styles.platformFeeBtnText}>Pay ₹{stats.commissionDue.toLocaleString('en-IN')}</Text></>}
-            </TouchableOpacity>
+            <Text style={styles.platformFeeSub}>Your customer has paid the 5% Booking Advance to BookMyShot. Your booking is confirmed. Collect the remaining 95% directly from the customer as per your agreed terms.</Text>
           </View>
         )}
             </TouchableOpacity>
