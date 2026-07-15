@@ -60,6 +60,15 @@ router.get("/categories", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// GET /categories/:slug/fields — registration fields for a specific category
+router.get("/categories/:slug/fields", async (req, res, next) => {
+  try {
+    const cat = await Category.findOne({ slug: req.params.slug }).select("name slug fields icon").lean();
+    if (!cat) return res.status(404).json({ success: false, message: "Category not found" });
+    res.json({ success: true, data: { name: cat.name, slug: cat.slug, icon: cat.icon, fields: cat.fields || [] } });
+  } catch (e) { next(e); }
+});
+
 // GET /districts — all active districts with creator count
 router.get("/districts", async (req, res, next) => {
   try {
