@@ -14,7 +14,7 @@ const router = express.Router();
 // Public: list approved creators with filters (NO email exposed)
 router.get("/", async (req, res, next) => {
   try {
-    const { city, category, budget, search, featured } = req.query;
+    const { city, category, subcategory, budget, search, featured } = req.query;
     const filter = { status: "approved", subscriptionStatus: { $in: ["free", "active", "trial"] } };
     if (city) filter.city = new RegExp(city, "i");
     if (category) {
@@ -23,6 +23,26 @@ router.get("/", async (req, res, next) => {
         { categorySlug: category },
         { category: new RegExp(category.replace(/[-\s]+/g, '.*'), "i") },
       ];
+    }
+    if (subcategory) {
+      // Filter by subcategory slug — match on subcategorySlug or specialty text
+      if (filter.$or) {
+        // Category already set $or, combine with subcategory using $and
+        const categoryOr = filter.$or;
+        delete filter.$or;
+        filter.$and = [
+          { $or: categoryOr },
+          { $or: [
+            { subcategorySlug: subcategory },
+            { specialty: new RegExp(subcategory.replace(/[-\s]+/g, '.*'), "i") },
+          ]},
+        ];
+      } else {
+        filter.$or = [
+          { subcategorySlug: subcategory },
+          { specialty: new RegExp(subcategory.replace(/[-\s]+/g, '.*'), "i") },
+        ];
+      }
     }
     if (featured === "true") filter.featured = true;
     if (budget) filter.budgetMax = { $gte: Number(budget) };

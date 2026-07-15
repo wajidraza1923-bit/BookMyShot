@@ -465,6 +465,39 @@ app.get("/api/config/public", async (req, res) => {
   }
 });
 
+// Homepage config — hero banner content + cashback % from admin panel (public, no auth)
+app.get("/api/homepage-config", async (req, res) => {
+  try {
+    const PlatformSettings = require("./models/PlatformSettings");
+    const CashbackSettings = require("./models/CashbackSettings");
+    const [settings, cashback] = await Promise.all([
+      PlatformSettings.findOne().lean(),
+      CashbackSettings.getSettings(),
+    ]);
+    const now = new Date();
+    const cashbackActive = cashback.enabled &&
+      (!cashback.startDate || new Date(cashback.startDate) <= now) &&
+      (!cashback.endDate || new Date(cashback.endDate) >= now);
+
+    res.json({
+      success: true,
+      data: {
+        cashbackPercentage: cashbackActive ? cashback.percentage : 0,
+        cashbackEnabled: cashbackActive,
+        cashbackMaxAmount: cashback.maxAmount,
+        heroTitle: settings?.heroTitle || "Your Dream Wedding,",
+        heroTitleAccent: settings?.heroTitleAccent || "More Rewards!",
+        heroSubtitle: settings?.heroSubtitle || "Book verified wedding creators and get exciting cashback on every successful booking.",
+        heroEyebrow: settings?.heroEyebrow || "CELEBRATE BEAUTIFULLY. SAVE MORE.",
+        heroCta1Text: settings?.heroCta1Text || "Find Creator",
+        heroCta2Text: settings?.heroCta2Text || "Get Free Quote",
+      },
+    });
+  } catch (err) {
+    res.json({ success: true, data: { cashbackPercentage: 10, cashbackEnabled: true, heroTitle: "Your Dream Wedding,", heroTitleAccent: "More Rewards!", heroSubtitle: "Book verified wedding creators and get exciting cashback on every successful booking.", heroEyebrow: "CELEBRATE BEAUTIFULLY. SAVE MORE.", heroCta1Text: "Find Creator", heroCta2Text: "Get Free Quote" } });
+  }
+});
+
 // Mobile app config — dynamic categories, cities, banners from real data
 app.get("/api/app-config", async (req, res) => {
   try {
@@ -546,6 +579,9 @@ app.use("/api/featured-wedding-moments", featuredMomentsRoutes);
 app.use("/api/testimonials", testimonialRoutes);
 app.use("/api/general-inquiries", generalInquiryRoutes);
 app.use("/api/discover", discoverRoutes);
+app.use("/api/subcategories", require("./routes/subcategories"));
+app.use("/api/cashback", require("./routes/cashback"));
+app.use("/api/footer", require("./routes/footer"));
 app.use("/api/live-stats", require("./routes/liveStats"));
 app.use("/api/app-version", require("./routes/appVersion"));
 app.use("/api/homepage-enquiries", homepageEnquiryRoutes);

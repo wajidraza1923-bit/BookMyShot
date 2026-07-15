@@ -55,6 +55,8 @@ export default function AdminDashboard({ navigation }: any) {
     { icon: 'warning-outline', label: 'Overdue Management', desc: 'Track pending payments, defaulters', screen: 'AdminOverdue' },
     { icon: 'trophy-outline', label: 'Creator Rankings', desc: 'Manage positions in all sections', screen: 'AdminRankings' },
     { icon: 'phone-portrait-outline', label: 'App Updates', desc: 'Manage versions, force update, APK', screen: 'AdminAppUpdates' },
+    { icon: 'grid-outline', label: 'Categories', desc: 'Manage categories & subcategories', screen: 'ContentManager' },
+    { icon: 'gift-outline', label: 'Cashback Management', desc: 'Cashback %, limits, offers, reports', screen: 'AdminCashback' },
   ];
 
   return (

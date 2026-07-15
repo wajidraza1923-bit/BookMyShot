@@ -46,7 +46,8 @@ export default function SearchScreen({ navigation, route }: any) {
   const [loading, setLoading] = useState(false);
   const [selectedCity, setSelectedCity] = useState(route?.params?.city || '');
   const [selectedCategory, setSelectedCategory] = useState(route?.params?.category || '');
-  const [showResults, setShowResults] = useState(!!route?.params?.city || !!route?.params?.category);
+  const [selectedSubcategory, setSelectedSubcategory] = useState(route?.params?.subcategory || '');
+  const [showResults, setShowResults] = useState(!!route?.params?.city || !!route?.params?.category || !!route?.params?.subcategory);
   const [districts, setDistricts] = useState<any[]>([]);
   const [trendingSearches, setTrendingSearches] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -55,6 +56,13 @@ export default function SearchScreen({ navigation, route }: any) {
   const [featuredCreators, setFeaturedCreators] = useState<any[]>([]);
 
   useEffect(() => { loadAll(); }, []);
+
+  // Update filters when navigated with new params
+  useEffect(() => {
+    if (route?.params?.category) { setSelectedCategory(route.params.category); setShowResults(true); }
+    if (route?.params?.subcategory) { setSelectedSubcategory(route.params.subcategory); setShowResults(true); }
+    if (route?.params?.city) { setSelectedCity(route.params.city); setShowResults(true); }
+  }, [route?.params?.category, route?.params?.subcategory, route?.params?.city]);
 
   const loadAll = async () => {
     try {
@@ -84,18 +92,19 @@ export default function SearchScreen({ navigation, route }: any) {
       if (query) params.search = query;
       if (selectedCity) params.city = selectedCity;
       if (selectedCategory) params.category = selectedCategory;
+      if (selectedSubcategory) params.subcategory = selectedSubcategory;
       const res = await creatorsAPI.getAll(params);
       setCreators(res.data?.creators || res.data?.data || []);
     } catch { setCreators([]); }
     finally { setLoading(false); }
-  }, [query, selectedCity, selectedCategory]);
+  }, [query, selectedCity, selectedCategory, selectedSubcategory]);
 
   useEffect(() => {
     if (showResults || query.length > 0) { const t = setTimeout(searchCreators, 300); return () => clearTimeout(t); }
-  }, [query, selectedCity, selectedCategory, showResults]);
+  }, [query, selectedCity, selectedCategory, selectedSubcategory, showResults]);
 
   const handleSearch = (t: string) => { setQuery(t); if (t.length > 0) setShowResults(true); };
-  const clearFilters = () => { setQuery(''); setSelectedCity(''); setSelectedCategory(''); setShowResults(false); };
+  const clearFilters = () => { setQuery(''); setSelectedCity(''); setSelectedCategory(''); setSelectedSubcategory(''); setShowResults(false); };
 
   return (
     <View style={s.container}>

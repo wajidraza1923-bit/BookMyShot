@@ -1,221 +1,170 @@
-/**
- * GuestProfileScreen — Premium Account Screen
- * Mobile-first, responsive, production-ready
- * Official BookMyShot camera logo, gold+black luxury theme
- */
 import React, { useRef, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Linking,
-  Animated,
-  useWindowDimensions,
-  StatusBar,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Animated, Dimensions, StatusBar, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
-const GOLD = '#D4AF37';
+const { width } = Dimensions.get('window');
 
 export default function GuestProfileScreen({ navigation }: any) {
-  const { width } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const btnScale = useRef(new Animated.Value(1)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
 
   useEffect(() => {
-    Animated.timing(fadeAnim, { toValue: 1, duration: 700, useNativeDriver: true }).start();
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
+      Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 40, friction: 8 }),
+    ]).start();
   }, []);
 
-  const onPressIn = () => Animated.spring(btnScale, { toValue: 0.97, useNativeDriver: true }).start();
-  const onPressOut = () => Animated.spring(btnScale, { toValue: 1, friction: 4, useNativeDriver: true }).start();
-
-  // Responsive scale (base 390)
-  const s = Math.min(width / 390, 1.12);
-  const hPad = Math.max(16, width * 0.048);
-
   return (
-    <Animated.View style={[st.root, { opacity: fadeAnim }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#000" translucent />
+    <View style={s.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <Animated.ScrollView showsVerticalScrollIndicator={false} style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
 
-      {/* Subtle gold mesh background — top area only */}
-      <View style={st.meshBg}>
-        <View style={[st.meshArc, { width: width * 0.9, height: width * 0.45, top: -width * 0.18, left: width * 0.05, borderRadius: width * 0.45 }]} />
-        <View style={[st.meshArc2, { width: width * 0.6, height: width * 0.3, top: -width * 0.08, right: -width * 0.1, borderRadius: width * 0.3 }]} />
-      </View>
-
-      <ScrollView
-        style={st.scroll}
-        contentContainerStyle={{ paddingTop: insets.top + 14 * s, paddingBottom: insets.bottom + 80, paddingHorizontal: hPad, alignItems: 'center' }}
-        showsVerticalScrollIndicator={false}
-        bounces={false}
-      >
-        {/* ═══ Logo — Camera icon in gold ring ═══ */}
-        <View style={[st.logoOuter, { width: 62 * s, height: 62 * s, borderRadius: 31 * s }]}>
-          <View style={[st.logoInner, { width: 40 * s, height: 40 * s, borderRadius: 20 * s }]}>
-            <Ionicons name="videocam-outline" size={22 * s} color={GOLD} />
+        {/* Header */}
+        <View style={s.header}>
+          <View style={s.logoRow}>
+            <View style={s.logoBadge}><Ionicons name="aperture" size={16} color="#6C3BFF" /></View>
+            <Text style={s.logoText}>BOOK<Text style={{ color: '#FF4FA3' }}>MYSHOT</Text></Text>
           </View>
+          <TouchableOpacity><Ionicons name="notifications-outline" size={22} color="#6B7280" /></TouchableOpacity>
         </View>
-        <Text style={[st.brand, { fontSize: 13 * s, marginTop: 8 * s }]}>BOOKMYSHOT</Text>
-        <Text style={[st.tagline, { fontSize: 6.5 * s, marginTop: 3 * s }]}>CAPTURE  •  CONNECT  •  CELEBRATE</Text>
 
-        {/* ═══ Profile Avatar ═══ */}
-        <View style={[st.avatarWrap, { marginTop: 14 * s }]}>
-          <View style={[st.avatarGlow, { width: 68 * s, height: 12 * s, bottom: -5 * s, borderRadius: 34 * s }]} />
-          <View style={[st.avatar, { width: 82 * s, height: 82 * s, borderRadius: 41 * s }]}>
-            <Ionicons name="person-outline" size={40 * s} color={GOLD} />
+        {/* Welcome Section */}
+        <View style={s.welcomeSection}>
+          <View style={s.welcomeIcon}>
+            <LinearGradient colors={['#6C3BFF', '#FF4FA3']} style={s.welcomeGradient}>
+              <Ionicons name="person-outline" size={28} color="#fff" />
+            </LinearGradient>
           </View>
+          <Text style={s.welcomeTitle}>Welcome Back 👋</Text>
+          <Text style={s.welcomeHeading}>Book creators faster than ever.</Text>
+          <Text style={s.welcomeSub}>Login to manage bookings, save favourites, track cashback and connect with verified creators.</Text>
         </View>
 
-        {/* ═══ Welcome ═══ */}
-        <Text style={[st.welcomeTitle, { fontSize: 22 * s, marginTop: 12 * s }]}>
-          Welcome to <Text style={st.gold}>BookMyShot</Text>
-        </Text>
-        <Text style={[st.welcomeSub, { fontSize: 12.5 * s, marginTop: 6 * s, marginBottom: 22 * s }]}>
-          Sign in to book creators, save favorites,{'\n'}send inquiries and manage your account.
-        </Text>
-
-        {/* ═══ Login Button ═══ */}
-        <Animated.View style={[st.fullW, { transform: [{ scale: btnScale }] }]}>
-          <TouchableOpacity
-            style={[st.loginBtn, { height: 50 * s, borderRadius: 25 * s }]}
-            onPress={() => navigation.navigate('Login')}
-            onPressIn={onPressIn}
-            onPressOut={onPressOut}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="log-in-outline" size={19 * s} color="#000" />
-            <Text style={[st.loginTxt, { fontSize: 15.5 * s }]}>Login</Text>
+        {/* Login Buttons */}
+        <View style={s.btnSection}>
+          <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('Login')}>
+            <LinearGradient colors={['#6C3BFF', '#8B5CF6', '#FF4FA3']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.btnPrimary}>
+              <Ionicons name="log-in-outline" size={16} color="#fff" />
+              <Text style={s.btnPrimaryText}>Login</Text>
+            </LinearGradient>
           </TouchableOpacity>
-        </Animated.View>
-
-        {/* ═══ Create Account ═══ */}
-        <TouchableOpacity
-          style={[st.createBtn, { height: 50 * s, borderRadius: 25 * s, marginTop: 10 * s }]}
-          onPress={() => navigation.navigate('Register')}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="person-add-outline" size={17 * s} color={GOLD} />
-          <Text style={[st.createTxt, { fontSize: 14.5 * s }]}>Create Account</Text>
-        </TouchableOpacity>
-
-        {/* ═══ Quick Access Divider ═══ */}
-        <View style={[st.dividerRow, { marginTop: 22 * s, marginBottom: 12 * s }]}>
-          <View style={st.divLine} />
-          <Text style={[st.divLabel, { fontSize: 10.5 * s }]}>Quick Access</Text>
-          <View style={st.divLine} />
-        </View>
-
-        {/* ═══ Cards Row ═══ */}
-        <View style={st.cardsRow}>
-          <TouchableOpacity style={[st.card, { padding: 12 * s, borderRadius: 12 * s }]} onPress={() => navigation.navigate('Login')} activeOpacity={0.8}>
-            <View style={[st.cardIconWrap, { width: 30 * s, height: 30 * s, borderRadius: 15 * s }]}>
-              <Ionicons name="camera-outline" size={14 * s} color={GOLD} />
-            </View>
-            <Text style={[st.cardTitle, { fontSize: 11.5 * s }]}>I'm a Creator</Text>
-            <Text style={[st.cardSub, { fontSize: 9.5 * s }]}>Join as a creator and{'\n'}showcase your work.</Text>
-            <Ionicons name="chevron-forward" size={12 * s} color="rgba(255,255,255,0.22)" style={st.cardArrow} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={[st.card, { padding: 12 * s, borderRadius: 12 * s }]} onPress={() => navigation.navigate('AdminLogin')} activeOpacity={0.8}>
-            <View style={[st.cardIconWrap, { width: 30 * s, height: 30 * s, borderRadius: 15 * s }]}>
-              <Ionicons name="shield-outline" size={14 * s} color={GOLD} />
-            </View>
-            <Text style={[st.cardTitle, { fontSize: 11.5 * s }]}>Admin Login</Text>
-            <Text style={[st.cardSub, { fontSize: 9.5 * s }]}>Secure admin access{'\n'}for management.</Text>
-            <Ionicons name="chevron-forward" size={12 * s} color="rgba(255,255,255,0.22)" style={st.cardArrow} />
+          <TouchableOpacity style={s.btnSecondary} activeOpacity={0.85} onPress={() => navigation.navigate('Register')}>
+            <Ionicons name="person-add-outline" size={15} color="#6C3BFF" />
+            <Text style={s.btnSecondaryText}>Create Account</Text>
           </TouchableOpacity>
         </View>
 
-        {/* ═══ Features Card ═══ */}
-        <View style={[st.featCard, { marginTop: 16 * s, paddingVertical: 14 * s, borderRadius: 12 * s }]}>
-          <View style={st.featCol}>
-            <Ionicons name="checkmark-circle-outline" size={20 * s} color={GOLD} />
-            <Text style={[st.featTitle, { fontSize: 9.5 * s }]}>100% Verified</Text>
-            <Text style={[st.featSub, { fontSize: 8.5 * s }]}>Trusted Creators</Text>
-          </View>
-          <View style={[st.featDiv, { height: 36 * s }]} />
-          <View style={st.featCol}>
-            <Ionicons name="star-outline" size={20 * s} color={GOLD} />
-            <Text style={[st.featTitle, { fontSize: 9.5 * s }]}>Premium Quality</Text>
-            <Text style={[st.featSub, { fontSize: 8.5 * s }]}>Top Professionals</Text>
-          </View>
-          <View style={[st.featDiv, { height: 36 * s }]} />
-          <View style={st.featCol}>
-            <Ionicons name="lock-closed-outline" size={20 * s} color={GOLD} />
-            <Text style={[st.featTitle, { fontSize: 9.5 * s }]}>Secure Booking</Text>
-            <Text style={[st.featSub, { fontSize: 8.5 * s }]}>Safe & Reliable</Text>
+        {/* Quick Access */}
+        <View style={s.section}>
+          <Text style={s.sectionTitle}>Quick Access</Text>
+          <View style={s.cardRow}>
+            <TouchableOpacity style={s.card} onPress={() => navigation.navigate('Register')} activeOpacity={0.8}>
+              <View style={[s.cardIcon, { backgroundColor: '#F3E8FF' }]}><Ionicons name="camera-outline" size={20} color="#6C3BFF" /></View>
+              <Text style={s.cardTitle}>Creator Portal</Text>
+              <Text style={s.cardSub}>Become a Creator</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={s.card} onPress={() => navigation.navigate('AdminLogin')} activeOpacity={0.8}>
+              <View style={[s.cardIcon, { backgroundColor: '#FDF2F8' }]}><Ionicons name="shield-checkmark-outline" size={20} color="#FF4FA3" /></View>
+              <Text style={s.cardTitle}>Admin Panel</Text>
+              <Text style={s.cardSub}>Admin Login</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
-        {/* ═══ Contact Support ═══ */}
-        <TouchableOpacity style={[st.supportRow, { marginTop: 20 * s }]} onPress={() => Linking.openURL('https://wa.me/918492922173')} activeOpacity={0.7}>
-          <Ionicons name="headset-outline" size={14 * s} color="rgba(255,255,255,0.4)" />
-          <Text style={[st.supportTxt, { fontSize: 11.5 * s }]}>
-            Need help? <Text style={st.gold}>Contact Support</Text>
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </Animated.View>
+        {/* Features */}
+        <View style={s.section}>
+          <Text style={s.sectionTitle}>Why BookMyShot</Text>
+          <View style={s.featureGrid}>
+            {[
+              { icon: 'shield-checkmark', label: 'Verified Creators', color: '#10B981', bg: '#ECFDF5' },
+              { icon: 'diamond', label: 'Premium Quality', color: '#6C3BFF', bg: '#F3E8FF' },
+              { icon: 'lock-closed', label: 'Secure Booking', color: '#3B82F6', bg: '#EFF6FF' },
+              { icon: 'gift', label: 'Cashback Rewards', color: '#FF4FA3', bg: '#FDF2F8' },
+            ].map((f, i) => (
+              <View key={i} style={s.featureCard}>
+                <View style={[s.featureIcon, { backgroundColor: f.bg }]}><Ionicons name={f.icon as any} size={18} color={f.color} /></View>
+                <Text style={s.featureLabel}>{f.label}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* Support */}
+        <View style={s.section}>
+          <Text style={s.sectionTitle}>Need Help?</Text>
+          <View style={s.supportGrid}>
+            {[
+              { icon: 'chatbubble-ellipses', label: 'Chat Support', action: () => navigation.navigate('Info', { page: 'Help' }) },
+              { icon: 'logo-whatsapp', label: 'WhatsApp', action: () => Linking.openURL('https://wa.me/918492922173') },
+              { icon: 'mail', label: 'Email', action: () => Linking.openURL('mailto:support@bookmyshot.in') },
+              { icon: 'call', label: 'Call', action: () => Linking.openURL('tel:+918492922173') },
+            ].map((s2, i) => (
+              <TouchableOpacity key={i} style={s.supportBtn} onPress={s2.action} activeOpacity={0.8}>
+                <Ionicons name={s2.icon as any} size={18} color="#6C3BFF" />
+                <Text style={s.supportLabel}>{s2.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Legal Links */}
+        <View style={s.legalSection}>
+          {['About Us', 'Privacy Policy', 'Terms & Conditions', 'Refund Policy'].map((page, i) => (
+            <TouchableOpacity key={i} style={s.legalLink} onPress={() => navigation.navigate('Info', { page })}>
+              <Text style={s.legalText}>{page}</Text>
+              <Ionicons name="chevron-forward" size={14} color="#D1D5DB" />
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <View style={{ height: 100 }} />
+      </Animated.ScrollView>
+    </View>
   );
 }
 
-const st = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#000' },
-  scroll: { flex: 1 },
-
-  // Mesh background
-  meshBg: { position: 'absolute', top: 0, left: 0, right: 0, height: '40%', overflow: 'hidden' },
-  meshArc: { position: 'absolute', borderWidth: 0.6, borderColor: GOLD, opacity: 0.045 },
-  meshArc2: { position: 'absolute', borderWidth: 0.5, borderColor: GOLD, opacity: 0.035 },
-
-  // Logo
-  logoOuter: { borderWidth: 1.4, borderColor: GOLD, alignItems: 'center', justifyContent: 'center' },
-  logoInner: { borderWidth: 0.7, borderColor: GOLD + '40', alignItems: 'center', justifyContent: 'center' },
-  brand: { fontWeight: '300', color: GOLD, letterSpacing: 6.5 },
-  tagline: { color: GOLD + '70', letterSpacing: 3, fontWeight: '400' },
-
-  // Avatar
-  avatarWrap: { alignItems: 'center', position: 'relative' },
-  avatarGlow: { position: 'absolute', backgroundColor: GOLD, opacity: 0.07 },
-  avatar: { backgroundColor: 'rgba(212,175,55,0.03)', borderWidth: 1.4, borderColor: 'rgba(212,175,55,0.25)', alignItems: 'center', justifyContent: 'center' },
-
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  // Header
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 54 : 38, paddingBottom: 8 },
+  logoRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  logoBadge: { width: 30, height: 30, borderRadius: 15, borderWidth: 2, borderColor: '#6C3BFF', alignItems: 'center', justifyContent: 'center' },
+  logoText: { fontSize: 15, fontWeight: '800', color: '#1F2937' },
   // Welcome
-  welcomeTitle: { fontWeight: '700', color: '#fff', textAlign: 'center' },
-  gold: { color: GOLD, fontWeight: '700' },
-  welcomeSub: { color: 'rgba(255,255,255,0.46)', textAlign: 'center', lineHeight: 20 },
-
+  welcomeSection: { alignItems: 'center', paddingHorizontal: 30, paddingTop: 30, paddingBottom: 24 },
+  welcomeIcon: { marginBottom: 16 },
+  welcomeGradient: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center' },
+  welcomeTitle: { fontSize: 14, color: '#6B7280', marginBottom: 4 },
+  welcomeHeading: { fontSize: 22, fontWeight: '800', color: '#1F2937', textAlign: 'center', marginBottom: 8 },
+  welcomeSub: { fontSize: 12, color: '#6B7280', textAlign: 'center', lineHeight: 18 },
   // Buttons
-  fullW: { width: '100%' },
-  loginBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, backgroundColor: GOLD, shadowColor: GOLD, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 5 },
-  loginTxt: { fontWeight: '700', color: '#000', letterSpacing: 0.3 },
-  createBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, width: '100%', borderWidth: 1.5, borderColor: GOLD, backgroundColor: 'transparent' },
-  createTxt: { fontWeight: '700', color: GOLD, letterSpacing: 0.2 },
-
-  // Divider
-  dividerRow: { flexDirection: 'row', alignItems: 'center', width: '100%' },
-  divLine: { flex: 1, height: 1, backgroundColor: 'rgba(212,175,55,0.13)' },
-  divLabel: { color: 'rgba(255,255,255,0.36)', marginHorizontal: 12, fontWeight: '500', letterSpacing: 0.3 },
-
+  btnSection: { paddingHorizontal: 20, gap: 12, marginBottom: 28 },
+  btnPrimary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 16, borderRadius: 18, elevation: 3, shadowColor: '#6C3BFF', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 8 },
+  btnPrimaryText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+  btnSecondary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 15, borderRadius: 18, borderWidth: 1.5, borderColor: '#6C3BFF', backgroundColor: '#fff' },
+  btnSecondaryText: { fontSize: 15, fontWeight: '600', color: '#6C3BFF' },
+  // Section
+  section: { paddingHorizontal: 20, marginBottom: 24 },
+  sectionTitle: { fontSize: 15, fontWeight: '700', color: '#1F2937', marginBottom: 12 },
   // Cards
-  cardsRow: { flexDirection: 'row', width: '100%', gap: 10 },
-  card: { flex: 1, backgroundColor: 'rgba(212,175,55,0.03)', borderWidth: 1, borderColor: 'rgba(212,175,55,0.16)', position: 'relative' },
-  cardIconWrap: { backgroundColor: 'rgba(212,175,55,0.08)', borderWidth: 0.8, borderColor: 'rgba(212,175,55,0.2)', alignItems: 'center', justifyContent: 'center', marginBottom: 7 },
-  cardTitle: { fontWeight: '700', color: '#fff', marginBottom: 2 },
-  cardSub: { color: 'rgba(255,255,255,0.36)', lineHeight: 13 },
-  cardArrow: { position: 'absolute', top: 12, right: 10 },
-
+  cardRow: { flexDirection: 'row', gap: 12 },
+  card: { flex: 1, backgroundColor: '#fff', borderRadius: 22, padding: 18, borderWidth: 1, borderColor: '#F1F5F9', elevation: 2, shadowColor: '#6C3BFF', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6 },
+  cardIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+  cardTitle: { fontSize: 12, fontWeight: '700', color: '#1F2937' },
+  cardSub: { fontSize: 10, color: '#6B7280', marginTop: 2 },
   // Features
-  featCard: { flexDirection: 'row', width: '100%', backgroundColor: 'rgba(212,175,55,0.03)', borderWidth: 1, borderColor: 'rgba(212,175,55,0.13)', alignItems: 'center', paddingHorizontal: 4 },
-  featCol: { flex: 1, alignItems: 'center' },
-  featDiv: { width: 1, backgroundColor: 'rgba(212,175,55,0.13)' },
-  featTitle: { fontWeight: '700', color: '#fff', marginTop: 5, textAlign: 'center' },
-  featSub: { color: 'rgba(255,255,255,0.36)', marginTop: 1, textAlign: 'center' },
-
+  featureGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  featureCard: { width: (width - 40 - 10) / 2, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff', borderRadius: 14, padding: 12, borderWidth: 1, borderColor: '#F1F5F9' },
+  featureIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  featureLabel: { fontSize: 11, fontWeight: '600', color: '#1F2937', flex: 1 },
   // Support
-  supportRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
-  supportTxt: { color: 'rgba(255,255,255,0.4)' },
+  supportGrid: { flexDirection: 'row', gap: 10 },
+  supportBtn: { flex: 1, alignItems: 'center', gap: 6, backgroundColor: '#F8F6FF', borderRadius: 14, paddingVertical: 14, borderWidth: 1, borderColor: '#EDE9FE' },
+  supportLabel: { fontSize: 9, fontWeight: '600', color: '#4B5563' },
+  // Legal
+  legalSection: { paddingHorizontal: 20, marginBottom: 12 },
+  legalLink: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+  legalText: { fontSize: 12, color: '#4B5563' },
 });

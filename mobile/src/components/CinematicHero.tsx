@@ -124,13 +124,19 @@ export default function CinematicHero({ scrollY, onNavigate }: Props) {
 
       {/* ═══ CONTENT ═══ */}
       <Animated.View style={[st.content, { opacity: Animated.multiply(contentReveal, contentOp), transform: [{ translateY: Animated.add(contentSlide, contentY) }] }]}>
-        <Text style={st.eyebrow}>INDIA'S PREMIUM WEDDING MARKETPLACE</Text>
-        <Text style={st.h1a}>Find Your Perfect</Text>
+        <Text style={st.eyebrow}>BOOK WITH CONFIDENCE. EARN CASHBACK.</Text>
+        <Text style={st.h1a}>Book Your Perfect</Text>
         <View style={{ overflow: 'hidden' }}>
           <Text style={st.h1b}>Wedding Creator</Text>
           <Animated.View style={[st.textSweep, { transform: [{ translateX: sweep.interpolate({ inputRange: [0, 1], outputRange: [-width, width] }) }] }]} />
         </View>
-        <Text style={st.sub}>Verified photographers, filmmakers and wedding artists across India.</Text>
+        <Text style={st.sub}>Get Cashback on every successful booking. Trusted photographers, videographers & wedding professionals.</Text>
+
+        {/* Cashback Badge */}
+        <View style={st.cashbackBadge}>
+          <Ionicons name="wallet-outline" size={12} color="#10B981" />
+          <Text style={st.cashbackText}>💰 Cashback on Every Booking</Text>
+        </View>
 
         {/* CTAs */}
         <View style={st.btns}>
@@ -179,6 +185,8 @@ const st = StyleSheet.create({
   h1b: { fontSize: 32, fontWeight: '800', color: '#FFB347', textAlign: 'center', lineHeight: 40, letterSpacing: -0.5, textShadowColor: 'rgba(249,115,22,0.3)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 16 },
   textSweep: { position: 'absolute', top: 0, width: 60, height: '100%', backgroundColor: 'rgba(255,220,130,0.04)', transform: [{ skewX: '-15deg' }] },
   sub: { fontSize: 12, color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginTop: 8, lineHeight: 18, paddingHorizontal: 10 },
+  cashbackBadge: { flexDirection: 'row', alignItems: 'center', alignSelf: 'center', gap: 6, marginTop: 12, backgroundColor: 'rgba(16,185,129,0.08)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.2)', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 },
+  cashbackText: { fontSize: 11, fontWeight: '700', color: '#10B981' },
   btns: { flexDirection: 'row', gap: 10, marginTop: 14, alignSelf: 'center' },
   btnP: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#F97316', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 11, shadowColor: '#F97316', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 },
   btnPT: { fontSize: 13, fontWeight: '700', color: '#000' },

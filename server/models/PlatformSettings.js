@@ -13,6 +13,15 @@ const platformSettingsSchema = new mongoose.Schema(
       enum: ["active", "maintenance", "offline"],
       default: "active",
     },
+    // Cashback percentage shown on Hero section (admin configurable)
+    cashbackPercentage: { type: Number, default: 10 },
+    // Hero Banner configurable content
+    heroTitle: { type: String, default: "Your Dream Wedding," },
+    heroTitleAccent: { type: String, default: "More Rewards!" },
+    heroSubtitle: { type: String, default: "Book verified wedding creators and get exciting cashback on every successful booking." },
+    heroEyebrow: { type: String, default: "CELEBRATE BEAUTIFULLY. SAVE MORE." },
+    heroCta1Text: { type: String, default: "Find Creator" },
+    heroCta2Text: { type: String, default: "Get Free Quote" },
   },
   { timestamps: true }
 );

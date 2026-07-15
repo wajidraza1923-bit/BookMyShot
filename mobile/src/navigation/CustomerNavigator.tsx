@@ -22,6 +22,8 @@ import AllCreatorsScreen from '../screens/AllCreatorsScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import CreatorNotifications from '../screens/creator/CreatorNotifications';
 import PaymentProofScreen from '../screens/PaymentProofScreen';
+import SubCategoriesScreen from '../screens/SubCategoriesScreen';
+import NearMeScreen from '../screens/NearMeScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -31,21 +33,21 @@ function CustomerTabs() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarStyle: { backgroundColor: '#0F0F0F', borderTopColor: 'rgba(255,255,255,0.06)', borderTopWidth: 1, height: 64, paddingBottom: 10, paddingTop: 8, elevation: 0 },
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
+        tabBarStyle: { backgroundColor: '#FFFFFF', borderTopColor: '#F1F5F9', borderTopWidth: 1, height: 64, paddingBottom: 10, paddingTop: 8, elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.05, shadowRadius: 8 },
+        tabBarActiveTintColor: '#6C3BFF',
+        tabBarInactiveTintColor: '#9CA3AF',
         tabBarLabelStyle: { fontSize: 10, fontWeight: '500', letterSpacing: 0.2 },
         tabBarIcon: ({ focused, color }) => {
-          const icons: Record<string, string> = { Home: focused ? 'home' : 'home-outline', Discover: focused ? 'compass' : 'compass-outline', Bookings: focused ? 'calendar' : 'calendar-outline', Messages: focused ? 'chatbubble' : 'chatbubble-outline', Profile: focused ? 'person' : 'person-outline' };
+          const icons: Record<string, string> = { Home: focused ? 'home' : 'home-outline', 'Near Me': focused ? 'location' : 'location-outline', Bookings: focused ? 'calendar' : 'calendar-outline', Messages: focused ? 'chatbubble' : 'chatbubble-outline', Account: focused ? 'person' : 'person-outline' };
           return <Ionicons name={(icons[route.name] || 'home') as any} size={21} color={color} />;
         },
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Discover" component={SearchScreen} />
+      <Tab.Screen name="Near Me" component={NearMeScreen} />
       <Tab.Screen name="Bookings" component={BookingsScreen} />
       <Tab.Screen name="Messages" component={MessagesScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Account" component={ProfileScreen} />
     </Tab.Navigator>
   );
 }
@@ -64,6 +66,9 @@ export default function CustomerNavigator() {
       <Stack.Screen name="WriteReview" component={WriteReviewScreen} />
       <Stack.Screen name="PlatformReview" component={PlatformReviewScreen} />
       <Stack.Screen name="AllCreators" component={AllCreatorsScreen} />
+      <Stack.Screen name="SubCategories" component={SubCategoriesScreen} />
+      <Stack.Screen name="NearMe" component={NearMeScreen} />
+      <Stack.Screen name="Discover" component={SearchScreen} />
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       <Stack.Screen name="CreatorNotifications" component={CreatorNotifications} />
       <Stack.Screen name="PaymentProof" component={PaymentProofScreen} options={{ animation: 'slide_from_bottom' }} />

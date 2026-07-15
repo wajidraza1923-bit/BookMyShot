@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cashback Management - BookMyShot Admin</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #F9FAFB; color: #1F2937; padding: 20px; }
+    .admin-container { max-width: 700px; margin: 0 auto; }
+    h1 { font-size: 24px; margin-bottom: 20px; }
+    .cashback-form { max-width: 600px; margin: 0 auto; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 13px; color: #1F2937; }
+    .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px 14px; border: 1px solid #E5E7EB; border-radius: 10px; font-size: 14px; }
+    .form-group textarea { min-height: 80px; resize: vertical; }
+    .toggle-row { display: flex; align-items: center; gap: 12px; }
+    .toggle { width: 44px; height: 24px; border-radius: 12px; background: #D1D5DB; position: relative; cursor: pointer; transition: 0.3s; }
+    .toggle.on { background: #6C3BFF; }
+    .toggle::after { content: ''; width: 20px; height: 20px; background: #fff; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: 0.3s; }
+    .toggle.on::after { left: 22px; }
+    .save-btn { background: #6C3BFF; color: #fff; border: none; padding: 12px 32px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 14px; }
+    .save-btn:hover { background: #5B2FD9; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .stat-card { background: #F8F6FF; border: 1px solid #EDE9FE; border-radius: 12px; padding: 16px; text-align: center; }
+    .stat-card h3 { font-size: 22px; color: #6C3BFF; margin: 0; }
+    .stat-card p { font-size: 11px; color: #6B7280; margin: 4px 0 0; }
+    .success-msg { background: #ECFDF5; border: 1px solid #10B981; color: #065F46; padding: 10px 16px; border-radius: 8px; margin-bottom: 16px; display: none; }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <h1>🎁 Cashback Management</h1>
+
+    <div class="success-msg" id="successMsg">✅ Cashback settings saved successfully!</div>
+
+    <!-- Reports -->
+    <div class="stats-grid" id="reportsGrid">
+      <div class="stat-card"><h3 id="totalGiven">₹0</h3><p>Total Cashback Given</p></div>
+      <div class="stat-card"><h3 id="todayCashback">₹0</h3><p>Today's Cashback</p></div>
+      <div class="stat-card"><h3 id="monthlyCashback">₹0</h3><p>This Month</p></div>
+      <div class="stat-card"><h3 id="pendingCashback">₹0</h3><p>Pending</p></div>
+    </div>
+
+    <!-- Settings Form -->
+    <div class="cashback-form">
+      <div class="form-group">
+        <label>Cashback Status</label>
+        <div class="toggle-row">
+          <div class="toggle" id="enabledToggle" onclick="toggleEnabled()"></div>
+          <span id="enabledLabel">Enabled</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Cashback Percentage (%)</label>
+        <input type="number" id="percentage" min="0" max="100" placeholder="10">
+      </div>
+
+      <div class="form-group">
+        <label>Minimum Booking Amount (₹)</label>
+        <input type="number" id="minBookingAmount" placeholder="1000">
+      </div>
+
+      <div class="form-group">
+        <label>Maximum Cashback Amount (₹)</label>
+        <input type="number" id="maxAmount" placeholder="5000">
+      </div>
+
+      <div class="form-group">
+        <label>Offer Title</label>
+        <input type="text" id="title" placeholder="Cashback Offer">
+      </div>
+
+      <div class="form-group">
+        <label>Offer Subtitle</label>
+        <input type="text" id="subtitle" placeholder="Earn cashback on every booking">
+      </div>
+
+      <div class="form-group">
+        <label>Show Banner on Home</label>
+        <div class="toggle-row">
+          <div class="toggle" id="bannerToggle" onclick="toggleBanner()"></div>
+          <span id="bannerLabel">Show</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Start Date</label>
+        <input type="date" id="startDate">
+      </div>
+
+      <div class="form-group">
+        <label>End Date</label>
+        <input type="date" id="endDate">
+      </div>
+
+      <div class="form-group">
+        <label>Terms & Conditions</label>
+        <textarea id="termsAndConditions" placeholder="Cashback terms..."></textarea>
+      </div>
+
+      <button class="save-btn" onclick="saveSettings()">💾 Save Cashback Settings</button>
+    </div>
+  </div>
+
+  <script>
+    const API = '/api/cashback';
+    const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
+    const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+
+    let settings = {};
+
+    async function loadSettings() {
+      try {
+        const res = await fetch(`${API}/admin/settings`, { headers });
+        const data = await res.json();
+        if (data.success) {
+          settings = data.data;
+          document.getElementById('percentage').value = settings.percentage || 10;
+          document.getElementById('minBookingAmount').value = settings.minBookingAmount || 1000;
+          document.getElementById('maxAmount').value = settings.maxAmount || 5000;
+          document.getElementById('title').value = settings.title || '';
+          document.getElementById('subtitle').value = settings.subtitle || '';
+          document.getElementById('startDate').value = settings.startDate ? settings.startDate.split('T')[0] : '';
+          document.getElementById('endDate').value = settings.endDate ? settings.endDate.split('T')[0] : '';
+          document.getElementById('termsAndConditions').value = settings.termsAndConditions || '';
+          updateToggle('enabledToggle', 'enabledLabel', settings.enabled, 'Enabled', 'Disabled');
+          updateToggle('bannerToggle', 'bannerLabel', settings.showBanner, 'Show', 'Hidden');
+        }
+      } catch (e) { console.error(e); }
+    }
+
+    async function loadReports() {
+      try {
+        const res = await fetch(`${API}/admin/reports`, { headers });
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('totalGiven').textContent = '₹' + (data.data.totalCashbackGiven || 0).toLocaleString('en-IN');
+          document.getElementById('todayCashback').textContent = '₹' + (data.data.todayCashback || 0).toLocaleString('en-IN');
+          document.getElementById('monthlyCashback').textContent = '₹' + (data.data.monthlyCashback || 0).toLocaleString('en-IN');
+          document.getElementById('pendingCashback').textContent = '₹' + (data.data.pendingCashback || 0).toLocaleString('en-IN');
+        }
+      } catch (e) {}
+    }
+
+    async function saveSettings() {
+      const body = {
+        enabled: document.getElementById('enabledToggle').classList.contains('on'),
+        percentage: Number(document.getElementById('percentage').value),
+        minBookingAmount: Number(document.getElementById('minBookingAmount').value),
+        maxAmount: Number(document.getElementById('maxAmount').value),
+        title: document.getElementById('title').value,
+        subtitle: document.getElementById('subtitle').value,
+        showBanner: document.getElementById('bannerToggle').classList.contains('on'),
+        startDate: document.getElementById('startDate').value || null,
+        endDate: document.getElementById('endDate').value || null,
+        termsAndConditions: document.getElementById('termsAndConditions').value,
+      };
+      try {
+        const res = await fetch(`${API}/admin/settings`, { method: 'PUT', headers, body: JSON.stringify(body) });
+        const data = await res.json();
+        if (data.success) {
+          const msg = document.getElementById('successMsg');
+          msg.style.display = 'block';
+          setTimeout(() => msg.style.display = 'none', 3000);
+        }
+      } catch (e) { alert('Failed to save'); }
+    }
+
+    function toggleEnabled() {
+      const el = document.getElementById('enabledToggle');
+      el.classList.toggle('on');
+      document.getElementById('enabledLabel').textContent = el.classList.contains('on') ? 'Enabled' : 'Disabled';
+    }
+
+    function toggleBanner() {
+      const el = document.getElementById('bannerToggle');
+      el.classList.toggle('on');
+      document.getElementById('bannerLabel').textContent = el.classList.contains('on') ? 'Show' : 'Hidden';
+    }
+
+    function updateToggle(toggleId, labelId, value, onText, offText) {
+      const el = document.getElementById(toggleId);
+      if (value) el.classList.add('on'); else el.classList.remove('on');
+      document.getElementById(labelId).textContent = value ? onText : offText;
+    }
+
+    loadSettings();
+    loadReports();
+  </script>
+</body>
+</html>
