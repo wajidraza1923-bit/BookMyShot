@@ -172,7 +172,7 @@ const s = StyleSheet.create({
   otpBoxFilled: { bordercolor: '#6C3BFF', backgroundColor: 'rgba(255,140,43,0.06)' },
   otpBoxError: { borderColor: '#EF4444' },
   errorText: { fontSize: 12, color: '#EF4444', marginBottom: 12 },
-  verifyBtn: { width: '100%', backgroundcolor: '#6C3BFF', borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginTop: 8 },
+  verifyBtn: { width: '100%', backgroundColor: '#6C3BFF', borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginTop: 8 },
   verifyBtnDisabled: { opacity: 0.6 },
   verifyBtnText: { fontSize: 15, fontWeight: '700', color: '#000' },
   resendRow: { alignItems: 'center', marginTop: 24 },

@@ -326,7 +326,7 @@ const s = StyleSheet.create({
   fcCard: { width: width * 0.65, height: 180, borderRadius: 16, overflow: 'hidden', marginRight: 12 },
   fcImg: { width: '100%', height: '100%', resizeMode: 'cover' },
   fcOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.35)' },
-  fcBadge: { position: 'absolute', top: 10, left: 10, flexDirection: 'row', alignItems: 'center', gap: 3, backgroundcolor: '#6C3BFF', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6 },
+  fcBadge: { position: 'absolute', top: 10, left: 10, flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#6C3BFF', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6 },
   fcBadgeText: { fontSize: 7, fontWeight: '800', color: '#000' },
   fcVerified: { position: 'absolute', top: 10, right: 10, width: 18, height: 18, borderRadius: 9, backgroundColor: '#10B981', alignItems: 'center', justifyContent: 'center' },
   fcInfo: { position: 'absolute', bottom: 10, left: 10, right: 10, backgroundColor: 'rgba(5,4,3,0.85)', borderRadius: 10, padding: 8, borderWidth: 1, borderColor: 'rgba(255,140,43,0.08)' },
@@ -343,7 +343,7 @@ const s = StyleSheet.create({
   distCount: { fontSize: 8, color: '#9CA3AF', marginTop: 1 },
   // Trending
   trCard: { alignItems: 'center', width: 90, marginRight: 10, paddingVertical: 12, backgroundColor: '#F8F6FF', borderRadius: 12, borderWidth: 1, borderColor: '#F1F5F9' },
-  trRank: { position: 'absolute', top: 5, left: 5, backgroundcolor: '#6C3BFF', width: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  trRank: { position: 'absolute', top: 5, left: 5, backgroundColor: '#6C3BFF', width: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   trRankText: { fontSize: 7, fontWeight: '800', color: '#000' },
   trAvatar: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: 'rgba(255,140,43,0.2)', marginBottom: 5 },
   trName: { fontSize: 10, fontWeight: '600', color: '#1F2937', textAlign: 'center' },
@@ -359,7 +359,7 @@ const s = StyleSheet.create({
   aiCard: { marginHorizontal: 20, marginTop: 28, padding: 20, backgroundColor: 'rgba(255,140,43,0.04)', borderWidth: 1, borderColor: 'rgba(255,140,43,0.12)', borderRadius: 18, alignItems: 'center' },
   aiTitle: { fontSize: 15, fontWeight: '700', color: '#1F2937' },
   aiSub: { fontSize: 11, color: 'rgba(255,255,255,0.45)', textAlign: 'center', marginTop: 4, marginBottom: 14 },
-  aiBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundcolor: '#6C3BFF', paddingHorizontal: 18, paddingVertical: 10, borderRadius: 10 },
+  aiBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#6C3BFF', paddingHorizontal: 18, paddingVertical: 10, borderRadius: 10 },
   aiBtnText: { fontSize: 12, fontWeight: '700', color: '#000' },
   // Results
   resCount: { fontSize: 11, color: '#9CA3AF', marginBottom: 12 },

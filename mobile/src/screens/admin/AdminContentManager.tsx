@@ -547,12 +547,12 @@ const s = StyleSheet.create({
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.06)', alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 17, fontWeight: '700', color: '#fff' },
   subtitle: { fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 1 },
-  addBtn: { width: 34, height: 34, borderRadius: 17, backgroundcolor: '#6C3BFF', alignItems: 'center', justifyContent: 'center' },
+  addBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#6C3BFF', alignItems: 'center', justifyContent: 'center' },
   // Tabs
   tabsScroll: { maxHeight: 44, marginBottom: 4 },
   tabsContent: { paddingHorizontal: 16, gap: 8, alignItems: 'center' },
   tab: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,140,43,0.2)', backgroundColor: 'rgba(255,140,43,0.04)' },
-  tabActive: { backgroundcolor: '#6C3BFF', bordercolor: '#6C3BFF' },
+  tabActive: { backgroundColor: '#6C3BFF', bordercolor: '#6C3BFF' },
   tabText: { fontSize: 10, color: '#6C3BFF', fontWeight: '500' },
   tabTextActive: { color: '#000', fontWeight: '700' },
   // Stats bar
@@ -624,7 +624,7 @@ const s = StyleSheet.create({
   modalBtns: { flexDirection: 'row', gap: 10, marginTop: 20 },
   modalCancelBtn: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
   modalCancelText: { fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: '500' },
-  modalSaveBtn: { flex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 12, borderRadius: 10, backgroundcolor: '#6C3BFF' },
+  modalSaveBtn: { flex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 12, borderRadius: 10, backgroundColor: '#6C3BFF' },
   modalSaveText: { fontSize: 13, fontWeight: '700', color: '#000' },
   modalDeleteBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 16, paddingVertical: 10, borderWidth: 1, borderColor: 'rgba(239,68,68,0.2)', borderRadius: 10 },
   modalDeleteText: { fontSize: 12, color: '#EF4444' },

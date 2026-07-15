@@ -118,7 +118,7 @@ const s = StyleSheet.create({
   barRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   barLabel: { fontSize: 9, color: 'rgba(255,255,255,0.4)', width: 18 },
   barBg: { flex: 1, height: 5, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 3, overflow: 'hidden' },
-  barFill: { height: '100%', backgroundcolor: '#6C3BFF', borderRadius: 3 },
+  barFill: { height: '100%', backgroundColor: '#6C3BFF', borderRadius: 3 },
   barCount: { fontSize: 9, color: 'rgba(255,255,255,0.3)', width: 16, textAlign: 'right' },
   // Reviews
   reviewCard: { backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)' },

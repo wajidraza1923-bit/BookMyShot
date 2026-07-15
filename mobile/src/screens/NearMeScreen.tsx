@@ -374,11 +374,11 @@ const s = StyleSheet.create({
   mapRadius: { fontSize: 10, color: '#6B7280' },
   mapWrap: { height: 180, borderRadius: 16, overflow: 'hidden', position: 'relative' },
   map: { width: '100%', height: '100%' },
-  marker: { width: 34, height: 34, borderRadius: 17, borderWidth: 2.5, borderColor: '#6C3BFF', overflow: 'hidden', backgroundcolor: '#1F2937' },
+  marker: { width: 34, height: 34, borderRadius: 17, borderWidth: 2.5, borderColor: '#6C3BFF', overflow: 'hidden', backgroundColor: '#1F2937' },
   markerImg: { width: '100%', height: '100%' },
-  searchAreaBtn: { position: 'absolute', top: 10, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 4, backgroundcolor: '#1F2937', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7, elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 3 },
+  searchAreaBtn: { position: 'absolute', top: 10, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#1F2937', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7, elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 3 },
   searchAreaT: { fontSize: 10, fontWeight: '600', color: '#6C3BFF' },
-  locFab: { position: 'absolute', bottom: 10, right: 10, width: 34, height: 34, borderRadius: 17, backgroundcolor: '#1F2937', alignItems: 'center', justifyContent: 'center', elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 3 },
+  locFab: { position: 'absolute', bottom: 10, right: 10, width: 34, height: 34, borderRadius: 17, backgroundColor: '#1F2937', alignItems: 'center', justifyContent: 'center', elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 3 },
   // Trust
   trustRow: { paddingHorizontal: 16, paddingVertical: 14, gap: 14, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
   trustBadge: { alignItems: 'center', width: 85, gap: 3 },
@@ -390,7 +390,7 @@ const s = StyleSheet.create({
   sortBtn: { fontSize: 10, color: '#6C3BFF', fontWeight: '600' },
   // Cards
   list: { paddingHorizontal: 16, paddingBottom: 90 },
-  card: { flexDirection: 'row', backgroundcolor: '#1F2937', borderRadius: 16, marginBottom: 12, borderWidth: 1, borderColor: '#F1F5F9', overflow: 'hidden', elevation: 2, shadowColor: '#6C3BFF', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6 },
+  card: { flexDirection: 'row', backgroundColor: '#1F2937', borderRadius: 16, marginBottom: 12, borderWidth: 1, borderColor: '#F1F5F9', overflow: 'hidden', elevation: 2, shadowColor: '#6C3BFF', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6 },
   cardImgWrap: { width: 105, height: 155 },
   cardImg: { width: '100%', height: '100%', resizeMode: 'cover' },
   onlineBadge: { position: 'absolute', top: 6, left: 5, flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 8, paddingHorizontal: 5, paddingVertical: 2.5 },
@@ -431,7 +431,7 @@ const s = StyleSheet.create({
   retryT: { fontSize: 12, fontWeight: '700', color: '#1F2937' },
   // Modals
   modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
-  sheet: { backgroundcolor: '#1F2937', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: Platform.OS === 'ios' ? 40 : 30, maxHeight: '75%' },
+  sheet: { backgroundColor: '#1F2937', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: Platform.OS === 'ios' ? 40 : 30, maxHeight: '75%' },
   sheetBar: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#E5E7EB', alignSelf: 'center', marginBottom: 16 },
   sheetTitle: { fontSize: 16, fontWeight: '800', color: '#1F2937', marginBottom: 16 },
   fLabel: { fontSize: 12, fontWeight: '700', color: '#1F2937', marginTop: 14, marginBottom: 10 },

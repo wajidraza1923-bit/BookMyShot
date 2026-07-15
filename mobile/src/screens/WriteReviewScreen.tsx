@@ -190,6 +190,6 @@ const s = StyleSheet.create({
   rulesTitle: { fontSize: 10, fontWeight: '700', color: '#9CA3AF', marginBottom: 6 },
   ruleItem: { fontSize: 10, color: '#9CA3AF', lineHeight: 16 },
   // Submit
-  submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundcolor: '#6C3BFF', borderRadius: 12, paddingVertical: 14, marginTop: 20 },
+  submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#6C3BFF', borderRadius: 12, paddingVertical: 14, marginTop: 20 },
   submitText: { fontSize: 14, fontWeight: '700', color: '#000' },
 });

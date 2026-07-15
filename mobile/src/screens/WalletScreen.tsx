@@ -68,8 +68,8 @@ export default function WalletScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundcolor: '#1F2937', paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 56 : 40 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundcolor: '#1F2937' },
+  container: { flex: 1, backgroundColor: '#1F2937', paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 56 : 40 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#1F2937' },
   title: { fontSize: 20, fontWeight: '800', color: '#1F2937', marginBottom: 20 },
   balanceRow: { flexDirection: 'row', gap: 12, marginBottom: 24 },
   balanceCard: { flex: 1, borderRadius: 16, padding: 16, borderWidth: 1, alignItems: 'center' },

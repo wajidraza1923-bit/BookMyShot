@@ -282,7 +282,7 @@ const s = StyleSheet.create({
   fieldLabel: { fontSize: 11, fontWeight: '600', color: '#6B7280', marginBottom: 6, letterSpacing: 0.3 },
   fieldInput: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#F8F6FF', borderWidth: 1, borderColor: '#F1F5F9', borderRadius: 12, paddingHorizontal: 12, height: 46 },
   fieldText: { flex: 1, fontSize: 14, color: '#1F2937' },
-  submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundcolor: '#6C3BFF', borderRadius: 14, paddingVertical: 14, marginTop: 20 },
+  submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#6C3BFF', borderRadius: 14, paddingVertical: 14, marginTop: 20 },
   submitText: { fontSize: 15, fontWeight: '700', color: '#000' },
   dateField: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#F8F6FF', borderWidth: 1, borderColor: '#F1F5F9', borderRadius: 12, paddingHorizontal: 12, height: 46, marginBottom: 14 },
   dateText: { flex: 1, fontSize: 14, color: '#9CA3AF' },
@@ -303,7 +303,7 @@ const s = StyleSheet.create({
   successIcon: { marginBottom: 16 },
   successTitle: { fontSize: 22, fontWeight: '700', color: '#1F2937' },
   successSub: { fontSize: 13, color: '#6B7280', textAlign: 'center', marginTop: 8, lineHeight: 20 },
-  successBtn: { marginTop: 24, backgroundcolor: '#6C3BFF', paddingHorizontal: 28, paddingVertical: 12, borderRadius: 12 },
+  successBtn: { marginTop: 24, backgroundColor: '#6C3BFF', paddingHorizontal: 28, paddingVertical: 12, borderRadius: 12 },
   successBtnText: { fontSize: 14, fontWeight: '700', color: '#000' },
   // Modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'flex-end' },

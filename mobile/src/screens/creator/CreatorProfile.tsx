@@ -265,7 +265,7 @@ const s = StyleSheet.create({
   avatarWrap: { position: 'relative' },
   avatarImg: { width: 80, height: 80, borderRadius: 40, borderWidth: 2, borderColor: 'rgba(255,140,43,0.3)' },
   avatarPlaceholder: { width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 2, borderColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' },
-  avatarBadge: { position: 'absolute', bottom: 0, right: 0, width: 26, height: 26, borderRadius: 13, backgroundcolor: '#6C3BFF', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#050403' },
+  avatarBadge: { position: 'absolute', bottom: 0, right: 0, width: 26, height: 26, borderRadius: 13, backgroundColor: '#6C3BFF', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#050403' },
   avatarHint: { fontSize: 10, color: 'rgba(255,255,255,0.25)', marginTop: 6 },
   // Sections
   secHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 20, marginTop: 20, marginBottom: 8 },
@@ -284,7 +284,7 @@ const s = StyleSheet.create({
   qlLabel: { fontSize: 12, fontWeight: '600', color: '#fff' },
   qlSub: { fontSize: 9, color: 'rgba(255,255,255,0.35)', marginTop: 1 },
   // Save
-  saveBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginHorizontal: 20, marginTop: 24, backgroundcolor: '#6C3BFF', paddingVertical: 14, borderRadius: 12 },
+  saveBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginHorizontal: 20, marginTop: 24, backgroundColor: '#6C3BFF', paddingVertical: 14, borderRadius: 12 },
   saveBtnText: { fontSize: 14, fontWeight: '700', color: '#000' },
   syncNote: { fontSize: 9, color: 'rgba(255,255,255,0.2)', textAlign: 'center', marginTop: 8 },
 });

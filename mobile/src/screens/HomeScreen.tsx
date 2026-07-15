@@ -265,7 +265,7 @@ export default function HomeScreen({ navigation }: any) {
                   <Image source={{ uri: getCreatorImg(item) }} style={st.tcImg} />
                   <View style={st.tcOnline}><View style={st.tcGreenDot} /><Text style={st.tcOnlineT}>Online</Text></View>
                   <View style={st.tcRating}><Text style={st.tcRatingT}>{item.rating || '4.9'} ⭐</Text></View>
-                  <TouchableOpacity style={st.tcHeart}><Ionicons name="heart-outline" size={16} color="#fff" /></TouchableOpacity>
+                  <TouchableOpacity style={st.tcHeart}><Ionicons name="heart-outline" size={16} color="#9CA3AF" /></TouchableOpacity>
                   <View style={st.tcInfo}>
                     <Text style={st.tcName} numberOfLines={1}>{item.user?.name || 'Creator'}</Text>
                     <Text style={st.tcSpec}>{item.specialty || 'Photographer'} • {item.experience || '5+'} Years</Text>
@@ -285,18 +285,17 @@ export default function HomeScreen({ navigation }: any) {
           ))}
         </ScrollView>
 
-        {/* ═══ OFFER BANNER ═══ */}
+        {/* ═══ OFFER BANNER — Clean, readable ═══ */}
         <View style={st.offerWrap}>
-          <LinearGradient colors={['#7C3AED', '#6C3BFF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={st.offer}>
+          <LinearGradient colors={['#6C3BFF', '#8B5CF6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={st.offer}>
             <Text style={{ fontSize: 28 }}>🎁</Text>
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text style={st.offerTitle}>More Bookings, More Cashback!</Text>
               <Text style={st.offerSub}>The more you book, the more you earn.</Text>
             </View>
-            <View style={st.offerBtn}><Text style={st.offerBtnT}>Explore Offers →</Text></View>
-            <View style={{ backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, marginLeft: 8 }}>
-              <Text style={{ fontSize: 8, color: '#FDE68A', fontWeight: '600' }}>Special Offer</Text>
-              <Text style={{ fontSize: 11, fontWeight: '800', color: '#1F2937' }}>Upto {heroConfig.cashbackPercentage}% Cashback</Text>
+            <View style={st.offerBadge}>
+              <Text style={st.offerBadgeLabel}>Special Offer</Text>
+              <Text style={st.offerBadgeValue}>Upto {heroConfig.cashbackPercentage}%</Text>
             </View>
           </LinearGradient>
         </View>
@@ -348,7 +347,7 @@ const st = StyleSheet.create({
   heroCbLabel: { fontSize: 9, fontWeight: '500', color: '#8B7355' },
   heroCbValue: { fontSize: 20, fontWeight: '900', color: '#D4860A', lineHeight: 24 },
   heroCbWord: { fontSize: 12, fontWeight: '600', color: '#B8860B' },
-  heroShine: { position: 'absolute', top: 0, width: 30, height: '100%', backgroundcolor: '#9CA3AF', transform: [{ skewX: '-15deg' }] },
+  heroShine: { position: 'absolute', top: 0, width: 30, height: '100%', backgroundColor: '#9CA3AF', transform: [{ skewX: '-15deg' }] },
   heroButtonRow: { flexDirection: 'row', gap: 12 },
   heroFindBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#6C3BFF', paddingHorizontal: 20, paddingVertical: 14, borderRadius: 12, elevation: 4, shadowColor: '#6C3BFF', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.35, shadowRadius: 8 },
   heroFindBtnText: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
@@ -370,16 +369,16 @@ const st = StyleSheet.create({
   catEmoji: { fontSize: 20 },
   catName: { fontSize: 9.5, fontWeight: '700', color: '#1F2937', textAlign: 'center' },
   catCount: { fontSize: 7.5, color: '#6B7280', marginTop: 2 },
-  // Top Creators
-  tcCard: { width: 160, borderRadius: 16, overflow: 'hidden', marginRight: 12, backgroundcolor: '#1F2937', borderWidth: 1, borderColor: '#F1F5F9', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4 },
+  // Top Creators — clean white cards, no overlays
+  tcCard: { width: 160, borderRadius: 16, overflow: 'hidden', marginRight: 12, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#F1F5F9', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4 },
   tcImg: { width: '100%', height: 110, resizeMode: 'cover' },
-  tcOnline: { position: 'absolute', top: 8, left: 8, flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 3 },
+  tcOnline: { position: 'absolute', top: 8, left: 8, flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#fff', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 3, elevation: 1 },
   tcGreenDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#10B981' },
   tcOnlineT: { fontSize: 7, color: '#1F2937', fontWeight: '600' },
-  tcRating: { position: 'absolute', top: 8, right: 8, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 6, paddingHorizontal: 5, paddingVertical: 2 },
+  tcRating: { position: 'absolute', top: 8, right: 8, backgroundColor: '#fff', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 3, elevation: 1 },
   tcRatingT: { fontSize: 8, color: '#1F2937', fontWeight: '700' },
-  tcHeart: { position: 'absolute', top: 84, right: 8, width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(0,0,0,0.3)', alignItems: 'center', justifyContent: 'center' },
-  tcInfo: { padding: 10 },
+  tcHeart: { position: 'absolute', top: 84, right: 8, width: 28, height: 28, borderRadius: 14, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', elevation: 1 },
+  tcInfo: { padding: 10, backgroundColor: '#fff' },
   tcName: { fontSize: 12, fontWeight: '700', color: '#1F2937' },
   tcSpec: { fontSize: 9, color: '#6B7280', marginTop: 2 },
   tcMeta: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 },
@@ -391,10 +390,11 @@ const st = StyleSheet.create({
   benefitL: { fontSize: 9, fontWeight: '700', color: '#1F2937', textAlign: 'center' },
   benefitS: { fontSize: 7, color: '#6B7280', textAlign: 'center' },
   // Offer
-  offerWrap: { marginHorizontal: 16, marginTop: 16, borderRadius: 20, overflow: 'hidden' },
-  offer: { flexDirection: 'row', alignItems: 'center', padding: 18 },
-  offerTitle: { fontSize: 13, fontWeight: '700', color: '#1F2937' },
-  offerSub: { fontSize: 10, color: '#4B5563', marginTop: 2 },
-  offerBtn: { backgroundcolor: '#1F2937', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
-  offerBtnT: { fontSize: 10, fontWeight: '700', color: '#6C3BFF' },
+  offerWrap: { marginHorizontal: 16, marginTop: 16, borderRadius: 16, overflow: 'hidden' },
+  offer: { flexDirection: 'row', alignItems: 'center', padding: 16 },
+  offerTitle: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
+  offerSub: { fontSize: 10, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
+  offerBadge: { backgroundColor: '#FFFFFF', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, alignItems: 'center' },
+  offerBadgeLabel: { fontSize: 8, fontWeight: '600', color: '#6C3BFF' },
+  offerBadgeValue: { fontSize: 13, fontWeight: '800', color: '#1F2937', marginTop: 1 },
 });

@@ -138,6 +138,6 @@ const st = StyleSheet.create({
   charCount: { fontSize: 9, color: 'rgba(255,255,255,0.2)', textAlign: 'right', marginTop: 3 },
   loggedIn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(16,185,129,0.04)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.15)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, marginTop: 10 },
   loggedInText: { fontSize: 11, color: '#10B981' },
-  submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundcolor: '#6C3BFF', borderRadius: 12, paddingVertical: 14, marginTop: 24 },
+  submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#6C3BFF', borderRadius: 12, paddingVertical: 14, marginTop: 24 },
   submitText: { fontSize: 14, fontWeight: '700', color: '#000' },
 });
