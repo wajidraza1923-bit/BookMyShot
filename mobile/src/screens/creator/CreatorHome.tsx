@@ -13,6 +13,7 @@ export default function CreatorHome({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState({ totalEarnings: 0, monthlyEarnings: 0, totalBookings: 0, pendingPayments: 0, upcomingEventsCount: 0, newInquiries: 0, favorites: 0, reviews: 0, commissionDue: 0 });
   const [loading, setLoading] = useState(true);
+  const [leadUsage, setLeadUsage] = useState({ freeLeadLimit: 3, freeUsed: 0, freeRemaining: 3, isSubscribed: false, canUnlock: true });
   const [promo, setPromo] = useState<any>({ featured: null, rank: null, pending: 0 });
   const [paying, setPaying] = useState(false);
   const [showRazorpay, setShowRazorpay] = useState(false);
@@ -20,13 +21,15 @@ export default function CreatorHome({ navigation }: any) {
 
   const loadDashboard = useCallback(async () => {
     try {
-      const [dashRes, featuredRes, activeRes, requestsRes] = await Promise.all([
+      const [dashRes, featuredRes, activeRes, requestsRes, leadRes] = await Promise.all([
         api.get('/creator/dashboard'),
         api.get('/promotions/my-featured').catch(() => ({ data: { active: null } })),
         api.get('/promotions/my-active').catch(() => ({ data: { active: null } })),
         api.get('/promotions/my-requests').catch(() => ({ data: { data: [] } })),
+        api.get('/leads/my-usage').catch(() => ({ data: { data: null } })),
       ]);
       if (dashRes.data) setStats(dashRes.data);
+      if (leadRes.data?.data) setLeadUsage(leadRes.data.data);
       const pending = (requestsRes.data?.data || []).filter((r: any) => r.status === 'pending').length;
       setPromo({ featured: featuredRes.data?.active, rank: activeRes.data?.active, pending });
     } catch {}
@@ -116,6 +119,28 @@ export default function CreatorHome({ navigation }: any) {
               <Text style={styles.statLabel}>{s.label}</Text>
             </View>
           ))}
+        </View>
+
+        {/* Lead Usage Card */}
+        <View style={styles.leadCard}>
+          <View style={styles.leadHeader}>
+            <View style={styles.leadIconWrap}><Ionicons name="people" size={18} color="#6C3BFF" /></View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.leadTitle}>Lead Usage</Text>
+              <Text style={styles.leadSub}>{leadUsage.isSubscribed ? 'Unlimited Leads • Premium Active' : `${leadUsage.freeUsed} of ${leadUsage.freeLeadLimit} free leads used`}</Text>
+            </View>
+            {!leadUsage.isSubscribed && !leadUsage.canUnlock && (
+              <TouchableOpacity style={styles.upgradeBtn} onPress={() => navigation.navigate('CreatorSubscription')}>
+                <Ionicons name="lock-open" size={12} color="#fff" /><Text style={styles.upgradeBtnText}>Upgrade</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          {!leadUsage.isSubscribed && (
+            <View style={styles.leadProgress}>
+              <View style={styles.leadBar}><View style={[styles.leadBarFill, { width: `${Math.min(100, (leadUsage.freeUsed / leadUsage.freeLeadLimit) * 100)}%` }]} /></View>
+              <Text style={styles.leadRemaining}>{leadUsage.freeRemaining} remaining</Text>
+            </View>
+          )}
         </View>
 
         {/* Commission Alert */}
@@ -286,6 +311,18 @@ const styles = StyleSheet.create({
   statIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.md },
   statValue: { ...typography.headlineLg, color: colors.text },
   statLabel: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
+  // Lead Usage Card
+  leadCard: { marginHorizontal: spacing.xl, marginTop: spacing.lg, backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#EDE9FE', elevation: 1 },
+  leadHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  leadIconWrap: { width: 36, height: 36, borderRadius: 12, backgroundColor: '#F3E8FF', alignItems: 'center', justifyContent: 'center' },
+  leadTitle: { fontSize: 13, fontWeight: '700', color: '#1F2937' },
+  leadSub: { fontSize: 10, color: '#6B7280', marginTop: 1 },
+  upgradeBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#6C3BFF', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 },
+  upgradeBtnText: { fontSize: 10, fontWeight: '700', color: '#FFFFFF' },
+  leadProgress: { marginTop: 12 },
+  leadBar: { height: 6, backgroundColor: '#F3F4F6', borderRadius: 3, overflow: 'hidden' },
+  leadBarFill: { height: '100%', backgroundColor: '#6C3BFF', borderRadius: 3 },
+  leadRemaining: { fontSize: 9, color: '#6B7280', marginTop: 4, textAlign: 'right' },
   alertCard: { flexDirection: 'row', alignItems: 'center', marginHorizontal: spacing.xl, marginTop: spacing.lg, backgroundColor: 'rgba(239,68,68,0.06)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.15)', borderRadius: radius.lg, padding: spacing.md, gap: spacing.md },
   alertContent: { flex: 1 },
   alertTitle: { ...typography.labelMd, color: colors.error },
