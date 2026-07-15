@@ -27,7 +27,7 @@ const Stack = createNativeStackNavigator();
 
 export default function AdminNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background }, animation: 'slide_from_right' }}>
+    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#FFFFFF' }, animation: 'slide_from_right' }}>
       <Stack.Screen name="AdminDashboard" component={AdminDashboard} />
       <Stack.Screen name="AdminCreators" component={AdminCreators} />
       <Stack.Screen name="AdminPromotions" component={AdminPromotions} />

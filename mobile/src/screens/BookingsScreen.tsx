@@ -270,7 +270,7 @@ const s = StyleSheet.create({
   detailValue: { fontSize: 12, color: colors.text, flex: 1, textAlign: 'right' },
   // Progress
   progressWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
-  progressBar: { flex: 1, height: 4, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' },
+  progressBar: { flex: 1, height: 4, backgroundColor: '#F3F4F6', borderRadius: 2, overflow: 'hidden' },
   progressFill: { height: '100%', backgroundColor: '#10B981', borderRadius: 2 },
   progressText: { fontSize: 10, color: colors.textMuted },
   // Upload
@@ -285,7 +285,7 @@ const s = StyleSheet.create({
   // Empty
   empty: { alignItems: 'center', paddingTop: 60, gap: 10 },
   emptyTitle: { fontSize: 15, fontWeight: '600', color: colors.textMuted },
-  emptySub: { fontSize: 12, color: 'rgba(255,255,255,0.3)' },
+  emptySub: { fontSize: 12, color: '#9CA3AF' },
   emptyAuth: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   signInBtn: { backgroundColor: colors.primary, paddingHorizontal: 24, paddingVertical: 10, borderRadius: 10, marginTop: 8 },
   signInText: { fontSize: 13, fontWeight: '700', color: '#000' },

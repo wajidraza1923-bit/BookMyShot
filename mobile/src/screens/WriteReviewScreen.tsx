@@ -158,38 +158,38 @@ export default function WriteReviewScreen({ route, navigation }: any) {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#050403' },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 56 : 44, paddingBottom: 10, gap: 10 },
-  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.06)', alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: '#fff', textAlign: 'center' },
+  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: '#1F2937', textAlign: 'center' },
   content: { padding: 20, paddingBottom: 60 },
   // Creator card
   creatorCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,140,43,0.04)', borderWidth: 1, borderColor: 'rgba(255,140,43,0.12)', borderRadius: 12, padding: 14, marginBottom: 20 },
-  creatorLabel: { fontSize: 9, color: 'rgba(255,255,255,0.35)', letterSpacing: 1, textTransform: 'uppercase' },
-  creatorName: { fontSize: 16, fontWeight: '700', color: '#fff', marginTop: 1 },
+  creatorLabel: { fontSize: 9, color: '#9CA3AF', letterSpacing: 1, textTransform: 'uppercase' },
+  creatorName: { fontSize: 16, fontWeight: '700', color: '#1F2937', marginTop: 1 },
   // Stars
-  sectionLabel: { fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.5)', marginBottom: 8, marginTop: 16 },
+  sectionLabel: { fontSize: 11, fontWeight: '600', color: '#6B7280', marginBottom: 8, marginTop: 16 },
   starsRow: { flexDirection: 'row', justifyContent: 'center', gap: 6 },
   starBtn: { padding: 4 },
-  ratingLabel: { textAlign: 'center', fontSize: 13, color: '#FF8C2B', fontWeight: '700', marginTop: 6, marginBottom: 4 },
+  ratingLabel: { textAlign: 'center', fontSize: 13, color: '#6C3BFF', fontWeight: '700', marginTop: 6, marginBottom: 4 },
   // Guest section
   guestSection: { marginTop: 8 },
   guestBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,140,43,0.04)', borderWidth: 1, borderColor: 'rgba(255,140,43,0.1)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, marginBottom: 8 },
-  guestBadgeText: { fontSize: 10, color: '#FF8C2B' },
-  phoneHint: { fontSize: 9, color: 'rgba(255,255,255,0.3)', marginTop: 3 },
+  guestBadgeText: { fontSize: 10, color: '#6C3BFF' },
+  phoneHint: { fontSize: 9, color: '#9CA3AF', marginTop: 3 },
   phoneValid: { fontSize: 9, color: '#10B981', marginTop: 3 },
   // Logged in badge
   loggedInBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(16,185,129,0.04)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.15)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, marginTop: 8, marginBottom: 4 },
   loggedInText: { fontSize: 11, color: '#10B981' },
   // Inputs
-  input: { backgroundColor: 'rgba(255,255,255,0.03)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: '#fff' },
+  input: { backgroundColor: '#F8F6FF', borderWidth: 1, borderColor: '#F1F5F9', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: '#1F2937' },
   textArea: { height: 110, textAlignVertical: 'top' },
   charCount: { fontSize: 9, color: 'rgba(255,255,255,0.2)', textAlign: 'right', marginTop: 3 },
   // Rules
-  rulesBox: { marginTop: 16, backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)' },
-  rulesTitle: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.4)', marginBottom: 6 },
-  ruleItem: { fontSize: 10, color: 'rgba(255,255,255,0.3)', lineHeight: 16 },
+  rulesBox: { marginTop: 16, backgroundColor: '#FAFAFA', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: '#F1F5F9' },
+  rulesTitle: { fontSize: 10, fontWeight: '700', color: '#9CA3AF', marginBottom: 6 },
+  ruleItem: { fontSize: 10, color: '#9CA3AF', lineHeight: 16 },
   // Submit
-  submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#FF8C2B', borderRadius: 12, paddingVertical: 14, marginTop: 20 },
+  submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundcolor: '#6C3BFF', borderRadius: 12, paddingVertical: 14, marginTop: 20 },
   submitText: { fontSize: 14, fontWeight: '700', color: '#000' },
 });

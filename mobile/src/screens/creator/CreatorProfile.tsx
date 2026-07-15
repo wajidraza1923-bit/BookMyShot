@@ -253,23 +253,23 @@ function QuickLink({ icon, label, sub, onPress }: any) {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#050403' },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 56 : 44, paddingBottom: 10, gap: 10 },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.06)', alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 17, fontWeight: '700', color: '#fff' },
   subtitle: { fontSize: 9, color: 'rgba(255,255,255,0.3)', marginTop: 1 },
   previewBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: 'rgba(255,140,43,0.06)', borderWidth: 1, borderColor: 'rgba(255,140,43,0.15)', borderRadius: 8 },
-  previewText: { fontSize: 10, fontWeight: '600', color: '#FF8C2B' },
+  previewText: { fontSize: 10, fontWeight: '600', color: '#6C3BFF' },
   // Avatar
   avatarSection: { alignItems: 'center', paddingVertical: 16 },
   avatarWrap: { position: 'relative' },
   avatarImg: { width: 80, height: 80, borderRadius: 40, borderWidth: 2, borderColor: 'rgba(255,140,43,0.3)' },
   avatarPlaceholder: { width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 2, borderColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' },
-  avatarBadge: { position: 'absolute', bottom: 0, right: 0, width: 26, height: 26, borderRadius: 13, backgroundColor: '#FF8C2B', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#050403' },
+  avatarBadge: { position: 'absolute', bottom: 0, right: 0, width: 26, height: 26, borderRadius: 13, backgroundcolor: '#6C3BFF', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#050403' },
   avatarHint: { fontSize: 10, color: 'rgba(255,255,255,0.25)', marginTop: 6 },
   // Sections
   secHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 20, marginTop: 20, marginBottom: 8 },
-  secTitle: { fontSize: 12, fontWeight: '700', color: '#FF8C2B', letterSpacing: 0.5 },
+  secTitle: { fontSize: 12, fontWeight: '700', color: '#6C3BFF', letterSpacing: 0.5 },
   fieldGroup: { paddingHorizontal: 20 },
   priceRow: { flexDirection: 'row', gap: 10 },
   // Fields
@@ -284,7 +284,7 @@ const s = StyleSheet.create({
   qlLabel: { fontSize: 12, fontWeight: '600', color: '#fff' },
   qlSub: { fontSize: 9, color: 'rgba(255,255,255,0.35)', marginTop: 1 },
   // Save
-  saveBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginHorizontal: 20, marginTop: 24, backgroundColor: '#FF8C2B', paddingVertical: 14, borderRadius: 12 },
+  saveBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginHorizontal: 20, marginTop: 24, backgroundcolor: '#6C3BFF', paddingVertical: 14, borderRadius: 12 },
   saveBtnText: { fontSize: 14, fontWeight: '700', color: '#000' },
   syncNote: { fontSize: 9, color: 'rgba(255,255,255,0.2)', textAlign: 'center', marginTop: 8 },
 });

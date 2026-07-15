@@ -190,18 +190,18 @@ export default function InfoScreen({ route, navigation }: any) {
 }
 
 const st = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#050403' },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 56 : 44, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.04)' },
-  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.06)', alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { flex: 1, fontSize: 16, fontWeight: '700', color: '#fff', textAlign: 'center' },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 56 : 44, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { flex: 1, fontSize: 16, fontWeight: '700', color: '#1F2937', textAlign: 'center' },
   scroll: { padding: 20, paddingBottom: 60 },
   heading: { fontSize: 15, fontWeight: '700', color: '#F5B942', marginTop: 24, marginBottom: 8 },
-  para: { fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 20, marginBottom: 12 },
+  para: { fontSize: 13, color: '#6B7280', lineHeight: 20, marginBottom: 12 },
   bullets: { marginBottom: 12 },
   bulletRow: { flexDirection: 'row', marginBottom: 6 },
   bulletDot: { fontSize: 14, color: '#F5B942', marginRight: 8, marginTop: -1 },
-  bulletText: { fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 19, flex: 1 },
+  bulletText: { fontSize: 13, color: '#6B7280', lineHeight: 19, flex: 1 },
   actionCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: 'rgba(245,185,66,0.04)', borderWidth: 1, borderColor: 'rgba(245,185,66,0.12)', borderRadius: 14, padding: 14, marginBottom: 10 },
-  actionLabel: { fontSize: 13, fontWeight: '600', color: '#fff' },
-  actionValue: { fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 },
+  actionLabel: { fontSize: 13, fontWeight: '600', color: '#1F2937' },
+  actionValue: { fontSize: 11, color: '#9CA3AF', marginTop: 2 },
 });

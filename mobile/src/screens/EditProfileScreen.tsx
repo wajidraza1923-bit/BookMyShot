@@ -53,7 +53,7 @@ export default function EditProfileScreen({ navigation }: any) {
           <Text style={s.label}>Email</Text>
           <View style={[s.inputRow, { opacity: 0.5 }]}>
             <Ionicons name="mail-outline" size={18} color="rgba(255,255,255,0.3)" />
-            <Text style={[s.input, { color: 'rgba(255,255,255,0.4)' }]}>{user?.email || '—'}</Text>
+            <Text style={[s.input, { color: '#9CA3AF' }]}>{user?.email || '—'}</Text>
           </View>
           <Text style={s.hint}>Email cannot be changed</Text>
         </View>
@@ -69,13 +69,13 @@ export default function EditProfileScreen({ navigation }: any) {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 56 : 48, paddingBottom: 12, gap: 10 },
-  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.06)', alignItems: 'center', justifyContent: 'center' },
+  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' },
   title: { flex: 1, fontSize: 17, fontWeight: '700', color: colors.text, textAlign: 'center' },
   content: { padding: 20, paddingBottom: 40 },
   field: { marginBottom: 20 },
-  label: { fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.5)', marginBottom: 8, letterSpacing: 0.3 },
-  inputRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(255,255,255,0.03)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', borderRadius: 12, paddingHorizontal: 14, height: 48 },
-  input: { flex: 1, fontSize: 15, color: '#fff' },
+  label: { fontSize: 12, fontWeight: '600', color: '#6B7280', marginBottom: 8, letterSpacing: 0.3 },
+  inputRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#F8F6FF', borderWidth: 1, borderColor: '#F1F5F9', borderRadius: 12, paddingHorizontal: 14, height: 48 },
+  input: { flex: 1, fontSize: 15, color: '#1F2937' },
   hint: { fontSize: 10, color: 'rgba(255,255,255,0.25)', marginTop: 4 },
   saveBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#F97316', borderRadius: 14, paddingVertical: 15, marginTop: 24 },
   saveBtnText: { fontSize: 15, fontWeight: '700', color: '#000' },

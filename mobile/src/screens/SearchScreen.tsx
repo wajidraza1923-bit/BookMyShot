@@ -243,7 +243,7 @@ function ResultsList({ creators, navigation, districts, selectedCity, setSelecte
           {/* Back button + District filter bar */}
           <TouchableOpacity onPress={() => setShowResults(false)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12, paddingVertical: 4 }}>
             <Ionicons name="arrow-back" size={16} color="#FF8C2B" />
-            <Text style={{ fontSize: 12, color: '#FF8C2B', fontWeight: '600' }}>Back to Discover</Text>
+            <Text style={{ fontSize: 12, color: '#6C3BFF', fontWeight: '600' }}>Back to Discover</Text>
           </TouchableOpacity>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }} contentContainerStyle={{ gap: 8 }}>
             <TouchableOpacity style={[s.distChip, !selectedCity && s.distChipActive]} onPress={() => { setSelectedCity(''); }}>
@@ -264,7 +264,7 @@ function ResultsList({ creators, navigation, districts, selectedCity, setSelecte
           <Text style={s.emptyTitle}>No creators found{selectedCity ? ` in ${selectedCity}` : ''}</Text>
           <Text style={s.emptySubTitle}>Try a different location or category</Text>
           <TouchableOpacity onPress={() => setShowResults(false)} style={{ marginTop: 16, paddingHorizontal: 20, paddingVertical: 10, backgroundColor: 'rgba(255,140,43,0.1)', borderWidth: 1, borderColor: 'rgba(255,140,43,0.25)', borderRadius: 10 }}>
-            <Text style={{ color: '#FF8C2B', fontSize: 13, fontWeight: '600' }}>← Back to Discover</Text>
+            <Text style={{ color: '#6C3BFF', fontSize: 13, fontWeight: '600' }}>← Back to Discover</Text>
           </TouchableOpacity>
         </View>
       }
@@ -291,94 +291,94 @@ function ResultsList({ creators, navigation, districts, selectedCity, setSelecte
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#050403' },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 56 : 44 },
-  headerTitle: { fontSize: 22, fontWeight: '700', color: '#fff' },
-  headerSub: { fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 },
+  headerTitle: { fontSize: 22, fontWeight: '700', color: '#1F2937' },
+  headerSub: { fontSize: 11, color: '#9CA3AF', marginTop: 2 },
   headerIcons: { flexDirection: 'row', gap: 8 },
   iconBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,140,43,0.08)', borderWidth: 1, borderColor: 'rgba(255,140,43,0.15)', alignItems: 'center', justifyContent: 'center' },
   // Search
   searchRow: { flexDirection: 'row', paddingHorizontal: 20, marginTop: 14, gap: 8 },
-  searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', paddingHorizontal: 12, height: 42, gap: 8 },
-  searchInput: { flex: 1, fontSize: 13, color: '#fff' },
+  searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 12, borderWidth: 1, borderColor: '#F1F5F9', paddingHorizontal: 12, height: 42, gap: 8 },
+  searchInput: { flex: 1, fontSize: 13, color: '#1F2937' },
   locBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,140,43,0.06)', borderWidth: 1, borderColor: 'rgba(255,140,43,0.15)', borderRadius: 12, paddingHorizontal: 10, height: 42 },
-  locText: { fontSize: 10, fontWeight: '600', color: '#FF8C2B' },
+  locText: { fontSize: 10, fontWeight: '600', color: '#6C3BFF' },
   filterRow: { flexDirection: 'row', paddingHorizontal: 20, gap: 6, marginTop: 8 },
   filterChip: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,140,43,0.08)', borderWidth: 1, borderColor: 'rgba(255,140,43,0.2)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 14 },
-  filterText: { fontSize: 10, color: '#FF8C2B' },
+  filterText: { fontSize: 10, color: '#6C3BFF' },
   // Sections
-  secTitle: { fontSize: 15, fontWeight: '700', color: '#fff', paddingHorizontal: 20, marginTop: 24, marginBottom: 10 },
+  secTitle: { fontSize: 15, fontWeight: '700', color: '#1F2937', paddingHorizontal: 20, marginTop: 24, marginBottom: 10 },
   secRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginTop: 24, marginBottom: 10 },
-  seeAll: { fontSize: 11, color: '#FF8C2B', fontWeight: '600' },
+  seeAll: { fontSize: 11, color: '#6C3BFF', fontWeight: '600' },
   // Trending pills
   pillWrap: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 20, gap: 8 },
-  pill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 18 },
-  pillText: { fontSize: 11, color: 'rgba(255,255,255,0.7)' },
+  pill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: '#F1F5F9', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 18 },
+  pillText: { fontSize: 11, color: '#4B5563' },
   // Category cards
   catCard: { width: 120, height: 80, borderRadius: 12, overflow: 'hidden', marginRight: 10 },
   catImg: { width: '100%', height: '100%', resizeMode: 'cover' },
   catPlaceholder: { width: '100%', height: '100%', backgroundColor: 'rgba(255,140,43,0.06)', alignItems: 'center', justifyContent: 'center' },
   catOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.5)' },
   catBottom: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 8 },
-  catLabel: { fontSize: 10, fontWeight: '600', color: '#fff' },
-  catCount: { fontSize: 8, color: '#FF8C2B', marginTop: 1 },
+  catLabel: { fontSize: 10, fontWeight: '600', color: '#1F2937' },
+  catCount: { fontSize: 8, color: '#6C3BFF', marginTop: 1 },
   // Featured creator cards
   fcCard: { width: width * 0.65, height: 180, borderRadius: 16, overflow: 'hidden', marginRight: 12 },
   fcImg: { width: '100%', height: '100%', resizeMode: 'cover' },
   fcOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.35)' },
-  fcBadge: { position: 'absolute', top: 10, left: 10, flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#FF8C2B', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6 },
+  fcBadge: { position: 'absolute', top: 10, left: 10, flexDirection: 'row', alignItems: 'center', gap: 3, backgroundcolor: '#6C3BFF', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6 },
   fcBadgeText: { fontSize: 7, fontWeight: '800', color: '#000' },
   fcVerified: { position: 'absolute', top: 10, right: 10, width: 18, height: 18, borderRadius: 9, backgroundColor: '#10B981', alignItems: 'center', justifyContent: 'center' },
   fcInfo: { position: 'absolute', bottom: 10, left: 10, right: 10, backgroundColor: 'rgba(5,4,3,0.85)', borderRadius: 10, padding: 8, borderWidth: 1, borderColor: 'rgba(255,140,43,0.08)' },
-  fcName: { fontSize: 12, fontWeight: '700', color: '#fff' },
-  fcMeta: { fontSize: 9, color: 'rgba(255,255,255,0.5)', marginTop: 1 },
+  fcName: { fontSize: 12, fontWeight: '700', color: '#1F2937' },
+  fcMeta: { fontSize: 9, color: '#6B7280', marginTop: 1 },
   fcRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
-  fcRating: { fontSize: 10, color: 'rgba(255,255,255,0.7)' },
-  fcPrice: { fontSize: 10, fontWeight: '600', color: '#FF8C2B', marginLeft: 'auto' },
+  fcRating: { fontSize: 10, color: '#4B5563' },
+  fcPrice: { fontSize: 10, fontWeight: '600', color: '#6C3BFF', marginLeft: 'auto' },
   // Districts
   distCard: { alignItems: 'center', marginRight: 14, width: 76 },
   distImg: { width: 56, height: 56, borderRadius: 28, borderWidth: 1.5, borderColor: 'rgba(255,140,43,0.2)', marginBottom: 5 },
   distPlaceholder: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,140,43,0.06)', borderWidth: 1, borderColor: 'rgba(255,140,43,0.12)', alignItems: 'center', justifyContent: 'center', marginBottom: 5 },
-  distName: { fontSize: 10, fontWeight: '500', color: '#fff', textAlign: 'center' },
-  distCount: { fontSize: 8, color: 'rgba(255,255,255,0.35)', marginTop: 1 },
+  distName: { fontSize: 10, fontWeight: '500', color: '#1F2937', textAlign: 'center' },
+  distCount: { fontSize: 8, color: '#9CA3AF', marginTop: 1 },
   // Trending
-  trCard: { alignItems: 'center', width: 90, marginRight: 10, paddingVertical: 12, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)' },
-  trRank: { position: 'absolute', top: 5, left: 5, backgroundColor: '#FF8C2B', width: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  trCard: { alignItems: 'center', width: 90, marginRight: 10, paddingVertical: 12, backgroundColor: '#F8F6FF', borderRadius: 12, borderWidth: 1, borderColor: '#F1F5F9' },
+  trRank: { position: 'absolute', top: 5, left: 5, backgroundcolor: '#6C3BFF', width: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   trRankText: { fontSize: 7, fontWeight: '800', color: '#000' },
   trAvatar: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: 'rgba(255,140,43,0.2)', marginBottom: 5 },
-  trName: { fontSize: 10, fontWeight: '600', color: '#fff', textAlign: 'center' },
-  trCity: { fontSize: 8, color: 'rgba(255,255,255,0.35)', marginTop: 1 },
+  trName: { fontSize: 10, fontWeight: '600', color: '#1F2937', textAlign: 'center' },
+  trCity: { fontSize: 8, color: '#9CA3AF', marginTop: 1 },
   trRatingRow: { flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 4 },
-  trRatingText: { fontSize: 9, color: 'rgba(255,255,255,0.6)' },
+  trRatingText: { fontSize: 9, color: '#6B7280' },
   // Inspiration
   inspCard: { width: width * 0.55, height: 130, borderRadius: 14, overflow: 'hidden', marginRight: 10 },
   inspImg: { width: '100%', height: '100%', resizeMode: 'cover' },
   inspOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
-  inspTitle: { position: 'absolute', bottom: 10, left: 10, fontSize: 12, fontWeight: '600', color: '#fff' },
+  inspTitle: { position: 'absolute', bottom: 10, left: 10, fontSize: 12, fontWeight: '600', color: '#1F2937' },
   // AI
   aiCard: { marginHorizontal: 20, marginTop: 28, padding: 20, backgroundColor: 'rgba(255,140,43,0.04)', borderWidth: 1, borderColor: 'rgba(255,140,43,0.12)', borderRadius: 18, alignItems: 'center' },
-  aiTitle: { fontSize: 15, fontWeight: '700', color: '#fff' },
+  aiTitle: { fontSize: 15, fontWeight: '700', color: '#1F2937' },
   aiSub: { fontSize: 11, color: 'rgba(255,255,255,0.45)', textAlign: 'center', marginTop: 4, marginBottom: 14 },
-  aiBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FF8C2B', paddingHorizontal: 18, paddingVertical: 10, borderRadius: 10 },
+  aiBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundcolor: '#6C3BFF', paddingHorizontal: 18, paddingVertical: 10, borderRadius: 10 },
   aiBtnText: { fontSize: 12, fontWeight: '700', color: '#000' },
   // Results
-  resCount: { fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 12 },
-  resCard: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 14, padding: 10, marginBottom: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)' },
+  resCount: { fontSize: 11, color: '#9CA3AF', marginBottom: 12 },
+  resCard: { flexDirection: 'row', backgroundColor: '#F8F6FF', borderRadius: 14, padding: 10, marginBottom: 10, borderWidth: 1, borderColor: '#F1F5F9' },
   resImg: { width: 70, height: 70, borderRadius: 12 },
   resInfo: { flex: 1, marginLeft: 12, justifyContent: 'center' },
-  resName: { fontSize: 13, fontWeight: '600', color: '#fff' },
-  resMeta: { fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 2 },
-  resBio: { fontSize: 9, color: 'rgba(255,255,255,0.3)', marginTop: 3, lineHeight: 13 },
+  resName: { fontSize: 13, fontWeight: '600', color: '#1F2937' },
+  resMeta: { fontSize: 10, color: '#9CA3AF', marginTop: 2 },
+  resBio: { fontSize: 9, color: '#9CA3AF', marginTop: 3, lineHeight: 13 },
   resRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 5 },
-  resRating: { fontSize: 10, color: 'rgba(255,255,255,0.6)', marginRight: 2 },
-  resReviews: { fontSize: 9, color: 'rgba(255,255,255,0.3)' },
-  resPrice: { fontSize: 10, fontWeight: '600', color: '#FF8C2B', marginLeft: 'auto' },
+  resRating: { fontSize: 10, color: '#6B7280', marginRight: 2 },
+  resReviews: { fontSize: 9, color: '#9CA3AF' },
+  resPrice: { fontSize: 10, fontWeight: '600', color: '#6C3BFF', marginLeft: 'auto' },
   // District filter chips
-  distChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', backgroundColor: 'rgba(255,255,255,0.02)' },
+  distChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: '#F1F5F9', backgroundColor: '#FAFAFA' },
   distChipActive: { backgroundColor: 'rgba(255,140,43,0.1)', borderColor: 'rgba(255,140,43,0.3)' },
-  distChipText: { fontSize: 11, color: 'rgba(255,255,255,0.5)' },
-  distChipTextActive: { color: '#FF8C2B', fontWeight: '600' },
+  distChipText: { fontSize: 11, color: '#6B7280' },
+  distChipTextActive: { color: '#6C3BFF', fontWeight: '600' },
   emptySubTitle: { fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 4 },
   empty: { alignItems: 'center', paddingTop: 50 },
-  emptyTitle: { fontSize: 14, color: 'rgba(255,255,255,0.4)', marginTop: 10 },
+  emptyTitle: { fontSize: 14, color: '#9CA3AF', marginTop: 10 },
 });

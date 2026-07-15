@@ -151,7 +151,7 @@ export default function AdminReviews({ navigation }: any) {
 }
 
 const st = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#050403' },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 56 : 44, paddingBottom: 10, gap: 10 },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.06)', alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 17, fontWeight: '700', color: '#fff' },
@@ -161,7 +161,7 @@ const st = StyleSheet.create({
   tab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 8, borderRadius: 8 },
   tabActive: { backgroundColor: 'rgba(255,140,43,0.08)' },
   tabText: { fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: '500' },
-  tabTextActive: { color: '#FF8C2B', fontWeight: '700' },
+  tabTextActive: { color: '#6C3BFF', fontWeight: '700' },
   tabBadge: { backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 8, paddingHorizontal: 5, paddingVertical: 1 },
   tabBadgeActive: { backgroundColor: 'rgba(255,140,43,0.15)' },
   tabBadgeText: { fontSize: 8, color: 'rgba(255,255,255,0.4)', fontWeight: '700' },
@@ -169,7 +169,7 @@ const st = StyleSheet.create({
   card: { backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)' },
   cardHidden: { opacity: 0.5, borderColor: 'rgba(107,114,128,0.2)' },
   cardHeader: { flexDirection: 'row', marginBottom: 6 },
-  creatorName: { fontSize: 11, fontWeight: '700', color: '#FF8C2B', marginBottom: 1 },
+  creatorName: { fontSize: 11, fontWeight: '700', color: '#6C3BFF', marginBottom: 1 },
   reviewerName: { fontSize: 12, fontWeight: '600', color: '#fff' },
   starsRow: { flexDirection: 'row', alignItems: 'center', gap: 1, marginTop: 3 },
   ratingNum: { fontSize: 10, color: 'rgba(255,255,255,0.4)', marginLeft: 4 },

@@ -59,7 +59,7 @@ export default function CreatorProfileScreen({ route, navigation }: any) {
       <Text style={s.errorText}>Creator not found</Text>
       <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', marginTop: 4 }}>This profile may be unavailable</Text>
       <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginTop: 16, paddingHorizontal: 20, paddingVertical: 10, backgroundColor: 'rgba(255,140,43,0.1)', borderWidth: 1, borderColor: 'rgba(255,140,43,0.25)', borderRadius: 10 }}>
-        <Text style={{ color: '#FF8C2B', fontSize: 13, fontWeight: '600' }}>← Go Back</Text>
+        <Text style={{ color: '#6C3BFF', fontSize: 13, fontWeight: '600' }}>← Go Back</Text>
       </TouchableOpacity>
     </View>
   );
@@ -100,7 +100,7 @@ export default function CreatorProfileScreen({ route, navigation }: any) {
           {/* Badges */}
           <View style={s.badgeRow}>
             {creator.featured && <View style={s.badge}><Ionicons name="star" size={10} color="#000" /><Text style={s.badgeText}>FEATURED</Text></View>}
-            {creator.verified && <View style={[s.badge, { backgroundColor: '#10B981' }]}><Ionicons name="checkmark-circle" size={10} color="#fff" /><Text style={[s.badgeText, { color: '#fff' }]}>VERIFIED</Text></View>}
+            {creator.verified && <View style={[s.badge, { backgroundColor: '#10B981' }]}><Ionicons name="checkmark-circle" size={10} color="#fff" /><Text style={[s.badgeText, { color: '#1F2937' }]}>VERIFIED</Text></View>}
           </View>
         </View>
 
@@ -303,9 +303,9 @@ function EmptyState({ icon, text }: { icon: string; text: string }) {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#050403' },
-  center: { flex: 1, backgroundColor: '#050403', alignItems: 'center', justifyContent: 'center' },
-  errorText: { fontSize: 14, color: 'rgba(255,255,255,0.4)' },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  center: { flex: 1, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
+  errorText: { fontSize: 14, color: '#9CA3AF' },
   // Hero
   hero: { width: '100%', height: 260, position: 'relative' },
   heroImg: { width: '100%', height: '100%' },
@@ -314,32 +314,32 @@ const s = StyleSheet.create({
   heroBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', marginLeft: 6 },
   heroRight: { flexDirection: 'row' },
   badgeRow: { position: 'absolute', bottom: 12, left: 16, flexDirection: 'row', gap: 6 },
-  badge: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#FF8C2B', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  badge: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundcolor: '#6C3BFF', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   badgeText: { fontSize: 8, fontWeight: '800', color: '#000' },
   // Profile
   profileSec: { paddingHorizontal: 20, paddingTop: 16 },
   profileRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 },
   avatar: { width: 56, height: 56, borderRadius: 28, borderWidth: 2, borderColor: 'rgba(255,140,43,0.3)' },
-  name: { fontSize: 18, fontWeight: '700', color: '#fff' },
-  specialty: { fontSize: 12, color: '#FF8C2B', marginTop: 1 },
+  name: { fontSize: 18, fontWeight: '700', color: '#1F2937' },
+  specialty: { fontSize: 12, color: '#6C3BFF', marginTop: 1 },
   locRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 3 },
-  locText: { fontSize: 11, color: 'rgba(255,255,255,0.4)' },
+  locText: { fontSize: 11, color: '#9CA3AF' },
   // Stats
-  statsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 14, paddingVertical: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', marginBottom: 14 },
+  statsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', backgroundColor: '#FAFAFA', borderRadius: 14, paddingVertical: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', marginBottom: 14 },
   stat: { alignItems: 'center' },
-  statVal: { fontSize: 15, fontWeight: '700', color: '#fff' },
-  statLbl: { fontSize: 9, color: 'rgba(255,255,255,0.4)', marginTop: 2 },
-  statDiv: { width: 1, height: 24, backgroundColor: 'rgba(255,255,255,0.06)' },
-  bio: { fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 20, marginBottom: 12 },
+  statVal: { fontSize: 15, fontWeight: '700', color: '#1F2937' },
+  statLbl: { fontSize: 9, color: '#9CA3AF', marginTop: 2 },
+  statDiv: { width: 1, height: 24, backgroundColor: '#F3F4F6' },
+  bio: { fontSize: 13, color: '#6B7280', lineHeight: 20, marginBottom: 12 },
   // Social
   socialRow: { flexDirection: 'row', gap: 8, marginBottom: 14 },
   socialBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,140,43,0.06)', borderWidth: 1, borderColor: 'rgba(255,140,43,0.15)', alignItems: 'center', justifyContent: 'center' },
   // Tabs
   tabs: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', marginHorizontal: 16 },
   tab: { flex: 1, alignItems: 'center', paddingVertical: 10 },
-  tabActive: { borderBottomWidth: 2, borderBottomColor: '#FF8C2B' },
-  tabText: { fontSize: 10, fontWeight: '500', color: 'rgba(255,255,255,0.35)' },
-  tabTextActive: { color: '#FF8C2B', fontWeight: '600' },
+  tabActive: { borderBottomWidth: 2, borderBottomcolor: '#6C3BFF' },
+  tabText: { fontSize: 10, fontWeight: '500', color: '#9CA3AF' },
+  tabTextActive: { color: '#6C3BFF', fontWeight: '600' },
   // Gallery
   galleryWrap: { paddingHorizontal: 16, paddingTop: 12 },
   masonry: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
@@ -349,47 +349,47 @@ const s = StyleSheet.create({
   masonryImg: { width: '100%', height: '100%' },
   // Videos
   videosWrap: { paddingHorizontal: 16, paddingTop: 12, flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  videoGridItem: { width: '48%', aspectRatio: 1, borderRadius: 12, overflow: 'hidden', position: 'relative', backgroundColor: 'rgba(255,255,255,0.02)' },
+  videoGridItem: { width: '48%', aspectRatio: 1, borderRadius: 12, overflow: 'hidden', position: 'relative', backgroundColor: '#FAFAFA' },
   videoGridThumb: { width: '100%', height: '100%', resizeMode: 'cover' },
   videoPlayOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.25)' },
   // Packages
   packagesWrap: { paddingHorizontal: 16, paddingTop: 12, gap: 10 },
-  pkgCard: { backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+  pkgCard: { backgroundColor: '#FAFAFA', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
   pkgHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-  pkgName: { fontSize: 14, fontWeight: '700', color: '#fff' },
-  pkgPrice: { fontSize: 15, fontWeight: '700', color: '#FF8C2B' },
+  pkgName: { fontSize: 14, fontWeight: '700', color: '#1F2937' },
+  pkgPrice: { fontSize: 15, fontWeight: '700', color: '#6C3BFF' },
   pkgDesc: { fontSize: 11, color: 'rgba(255,255,255,0.45)', marginBottom: 8 },
   pkgFeatures: { gap: 5 },
   featureRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  featureText: { fontSize: 11, color: 'rgba(255,255,255,0.5)' },
+  featureText: { fontSize: 11, color: '#6B7280' },
   // Reviews
   reviewsWrap: { paddingHorizontal: 16, paddingTop: 12, gap: 10 },
-  ratingSummary: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', marginBottom: 10, gap: 16 },
+  ratingSummary: { flexDirection: 'row', backgroundColor: '#FAFAFA', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', marginBottom: 10, gap: 16 },
   ratingBig: { alignItems: 'center', justifyContent: 'center', width: 80 },
-  ratingNum: { fontSize: 28, fontWeight: '800', color: '#FF8C2B' },
+  ratingNum: { fontSize: 28, fontWeight: '800', color: '#6C3BFF' },
   starsRow: { flexDirection: 'row', gap: 1, marginTop: 4 },
-  ratingCount: { fontSize: 9, color: 'rgba(255,255,255,0.35)', marginTop: 3 },
+  ratingCount: { fontSize: 9, color: '#9CA3AF', marginTop: 3 },
   ratingBars: { flex: 1, justifyContent: 'center', gap: 4 },
   barRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  barLabel: { fontSize: 9, color: 'rgba(255,255,255,0.3)', width: 10 },
-  barBg: { flex: 1, height: 4, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' },
-  barFill: { height: '100%', backgroundColor: '#FF8C2B', borderRadius: 2 },
-  barCount: { fontSize: 9, color: 'rgba(255,255,255,0.3)', width: 14, textAlign: 'right' },
-  reviewCard: { backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)' },
-  writeReviewBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#FF8C2B', borderRadius: 10, paddingVertical: 11, marginBottom: 12 },
+  barLabel: { fontSize: 9, color: '#9CA3AF', width: 10 },
+  barBg: { flex: 1, height: 4, backgroundColor: '#F3F4F6', borderRadius: 2, overflow: 'hidden' },
+  barFill: { height: '100%', backgroundcolor: '#6C3BFF', borderRadius: 2 },
+  barCount: { fontSize: 9, color: '#9CA3AF', width: 14, textAlign: 'right' },
+  reviewCard: { backgroundColor: '#FAFAFA', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#F1F5F9' },
+  writeReviewBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundcolor: '#6C3BFF', borderRadius: 10, paddingVertical: 11, marginBottom: 12 },
   writeReviewText: { fontSize: 13, fontWeight: '700', color: '#000' },
   reviewHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
   reviewAvatar: { width: 32, height: 32, borderRadius: 16 },
-  reviewName: { fontSize: 12, fontWeight: '600', color: '#fff' },
-  reviewDate: { fontSize: 9, color: 'rgba(255,255,255,0.3)' },
+  reviewName: { fontSize: 12, fontWeight: '600', color: '#1F2937' },
+  reviewDate: { fontSize: 9, color: '#9CA3AF' },
   reviewStars: { flexDirection: 'row', gap: 1 },
-  reviewTitle: { fontSize: 12, fontWeight: '600', color: '#fff', marginBottom: 3 },
-  reviewText: { fontSize: 11, color: 'rgba(255,255,255,0.5)', lineHeight: 16 },
+  reviewTitle: { fontSize: 12, fontWeight: '600', color: '#1F2937', marginBottom: 3 },
+  reviewText: { fontSize: 11, color: '#6B7280', lineHeight: 16 },
   // Empty
   empty: { alignItems: 'center', paddingVertical: 40 },
-  emptyText: { fontSize: 12, color: 'rgba(255,255,255,0.3)', marginTop: 8 },
+  emptyText: { fontSize: 12, color: '#9CA3AF', marginTop: 8 },
   // CTA
   ctaBar: { position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'rgba(5,4,3,0.95)', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 20, paddingVertical: 12, paddingBottom: Platform.OS === 'ios' ? 28 : 12 },
-  ctaLabel: { fontSize: 9, color: 'rgba(255,255,255,0.4)' },
-  ctaPrice: { fontSize: 16, fontWeight: '700', color: '#fff' },
+  ctaLabel: { fontSize: 9, color: '#9CA3AF' },
+  ctaPrice: { fontSize: 16, fontWeight: '700', color: '#1F2937' },
 });

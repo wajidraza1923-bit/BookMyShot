@@ -153,8 +153,8 @@ function PendingApprovalScreen({ status }: { status: string }) {
 }
 
 const styles = StyleSheet.create({
-  loading: { flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
-  pending: { flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30 },
+  loading: { flex: 1, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
+  pending: { flex: 1, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30 },
   pendingIcon: { width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(249,115,22,0.08)', alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
   pendingTitle: { fontSize: 20, fontWeight: '700', color: '#fff', textAlign: 'center' },
   pendingSub: { fontSize: 13, color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginTop: 10, lineHeight: 20 },

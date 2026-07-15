@@ -187,19 +187,19 @@ const s = StyleSheet.create({
   headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: colors.text, textAlign: 'center' },
   // Summary
   summaryCard: { backgroundColor: 'rgba(249,115,22,0.04)', borderWidth: 1, borderColor: 'rgba(249,115,22,0.12)', borderRadius: 14, padding: 16, marginBottom: 20 },
-  summaryLabel: { fontSize: 12, color: 'rgba(255,255,255,0.4)', marginBottom: 10 },
+  summaryLabel: { fontSize: 12, color: '#9CA3AF', marginBottom: 10 },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between' },
   summaryItem: { alignItems: 'center' },
   summaryNum: { fontSize: 18, fontWeight: '700', color: colors.text },
   summaryCaption: { fontSize: 9, color: colors.textMuted, marginTop: 2 },
   // Fields
   field: { marginBottom: 16 },
-  label: { fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.4)', marginBottom: 6, letterSpacing: 0.3 },
-  inputRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(255,255,255,0.03)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', borderRadius: 12, paddingHorizontal: 12, height: 46 },
-  input: { flex: 1, fontSize: 14, color: '#fff' },
+  label: { fontSize: 11, fontWeight: '600', color: '#9CA3AF', marginBottom: 6, letterSpacing: 0.3 },
+  inputRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#F8F6FF', borderWidth: 1, borderColor: '#F1F5F9', borderRadius: 12, paddingHorizontal: 12, height: 46 },
+  input: { flex: 1, fontSize: 14, color: '#1F2937' },
   // Method
   methodRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  methodBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.02)' },
+  methodBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: '#FAFAFA' },
   methodActive: { borderColor: '#F97316', backgroundColor: 'rgba(249,115,22,0.08)' },
   methodText: { fontSize: 12, color: colors.textMuted, fontWeight: '500' },
   methodTextActive: { color: '#F97316', fontWeight: '700' },
@@ -215,8 +215,8 @@ const s = StyleSheet.create({
   submitText: { fontSize: 15, fontWeight: '700', color: '#000' },
   // Success
   successIcon: { marginBottom: 16 },
-  successTitle: { fontSize: 20, fontWeight: '700', color: '#fff' },
-  successSub: { fontSize: 13, color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginTop: 8, lineHeight: 20, maxWidth: 280 },
+  successTitle: { fontSize: 20, fontWeight: '700', color: '#1F2937' },
+  successSub: { fontSize: 13, color: '#6B7280', textAlign: 'center', marginTop: 8, lineHeight: 20, maxWidth: 280 },
   doneBtn: { marginTop: 24, backgroundColor: '#F97316', paddingHorizontal: 32, paddingVertical: 12, borderRadius: 12 },
   doneBtnText: { fontSize: 14, fontWeight: '700', color: '#000' },
 });

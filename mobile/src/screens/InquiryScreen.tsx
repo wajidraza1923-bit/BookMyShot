@@ -195,7 +195,7 @@ export default function InquiryScreen({ route, navigation }: any) {
             <Text style={s.fieldLabel}>Event Date *</Text>
             <TouchableOpacity style={s.dateField} onPress={() => setShowDatePicker(true)} activeOpacity={0.7}>
               <Ionicons name="today-outline" size={18} color={selectedDate ? '#F97316' : 'rgba(255,255,255,0.3)'} />
-              <Text style={[s.dateText, selectedDate && { color: '#fff' }]}>
+              <Text style={[s.dateText, selectedDate && { color: '#1F2937' }]}>
                 {selectedDate ? selectedDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : 'Select Event Date'}
               </Text>
               <Ionicons name="chevron-down" size={14} color="rgba(255,255,255,0.3)" />
@@ -271,46 +271,46 @@ function Field({ label, icon, value, onChange, keyboard, placeholder, multiline 
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#050403' },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 56 : 44, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.04)' },
-  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.06)', alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { flex: 1, fontSize: 16, fontWeight: '700', color: '#fff', textAlign: 'center' },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 56 : 44, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { flex: 1, fontSize: 16, fontWeight: '700', color: '#1F2937', textAlign: 'center' },
   scroll: { padding: 20, paddingBottom: 40 },
   directBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,140,43,0.06)', borderWidth: 1, borderColor: 'rgba(255,140,43,0.15)', borderRadius: 10, padding: 10, marginBottom: 16 },
-  directText: { fontSize: 12, color: '#FF8C2B', fontWeight: '500' },
+  directText: { fontSize: 12, color: '#6C3BFF', fontWeight: '500' },
   field: { marginBottom: 14 },
-  fieldLabel: { fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.5)', marginBottom: 6, letterSpacing: 0.3 },
-  fieldInput: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(255,255,255,0.03)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', borderRadius: 12, paddingHorizontal: 12, height: 46 },
-  fieldText: { flex: 1, fontSize: 14, color: '#fff' },
-  submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#FF8C2B', borderRadius: 14, paddingVertical: 14, marginTop: 20 },
+  fieldLabel: { fontSize: 11, fontWeight: '600', color: '#6B7280', marginBottom: 6, letterSpacing: 0.3 },
+  fieldInput: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#F8F6FF', borderWidth: 1, borderColor: '#F1F5F9', borderRadius: 12, paddingHorizontal: 12, height: 46 },
+  fieldText: { flex: 1, fontSize: 14, color: '#1F2937' },
+  submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundcolor: '#6C3BFF', borderRadius: 14, paddingVertical: 14, marginTop: 20 },
   submitText: { fontSize: 15, fontWeight: '700', color: '#000' },
-  dateField: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(255,255,255,0.03)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', borderRadius: 12, paddingHorizontal: 12, height: 46, marginBottom: 14 },
-  dateText: { flex: 1, fontSize: 14, color: 'rgba(255,255,255,0.3)' },
+  dateField: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#F8F6FF', borderWidth: 1, borderColor: '#F1F5F9', borderRadius: 12, paddingHorizontal: 12, height: 46, marginBottom: 14 },
+  dateText: { flex: 1, fontSize: 14, color: '#9CA3AF' },
   chooseBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: 'rgba(255,140,43,0.3)', borderRadius: 14, paddingVertical: 13, marginTop: 12 },
-  chooseBtnText: { fontSize: 13, fontWeight: '600', color: '#FF8C2B' },
+  chooseBtnText: { fontSize: 13, fontWeight: '600', color: '#6C3BFF' },
   // Creator selection
-  selectTitle: { fontSize: 17, fontWeight: '700', color: '#fff', marginBottom: 4 },
-  selectSub: { fontSize: 12, color: 'rgba(255,255,255,0.4)', marginBottom: 16 },
-  creatorRow: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', backgroundColor: 'rgba(255,255,255,0.02)', marginBottom: 8 },
+  selectTitle: { fontSize: 17, fontWeight: '700', color: '#1F2937', marginBottom: 4 },
+  selectSub: { fontSize: 12, color: '#9CA3AF', marginBottom: 16 },
+  creatorRow: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', backgroundColor: '#FAFAFA', marginBottom: 8 },
   creatorRowActive: { borderColor: 'rgba(255,140,43,0.3)', backgroundColor: 'rgba(255,140,43,0.04)' },
   creatorAvatar: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: 'rgba(255,140,43,0.2)' },
-  creatorName: { fontSize: 13, fontWeight: '600', color: '#fff' },
-  creatorMeta: { fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 1 },
+  creatorName: { fontSize: 13, fontWeight: '600', color: '#1F2937' },
+  creatorMeta: { fontSize: 10, color: '#9CA3AF', marginTop: 1 },
   backLink: { alignItems: 'center', marginTop: 14 },
-  backLinkText: { fontSize: 12, color: 'rgba(255,255,255,0.4)' },
+  backLinkText: { fontSize: 12, color: '#9CA3AF' },
   // Success
   successView: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
   successIcon: { marginBottom: 16 },
-  successTitle: { fontSize: 22, fontWeight: '700', color: '#fff' },
-  successSub: { fontSize: 13, color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginTop: 8, lineHeight: 20 },
-  successBtn: { marginTop: 24, backgroundColor: '#FF8C2B', paddingHorizontal: 28, paddingVertical: 12, borderRadius: 12 },
+  successTitle: { fontSize: 22, fontWeight: '700', color: '#1F2937' },
+  successSub: { fontSize: 13, color: '#6B7280', textAlign: 'center', marginTop: 8, lineHeight: 20 },
+  successBtn: { marginTop: 24, backgroundcolor: '#6C3BFF', paddingHorizontal: 28, paddingVertical: 12, borderRadius: 12 },
   successBtnText: { fontSize: 14, fontWeight: '700', color: '#000' },
   // Modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'flex-end' },
   modalCard: { backgroundColor: '#1a1a1a', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 40 },
-  modalTitle: { fontSize: 16, fontWeight: '700', color: '#fff', textAlign: 'center', marginBottom: 16 },
+  modalTitle: { fontSize: 16, fontWeight: '700', color: '#1F2937', textAlign: 'center', marginBottom: 16 },
   modalClose: { alignItems: 'center', marginTop: 16, paddingVertical: 12 },
-  modalCloseText: { fontSize: 14, color: 'rgba(255,255,255,0.4)' },
+  modalCloseText: { fontSize: 14, color: '#9CA3AF' },
 });
 
 // Simple Calendar Grid Component (works in Expo Go, no native modules)
@@ -334,11 +334,11 @@ function DateGrid({ selectedDate, onSelect }: { selectedDate: Date | null; onSel
     <View>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <TouchableOpacity onPress={prevMonth} style={{ padding: 8 }}><Ionicons name="chevron-back" size={20} color="#F97316" /></TouchableOpacity>
-        <Text style={{ fontSize: 14, fontWeight: '700', color: '#fff' }}>{monthName}</Text>
+        <Text style={{ fontSize: 14, fontWeight: '700', color: '#1F2937' }}>{monthName}</Text>
         <TouchableOpacity onPress={nextMonth} style={{ padding: 8 }}><Ionicons name="chevron-forward" size={20} color="#F97316" /></TouchableOpacity>
       </View>
       <View style={{ flexDirection: 'row', marginBottom: 6 }}>
-        {['S','M','T','W','T','F','S'].map((d, i) => <Text key={i} style={{ flex: 1, textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.3)', fontWeight: '600' }}>{d}</Text>)}
+        {['S','M','T','W','T','F','S'].map((d, i) => <Text key={i} style={{ flex: 1, textAlign: 'center', fontSize: 11, color: '#9CA3AF', fontWeight: '600' }}>{d}</Text>)}
       </View>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
         {days.map((day, i) => {

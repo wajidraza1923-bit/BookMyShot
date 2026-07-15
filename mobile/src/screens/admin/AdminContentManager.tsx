@@ -542,23 +542,23 @@ export default function AdminContentManager({ navigation }: any) {
 
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#050403' },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 56 : 44, paddingBottom: 10, gap: 10 },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.06)', alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 17, fontWeight: '700', color: '#fff' },
   subtitle: { fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 1 },
-  addBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#FF8C2B', alignItems: 'center', justifyContent: 'center' },
+  addBtn: { width: 34, height: 34, borderRadius: 17, backgroundcolor: '#6C3BFF', alignItems: 'center', justifyContent: 'center' },
   // Tabs
   tabsScroll: { maxHeight: 44, marginBottom: 4 },
   tabsContent: { paddingHorizontal: 16, gap: 8, alignItems: 'center' },
   tab: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,140,43,0.2)', backgroundColor: 'rgba(255,140,43,0.04)' },
-  tabActive: { backgroundColor: '#FF8C2B', borderColor: '#FF8C2B' },
-  tabText: { fontSize: 10, color: '#FF8C2B', fontWeight: '500' },
+  tabActive: { backgroundcolor: '#6C3BFF', bordercolor: '#6C3BFF' },
+  tabText: { fontSize: 10, color: '#6C3BFF', fontWeight: '500' },
   tabTextActive: { color: '#000', fontWeight: '700' },
   // Stats bar
   statsBar: { flexDirection: 'row', marginHorizontal: 16, marginVertical: 8, backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)' },
   statItem: { flex: 1, alignItems: 'center' },
-  statNum: { fontSize: 16, fontWeight: '700', color: '#FF8C2B' },
+  statNum: { fontSize: 16, fontWeight: '700', color: '#6C3BFF' },
   statLabel: { fontSize: 9, color: 'rgba(255,255,255,0.4)', marginTop: 2 },
   statDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.06)' },
   // Loading
@@ -615,7 +615,7 @@ const s = StyleSheet.create({
   previewImg: { width: width - 80, height: 120, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.05)' },
   previewLabel: { fontSize: 9, color: 'rgba(255,255,255,0.25)', marginTop: 4 },
   uploadImgBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: 'rgba(255,140,43,0.06)', borderWidth: 1, borderColor: 'rgba(255,140,43,0.2)', borderRadius: 10, paddingVertical: 12, borderStyle: 'dashed' },
-  uploadImgText: { fontSize: 12, fontWeight: '600', color: '#FF8C2B' },
+  uploadImgText: { fontSize: 12, fontWeight: '600', color: '#6C3BFF' },
   removeImgBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
   removeImgText: { fontSize: 10, color: '#EF4444' },
   iconPreview: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6, backgroundColor: 'rgba(255,140,43,0.06)', borderRadius: 8, padding: 8 },
@@ -624,7 +624,7 @@ const s = StyleSheet.create({
   modalBtns: { flexDirection: 'row', gap: 10, marginTop: 20 },
   modalCancelBtn: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
   modalCancelText: { fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: '500' },
-  modalSaveBtn: { flex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 12, borderRadius: 10, backgroundColor: '#FF8C2B' },
+  modalSaveBtn: { flex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 12, borderRadius: 10, backgroundcolor: '#6C3BFF' },
   modalSaveText: { fontSize: 13, fontWeight: '700', color: '#000' },
   modalDeleteBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 16, paddingVertical: 10, borderWidth: 1, borderColor: 'rgba(239,68,68,0.2)', borderRadius: 10 },
   modalDeleteText: { fontSize: 12, color: '#EF4444' },

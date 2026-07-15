@@ -58,7 +58,7 @@ function CreatorTabs() {
 
 export default function CreatorNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', contentStyle: { backgroundColor: colors.background } }}>
+    <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', contentStyle: { backgroundColor: '#FFFFFF' } }}>
       <Stack.Screen name="CreatorTabs" component={CreatorTabs} />
       <Stack.Screen name="CreatorBookings" component={CreatorBookings} />
       <Stack.Screen name="BookingDetail" component={BookingDetail} />

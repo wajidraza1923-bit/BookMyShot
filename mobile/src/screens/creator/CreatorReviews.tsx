@@ -104,21 +104,21 @@ export default function CreatorReviews({ navigation }: any) {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#050403' },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 56 : 44, paddingBottom: 10, gap: 10 },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.06)', alignItems: 'center', justifyContent: 'center' },
   title: { flex: 1, fontSize: 17, fontWeight: '700', color: '#fff', textAlign: 'center' },
   // Summary
   summaryCard: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', marginBottom: 16, gap: 16 },
   summaryLeft: { alignItems: 'center', justifyContent: 'center', width: 80 },
-  summaryNum: { fontSize: 30, fontWeight: '800', color: '#FF8C2B' },
+  summaryNum: { fontSize: 30, fontWeight: '800', color: '#6C3BFF' },
   starsRow: { flexDirection: 'row', gap: 1, marginTop: 4 },
   summaryCount: { fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 4 },
   summaryBars: { flex: 1, justifyContent: 'center', gap: 5 },
   barRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   barLabel: { fontSize: 9, color: 'rgba(255,255,255,0.4)', width: 18 },
   barBg: { flex: 1, height: 5, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 3, overflow: 'hidden' },
-  barFill: { height: '100%', backgroundColor: '#FF8C2B', borderRadius: 3 },
+  barFill: { height: '100%', backgroundcolor: '#6C3BFF', borderRadius: 3 },
   barCount: { fontSize: 9, color: 'rgba(255,255,255,0.3)', width: 16, textAlign: 'right' },
   // Reviews
   reviewCard: { backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)' },

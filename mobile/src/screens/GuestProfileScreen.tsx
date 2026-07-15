@@ -142,21 +142,21 @@ const s = StyleSheet.create({
   // Buttons
   btnSection: { paddingHorizontal: 20, gap: 12, marginBottom: 28 },
   btnPrimary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 16, borderRadius: 18, elevation: 3, shadowColor: '#6C3BFF', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 8 },
-  btnPrimaryText: { fontSize: 15, fontWeight: '700', color: '#fff' },
-  btnSecondary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 15, borderRadius: 18, borderWidth: 1.5, borderColor: '#6C3BFF', backgroundColor: '#fff' },
+  btnPrimaryText: { fontSize: 15, fontWeight: '700', color: '#1F2937' },
+  btnSecondary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 15, borderRadius: 18, borderWidth: 1.5, borderColor: '#6C3BFF', backgroundcolor: '#1F2937' },
   btnSecondaryText: { fontSize: 15, fontWeight: '600', color: '#6C3BFF' },
   // Section
   section: { paddingHorizontal: 20, marginBottom: 24 },
   sectionTitle: { fontSize: 15, fontWeight: '700', color: '#1F2937', marginBottom: 12 },
   // Cards
   cardRow: { flexDirection: 'row', gap: 12 },
-  card: { flex: 1, backgroundColor: '#fff', borderRadius: 22, padding: 18, borderWidth: 1, borderColor: '#F1F5F9', elevation: 2, shadowColor: '#6C3BFF', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6 },
+  card: { flex: 1, backgroundcolor: '#1F2937', borderRadius: 22, padding: 18, borderWidth: 1, borderColor: '#F1F5F9', elevation: 2, shadowColor: '#6C3BFF', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6 },
   cardIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
   cardTitle: { fontSize: 12, fontWeight: '700', color: '#1F2937' },
   cardSub: { fontSize: 10, color: '#6B7280', marginTop: 2 },
   // Features
   featureGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  featureCard: { width: (width - 40 - 10) / 2, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff', borderRadius: 14, padding: 12, borderWidth: 1, borderColor: '#F1F5F9' },
+  featureCard: { width: (width - 40 - 10) / 2, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundcolor: '#1F2937', borderRadius: 14, padding: 12, borderWidth: 1, borderColor: '#F1F5F9' },
   featureIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   featureLabel: { fontSize: 11, fontWeight: '600', color: '#1F2937', flex: 1 },
   // Support

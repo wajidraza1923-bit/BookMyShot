@@ -135,7 +135,7 @@ export default function SubCategoriesScreen({ navigation, route }: any) {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#050403" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       {/* Header */}
       <View style={styles.header}>
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
   retryText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#fff',
+    color: '#1F2937',
   },
   emptyText: {
     fontSize: 14,
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
   cardName: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#fff',
+    color: '#1F2937',
     lineHeight: 16,
   },
   cardCount: {
