@@ -453,7 +453,7 @@ const s = StyleSheet.create({
   actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1.5, borderColor: '#6C3BFF', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
   actionT: { fontSize: 9, fontWeight: '700', color: '#6C3BFF' },
   actionBtnFilled: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#6C3BFF', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
-  actionTFilled: { fontSize: 9, fontWeight: '700', color: '#FFFFFF' } },
+  actionTFilled: { fontSize: 9, fontWeight: '700', color: '#FFFFFF' },
   // Empty
   empty: { alignItems: 'center', paddingVertical: 50, paddingHorizontal: 30 },
   emptyTitle: { fontSize: 15, fontWeight: '700', color: '#1F2937', marginTop: 12 },
