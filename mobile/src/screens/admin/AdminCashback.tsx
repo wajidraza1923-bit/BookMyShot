@@ -43,7 +43,15 @@ export default function AdminCashback({ navigation }: any) {
           termsAndConditions: s2.termsAndConditions || '',
         });
       }
-      if (reportsRes.data?.data) setReports(reportsRes.data.data);
+      if (reportsRes.data?.data) {
+        const r = reportsRes.data.data;
+        setReports({
+          totalCashbackGiven: Number(r.totalCashbackGiven) || 0,
+          todayCashback: Number(r.todayCashback) || 0,
+          monthlyCashback: Number(r.monthlyCashback) || 0,
+          pendingCashback: Number(r.pendingCashback) || 0,
+        });
+      }
     } catch (e: any) {
       // Server might not have cashback route yet — just use defaults
       console.log('[AdminCashback] API not available, using defaults');
@@ -84,10 +92,10 @@ export default function AdminCashback({ navigation }: any) {
       <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
         {/* Reports */}
         <View style={s.reportsRow}>
-          <View style={s.reportCard}><Text style={s.reportVal}>₹{reports.totalCashbackGiven.toLocaleString('en-IN')}</Text><Text style={s.reportLbl}>Total Given</Text></View>
-          <View style={s.reportCard}><Text style={s.reportVal}>₹{reports.todayCashback.toLocaleString('en-IN')}</Text><Text style={s.reportLbl}>Today</Text></View>
-          <View style={s.reportCard}><Text style={s.reportVal}>₹{reports.monthlyCashback.toLocaleString('en-IN')}</Text><Text style={s.reportLbl}>This Month</Text></View>
-          <View style={s.reportCard}><Text style={s.reportVal}>₹{reports.pendingCashback.toLocaleString('en-IN')}</Text><Text style={s.reportLbl}>Pending</Text></View>
+          <View style={s.reportCard}><Text style={s.reportVal}>₹{Number(reports?.totalCashbackGiven || 0).toLocaleString('en-IN')}</Text><Text style={s.reportLbl}>Total Given</Text></View>
+          <View style={s.reportCard}><Text style={s.reportVal}>₹{Number(reports?.todayCashback || 0).toLocaleString('en-IN')}</Text><Text style={s.reportLbl}>Today</Text></View>
+          <View style={s.reportCard}><Text style={s.reportVal}>₹{Number(reports?.monthlyCashback || 0).toLocaleString('en-IN')}</Text><Text style={s.reportLbl}>This Month</Text></View>
+          <View style={s.reportCard}><Text style={s.reportVal}>₹{Number(reports?.pendingCashback || 0).toLocaleString('en-IN')}</Text><Text style={s.reportLbl}>Pending</Text></View>
         </View>
 
         {/* Toggle */}
