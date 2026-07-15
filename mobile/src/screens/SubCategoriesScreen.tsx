@@ -140,7 +140,7 @@ export default function SubCategoriesScreen({ navigation, route }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={22} color="#fff" />
+          <Ionicons name="arrow-back" size={20} color="#1F2937" />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Ionicons name={(icon || 'grid-outline') as any} size={16} color="#6C3BFF" />
@@ -200,12 +200,19 @@ const styles = StyleSheet.create({
     borderBottomColor: '#F1F5F9',
   },
   backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F3F4F6',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
   },
   headerCenter: {
     flexDirection: 'row',
@@ -320,13 +327,13 @@ const styles = StyleSheet.create({
   cardName: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#FFFFFF',
     lineHeight: 16,
   },
   cardCount: {
     fontSize: 10,
-    color: 'rgba(255,255,255,0.8)',
+    color: '#E5E7EB',
     marginTop: 3,
-    fontWeight: '500',
+    fontWeight: '600',
   },
 });
