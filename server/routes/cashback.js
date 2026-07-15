@@ -140,15 +140,37 @@ router.post("/confirm-completion", protect, async (req, res, next) => {
     const booking = await Booking.findById(bookingId);
     if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
 
-    // Validate eligibility
-    if (!booking.bookingFeePaid) return res.status(400).json({ success: false, message: "Booking fee was not paid" });
-    if (booking.status === "Cancelled" || booking.status === "Refunded") return res.status(400).json({ success: false, message: "Cancelled/refunded bookings are not eligible" });
+    // ═══ ELIGIBILITY CHECKS ═══
 
-    // Check if already credited
+    // 1. Must be the customer who made the booking (self-registered)
+    if (String(booking.customer) !== String(req.user._id)) {
+      return res.status(403).json({ success: false, message: "Only the booking customer can confirm completion" });
+    }
+
+    // 2. Must NOT be a creator-created inquiry (manual/walk-in)
+    if (booking.createdByCreator || booking.source === 'creator_manual' || booking.source === 'walk_in') {
+      return res.status(400).json({
+        success: false,
+        message: "Cashback is available only for customers who register and book directly through their own BookMyShot account. Manually created inquiries are not eligible.",
+        code: "CREATOR_CREATED_NOT_ELIGIBLE",
+      });
+    }
+
+    // 3. Booking fee must have been paid by the customer via Razorpay
+    if (!booking.bookingFeePaid) {
+      return res.status(400).json({ success: false, message: "Booking fee was not paid. Cashback requires 5% booking fee payment." });
+    }
+
+    // 4. Booking must not be cancelled/refunded
+    if (booking.status === "Cancelled" || booking.status === "Refunded" || booking.status === "Rejected") {
+      return res.status(400).json({ success: false, message: "Cancelled/refunded/rejected bookings are not eligible for cashback" });
+    }
+
+    // 5. Prevent duplicate cashback
     const existing = await CashbackTransaction.findOne({ booking: bookingId });
     if (existing) return res.json({ success: true, data: existing, message: "Cashback already credited" });
 
-    // Get settings & calculate
+    // ═══ CALCULATE & CREDIT ═══
     const settings = await CashbackSettings.getSettings();
     const now = new Date();
     const isActive = settings.enabled && (!settings.startDate || new Date(settings.startDate) <= now) && (!settings.endDate || new Date(settings.endDate) >= now);
@@ -156,12 +178,13 @@ router.post("/confirm-completion", protect, async (req, res, next) => {
     if (!isActive) return res.status(400).json({ success: false, message: "Cashback is currently not active" });
 
     const bookingAmount = booking.totalAmount || booking.quotedAmount || booking.amount || 0;
-    if (bookingAmount < settings.minBookingAmount) return res.status(400).json({ success: false, message: `Minimum ₹${settings.minBookingAmount} required for cashback` });
+    if (bookingAmount < settings.minBookingAmount) return res.status(400).json({ success: false, message: `Minimum ₹${settings.minBookingAmount} booking required for cashback` });
 
     let cashbackAmount = Math.round((bookingAmount * settings.percentage) / 100);
     if (cashbackAmount > settings.maxAmount) cashbackAmount = settings.maxAmount;
+    if (cashbackAmount <= 0) return res.status(400).json({ success: false, message: "Cashback amount is zero" });
 
-    // Credit cashback
+    // Credit to customer wallet
     const transaction = await CashbackTransaction.create({
       user: req.user._id,
       booking: bookingId,
@@ -172,12 +195,12 @@ router.post("/confirm-completion", protect, async (req, res, next) => {
       creditedAt: new Date(),
     });
 
-    // Update booking
+    // Mark booking as customer-confirmed
     await Booking.findByIdAndUpdate(bookingId, { $set: { customerConfirmedCompletion: true } });
 
     res.status(201).json({
       success: true,
-      message: `🎉 ₹${cashbackAmount} cashback credited to your wallet!`,
+      message: `🎉 ₹${cashbackAmount.toLocaleString('en-IN')} cashback credited to your wallet!`,
       data: transaction,
     });
   } catch (e) {

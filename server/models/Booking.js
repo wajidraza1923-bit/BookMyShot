@@ -65,6 +65,9 @@ const bookingSchema = new mongoose.Schema(
     bookingFeePaidAt: { type: Date, default: null },
     // Completion confirmation
     customerConfirmedCompletion: { type: Boolean, default: false },
+    // Source tracking for cashback eligibility
+    createdByCreator: { type: Boolean, default: false },
+    source: { type: String, enum: ['customer_app', 'customer_web', 'creator_manual', 'walk_in', 'admin'], default: 'customer_app' },
   },
   { timestamps: true }
 );
