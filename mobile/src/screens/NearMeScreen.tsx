@@ -121,11 +121,49 @@ export default function NearMeScreen({ navigation }: any) {
     return item.user?.avatar || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=300';
   };
 
+  // Haversine formula for real distance calculation
+  const getDistance = (creatorCity: string, creatorCoords?: any): string => {
+    if (!coords) return '—';
+    
+    // If creator has real coordinates stored
+    if (creatorCoords?.coordinates && creatorCoords.coordinates[0] !== 0 && creatorCoords.coordinates[1] !== 0) {
+      const [lng2, lat2] = creatorCoords.coordinates;
+      return haversine(coords.lat, coords.lng, lat2, lng2).toFixed(1);
+    }
+    
+    // Fallback: use known city coordinates
+    const cityCoords: Record<string, [number, number]> = {
+      'poonch': [33.77, 74.09], 'surankote': [33.64, 74.03], 'rajouri': [33.38, 74.31],
+      'jammu': [32.73, 74.87], 'srinagar': [34.08, 74.79], 'kathua': [32.39, 75.52],
+      'udhampur': [32.92, 75.14], 'delhi': [28.61, 77.21], 'mumbai': [19.07, 72.87],
+      'bangalore': [12.97, 77.59], 'jaipur': [26.91, 75.79], 'chandigarh': [30.73, 76.77],
+      'lucknow': [26.85, 80.95], 'pune': [18.52, 73.85], 'hyderabad': [17.38, 78.49],
+      'kolkata': [22.57, 88.36], 'ahmedabad': [23.02, 72.57], 'goa': [15.49, 73.83],
+    };
+    
+    const city = (creatorCity || '').toLowerCase().trim();
+    const match = cityCoords[city];
+    if (match) {
+      return haversine(coords.lat, coords.lng, match[0], match[1]).toFixed(1);
+    }
+    
+    return '—'; // Unknown location
+  };
+
+  // Haversine formula
+  const haversine = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371; // Earth radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  };
+
   // ═══ CREATOR CARD ═══
   const CreatorCard = ({ item, index }: any) => {
     const cardFade = useRef(new Animated.Value(0)).current;
     useEffect(() => { Animated.timing(cardFade, { toValue: 1, duration: 400, delay: index * 80, useNativeDriver: true }).start(); }, []);
-    const dist = (Math.random() * (radius * 0.8) + 0.3).toFixed(1);
+    const dist = getDistance(item.city, item.coordinates);
     return (
       <Animated.View style={[s.card, { opacity: cardFade, transform: [{ translateY: cardFade.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
         <View style={s.cardImgWrap}>
