@@ -1,14 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View, Text, StyleSheet, TouchableOpacity, KeyboardAvoidingView,
-  Platform, ScrollView, Modal, FlatList, ActivityIndicator,
-} from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { View, Text, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, TextInput, ActivityIndicator, StatusBar, Modal, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, typography, radius } from '../theme';
-import Input from '../components/Input';
-import Button from '../components/Button';
-import PremiumModal from '../components/PremiumModal';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 
@@ -21,36 +15,16 @@ export default function RegisterScreen({ navigation }: any) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [errorModal, setErrorModal] = useState<{ visible: boolean; title: string; message: string }>({ visible: false, title: '', message: '' });
-
-  // Category selection for creators
-  const [selectedCategorySlug, setSelectedCategorySlug] = useState('wedding-photographer');
-  const [selectedCategoryName, setSelectedCategoryName] = useState('Wedding Photographer');
-  const [selectedGroup, setSelectedGroup] = useState('Photography & Video');
+  const [selectedCategorySlug, setSelectedCategorySlug] = useState('');
+  const [selectedCategoryName, setSelectedCategoryName] = useState('Select Service');
+  const [selectedGroup, setSelectedGroup] = useState('');
   const [categories, setCategories] = useState<any[]>([]);
-  const [groupedCats, setGroupedCats] = useState<Record<string, any[]>>({});
   const [showCatPicker, setShowCatPicker] = useState(false);
-  const [catsLoading, setCatsLoading] = useState(false);
 
-  useEffect(() => {
-    if (role === 'creator') loadCategories();
-  }, [role]);
+  useEffect(() => { if (role === 'creator') loadCategories(); }, [role]);
 
   const loadCategories = async () => {
-    setCatsLoading(true);
-    try {
-      const res = await api.get('/discover/categories');
-      const cats = res.data?.data || [];
-      setCategories(cats);
-      // Group by group field
-      const groups: Record<string, any[]> = {};
-      for (const cat of cats) {
-        const g = cat.group || 'Other';
-        if (!groups[g]) groups[g] = [];
-        groups[g].push(cat);
-      }
-      setGroupedCats(groups);
-    } catch {} finally { setCatsLoading(false); }
+    try { const res = await api.get('/discover/categories'); setCategories(res.data?.data || []); } catch {}
   };
 
   const validate = () => {
@@ -60,7 +34,7 @@ export default function RegisterScreen({ navigation }: any) {
     else if (!/\S+@\S+\.\S+/.test(email)) e.email = 'Enter a valid email';
     if (!password) e.password = 'Password is required';
     else if (password.length < 6) e.password = 'Minimum 6 characters';
-    if (role === 'creator' && !selectedCategorySlug) e.category = 'Please select your service category';
+    if (role === 'creator' && !selectedCategorySlug) e.category = 'Select your service';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -69,147 +43,161 @@ export default function RegisterScreen({ navigation }: any) {
     if (!validate()) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setLoading(true);
-    const result = await authRegister(
-      name.trim(),
-      email.trim().toLowerCase(),
-      password,
-      role,
-      role === 'creator' ? { categorySlug: selectedCategorySlug, categoryGroup: selectedGroup, category: selectedCategorySlug } : undefined
-    );
+    setErrors({});
+    const result = await authRegister(name.trim(), email.trim().toLowerCase(), password, role, role === 'creator' ? { categorySlug: selectedCategorySlug, categoryGroup: selectedGroup, category: selectedCategorySlug } : undefined);
     setLoading(false);
     if (result.success) return;
-    if (result.requiresVerification) {
-      navigation.navigate('VerifyEmail', { email: email.trim().toLowerCase() });
-    } else {
-      setErrorModal({ visible: true, title: 'Registration Failed', message: result.message || 'Something went wrong. Please try again.' });
-    }
+    if (result.requiresVerification) { navigation.navigate('VerifyEmail', { email: email.trim().toLowerCase() }); }
+    else { setErrors({ general: result.message || 'Registration failed. Try again.' }); }
   };
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={22} color={colors.text} />
+    <KeyboardAvoidingView style={s.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+
+        <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={20} color="#1F2937" />
         </TouchableOpacity>
 
-        <Text style={styles.title}>Create Account</Text>
-        <Text style={styles.subtitle}>Join BookMyShot — India's Wedding Marketplace</Text>
+        {/* Header */}
+        <Text style={s.title}>Create Account</Text>
+        <Text style={s.subtitle}>Join BookMyShot — India's Premium Wedding Marketplace</Text>
 
-        {/* Role selector */}
-        <View style={styles.roleRow}>
-          <TouchableOpacity style={[styles.roleBtn, role === 'user' && styles.roleBtnActive]} onPress={() => { setRole('user'); Haptics.selectionAsync(); }}>
-            <Ionicons name="heart-outline" size={18} color={role === 'user' ? colors.primary : colors.textMuted} />
-            <Text style={[styles.roleLabel, role === 'user' && styles.roleLabelActive]}>I'm a Customer</Text>
+        {/* Role Selector */}
+        <View style={s.roleRow}>
+          <TouchableOpacity style={[s.roleBtn, role === 'user' && s.roleBtnActive]} onPress={() => { setRole('user'); Haptics.selectionAsync(); }}>
+            <Ionicons name="heart" size={16} color={role === 'user' ? '#6C3BFF' : '#9CA3AF'} />
+            <Text style={[s.roleText, role === 'user' && s.roleTextActive]}>Customer</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.roleBtn, role === 'creator' && styles.roleBtnActive]} onPress={() => { setRole('creator'); Haptics.selectionAsync(); }}>
-            <Ionicons name="camera-outline" size={18} color={role === 'creator' ? colors.primary : colors.textMuted} />
-            <Text style={[styles.roleLabel, role === 'creator' && styles.roleLabelActive]}>I'm a Vendor</Text>
+          <TouchableOpacity style={[s.roleBtn, role === 'creator' && s.roleBtnActive]} onPress={() => { setRole('creator'); Haptics.selectionAsync(); }}>
+            <Ionicons name="camera" size={16} color={role === 'creator' ? '#6C3BFF' : '#9CA3AF'} />
+            <Text style={[s.roleText, role === 'creator' && s.roleTextActive]}>Creator / Vendor</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Category picker for creators */}
+        {/* Error */}
+        {errors.general && (
+          <View style={s.errorBanner}><Ionicons name="alert-circle" size={16} color="#EF4444" /><Text style={s.errorBannerText}>{errors.general}</Text></View>
+        )}
+
+        {/* Category for creators */}
         {role === 'creator' && (
-          <View style={styles.catSection}>
-            <Text style={styles.catLabel}>Select Your Service *</Text>
-            <TouchableOpacity style={[styles.catPicker, errors.category ? { borderColor: colors.error } : {}]} onPress={() => setShowCatPicker(true)} activeOpacity={0.8}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.catPickerGroup}>{selectedGroup}</Text>
-                <Text style={styles.catPickerName}>{selectedCategoryName}</Text>
-              </View>
-              {catsLoading ? <ActivityIndicator size="small" color={colors.primary} /> : <Ionicons name="chevron-down" size={16} color={colors.primary} />}
+          <View style={s.fieldWrap}>
+            <Text style={s.label}>Service Category *</Text>
+            <TouchableOpacity style={[s.inputRow, errors.category && s.inputError]} onPress={() => setShowCatPicker(true)}>
+              <Ionicons name="briefcase-outline" size={18} color="#9CA3AF" />
+              <Text style={[s.input, { color: selectedCategorySlug ? '#1F2937' : '#D1D5DB' }]}>{selectedCategoryName}</Text>
+              <Ionicons name="chevron-down" size={16} color="#6C3BFF" />
             </TouchableOpacity>
-            {errors.category && <Text style={styles.errorText}>{errors.category}</Text>}
+            {errors.category && <Text style={s.fieldError}>{errors.category}</Text>}
           </View>
         )}
 
-        <View style={styles.form}>
-          <Input label="Full Name" icon="person-outline" value={name} onChangeText={setName} placeholder="Your name" autoCapitalize="words" error={errors.name} />
-          <Input label="Email" icon="mail-outline" value={email} onChangeText={setEmail} placeholder="you@example.com" keyboardType="email-address" autoCapitalize="none" error={errors.email} />
-          <Input label="Password" icon="lock-closed-outline" value={password} onChangeText={setPassword} placeholder="Min 6 characters" secureTextEntry={!showPassword} rightIcon={showPassword ? 'eye-off-outline' : 'eye-outline'} onRightIconPress={() => setShowPassword(!showPassword)} error={errors.password} />
-          <Button title="Create Account" onPress={handleRegister} loading={loading} size="lg" style={styles.registerBtn} />
+        {/* Form Fields */}
+        <View style={s.fieldWrap}>
+          <Text style={s.label}>Full Name</Text>
+          <View style={[s.inputRow, errors.name && s.inputError]}>
+            <Ionicons name="person-outline" size={18} color="#9CA3AF" />
+            <TextInput style={s.input} value={name} onChangeText={setName} placeholder="Your full name" placeholderTextColor="#D1D5DB" autoCapitalize="words" />
+          </View>
+          {errors.name && <Text style={s.fieldError}>{errors.name}</Text>}
         </View>
 
-        <Text style={styles.terms}>By creating an account, you agree to our <Text style={styles.termsLink}>Terms</Text> and <Text style={styles.termsLink}>Privacy Policy</Text></Text>
-        <View style={styles.loginRow}>
-          <Text style={styles.loginText}>Already have an account? </Text>
-          <TouchableOpacity onPress={() => navigation.goBack()}><Text style={styles.loginLink}>Sign In</Text></TouchableOpacity>
+        <View style={s.fieldWrap}>
+          <Text style={s.label}>Email</Text>
+          <View style={[s.inputRow, errors.email && s.inputError]}>
+            <Ionicons name="mail-outline" size={18} color="#9CA3AF" />
+            <TextInput style={s.input} value={email} onChangeText={setEmail} placeholder="you@example.com" placeholderTextColor="#D1D5DB" keyboardType="email-address" autoCapitalize="none" />
+          </View>
+          {errors.email && <Text style={s.fieldError}>{errors.email}</Text>}
         </View>
+
+        <View style={s.fieldWrap}>
+          <Text style={s.label}>Password</Text>
+          <View style={[s.inputRow, errors.password && s.inputError]}>
+            <Ionicons name="lock-closed-outline" size={18} color="#9CA3AF" />
+            <TextInput style={s.input} value={password} onChangeText={setPassword} placeholder="Min 6 characters" placeholderTextColor="#D1D5DB" secureTextEntry={!showPassword} />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}><Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={18} color="#9CA3AF" /></TouchableOpacity>
+          </View>
+          {errors.password && <Text style={s.fieldError}>{errors.password}</Text>}
+        </View>
+
+        {/* Register Button */}
+        <TouchableOpacity activeOpacity={0.85} onPress={handleRegister} disabled={loading} style={{ marginTop: 20 }}>
+          <LinearGradient colors={['#6C3BFF', '#8B5CF6', '#FF4FA3']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.registerBtnGradient}>
+            {loading ? <ActivityIndicator color="#fff" /> : <><Ionicons name="person-add-outline" size={18} color="#fff" /><Text style={s.registerBtnText}>Create Account</Text></>}
+          </LinearGradient>
+        </TouchableOpacity>
+
+        {/* Login link */}
+        <View style={s.loginRow}>
+          <Text style={s.loginText}>Already have an account? </Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Login')}><Text style={s.loginLink}>Sign In</Text></TouchableOpacity>
+        </View>
+
+        {/* Terms */}
+        <Text style={s.terms}>By creating an account, you agree to our <Text style={s.termsLink}>Terms of Service</Text> and <Text style={s.termsLink}>Privacy Policy</Text></Text>
       </ScrollView>
 
       {/* Category Picker Modal */}
-      <Modal visible={showCatPicker} animationType="slide" presentationStyle="pageSheet">
-        <View style={styles.modal}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Select Your Service</Text>
-            <TouchableOpacity onPress={() => setShowCatPicker(false)}><Ionicons name="close" size={22} color={colors.text} /></TouchableOpacity>
+      <Modal visible={showCatPicker} transparent animationType="slide">
+        <TouchableOpacity style={s.modalBg} activeOpacity={1} onPress={() => setShowCatPicker(false)}>
+          <View style={s.modalSheet} onStartShouldSetResponder={() => true}>
+            <View style={s.sheetBar} />
+            <Text style={s.sheetTitle}>Select Your Service</Text>
+            <FlatList data={categories} keyExtractor={item => item.slug || item._id} renderItem={({ item }) => (
+              <TouchableOpacity style={[s.catItem, selectedCategorySlug === item.slug && s.catItemActive]} onPress={() => { setSelectedCategorySlug(item.slug); setSelectedCategoryName(item.name); setSelectedGroup(item.group || ''); setShowCatPicker(false); }}>
+                <Ionicons name={item.icon || 'camera'} size={18} color={selectedCategorySlug === item.slug ? '#6C3BFF' : '#6B7280'} />
+                <Text style={[s.catItemText, selectedCategorySlug === item.slug && { color: '#6C3BFF', fontWeight: '700' }]}>{item.name}</Text>
+                {selectedCategorySlug === item.slug && <Ionicons name="checkmark-circle" size={18} color="#6C3BFF" />}
+              </TouchableOpacity>
+            )} />
           </View>
-          <FlatList
-            data={Object.entries(groupedCats)}
-            keyExtractor={([g]) => g}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 60 }}
-            renderItem={({ item: [group, cats] }) => (
-              <View>
-                <Text style={styles.groupHeader}>{group}</Text>
-                {cats.map((cat: any) => (
-                  <TouchableOpacity
-                    key={cat.slug}
-                    style={[styles.catItem, selectedCategorySlug === cat.slug && styles.catItemActive]}
-                    onPress={() => {
-                      setSelectedCategorySlug(cat.slug);
-                      setSelectedCategoryName(cat.name);
-                      setSelectedGroup(cat.group || group);
-                      setShowCatPicker(false);
-                      Haptics.selectionAsync();
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons name={(cat.icon as any) || 'storefront-outline'} size={16} color={selectedCategorySlug === cat.slug ? colors.primary : colors.textMuted} />
-                    <Text style={[styles.catItemText, selectedCategorySlug === cat.slug && { color: colors.primary, fontWeight: '700' }]}>{cat.name}</Text>
-                    {selectedCategorySlug === cat.slug && <Ionicons name="checkmark-circle" size={16} color={colors.primary} />}
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-          />
-        </View>
+        </TouchableOpacity>
       </Modal>
-
-      <PremiumModal visible={errorModal.visible} onClose={() => setErrorModal({ ...errorModal, visible: false })} type="error" title={errorModal.title} message={errorModal.message} buttons={[{ text: 'Try Again', onPress: () => setErrorModal({ ...errorModal, visible: false }), variant: 'primary' }]} />
     </KeyboardAvoidingView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  scroll: { flexGrow: 1, paddingHorizontal: spacing['2xl'], paddingBottom: spacing['4xl'] },
-  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', marginTop: spacing['5xl'], marginBottom: spacing['2xl'], borderWidth: 1, borderColor: colors.border },
-  title: { ...typography.displaySm, color: colors.text, marginBottom: spacing.sm },
-  subtitle: { ...typography.bodyMd, color: colors.textSecondary, marginBottom: spacing['3xl'] },
-  roleRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing['2xl'] },
-  roleBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingVertical: spacing.md + 2, borderRadius: radius.md, backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.border },
-  roleBtnActive: { borderColor: colors.primary, backgroundColor: colors.primaryMuted },
-  roleLabel: { ...typography.labelMd, color: colors.textMuted },
-  roleLabelActive: { color: colors.primary },
-  catSection: { marginBottom: spacing['2xl'] },
-  catLabel: { ...typography.labelSm, color: colors.textMuted, marginBottom: spacing.sm },
-  catPicker: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.primary, borderRadius: radius.md, padding: spacing.md },
-  catPickerGroup: { ...typography.caption, color: colors.primary, marginBottom: 2 },
-  catPickerName: { ...typography.headlineSm, color: colors.text },
-  errorText: { ...typography.caption, color: colors.error, marginTop: 4 },
-  form: {},
-  registerBtn: { marginTop: spacing.md },
-  terms: { ...typography.caption, color: colors.textMuted, textAlign: 'center', marginTop: spacing['2xl'], lineHeight: 18 },
-  termsLink: { color: colors.primary },
-  loginRow: { flexDirection: 'row', justifyContent: 'center', marginTop: spacing['2xl'] },
-  loginText: { ...typography.bodyMd, color: colors.textSecondary },
-  loginLink: { ...typography.labelLg, color: colors.primary },
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  scroll: { flexGrow: 1, paddingHorizontal: 24, paddingBottom: 40 },
+  backBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center', marginTop: Platform.OS === 'ios' ? 56 : 40 },
+  title: { fontSize: 24, fontWeight: '800', color: '#1F2937', marginTop: 24, marginBottom: 6 },
+  subtitle: { fontSize: 13, color: '#6B7280', marginBottom: 20 },
+  // Role selector
+  roleRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
+  roleBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 13, borderRadius: 14, borderWidth: 1.5, borderColor: '#E5E7EB', backgroundColor: '#FAFAFA' },
+  roleBtnActive: { borderColor: '#6C3BFF', backgroundColor: '#F3E8FF' },
+  roleText: { fontSize: 12, fontWeight: '600', color: '#9CA3AF' },
+  roleTextActive: { color: '#6C3BFF' },
+  // Error
+  errorBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA', borderRadius: 12, padding: 12, marginBottom: 16 },
+  errorBannerText: { fontSize: 12, color: '#DC2626', flex: 1 },
+  // Fields
+  fieldWrap: { marginBottom: 16 },
+  label: { fontSize: 12, fontWeight: '600', color: '#374151', marginBottom: 6 },
+  inputRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFB', borderWidth: 1.5, borderColor: '#E5E7EB', borderRadius: 14, paddingHorizontal: 14, height: 50, gap: 10 },
+  inputError: { borderColor: '#EF4444' },
+  input: { flex: 1, fontSize: 14, color: '#1F2937' },
+  fieldError: { fontSize: 11, color: '#EF4444', marginTop: 4, marginLeft: 4 },
+  // Register button
+  registerBtnGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 52, borderRadius: 16, elevation: 3, shadowColor: '#6C3BFF', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 8 },
+  registerBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+  // Login
+  loginRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 18 },
+  loginText: { fontSize: 13, color: '#6B7280' },
+  loginLink: { fontSize: 13, fontWeight: '700', color: '#6C3BFF' },
+  // Terms
+  terms: { fontSize: 10, color: '#9CA3AF', textAlign: 'center', marginTop: 16, lineHeight: 15 },
+  termsLink: { color: '#6C3BFF', fontWeight: '500' },
   // Modal
-  modal: { flex: 1, backgroundColor: colors.background },
-  modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.xl, paddingTop: spacing['3xl'], borderBottomWidth: 1, borderBottomColor: colors.border },
-  modalTitle: { ...typography.headlineLg, color: colors.text },
-  groupHeader: { ...typography.labelSm, color: colors.primary, backgroundColor: 'rgba(255,140,43,0.06)', paddingHorizontal: spacing.xl, paddingVertical: spacing.sm, marginTop: spacing.md, letterSpacing: 1 },
-  catItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.xl, paddingVertical: spacing.md + 2, borderBottomWidth: 1, borderBottomColor: colors.border },
-  catItemActive: { backgroundColor: 'rgba(255,140,43,0.06)' },
-  catItemText: { ...typography.bodyMd, color: colors.text, flex: 1 },
+  modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
+  modalSheet: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '70%' },
+  sheetBar: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#E5E7EB', alignSelf: 'center', marginBottom: 16 },
+  sheetTitle: { fontSize: 16, fontWeight: '700', color: '#1F2937', marginBottom: 16 },
+  catItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+  catItemActive: { backgroundColor: '#F8F6FF', marginHorizontal: -8, paddingHorizontal: 8, borderRadius: 10 },
+  catItemText: { fontSize: 13, color: '#4B5563', flex: 1 },
 });
