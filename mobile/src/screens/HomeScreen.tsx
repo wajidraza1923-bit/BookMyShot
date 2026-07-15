@@ -100,7 +100,7 @@ export default function HomeScreen({ navigation }: any) {
         const mapped = dbCats.map((c: any, idx: number) => ({
           id: c.slug || c.name?.toLowerCase().replace(/\s+/g, '-'),
           label: c.name?.length > 14 ? c.name.split(' ')[0] : c.name,
-          emoji: CATEGORIES_DEFAULT[idx]?.emoji || '📷',
+          icon: CATEGORIES_DEFAULT[idx]?.icon || 'camera-outline',
           color: CATEGORIES_DEFAULT[idx]?.color || '#EEF2FF',
           count: c.creatorCount || 0,
         }));
@@ -207,7 +207,7 @@ export default function HomeScreen({ navigation }: any) {
             {/* Premium Cashback Badge — compact luxury design */}
             <View style={st.heroCashbackPill}>
               <View style={st.heroCashbackIconCircle}>
-                <Text style={{ fontSize: 14 }}>🪙</Text>
+                <Ionicons name="gift-outline" size={14} color="#D4860A" />
               </View>
               <View style={{ marginLeft: 6 }}>
                 <Text style={st.heroCbLabel}>Up to</Text>
@@ -248,7 +248,7 @@ export default function HomeScreen({ navigation }: any) {
         <View style={st.catGrid}>
           {categories.slice(0, 10).map(cat => (
             <TouchableOpacity key={cat.id} style={st.catCard} onPress={() => cat.id === 'more' ? navigation.navigate('Discover') : navigation.navigate('SubCategories', { slug: cat.id, name: cat.label, icon: 'grid' })} activeOpacity={0.7}>
-              <View style={[st.catIcon, { backgroundColor: cat.color }]}><Text style={st.catEmoji}>{cat.emoji}</Text></View>
+              <View style={[st.catIconWrap, { backgroundColor: cat.color }]}><Ionicons name={cat.icon as any} size={20} color="#6C3BFF" /></View>
               <Text style={st.catName}>{cat.label}</Text>
               {cat.count > 0 && <Text style={st.catCount}>{cat.count}+ Creators</Text>}
             </TouchableOpacity>
@@ -329,7 +329,7 @@ const st = StyleSheet.create({
   searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFB', borderRadius: 12, paddingHorizontal: 12, height: 44, borderWidth: 1, borderColor: '#E5E7EB', gap: 8 },
   searchInput: { flex: 1, fontSize: 12, color: '#1F2937' },
   filtersBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#6C3BFF', borderRadius: 12, paddingHorizontal: 14, height: 44 },
-  filtersBtnT: { fontSize: 11, fontWeight: '700', color: '#1F2937' },
+  filtersBtnT: { fontSize: 12, fontWeight: '800', color: '#FFFFFF', letterSpacing: 0.3 },
   // ═══ HERO — Image as integrated full background ═══
   heroBanner: { marginHorizontal: 0, marginTop: 10, overflow: 'hidden', height: 380, position: 'relative' },
   heroFullImg: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%', zIndex: 0, opacity: 0.85 },
@@ -347,7 +347,7 @@ const st = StyleSheet.create({
   heroCbLabel: { fontSize: 9, fontWeight: '500', color: '#8B7355' },
   heroCbValue: { fontSize: 20, fontWeight: '900', color: '#D4860A', lineHeight: 24 },
   heroCbWord: { fontSize: 12, fontWeight: '600', color: '#B8860B' },
-  heroShine: { position: 'absolute', top: 0, width: 30, height: '100%', backgroundColor: '#9CA3AF', transform: [{ skewX: '-15deg' }] },
+  heroShine: { position: 'absolute', top: 0, width: 20, height: '100%', backgroundColor: 'rgba(255,255,255,0.3)', transform: [{ skewX: '-15deg' }] },
   heroButtonRow: { flexDirection: 'row', gap: 12 },
   heroFindBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#6C3BFF', paddingHorizontal: 20, paddingVertical: 14, borderRadius: 12, elevation: 4, shadowColor: '#6C3BFF', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.35, shadowRadius: 8 },
   heroFindBtnText: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
@@ -365,8 +365,7 @@ const st = StyleSheet.create({
   // Categories — 5-column grid (matches reference)
   catGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12, gap: 8 },
   catCard: { width: (width - 24 - 32) / 5, alignItems: 'center', paddingVertical: 14 },
-  catIcon: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  catEmoji: { fontSize: 20 },
+  catIconWrap: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
   catName: { fontSize: 9.5, fontWeight: '700', color: '#1F2937', textAlign: 'center' },
   catCount: { fontSize: 7.5, color: '#6B7280', marginTop: 2 },
   // Top Creators — clean white cards, no overlays
