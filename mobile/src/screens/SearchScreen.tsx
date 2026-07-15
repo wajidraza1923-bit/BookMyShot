@@ -112,7 +112,7 @@ export default function SearchScreen({ navigation, route }: any) {
       <View style={s.header}>
         <View><Text style={s.headerTitle}>Discover</Text><Text style={s.headerSub}>Find your perfect creator</Text></View>
         <View style={s.headerIcons}>
-          <TouchableOpacity style={s.iconBtn}><Ionicons name="options-outline" size={18} color="#FF8C2B" /></TouchableOpacity>
+          <TouchableOpacity style={s.iconBtn}><Ionicons name="options-outline" size={18} color="#6C3BFF" /></TouchableOpacity>
         </View>
       </View>
 
@@ -120,21 +120,21 @@ export default function SearchScreen({ navigation, route }: any) {
       <View style={s.searchRow}>
         <View style={s.searchBar}>
           <Ionicons name="search" size={15} color="rgba(255,255,255,0.3)" />
-          <TextInput style={s.searchInput} value={query} onChangeText={handleSearch} placeholder="Search creators, cities, categories..." placeholderTextColor="rgba(255,255,255,0.25)" selectionColor="#FF8C2B" />
+          <TextInput style={s.searchInput} value={query} onChangeText={handleSearch} placeholder="Search creators, cities, categories..." placeholderTextColor="rgba(255,255,255,0.25)" selectioncolor="#6C3BFF" />
           {query.length > 0 && <TouchableOpacity onPress={clearFilters}><Ionicons name="close-circle" size={17} color="rgba(255,255,255,0.3)" /></TouchableOpacity>}
         </View>
-        <TouchableOpacity style={s.locBtn}><Ionicons name="location" size={14} color="#FF8C2B" /><Text style={s.locText}>J&K</Text></TouchableOpacity>
+        <TouchableOpacity style={s.locBtn}><Ionicons name="location" size={14} color="#6C3BFF" /><Text style={s.locText}>J&K</Text></TouchableOpacity>
       </View>
 
       {/* FILTERS */}
       {(selectedCity || selectedCategory) && (
         <View style={s.filterRow}>
-          {selectedCity ? <TouchableOpacity style={s.filterChip} onPress={() => setSelectedCity('')}><Text style={s.filterText}>{selectedCity}</Text><Ionicons name="close" size={11} color="#FF8C2B" /></TouchableOpacity> : null}
-          {selectedCategory ? <TouchableOpacity style={s.filterChip} onPress={() => setSelectedCategory('')}><Text style={s.filterText}>{selectedCategory}</Text><Ionicons name="close" size={11} color="#FF8C2B" /></TouchableOpacity> : null}
+          {selectedCity ? <TouchableOpacity style={s.filterChip} onPress={() => setSelectedCity('')}><Text style={s.filterText}>{selectedCity}</Text><Ionicons name="close" size={11} color="#6C3BFF" /></TouchableOpacity> : null}
+          {selectedCategory ? <TouchableOpacity style={s.filterChip} onPress={() => setSelectedCategory('')}><Text style={s.filterText}>{selectedCategory}</Text><Ionicons name="close" size={11} color="#6C3BFF" /></TouchableOpacity> : null}
         </View>
       )}
 
-      {loading ? <ActivityIndicator size="large" color="#FF8C2B" style={{ marginTop: 50 }} /> :
+      {loading ? <ActivityIndicator size="large" color="#6C3BFF" style={{ marginTop: 50 }} /> :
         showResults ? <ResultsList creators={creators} navigation={navigation} districts={districts} selectedCity={selectedCity} setSelectedCity={setSelectedCity} setShowResults={setShowResults} /> :
         <DiscoverContent districts={districts} trendingSearches={trendingSearches} categories={categories} inspiration={inspiration} trendingCreators={trendingCreators} featuredCreators={featuredCreators} navigation={navigation} setQuery={setQuery} setSelectedCity={setSelectedCity} setSelectedCategory={setSelectedCategory} setShowResults={setShowResults} />
       }
@@ -150,7 +150,7 @@ function DiscoverContent({ districts, trendingSearches, categories, inspiration,
       {trendingSearches.length > 0 && (<>
         <Text style={s.secTitle}>Trending Searches</Text>
         <View style={s.pillWrap}>{trendingSearches.map((t: any, i: number) => (
-          <TouchableOpacity key={i} style={s.pill} onPress={() => { setQuery(t.title); setShowResults(true); }}><Ionicons name={(t.icon || 'search') as any} size={13} color="#FF8C2B" /><Text style={s.pillText}>{t.title}</Text></TouchableOpacity>
+          <TouchableOpacity key={i} style={s.pill} onPress={() => { setQuery(t.title); setShowResults(true); }}><Ionicons name={(t.icon || 'search') as any} size={13} color="#6C3BFF" /><Text style={s.pillText}>{t.title}</Text></TouchableOpacity>
         ))}</View>
       </>)}
 
@@ -160,7 +160,7 @@ function DiscoverContent({ districts, trendingSearches, categories, inspiration,
         <FlatList horizontal showsHorizontalScrollIndicator={false} data={categories} contentContainerStyle={{ paddingHorizontal: 20 }} keyExtractor={(i: any) => i.id}
           renderItem={({ item }: any) => (
             <TouchableOpacity style={s.catCard} onPress={() => { setSelectedCategory(item.id); setShowResults(true); }}>
-              {item.image ? <Image source={{ uri: item.image }} style={s.catImg} /> : <View style={s.catPlaceholder}><Ionicons name={(item.icon || 'camera') as any} size={24} color="#FF8C2B" /></View>}
+              {item.image ? <Image source={{ uri: item.image }} style={s.catImg} /> : <View style={s.catPlaceholder}><Ionicons name={(item.icon || 'camera') as any} size={24} color="#6C3BFF" /></View>}
               <View style={s.catOverlay} />
               <View style={s.catBottom}><Text style={s.catLabel}>{item.label}</Text><Text style={s.catCount}>{item.count || 0}+</Text></View>
             </TouchableOpacity>
@@ -180,7 +180,7 @@ function DiscoverContent({ districts, trendingSearches, categories, inspiration,
               <View style={s.fcInfo}>
                 <Text style={s.fcName} numberOfLines={1}>{item.user?.name}</Text>
                 <Text style={s.fcMeta}>{item.city || item.specialty}</Text>
-                <View style={s.fcRow}><Ionicons name="star" size={10} color="#FF8C2B" /><Text style={s.fcRating}>{item.rating || '5.0'}</Text>
+                <View style={s.fcRow}><Ionicons name="star" size={10} color="#6C3BFF" /><Text style={s.fcRating}>{item.rating || '5.0'}</Text>
                   {item.startingPrice > 0 && <Text style={s.fcPrice}>₹{item.startingPrice?.toLocaleString('en-IN')}</Text>}</View>
               </View>
             </TouchableOpacity>
@@ -193,7 +193,7 @@ function DiscoverContent({ districts, trendingSearches, categories, inspiration,
         <FlatList horizontal showsHorizontalScrollIndicator={false} data={districts.slice(0, 10)} contentContainerStyle={{ paddingHorizontal: 20 }} keyExtractor={(i: any) => i._id || i.name}
           renderItem={({ item }: any) => (
             <TouchableOpacity style={s.distCard} onPress={() => { setSelectedCity(item.name); setShowResults(true); }}>
-              {item.imageUrl ? <Image source={{ uri: item.imageUrl }} style={s.distImg} /> : <View style={s.distPlaceholder}><Ionicons name="location" size={22} color="#FF8C2B" /></View>}
+              {item.imageUrl ? <Image source={{ uri: item.imageUrl }} style={s.distImg} /> : <View style={s.distPlaceholder}><Ionicons name="location" size={22} color="#6C3BFF" /></View>}
               <Text style={s.distName}>{item.name}</Text>
               <Text style={s.distCount}>{item.creatorCount || 0}+ Creators</Text>
             </TouchableOpacity>
@@ -210,7 +210,7 @@ function DiscoverContent({ districts, trendingSearches, categories, inspiration,
               <Image source={{ uri: _img(item.user?.avatar) || _img(item.portfolio?.[0]) || 'https://via.placeholder.com/100' }} style={s.trAvatar} />
               <Text style={s.trName} numberOfLines={1}>{item.user?.name}</Text>
               <Text style={s.trCity}>{item.city || item.specialty}</Text>
-              <View style={s.trRatingRow}><Ionicons name="star" size={9} color="#FF8C2B" /><Text style={s.trRatingText}>{item.rating || '5.0'}</Text></View>
+              <View style={s.trRatingRow}><Ionicons name="star" size={9} color="#6C3BFF" /><Text style={s.trRatingText}>{item.rating || '5.0'}</Text></View>
             </TouchableOpacity>
           )} />
       </>)}
@@ -242,7 +242,7 @@ function ResultsList({ creators, navigation, districts, selectedCity, setSelecte
         <View>
           {/* Back button + District filter bar */}
           <TouchableOpacity onPress={() => setShowResults(false)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12, paddingVertical: 4 }}>
-            <Ionicons name="arrow-back" size={16} color="#FF8C2B" />
+            <Ionicons name="arrow-back" size={16} color="#6C3BFF" />
             <Text style={{ fontSize: 12, color: '#6C3BFF', fontWeight: '600' }}>Back to Discover</Text>
           </TouchableOpacity>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }} contentContainerStyle={{ gap: 8 }}>
@@ -280,7 +280,7 @@ function ResultsList({ creators, navigation, districts, selectedCity, setSelecte
             <Text style={s.resMeta}>{item.specialty || 'Photographer'} • {item.city || 'J&K'}</Text>
             {item.bio && <Text style={s.resBio} numberOfLines={2}>{item.bio}</Text>}
             <View style={s.resRow}>
-              <Ionicons name="star" size={10} color="#FF8C2B" /><Text style={s.resRating}>{item.rating || '5.0'}</Text>
+              <Ionicons name="star" size={10} color="#6C3BFF" /><Text style={s.resRating}>{item.rating || '5.0'}</Text>
               <Text style={s.resReviews}>({item.reviewCount || 0})</Text>
               {item.startingPrice > 0 && <Text style={s.resPrice}>₹{item.startingPrice?.toLocaleString('en-IN')}</Text>}
             </View>
@@ -375,9 +375,9 @@ const s = StyleSheet.create({
   resPrice: { fontSize: 10, fontWeight: '600', color: '#6C3BFF', marginLeft: 'auto' },
   // District filter chips
   distChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: '#F1F5F9', backgroundColor: '#FAFAFA' },
-  distChipActive: { backgroundColor: 'rgba(255,140,43,0.1)', borderColor: 'rgba(255,140,43,0.3)' },
+  distChipActive: { backgroundColor: '#6C3BFF', borderColor: '#6C3BFF' },
   distChipText: { fontSize: 11, color: '#6B7280' },
-  distChipTextActive: { color: '#6C3BFF', fontWeight: '600' },
+  distChipTextActive: { color: '#FFFFFF', fontWeight: '600' },
   emptySubTitle: { fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 4 },
   empty: { alignItems: 'center', paddingTop: 50 },
   emptyTitle: { fontSize: 14, color: '#9CA3AF', marginTop: 10 },
