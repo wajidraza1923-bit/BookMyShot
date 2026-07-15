@@ -24,6 +24,7 @@ import CreatorNotifications from '../screens/creator/CreatorNotifications';
 import PaymentProofScreen from '../screens/PaymentProofScreen';
 import SubCategoriesScreen from '../screens/SubCategoriesScreen';
 import NearMeScreen from '../screens/NearMeScreen';
+import WalletScreen from '../screens/WalletScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -69,6 +70,7 @@ export default function CustomerNavigator() {
       <Stack.Screen name="SubCategories" component={SubCategoriesScreen} />
       <Stack.Screen name="NearMe" component={NearMeScreen} />
       <Stack.Screen name="Discover" component={SearchScreen} />
+      <Stack.Screen name="Wallet" component={WalletScreen} />
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       <Stack.Screen name="CreatorNotifications" component={CreatorNotifications} />
       <Stack.Screen name="PaymentProof" component={PaymentProofScreen} options={{ animation: 'slide_from_bottom' }} />

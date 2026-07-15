@@ -315,6 +315,18 @@ export default function HomeScreen({ navigation }: any) {
           </LinearGradient>
         </View>
 
+        {/* ═══ CASHBACK WALLET QUICK ACCESS ═══ */}
+        {isAuthenticated && (
+          <TouchableOpacity style={st.walletQuick} onPress={() => navigation.navigate('Wallet')} activeOpacity={0.8}>
+            <Ionicons name="wallet-outline" size={20} color="#6C3BFF" />
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={st.walletQuickTitle}>My Cashback Wallet</Text>
+              <Text style={st.walletQuickSub}>View balance, history & earn rewards</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+          </TouchableOpacity>
+        )}
+
         {/* ═══ FOOTER ═══ */}
         <AppFooter navigation={navigation} />
       </Animated.ScrollView>
@@ -411,4 +423,8 @@ const st = StyleSheet.create({
   offerBadge: { backgroundColor: '#FFFFFF', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, alignItems: 'center' },
   offerBadgeLabel: { fontSize: 8, fontWeight: '600', color: '#6C3BFF' },
   offerBadgeValue: { fontSize: 13, fontWeight: '800', color: '#1F2937', marginTop: 1 },
+  // Wallet Quick Access
+  walletQuick: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginTop: 14, backgroundColor: '#FFFFFF', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#EDE9FE' },
+  walletQuickTitle: { fontSize: 13, fontWeight: '600', color: '#1F2937' },
+  walletQuickSub: { fontSize: 10, color: '#6B7280', marginTop: 1 },
 });
