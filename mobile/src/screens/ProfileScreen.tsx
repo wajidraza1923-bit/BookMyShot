@@ -72,6 +72,7 @@ export default function ProfileScreen({ navigation }: any) {
       title: 'Account',
       items: [
         { icon: 'calendar-outline', label: 'My Bookings', screen: 'Bookings', badge: stats.bookings > 0 ? String(stats.bookings) : null },
+        { icon: 'wallet-outline', label: 'Cashback Wallet', screen: 'Wallet' },
         { icon: 'notifications-outline', label: 'Notifications', screen: 'CreatorNotifications', badge: stats.notifications > 0 ? String(stats.notifications) : null },
       ],
     },

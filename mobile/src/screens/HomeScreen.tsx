@@ -315,18 +315,6 @@ export default function HomeScreen({ navigation }: any) {
           </LinearGradient>
         </View>
 
-        {/* ═══ CASHBACK WALLET QUICK ACCESS ═══ */}
-        {isAuthenticated && (
-          <TouchableOpacity style={st.walletQuick} onPress={() => navigation.navigate('Wallet')} activeOpacity={0.8}>
-            <Ionicons name="wallet-outline" size={20} color="#6C3BFF" />
-            <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={st.walletQuickTitle}>My Cashback Wallet</Text>
-              <Text style={st.walletQuickSub}>View balance, history & earn rewards</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
-          </TouchableOpacity>
-        )}
-
         {/* ═══ FOOTER ═══ */}
         <AppFooter navigation={navigation} />
       </Animated.ScrollView>
