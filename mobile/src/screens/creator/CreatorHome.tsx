@@ -153,9 +153,6 @@ export default function CreatorHome({ navigation }: any) {
             <Text style={styles.platformFeeSub}>Your customer has paid the 5% Booking Advance to BookMyShot. Your booking is confirmed. Collect the remaining 95% directly from the customer as per your agreed terms.</Text>
           </View>
         )}
-            </TouchableOpacity>
-          </View>
-        )}
 
         {/* Subscription Expiry Warning */}
         {(stats as any).expiryWarning && (
