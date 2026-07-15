@@ -393,3 +393,4 @@ const s = StyleSheet.create({
   ctaLabel: { fontSize: 9, color: '#9CA3AF' },
   ctaPrice: { fontSize: 16, fontWeight: '700', color: '#1F2937' },
 });
+

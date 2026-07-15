@@ -180,3 +180,4 @@ const s = StyleSheet.create({
   countdownText: { fontSize: 12, color: '#9CA3AF', marginTop: 4 },
   resendBtn: { fontSize: 13, fontWeight: '600', color: '#6C3BFF', marginTop: 4 },
 });
+

@@ -141,3 +141,4 @@ const st = StyleSheet.create({
   submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#6C3BFF', borderRadius: 12, paddingVertical: 14, marginTop: 24 },
   submitText: { fontSize: 14, fontWeight: '700', color: '#000' },
 });
+

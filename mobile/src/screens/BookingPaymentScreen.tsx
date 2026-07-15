@@ -197,3 +197,4 @@ const s = StyleSheet.create({
   payBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginHorizontal: 20, marginTop: 24, backgroundColor: '#6C3BFF', borderRadius: 16, paddingVertical: 16, elevation: 3, shadowColor: '#6C3BFF', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 8 },
   payBtnText: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
 });
+

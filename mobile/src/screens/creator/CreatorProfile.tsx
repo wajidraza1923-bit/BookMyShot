@@ -288,3 +288,4 @@ const s = StyleSheet.create({
   saveBtnText: { fontSize: 14, fontWeight: '700', color: '#000' },
   syncNote: { fontSize: 9, color: 'rgba(255,255,255,0.2)', textAlign: 'center', marginTop: 8 },
 });
+

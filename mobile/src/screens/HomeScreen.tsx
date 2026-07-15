@@ -416,3 +416,4 @@ const st = StyleSheet.create({
   walletQuickTitle: { fontSize: 13, fontWeight: '600', color: '#1F2937' },
   walletQuickSub: { fontSize: 10, color: '#6B7280', marginTop: 1 },
 });
+

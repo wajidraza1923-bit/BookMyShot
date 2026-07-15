@@ -371,3 +371,4 @@ const styles = StyleSheet.create({
   promoteBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, marginHorizontal: spacing.xl, marginBottom: spacing.md, paddingVertical: spacing.md, borderRadius: radius.md, backgroundColor: colors.primaryMuted, borderWidth: 1, borderColor: colors.borderGold },
   promoteBtnText: { ...typography.labelMd, color: colors.primary, fontWeight: '600' },
 });
+

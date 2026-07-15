@@ -629,3 +629,4 @@ const s = StyleSheet.create({
   modalDeleteBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 16, paddingVertical: 10, borderWidth: 1, borderColor: 'rgba(239,68,68,0.2)', borderRadius: 10 },
   modalDeleteText: { fontSize: 12, color: '#EF4444' },
 });
+

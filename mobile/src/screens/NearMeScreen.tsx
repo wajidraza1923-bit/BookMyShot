@@ -396,7 +396,7 @@ const s = StyleSheet.create({
   searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFB', borderRadius: 12, paddingHorizontal: 12, height: 42, borderWidth: 1, borderColor: '#E5E7EB', gap: 6 },
   searchInput: { flex: 1, fontSize: 12, color: '#1F2937' },
   filterBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#6C3BFF', borderRadius: 12, paddingHorizontal: 14, height: 42 },
-  filterBtnT: { fontSize: 11, fontWeight: '700', color: '#1F2937' },
+  filterBtnT: { fontSize: 12, fontWeight: '800', color: '#FFFFFF', letterSpacing: 0.3 } },
   // Chips — small rounded, height 44px, horizontal scroll
   chipRow: { paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 44, paddingHorizontal: 16, borderRadius: 24, backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: '#E5E7EB' },
@@ -453,7 +453,7 @@ const s = StyleSheet.create({
   actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1.5, borderColor: '#6C3BFF', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
   actionT: { fontSize: 9, fontWeight: '700', color: '#6C3BFF' },
   actionBtnFilled: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#6C3BFF', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
-  actionTFilled: { fontSize: 9, fontWeight: '700', color: '#1F2937' },
+  actionTFilled: { fontSize: 9, fontWeight: '700', color: '#FFFFFF' } },
   // Empty
   empty: { alignItems: 'center', paddingVertical: 50, paddingHorizontal: 30 },
   emptyTitle: { fontSize: 15, fontWeight: '700', color: '#1F2937', marginTop: 12 },
@@ -489,3 +489,4 @@ const s = StyleSheet.create({
   sortOptionT: { fontSize: 13, color: '#4B5563' },
   sortOptionTActive: { color: '#6C3BFF', fontWeight: '700' },
 });
+
