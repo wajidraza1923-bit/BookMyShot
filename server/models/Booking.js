@@ -57,6 +57,12 @@ const bookingSchema = new mongoose.Schema(
     commissionStatus: { type: String, enum: ["pending", "paid", "waived", ""], default: "" },
     commissionLocked: { type: Boolean, default: false },
     commissionLockedAmount: { type: Number, default: 0 },
+    // Booking Fee (5% paid by customer to BookMyShot)
+    bookingFeePaid: { type: Boolean, default: false },
+    bookingFeeAmount: { type: Number, default: 0 },
+    bookingFeePaymentId: { type: String, default: "" },
+    bookingFeeOrderId: { type: String, default: "" },
+    bookingFeePaidAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
