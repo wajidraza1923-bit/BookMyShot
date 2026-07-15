@@ -30,6 +30,14 @@ const CATEGORIES_DEFAULT = [
   { id: 'more', label: 'More', emoji: '•••', color: '#F9FAFB' },
 ];
 
+// Smart number formatter: shows actual number below 1000, K+ format above
+function formatStat(num: number): string {
+  if (!num || num === 0) return '0';
+  if (num < 1000) return String(num);
+  if (num < 10000) return `${(num / 1000).toFixed(1)}K+`;
+  return `${Math.floor(num / 1000)}K+`;
+}
+
 export default function HomeScreen({ navigation }: any) {
   const { isAuthenticated } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
@@ -226,10 +234,10 @@ export default function HomeScreen({ navigation }: any) {
         {/* ═══ STATS ═══ */}
         <View style={st.statsRow}>
           {[
-            { icon: 'people-outline', val: stats.creators > 0 ? `${(stats.creators / 1000).toFixed(stats.creators > 999 ? 0 : 1)}K+` : '—', label: 'Trusted Creators', c: '#6C3BFF' },
-            { icon: 'calendar-outline', val: stats.bookings > 0 ? `${(stats.bookings / 1000).toFixed(stats.bookings > 999 ? 0 : 1)}K+` : '—', label: 'Bookings Done', c: '#FF4FA3' },
-            { icon: 'location-outline', val: stats.cities > 0 ? `${stats.cities}+` : '—', label: 'Cities Covered', c: '#10B981' },
-            { icon: 'star-outline', val: stats.avgRating > 0 ? stats.avgRating.toFixed(1) : '—', label: 'Average Rating', c: '#F4B400' },
+            { icon: 'people-outline', val: formatStat(stats.creators), label: 'Trusted Creators', c: '#6C3BFF' },
+            { icon: 'calendar-outline', val: formatStat(stats.bookings), label: 'Bookings Done', c: '#FF4FA3' },
+            { icon: 'location-outline', val: stats.cities > 0 ? `${stats.cities}+` : '0', label: 'Cities Covered', c: '#10B981' },
+            { icon: 'star-outline', val: stats.avgRating > 0 ? stats.avgRating.toFixed(1) : '0', label: 'Average Rating', c: '#F4B400' },
           ].map((s, i) => (
             <View key={i} style={st.stat}><Ionicons name={s.icon as any} size={20} color={s.c} /><Text style={st.statVal}>{s.val}</Text><Text style={st.statLbl}>{s.label}</Text></View>
           ))}
