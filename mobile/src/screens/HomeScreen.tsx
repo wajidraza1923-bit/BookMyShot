@@ -382,7 +382,7 @@ const st = StyleSheet.create({
   catCard: { width: (width - 24 - 32) / 5, alignItems: 'center', paddingVertical: 14 },
   catIconWrap: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
   catName: { fontSize: 9.5, fontWeight: '700', color: '#1F2937', textAlign: 'center' },
-  catCount: { fontSize: 7.5, color: '#6B7280', marginTop: 2 },
+  catCount: { fontSize: 8, color: '#374151', marginTop: 2, fontWeight: '500' },
   // Top Creators — clean white cards, no overlays
   tcCard: { width: 160, borderRadius: 16, overflow: 'hidden', marginRight: 12, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#F1F5F9', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4 },
   tcImg: { width: '100%', height: 110, resizeMode: 'cover' },
