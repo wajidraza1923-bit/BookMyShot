@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Featured Wedding Moments - BookMyShot Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Outfit', sans-serif; background: #FAFAFE; color: #1F2937; min-height: 100vh; }
+    .page-header { background: #fff; border-bottom: 1px solid #F1F0F7; padding: 20px 28px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+    .page-header h1 { font-size: 20px; font-weight: 700; }
+    .page-header .back-link { color: #6C3BFF; text-decoration: none; font-size: 14px; font-weight: 500; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
+    .top-bar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+    .btn { padding: 10px 18px; border-radius: 10px; border: none; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .btn-primary { background: #6C3BFF; color: #fff; }
+    .btn-primary:hover { background: #5B2FD9; }
+    .btn-danger { background: #FEE2E2; color: #DC2626; }
+    .search-input { flex: 1; min-width: 200px; padding: 10px 14px; border: 1px solid #E5E7EB; border-radius: 10px; font-size: 13px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+    .card { background: #fff; border-radius: 16px; overflow: hidden; border: 1px solid #F1F0F7; transition: all 0.2s; }
+    .card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+    .card-img { width: 100%; height: 180px; object-fit: cover; }
+    .card-body { padding: 16px; }
+    .card-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+    .card-meta { font-size: 11px; color: #6B7280; display: flex; gap: 10px; margin-bottom: 8px; }
+    .card-stats { display: flex; gap: 14px; font-size: 11px; color: #6B7280; margin-bottom: 10px; }
+    .card-actions { display: flex; gap: 8px; }
+    .card-actions .btn { padding: 6px 12px; font-size: 11px; border-radius: 8px; }
+    .badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 600; }
+    .badge-active { background: #D1FAE5; color: #059669; }
+    .badge-inactive { background: #FEE2E2; color: #DC2626; }
+    .badge-cat { background: #EDE9FE; color: #6C3BFF; }
+    /* Modal */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 1000; justify-content: center; align-items: center; }
+    .modal-overlay.active { display: flex; }
+    .modal { background: #fff; border-radius: 20px; padding: 28px; width: 90%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
+    .modal h3 { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 12px; font-weight: 600; color: #4B5563; margin-bottom: 6px; }
+    .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px 14px; border: 1px solid #E5E7EB; border-radius: 10px; font-size: 13px; font-family: inherit; }
+    .form-group textarea { min-height: 70px; resize: vertical; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+    .toast { position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: 12px; font-size: 13px; z-index: 2000; animation: slideIn 0.3s; }
+    .toast.success { background: #D1FAE5; color: #065F46; }
+    .toast.error { background: #FEE2E2; color: #991B1B; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    .empty { text-align: center; padding: 60px; color: #9CA3AF; }
+    @media(max-width:768px) { .grid { grid-template-columns: 1fr; } .form-row { grid-template-columns: 1fr; } }
+  </style>
+  <link rel="stylesheet" href="/css/admin-theme.css">
+</head>
+<body>
+  <div class="page-header">
+    <h1>✨ Featured Wedding Moments</h1>
+    <a href="/admin/dashboard.html" class="back-link"><i class="fa-solid fa-arrow-left"></i> Dashboard</a>
+  </div>
+  <div class="container">
+    <div class="top-bar">
+      <button class="btn btn-primary" onclick="openCreate()"><i class="fa-solid fa-plus"></i> Add Moment</button>
+      <input class="search-input" placeholder="Search by title, city..." id="searchInput" oninput="filterMoments()">
+      <select style="padding:10px;border:1px solid #E5E7EB;border-radius:10px;font-size:13px;" id="filterCat" onchange="filterMoments()">
+        <option value="">All Categories</option>
+        <option>Photography</option><option>Videography</option><option>Makeup</option><option>Decoration</option><option>Catering</option><option>Mehndi</option><option>Venues</option><option>DJ</option><option>Wedding Planner</option>
+      </select>
+    </div>
+    <div class="grid" id="momentsGrid"></div>
+    <div class="empty" id="emptyState" style="display:none;"><i class="fa-solid fa-images" style="font-size:36px;margin-bottom:12px;"></i><p>No featured moments yet. Add your first one!</p></div>
+  </div>
+
+  <!-- Create/Edit Modal -->
+  <div class="modal-overlay" id="formModal">
+    <div class="modal">
+      <h3 id="formTitle">Add Featured Moment</h3>
+      <input type="hidden" id="editId">
+      <div class="form-group"><label>Cover Image URL (Cloudinary) *</label><input id="fCover" placeholder="https://res.cloudinary.com/..."></div>
+      <div class="form-group"><label>Gallery Images (comma-separated URLs)</label><textarea id="fGallery" placeholder="url1, url2, url3..."></textarea></div>
+      <div class="form-group"><label>Title *</label><input id="fTitle" placeholder="Beautiful Wedding Shoot"></div>
+      <div class="form-group"><label>Description</label><textarea id="fDesc" placeholder="About this moment..."></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label>Category *</label><select id="fCategory"><option>Photography</option><option>Videography</option><option>Makeup</option><option>Decoration</option><option>Catering</option><option>Mehndi</option><option>Venues</option><option>DJ</option><option>Wedding Planner</option></select></div>
+        <div class="form-group"><label>City *</label><input id="fCity" placeholder="Mumbai"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Creator Name</label><input id="fCreatorName" placeholder="Studio XYZ"></div>
+        <div class="form-group"><label>Rating (0-5)</label><input type="number" id="fRating" min="0" max="5" step="0.1" placeholder="4.5"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Sort Order</label><input type="number" id="fSort" placeholder="0"></div>
+        <div class="form-group"><label>Status</label><select id="fStatus"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+      </div>
+      <div class="form-group" style="display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" id="fFeatured" checked><label for="fFeatured" style="margin:0;cursor:pointer;">Featured on Homepage</label>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" style="background:#F3F4F6;color:#4B5563;" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveForm()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    let moments = [];
+
+    document.addEventListener('DOMContentLoaded', loadMoments);
+
+    async function loadMoments() {
+      try {
+        const res = await API.get('/featured-moments/admin/all');
+        moments = res.data || [];
+        renderGrid();
+      } catch (e) { toast('Failed to load: ' + (e.message || ''), 'error'); }
+    }
+
+    function renderGrid() {
+      const q = document.getElementById('searchInput').value.toLowerCase();
+      const cat = document.getElementById('filterCat').value;
+      let filtered = moments;
+      if (q) filtered = filtered.filter(m => m.title?.toLowerCase().includes(q) || m.city?.toLowerCase().includes(q));
+      if (cat) filtered = filtered.filter(m => m.category === cat);
+
+      if (filtered.length === 0) {
+        document.getElementById('momentsGrid').innerHTML = '';
+        document.getElementById('emptyState').style.display = 'block';
+        return;
+      }
+      document.getElementById('emptyState').style.display = 'none';
+      document.getElementById('momentsGrid').innerHTML = filtered.map(m => `
+        <div class="card">
+          <img class="card-img" src="${m.coverImage}" alt="${m.title}" onerror="this.src='https://placehold.co/400x200/F3E8FF/6C3BFF?text=No+Image'">
+          <div class="card-body">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <span class="badge badge-cat">${m.category}</span>
+              <span class="badge ${m.status === 'active' ? 'badge-active' : 'badge-inactive'}">${m.status}</span>
+            </div>
+            <p class="card-title">${m.title}</p>
+            <div class="card-meta">
+              <span>👤 ${m.creatorName || 'N/A'}</span>
+              <span>📍 ${m.city}</span>
+              <span>⭐ ${m.rating || 0}</span>
+            </div>
+            <div class="card-stats">
+              <span>❤️ ${m.likes || 0} likes</span>
+              <span>👁 ${m.views || 0} views</span>
+              <span>📐 Order: ${m.sortOrder || 0}</span>
+            </div>
+            <div class="card-actions">
+              <button class="btn" style="background:#EEF2FF;color:#6C3BFF;" onclick='editMoment(${JSON.stringify(m).replace(/'/g, "\\'")})'><i class="fa-solid fa-pen"></i> Edit</button>
+              <button class="btn" style="background:#F3E8FF;color:#7C3AED;" onclick="openUpload('${m._id}')"><i class="fa-solid fa-images"></i> Images (${(m.galleryImages||[]).length}/10)</button>
+              <button class="btn" style="background:${m.status === 'active' ? '#FEF3C7' : '#D1FAE5'};color:${m.status === 'active' ? '#B45309' : '#059669'};" onclick="toggleStatus('${m._id}', '${m.status}')">${m.status === 'active' ? 'Disable' : 'Enable'}</button>
+              <button class="btn btn-danger" onclick="deleteMoment('${m._id}')"><i class="fa-solid fa-trash"></i></button>
+            </div>
+            ${(m.galleryImages && m.galleryImages.length > 0) ? '<div style="display:flex;gap:6px;margin-top:10px;overflow-x:auto;padding-bottom:4px;">' + m.galleryImages.map(img => '<div style="position:relative;flex-shrink:0;"><img src="' + (img.url||img) + '" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:1px solid #EDE9FE;"><button onclick="deleteImage(\'' + m._id + '\',\'' + (img._id||'') + '\')" style="position:absolute;top:-4px;right:-4px;width:16px;height:16px;border-radius:50%;background:#EF4444;color:#fff;border:none;font-size:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button></div>').join('') + '</div>' : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function filterMoments() { renderGrid(); }
+
+    function openCreate() {
+      document.getElementById('formTitle').textContent = 'Add Featured Moment';
+      document.getElementById('editId').value = '';
+      document.getElementById('fCover').value = '';
+      document.getElementById('fGallery').value = '';
+      document.getElementById('fTitle').value = '';
+      document.getElementById('fDesc').value = '';
+      document.getElementById('fCategory').value = 'Photography';
+      document.getElementById('fCity').value = '';
+      document.getElementById('fCreatorName').value = '';
+      document.getElementById('fRating').value = '';
+      document.getElementById('fSort').value = '0';
+      document.getElementById('fStatus').value = 'active';
+      document.getElementById('fFeatured').checked = true;
+      document.getElementById('formModal').classList.add('active');
+    }
+
+    function editMoment(m) {
+      document.getElementById('formTitle').textContent = 'Edit Moment';
+      document.getElementById('editId').value = m._id;
+      document.getElementById('fCover').value = m.coverImage || '';
+      document.getElementById('fGallery').value = (m.galleryImages || []).join(', ');
+      document.getElementById('fTitle').value = m.title || '';
+      document.getElementById('fDesc').value = m.description || '';
+      document.getElementById('fCategory').value = m.category || 'Photography';
+      document.getElementById('fCity').value = m.city || '';
+      document.getElementById('fCreatorName').value = m.creatorName || '';
+      document.getElementById('fRating').value = m.rating || '';
+      document.getElementById('fSort').value = m.sortOrder || 0;
+      document.getElementById('fStatus').value = m.status || 'active';
+      document.getElementById('fFeatured').checked = m.isFeatured !== false;
+      document.getElementById('formModal').classList.add('active');
+    }
+
+    async function saveForm() {
+      const id = document.getElementById('editId').value;
+      const body = {
+        coverImage: document.getElementById('fCover').value.trim(),
+        galleryImages: document.getElementById('fGallery').value.split(',').map(s => s.trim()).filter(Boolean),
+        title: document.getElementById('fTitle').value.trim(),
+        description: document.getElementById('fDesc').value.trim(),
+        category: document.getElementById('fCategory').value,
+        city: document.getElementById('fCity').value.trim(),
+        creatorName: document.getElementById('fCreatorName').value.trim(),
+        rating: Number(document.getElementById('fRating').value) || 0,
+        sortOrder: Number(document.getElementById('fSort').value) || 0,
+        status: document.getElementById('fStatus').value,
+        isFeatured: document.getElementById('fFeatured').checked,
+      };
+      if (!body.coverImage || !body.title || !body.city) { toast('Cover image, title, and city are required', 'error'); return; }
+      try {
+        if (id) { await API.put('/featured-moments/admin/' + id, body); }
+        else { await API.post('/featured-moments/admin/create', body); }
+        toast(id ? 'Updated!' : 'Created!', 'success');
+        closeModal();
+        loadMoments();
+      } catch (e) { toast('Failed: ' + (e.message || ''), 'error'); }
+    }
+
+    async function toggleStatus(id, current) {
+      try {
+        await API.put('/featured-moments/admin/' + id, { status: current === 'active' ? 'inactive' : 'active' });
+        toast('Status updated', 'success');
+        loadMoments();
+      } catch (e) { toast('Failed', 'error'); }
+    }
+
+    async function deleteMoment(id) {
+      if (!confirm('Delete this moment permanently?')) return;
+      try {
+        await API.delete('/featured-moments/admin/' + id);
+        toast('Deleted', 'success');
+        loadMoments();
+      } catch (e) { toast('Failed', 'error'); }
+    }
+
+    function closeModal() { document.getElementById('formModal').classList.remove('active'); }
+    function toast(msg, type) { const t = document.createElement('div'); t.className = 'toast ' + type; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 4000); }
+
+    // ═══ IMAGE UPLOAD ═══
+    let uploadMomentId = '';
+
+    function openUpload(id) {
+      uploadMomentId = id;
+      const m = moments.find(x => x._id === id);
+      const count = (m?.galleryImages || []).length;
+      if (count >= 10) { toast('Maximum 10 images allowed.', 'error'); return; }
+      document.getElementById('uploadInput').value = '';
+      document.getElementById('uploadProgress').style.display = 'none';
+      document.getElementById('uploadModal').classList.add('active');
+    }
+
+    async function uploadImages() {
+      const input = document.getElementById('uploadInput');
+      const files = input.files;
+      if (!files || files.length === 0) { toast('Select at least one image', 'error'); return; }
+
+      const m = moments.find(x => x._id === uploadMomentId);
+      const currentCount = (m?.galleryImages || []).length;
+      if (currentCount + files.length > 10) {
+        toast(`Maximum 10 images allowed. Currently ${currentCount}, trying to add ${files.length}.`, 'error');
+        return;
+      }
+
+      // Validate files
+      for (const file of files) {
+        if (!['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(file.type)) {
+          toast('Only JPG, JPEG, PNG, WEBP allowed: ' + file.name, 'error'); return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+          toast('Max 10 MB per image: ' + file.name, 'error'); return;
+        }
+      }
+
+      const progress = document.getElementById('uploadProgress');
+      progress.style.display = 'block';
+      progress.textContent = 'Uploading ' + files.length + ' image(s)...';
+
+      const formData = new FormData();
+      for (const file of files) formData.append('images', file);
+
+      try {
+        const token = API.getToken();
+        const res = await fetch(API.base + '/api/featured-moments/admin/' + uploadMomentId + '/upload-images', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token },
+          body: formData,
+        });
+        const data = await res.json();
+        if (data.success) {
+          toast(data.message || 'Uploaded!', 'success');
+          document.getElementById('uploadModal').classList.remove('active');
+          loadMoments();
+        } else {
+          toast(data.message || 'Upload failed', 'error');
+        }
+      } catch (e) {
+        toast('Upload failed: ' + (e.message || 'Network error'), 'error');
+      } finally {
+        progress.style.display = 'none';
+      }
+    }
+
+    async function deleteImage(momentId, imageId) {
+      if (!confirm('Delete this image permanently? It will be removed from Cloudinary.')) return;
+      try {
+        await API.delete('/featured-moments/admin/' + momentId + '/image/' + imageId);
+        toast('Image deleted', 'success');
+        loadMoments();
+      } catch (e) { toast('Failed: ' + (e.message || ''), 'error'); }
+    }
+  </script>
+  <!-- Upload Modal -->
+  <div class="modal-overlay" id="uploadModal">
+    <div class="modal">
+      <h3>📷 Upload Images (Max 10)</h3>
+      <p style="font-size:12px;color:#6B7280;margin-bottom:14px;">Accepted: JPG, JPEG, PNG, WEBP • Max 10 MB each</p>
+      <input type="file" id="uploadInput" multiple accept="image/jpeg,image/jpg,image/png,image/webp" style="width:100%;padding:12px;border:2px dashed #EDE9FE;border-radius:12px;margin-bottom:14px;font-size:13px;">
+      <div id="uploadProgress" style="display:none;padding:10px;background:#F8F6FF;border-radius:8px;font-size:12px;color:#6C3BFF;margin-bottom:14px;text-align:center;">Uploading...</div>
+      <div class="modal-actions">
+        <button class="btn" style="background:#F3F4F6;color:#4B5563;" onclick="document.getElementById('uploadModal').classList.remove('active')">Cancel</button>
+        <button class="btn btn-primary" onclick="uploadImages()"><i class="fa-solid fa-cloud-arrow-up"></i> Upload</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -41,7 +41,100 @@ router.get("/admin/all", protect, authorize("admin"), async (req, res, next) => 
     const { status } = req.query;
     const filter = status ? { status } : {};
     const requests = await WithdrawalRequest.find(filter).sort("-createdAt").populate("user", "name email phone");
-    res.json({ success: true, data: requests });
+
+    // Enrich each request with user's cashback summary
+    const enriched = await Promise.all(requests.map(async (req_item) => {
+      const userId = req_item.user?._id || req_item.user;
+      const [credited, withdrawn] = await Promise.all([
+        CashbackTransaction.aggregate([{ $match: { user: userId, status: "credited" } }, { $group: { _id: null, total: { $sum: "$amount" } } }]),
+        WithdrawalRequest.aggregate([{ $match: { user: userId, status: { $in: ["pending", "approved", "paid"] } } }, { $group: { _id: null, total: { $sum: "$amount" } } }]),
+      ]);
+      const totalEarned = credited[0]?.total || 0;
+      const totalWithdrawn = withdrawn[0]?.total || 0;
+      const availableBalance = totalEarned - totalWithdrawn;
+      return { ...req_item.toObject(), totalEarned, totalWithdrawn, availableBalance };
+    }));
+
+    res.json({ success: true, data: enriched });
+  } catch (e) { next(e); }
+});
+
+// ═══ ADMIN: Get customer full cashback history for a withdrawal ═══
+router.get("/admin/customer-history/:userId", protect, authorize("admin"), async (req, res, next) => {
+  try {
+    const userId = require("mongoose").Types.ObjectId(req.params.userId);
+    const Booking = require("../models/Booking");
+
+    const [cashbackTxns, withdrawals, bookings] = await Promise.all([
+      CashbackTransaction.find({ user: userId }).sort("-createdAt").populate("booking", "eventType eventDate status amount totalAmount bookingFeePaid bookingFeeAmount bookingFeePaidAt clientName"),
+      WithdrawalRequest.find({ user: userId }).sort("-createdAt"),
+      Booking.find({ user: userId, bookingFeePaid: true }).sort("-createdAt").select("eventType eventDate status amount totalAmount bookingFeeAmount bookingFeePaidAt clientName createdAt customerConfirmedCompletion"),
+    ]);
+
+    // Build timeline
+    const timeline = [];
+
+    // Booking fee payments
+    bookings.forEach(b => {
+      timeline.push({
+        type: "booking_fee",
+        date: b.bookingFeePaidAt || b.createdAt,
+        description: `Paid 5% booking fee for ${b.eventType}`,
+        amount: b.bookingFeeAmount || 0,
+        bookingStatus: b.status,
+        eventDate: b.eventDate,
+        bookingId: b._id,
+      });
+    });
+
+    // Cashback credits
+    cashbackTxns.forEach(tx => {
+      timeline.push({
+        type: tx.status === "cancelled" ? "cashback_cancelled" : "cashback_credited",
+        date: tx.creditedAt || tx.createdAt,
+        description: tx.status === "cancelled"
+          ? `Cashback reversed (booking cancelled)`
+          : `${tx.percentage}% cashback on ₹${tx.bookingAmount} booking`,
+        amount: tx.amount,
+        status: tx.status,
+        bookingId: tx.booking?._id,
+        bookingStatus: tx.booking?.status,
+      });
+    });
+
+    // Withdrawals
+    withdrawals.forEach(w => {
+      timeline.push({
+        type: "withdrawal",
+        date: w.paidAt || w.approvedAt || w.createdAt,
+        description: `Withdrawal ₹${w.amount} — ${w.status}`,
+        amount: w.amount,
+        status: w.status,
+        utrNumber: w.utrNumber,
+        withdrawalId: w._id,
+      });
+    });
+
+    // Sort by date desc
+    timeline.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    // Summary
+    const totalCredited = cashbackTxns.filter(t => t.status === "credited").reduce((s, t) => s + t.amount, 0);
+    const totalCancelled = cashbackTxns.filter(t => t.status === "cancelled").reduce((s, t) => s + t.amount, 0);
+    const totalWithdrawnPaid = withdrawals.filter(w => w.status === "paid").reduce((s, w) => s + w.amount, 0);
+    const totalPendingWithdraw = withdrawals.filter(w => ["pending", "approved"].includes(w.status)).reduce((s, w) => s + w.amount, 0);
+    const availableBalance = totalCredited - totalWithdrawnPaid - totalPendingWithdraw;
+
+    res.json({
+      success: true,
+      data: {
+        timeline,
+        summary: { totalCredited, totalCancelled, totalWithdrawnPaid, totalPendingWithdraw, availableBalance },
+        cashbackTxns,
+        withdrawals,
+        bookings,
+      },
+    });
   } catch (e) { next(e); }
 });
 

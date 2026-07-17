@@ -200,7 +200,7 @@ export default function AdminAppUpdates({ navigation }: any) {
             </View>
             {latest.downloadUrl && (
               <TouchableOpacity style={st.downloadBtn} onPress={() => Linking.openURL(latest.downloadUrl)}>
-                <Ionicons name="download-outline" size={14} color="#000" />
+                <Ionicons name="download-outline" size={15} color="#FFFFFF" />
                 <Text style={st.downloadText}>Download APK</Text>
               </TouchableOpacity>
             )}
@@ -275,8 +275,8 @@ export default function AdminAppUpdates({ navigation }: any) {
               disabled={publishing}
               activeOpacity={0.85}
             >
-              {publishing ? <ActivityIndicator size="small" color="#000" /> : (
-                <><Ionicons name="rocket-outline" size={16} color="#000" /><Text style={st.publishText}>Publish Update</Text></>
+              {publishing ? <ActivityIndicator size="small" color="#FFFFFF" /> : (
+                <><Ionicons name="rocket-outline" size={16} color="#FFFFFF" /><Text style={st.publishText}>Publish Update</Text></>
               )}
             </TouchableOpacity>
           </View>
@@ -305,8 +305,8 @@ export default function AdminAppUpdates({ navigation }: any) {
                 <Text style={st.metaText}>{fmtDate(v.createdAt)}</Text>
                 {v.fileSize > 0 && <Text style={st.metaText}>{fmtSize(v.fileSize)}</Text>}
                 {v.downloadUrl && (
-                  <TouchableOpacity onPress={() => Linking.openURL(v.downloadUrl)}>
-                    <Text style={{ fontSize: 10, color: '#10b981', fontWeight: '600' }}>⬇ APK</Text>
+                  <TouchableOpacity onPress={() => Linking.openURL(v.downloadUrl)} style={{ backgroundColor: colors.primaryMuted, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
+                    <Text style={{ fontSize: 10, color: colors.primary, fontWeight: '600' }}>⬇ APK</Text>
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity onPress={() => handleDelete(v._id)}>
@@ -330,7 +330,7 @@ function InputField({ label, value, onChangeText, placeholder, multiline, keyboa
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="rgba(255,255,255,0.2)"
+        placeholderTextColor={colors.textLight}
         selectionColor={colors.primary}
         multiline={multiline}
         keyboardType={keyboardType}
@@ -341,63 +341,63 @@ function InputField({ label, value, onChangeText, placeholder, multiline, keyboa
 
 const st = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingTop: 50, paddingBottom: 10, gap: 10 },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 50, paddingBottom: 12, gap: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
   headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: colors.text },
-  addBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.primaryMuted, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(212,175,55,0.2)' },
-  card: { backgroundColor: colors.surface, borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: colors.border },
+  addBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.primaryMuted, alignItems: 'center', justifyContent: 'center' },
+  card: { backgroundColor: colors.card, borderRadius: 14, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: colors.primaryBorder },
   cardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  sectionTitle: { fontSize: 12, fontWeight: '700', color: colors.primary, marginBottom: 8, letterSpacing: 0.3 },
-  infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.03)' },
+  sectionTitle: { fontSize: 13, fontWeight: '700', color: colors.primary, marginBottom: 8 },
+  infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.border },
   infoLabel: { fontSize: 12, color: colors.textMuted },
   infoValue: { fontSize: 12, fontWeight: '600', color: colors.text },
-  notesBox: { backgroundColor: colors.background, borderRadius: 8, padding: 10, marginVertical: 6, borderWidth: 1, borderColor: colors.border },
+  notesBox: { backgroundColor: colors.surfaceAlt, borderRadius: 10, padding: 12, marginVertical: 8, borderWidth: 1, borderColor: colors.borderMedium },
   notesLabel: { fontSize: 10, fontWeight: '600', color: colors.primary, marginBottom: 4 },
-  notesText: { fontSize: 11, color: 'rgba(255,255,255,0.5)', lineHeight: 16 },
-  forceBadge: { backgroundColor: 'rgba(220,38,38,0.1)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
-  forceText: { fontSize: 9, fontWeight: '700', color: '#dc2626' },
-  downloadBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: colors.primary, borderRadius: 8, paddingVertical: 10, marginTop: 8 },
-  downloadText: { fontSize: 12, fontWeight: '700', color: '#000' },
+  notesText: { fontSize: 11, color: colors.textSecondary, lineHeight: 16 },
+  forceBadge: { backgroundColor: colors.errorLight, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  forceText: { fontSize: 9, fontWeight: '700', color: colors.error },
+  downloadBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: colors.primary, borderRadius: 10, paddingVertical: 12, marginTop: 10 },
+  downloadText: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
   // Form
-  fieldWrap: { marginBottom: 12 },
-  fieldLabel: { fontSize: 10, fontWeight: '600', color: colors.textMuted, marginBottom: 4 },
-  fieldInput: { backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, fontSize: 12, color: '#fff' },
+  fieldWrap: { marginBottom: 14 },
+  fieldLabel: { fontSize: 11, fontWeight: '600', color: colors.textSecondary, marginBottom: 5 },
+  fieldInput: { backgroundColor: colors.surfaceAlt, borderWidth: 1, borderColor: colors.borderMedium, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, color: colors.text },
   // APK Picker
-  apkPicker: { borderWidth: 2, borderColor: 'rgba(212,175,55,0.2)', borderStyle: 'dashed', borderRadius: 12, padding: 16, alignItems: 'center' },
-  apkPickerSelected: { borderColor: '#10b981', borderStyle: 'solid', backgroundColor: 'rgba(16,185,129,0.03)' },
-  apkEmpty: { alignItems: 'center', gap: 4 },
+  apkPicker: { borderWidth: 2, borderColor: colors.primaryBorder, borderStyle: 'dashed', borderRadius: 14, padding: 20, alignItems: 'center' },
+  apkPickerSelected: { borderColor: colors.success, borderStyle: 'solid', backgroundColor: colors.successLight },
+  apkEmpty: { alignItems: 'center', gap: 6 },
   apkPickText: { fontSize: 14, fontWeight: '700', color: colors.primary, marginTop: 4 },
   apkPickSub: { fontSize: 11, color: colors.textMuted },
   apkSelected: { flexDirection: 'row', alignItems: 'center', gap: 10, width: '100%' },
-  apkFileName: { fontSize: 12, fontWeight: '600', color: '#10b981' },
+  apkFileName: { fontSize: 12, fontWeight: '600', color: colors.success },
   apkFileSize: { fontSize: 10, color: colors.textMuted },
   // Toggles
-  toggleRow: { flexDirection: 'row', gap: 12, marginBottom: 14 },
-  toggleItem: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 10 },
-  toggleLabel: { fontSize: 11, fontWeight: '600', color: colors.textMuted },
-  toggleSub: { fontSize: 9, color: 'rgba(255,255,255,0.25)', marginTop: 1 },
+  toggleRow: { flexDirection: 'row', gap: 10, marginBottom: 14 },
+  toggleItem: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.surfaceAlt, borderWidth: 1, borderColor: colors.borderMedium, borderRadius: 10, padding: 12 },
+  toggleLabel: { fontSize: 11, fontWeight: '600', color: colors.textSecondary },
+  toggleSub: { fontSize: 9, color: colors.textLight, marginTop: 1 },
   // Progress
-  progressBox: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(212,175,55,0.04)', borderRadius: 8, padding: 10, marginBottom: 10 },
-  progressText: { fontSize: 11, color: colors.primary },
+  progressBox: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.primaryMuted, borderRadius: 10, padding: 12, marginBottom: 12 },
+  progressText: { fontSize: 11, fontWeight: '500', color: colors.primary },
   // Publish
-  publishBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: colors.primary, borderRadius: 10, paddingVertical: 14 },
-  publishText: { fontSize: 14, fontWeight: '700', color: '#000' },
+  publishBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 14 },
+  publishText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
   // History
-  historyTitle: { fontSize: 13, fontWeight: '700', color: colors.text, marginTop: 8, marginBottom: 8 },
+  historyTitle: { fontSize: 14, fontWeight: '700', color: colors.text, marginTop: 10, marginBottom: 10 },
   emptyText: { fontSize: 12, color: colors.textMuted, textAlign: 'center', paddingVertical: 20 },
-  historyCard: { backgroundColor: colors.surface, borderRadius: 10, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: colors.border },
-  historyHead: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 4 },
-  historyVer: { fontSize: 13, fontWeight: '700', color: colors.text },
+  historyCard: { backgroundColor: colors.card, borderRadius: 12, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: colors.border },
+  historyHead: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 6 },
+  historyVer: { fontSize: 14, fontWeight: '700', color: colors.text },
   historyCode: { fontWeight: '400', color: colors.textMuted },
-  historyTitleText: { fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 1 },
-  historyDesc: { fontSize: 10, color: 'rgba(255,255,255,0.35)', marginBottom: 6, lineHeight: 14 },
-  badges: { flexDirection: 'row', gap: 4 },
-  badgeRed: { backgroundColor: 'rgba(220,38,38,0.1)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-  badgeRedText: { fontSize: 9, fontWeight: '700', color: '#dc2626' },
-  badgeGreen: { backgroundColor: 'rgba(16,185,129,0.1)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-  badgeGreenText: { fontSize: 9, fontWeight: '700', color: '#10b981' },
-  badgeYellow: { backgroundColor: 'rgba(245,158,11,0.1)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-  badgeYellowText: { fontSize: 9, fontWeight: '700', color: '#f59e0b' },
-  historyMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  metaText: { fontSize: 9, color: 'rgba(255,255,255,0.25)' },
-  deleteText: { fontSize: 10, color: '#dc2626', fontWeight: '600' },
+  historyTitleText: { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
+  historyDesc: { fontSize: 11, color: colors.textMuted, marginBottom: 8, lineHeight: 15 },
+  badges: { flexDirection: 'row', gap: 5 },
+  badgeRed: { backgroundColor: colors.errorLight, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6 },
+  badgeRedText: { fontSize: 9, fontWeight: '700', color: colors.error },
+  badgeGreen: { backgroundColor: colors.successLight, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6 },
+  badgeGreenText: { fontSize: 9, fontWeight: '700', color: colors.success },
+  badgeYellow: { backgroundColor: colors.warningLight, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6 },
+  badgeYellowText: { fontSize: 9, fontWeight: '700', color: colors.warning },
+  historyMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.border },
+  metaText: { fontSize: 10, color: colors.textLight },
+  deleteText: { fontSize: 10, color: colors.error, fontWeight: '600' },
 });

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, FlatList, ActivityIndicator, Platform, TouchableOpacity, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, FlatList, ActivityIndicator, Platform, TouchableOpacity, StatusBar, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../services/api';
 
@@ -7,17 +7,23 @@ export default function WalletScreen({ navigation }: any) {
   const [wallet, setWallet] = useState<any>(null);
   const [cashbackOffer, setCashbackOffer] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showWithdraw, setShowWithdraw] = useState(false);
+  const [wForm, setWForm] = useState({ accountHolderName: '', bankAccountNumber: '', ifscCode: '', upiId: '', amount: '' });
+  const [submitting, setSubmitting] = useState(false);
+  const [myRequests, setMyRequests] = useState<any[]>([]);
 
   useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
     try {
-      const [walletRes, settingsRes] = await Promise.all([
+      const [walletRes, settingsRes, reqRes] = await Promise.all([
         api.get('/cashback/wallet').catch(() => ({ data: { data: null } })),
         api.get('/cashback/settings').catch(() => ({ data: { data: null } })),
+        api.get('/withdrawal/my-requests').catch(() => ({ data: { data: [] } })),
       ]);
       if (walletRes.data?.data) setWallet(walletRes.data.data);
       if (settingsRes.data?.data) setCashbackOffer(settingsRes.data.data);
+      if (reqRes.data?.data) setMyRequests(reqRes.data.data);
     } catch {} finally { setLoading(false); }
   };
 
@@ -26,6 +32,32 @@ export default function WalletScreen({ navigation }: any) {
   const earned = wallet?.earned || 0;
   const pending = wallet?.pending || 0;
   const available = earned; // Available = credited cashback
+
+  const submitWithdrawal = async () => {
+    const { accountHolderName, bankAccountNumber, ifscCode, amount } = wForm;
+    if (!accountHolderName.trim()) { Alert.alert('Error', 'Account holder name is required'); return; }
+    if (!bankAccountNumber.trim()) { Alert.alert('Error', 'Bank account number is required'); return; }
+    if (!ifscCode.trim()) { Alert.alert('Error', 'IFSC code is required'); return; }
+    const amt = Number(amount);
+    if (!amt || amt < 100) { Alert.alert('Error', 'Minimum withdrawal is ₹100'); return; }
+    if (amt > available) { Alert.alert('Error', `Only ₹${available.toLocaleString('en-IN')} available`); return; }
+    setSubmitting(true);
+    try {
+      await api.post('/withdrawal/request', {
+        accountHolderName: accountHolderName.trim(),
+        bankAccountNumber: bankAccountNumber.trim(),
+        ifscCode: ifscCode.trim().toUpperCase(),
+        upiId: wForm.upiId.trim() || undefined,
+        amount: amt,
+      });
+      Alert.alert('Success', 'Withdrawal request submitted! You will receive the amount within 2-3 business days.');
+      setShowWithdraw(false);
+      setWForm({ accountHolderName: '', bankAccountNumber: '', ifscCode: '', upiId: '', amount: '' });
+      loadData();
+    } catch (e: any) {
+      Alert.alert('Error', e.response?.data?.message || e.message || 'Failed to submit');
+    } finally { setSubmitting(false); }
+  };
 
   return (
     <View style={s.container}>
@@ -61,6 +93,62 @@ export default function WalletScreen({ navigation }: any) {
               <Text style={s.balanceLbl}>Lifetime</Text>
             </View>
           </View>
+        </View>
+
+        {/* Withdraw Cashback Button */}
+        <TouchableOpacity style={[s.withdrawBtn, available < 100 && { opacity: 0.5 }]} onPress={() => {
+          if (available < 100) { Alert.alert('Insufficient Balance', 'Minimum ₹100 balance required to withdraw cashback.'); return; }
+          setShowWithdraw(!showWithdraw);
+        }}>
+          <Ionicons name="cash-outline" size={18} color="#fff" />
+          <Text style={s.withdrawBtnText}>{showWithdraw ? 'Cancel' : 'Withdraw Cashback'}</Text>
+        </TouchableOpacity>
+        {available < 100 && (
+          <Text style={{ textAlign: 'center', fontSize: 10, color: '#9CA3AF', marginTop: 6 }}>Min ₹100 balance required to withdraw</Text>
+        )}
+
+        {/* Withdrawal Form */}
+        {showWithdraw && (
+          <View style={s.withdrawCard}>
+            <Text style={s.withdrawTitle}>Withdraw to Bank Account</Text>
+            <Text style={s.wFieldLabel}>Account Holder Name *</Text>
+            <TextInput style={s.wInput} value={wForm.accountHolderName} onChangeText={v => setWForm({ ...wForm, accountHolderName: v })} placeholder="As per bank records" />
+            <Text style={s.wFieldLabel}>Bank Account Number *</Text>
+            <TextInput style={s.wInput} value={wForm.bankAccountNumber} onChangeText={v => setWForm({ ...wForm, bankAccountNumber: v })} placeholder="Enter account number" keyboardType="numeric" />
+            <Text style={s.wFieldLabel}>IFSC Code *</Text>
+            <TextInput style={s.wInput} value={wForm.ifscCode} onChangeText={v => setWForm({ ...wForm, ifscCode: v })} placeholder="e.g. SBIN0001234" autoCapitalize="characters" />
+            <Text style={s.wFieldLabel}>UPI ID (optional)</Text>
+            <TextInput style={s.wInput} value={wForm.upiId} onChangeText={v => setWForm({ ...wForm, upiId: v })} placeholder="e.g. name@upi" />
+            <Text style={s.wFieldLabel}>Amount (₹) *</Text>
+            <TextInput style={s.wInput} value={wForm.amount} onChangeText={v => setWForm({ ...wForm, amount: v })} placeholder={`Min ₹100 • Max ₹${available.toLocaleString('en-IN')}`} keyboardType="numeric" />
+            <TouchableOpacity style={s.wSubmitBtn} onPress={submitWithdrawal} disabled={submitting}>
+              <Text style={s.wSubmitText}>{submitting ? 'Submitting...' : '💸 Submit Withdrawal Request'}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* My Withdrawal Requests */}
+        <View style={s.section}>
+          <Text style={s.sectionTitle}>Withdrawal Requests</Text>
+          {myRequests.length > 0 ? (
+            myRequests.map((req: any, i: number) => (
+              <View key={i} style={s.wReqCard}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={s.wReqAmount}>₹{req.amount?.toLocaleString('en-IN')}</Text>
+                  <View style={[s.wReqBadge, { backgroundColor: req.status === 'paid' ? '#D1FAE5' : req.status === 'rejected' ? '#FEE2E2' : req.status === 'approved' ? '#DBEAFE' : '#FEF3C7' }]}>
+                    <Text style={[s.wReqBadgeText, { color: req.status === 'paid' ? '#059669' : req.status === 'rejected' ? '#DC2626' : req.status === 'approved' ? '#2563EB' : '#D97706' }]}>{req.status}</Text>
+                  </View>
+                </View>
+                <Text style={s.wReqDate}>{new Date(req.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</Text>
+                {req.rejectionReason ? <Text style={s.wReqReason}>Reason: {req.rejectionReason}</Text> : null}
+                {req.utrNumber ? <Text style={s.wReqUtr}>UTR: {req.utrNumber}</Text> : null}
+              </View>
+            ))
+          ) : (
+            <View style={s.wReqCard}>
+              <Text style={{ fontSize: 11, color: '#9CA3AF', textAlign: 'center' }}>No withdrawal requests yet. Use the button above to withdraw your cashback.</Text>
+            </View>
+          )}
         </View>
 
         {/* Current Offer */}
@@ -200,5 +288,21 @@ const s = StyleSheet.create({
   emptyState: { alignItems: 'center', paddingVertical: 30 },
   emptyTitle: { fontSize: 13, fontWeight: '600', color: '#4B5563', marginTop: 8 },
   emptySub: { fontSize: 11, color: '#9CA3AF', marginTop: 4 },
+  // Withdraw
+  withdrawBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginHorizontal: 20, marginTop: 14, backgroundColor: '#6C3BFF', borderRadius: 14, paddingVertical: 14 },
+  withdrawBtnText: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  withdrawCard: { marginHorizontal: 20, marginTop: 14, backgroundColor: '#F8F6FF', borderRadius: 16, padding: 18, borderWidth: 1, borderColor: '#EDE9FE' },
+  withdrawTitle: { fontSize: 14, fontWeight: '700', color: '#1F2937', marginBottom: 12 },
+  wFieldLabel: { fontSize: 11, fontWeight: '600', color: '#4B5563', marginTop: 10, marginBottom: 4 },
+  wInput: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, fontSize: 13, color: '#1F2937' },
+  wSubmitBtn: { backgroundColor: '#6C3BFF', borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 16 },
+  wSubmitText: { fontSize: 13, fontWeight: '700', color: '#fff' },
+  wReqCard: { backgroundColor: '#fff', borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: '#F1F5F9' },
+  wReqAmount: { fontSize: 14, fontWeight: '700', color: '#1F2937' },
+  wReqBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 50 },
+  wReqBadgeText: { fontSize: 10, fontWeight: '700', textTransform: 'capitalize' },
+  wReqDate: { fontSize: 10, color: '#9CA3AF', marginTop: 4 },
+  wReqReason: { fontSize: 10, color: '#EF4444', marginTop: 4 },
+  wReqUtr: { fontSize: 10, color: '#10B981', marginTop: 2 },
 });
 

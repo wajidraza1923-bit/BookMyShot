@@ -870,6 +870,12 @@
       .stat-card { padding: 0.8rem; }
       .stat-card .value { font-size: 1.2rem; }
     }
+
+    /* Wallet panel theme */
+    #panel-wallet h4 { color: #1F2937 !important; }
+    #panel-wallet .card { background: #FFFFFF !important; border: 1px solid #EDE9FE !important; }
+    #panel-wallet .form-group label { color: #4B5563 !important; }
+    #panel-wallet .form-group input, #panel-wallet .form-group textarea { background: #FFFFFF !important; border-color: #E5E7EB !important; color: #1F2937 !important; }
   </style>
   <script src="/js/ga.js"></script>
 </head>
@@ -885,6 +891,7 @@
         <a href="#" data-panel="payments"><span class="icon"><i class="fa-solid fa-credit-card"></i></span> Payments</a>
         <a href="#" data-panel="favorites"><span class="icon"><i class="fa-solid fa-heart"></i></span> Favorites</a>
         <a href="#" data-panel="messages"><span class="icon"><i class="fa-solid fa-comment-dots"></i></span> Messages</a>
+        <a href="#" data-panel="wallet" style="color:#6C3BFF;font-weight:600"><span class="icon"><i class="fa-solid fa-wallet"></i></span> 💰 Cashback Wallet</a>
         <a href="#" data-panel="profile"><span class="icon"><i class="fa-solid fa-user"></i></span> My Profile</a>
         <a href="/" target="_blank"><span class="icon"><i class="fa-solid fa-globe"></i></span> View Site</a>
         <a href="#" id="logoutBtn"><span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span> Logout</a>
@@ -1027,6 +1034,89 @@
         </div>
       </div>
 
+      <!-- ─── CASHBACK WALLET PANEL ─── -->
+      <div class="panel" id="panel-wallet">
+        <div class="panel-header"><h2>💰 Cashback Wallet</h2><p>Your cashback balance, withdrawals & history</p></div>
+
+        <!-- Balance Cards -->
+        <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px;">
+          <div style="background:#F8F6FF;border:1px solid #EDE9FE;border-radius:14px;padding:18px;text-align:center;">
+            <i class="fa-solid fa-wallet" style="color:#6C3BFF;font-size:18px;margin-bottom:6px;"></i>
+            <h3 id="wAvailable" style="font-size:22px;color:#6C3BFF;margin:4px 0;">₹0</h3>
+            <p style="font-size:11px;color:#6B7280;">Available</p>
+          </div>
+          <div style="background:#FEF3C7;border:1px solid #FDE68A;border-radius:14px;padding:18px;text-align:center;">
+            <i class="fa-solid fa-clock" style="color:#F59E0B;font-size:18px;margin-bottom:6px;"></i>
+            <h3 id="wPending" style="font-size:22px;color:#F59E0B;margin:4px 0;">₹0</h3>
+            <p style="font-size:11px;color:#6B7280;">Pending</p>
+          </div>
+          <div style="background:#D1FAE5;border:1px solid #A7F3D0;border-radius:14px;padding:18px;text-align:center;">
+            <i class="fa-solid fa-gift" style="color:#10B981;font-size:18px;margin-bottom:6px;"></i>
+            <h3 id="wLifetime" style="font-size:22px;color:#10B981;margin:4px 0;">₹0</h3>
+            <p style="font-size:11px;color:#6B7280;">Lifetime Earned</p>
+          </div>
+        </div>
+
+        <!-- Current Offer Banner -->
+        <div id="wOfferBanner" style="display:none;background:#F3E8FF;border:1px solid #EDE9FE;border-radius:12px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:10px;">
+          <i class="fa-solid fa-sparkles" style="color:#6C3BFF;font-size:16px;"></i>
+          <div>
+            <strong id="wOfferTitle" style="color:#6C3BFF;font-size:13px;"></strong>
+            <p id="wOfferSub" style="font-size:11px;color:#6B7280;margin:2px 0 0;"></p>
+          </div>
+        </div>
+
+        <!-- Withdraw Section -->
+        <div class="card" style="margin-bottom:20px;">
+          <h4 style="margin-bottom:12px;font-size:14px;color:#1F2937;">💸 Withdraw Cashback</h4>
+          <div id="withdrawFormArea">
+            <button id="showWithdrawBtn" class="btn btn-primary" style="background:#6C3BFF;border:none;padding:10px 24px;border-radius:10px;color:#fff;font-weight:600;cursor:pointer;font-size:13px;" onclick="toggleWithdrawForm()">Withdraw to Bank Account</button>
+          </div>
+          <div id="withdrawForm" style="display:none;margin-top:14px;">
+            <div class="form-group"><label>Account Holder Name *</label><input type="text" id="wAccName" placeholder="As per bank records"></div>
+            <div class="form-group"><label>Bank Account Number *</label><input type="text" id="wAccNum" placeholder="Enter account number"></div>
+            <div class="form-group"><label>IFSC Code *</label><input type="text" id="wIfsc" placeholder="e.g. SBIN0001234" style="text-transform:uppercase;"></div>
+            <div class="form-group"><label>UPI ID (optional)</label><input type="text" id="wUpi" placeholder="e.g. name@upi"></div>
+            <div class="form-group"><label>Amount (₹) *</label><input type="number" id="wAmount" placeholder="Min ₹100" min="100"></div>
+            <div style="display:flex;gap:10px;margin-top:12px;">
+              <button class="btn btn-primary" style="background:#6C3BFF;border:none;padding:10px 20px;border-radius:10px;color:#fff;font-weight:600;cursor:pointer;font-size:13px;" onclick="submitWithdrawal()">Submit Request</button>
+              <button class="btn" style="background:#F3F4F6;border:1px solid #E5E7EB;padding:10px 20px;border-radius:10px;color:#4B5563;font-weight:500;cursor:pointer;font-size:13px;" onclick="toggleWithdrawForm()">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Withdrawal History -->
+        <div class="card" style="margin-bottom:20px;">
+          <h4 style="margin-bottom:12px;font-size:14px;color:#1F2937;">📋 Withdrawal Requests</h4>
+          <div id="wRequestsList"><p style="color:#9CA3AF;font-size:12px;">No withdrawal requests yet.</p></div>
+        </div>
+
+        <!-- Cashback History -->
+        <div class="card" style="margin-bottom:20px;">
+          <h4 style="margin-bottom:12px;font-size:14px;color:#1F2937;">📜 Cashback History</h4>
+          <div id="wTransactionsList"><p style="color:#9CA3AF;font-size:12px;">No cashback transactions yet.</p></div>
+        </div>
+
+        <!-- How It Works -->
+        <div class="card">
+          <h4 style="margin-bottom:12px;font-size:14px;color:#1F2937;">🔄 How Cashback Works</h4>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;align-items:center;gap:10px;"><div style="width:26px;height:26px;border-radius:50%;background:#10B981;display:flex;align-items:center;justify-content:center;"><i class="fa-solid fa-user-plus" style="font-size:10px;color:#fff;"></i></div><span style="font-size:12px;color:#1F2937;font-weight:500;">Create your own BookMyShot account</span></div>
+            <div style="display:flex;align-items:center;gap:10px;"><div style="width:26px;height:26px;border-radius:50%;background:#10B981;display:flex;align-items:center;justify-content:center;"><i class="fa-solid fa-search" style="font-size:10px;color:#fff;"></i></div><span style="font-size:12px;color:#1F2937;font-weight:500;">Book a verified creator</span></div>
+            <div style="display:flex;align-items:center;gap:10px;"><div style="width:26px;height:26px;border-radius:50%;background:#F3E8FF;display:flex;align-items:center;justify-content:center;"><i class="fa-solid fa-credit-card" style="font-size:10px;color:#6C3BFF;"></i></div><span style="font-size:12px;color:#4B5563;">Pay 5% Booking Fee via Razorpay</span></div>
+            <div style="display:flex;align-items:center;gap:10px;"><div style="width:26px;height:26px;border-radius:50%;background:#F3E8FF;display:flex;align-items:center;justify-content:center;"><i class="fa-solid fa-calendar" style="font-size:10px;color:#6C3BFF;"></i></div><span style="font-size:12px;color:#4B5563;">Complete your event</span></div>
+            <div style="display:flex;align-items:center;gap:10px;"><div style="width:26px;height:26px;border-radius:50%;background:#F3E8FF;display:flex;align-items:center;justify-content:center;"><i class="fa-solid fa-circle-check" style="font-size:10px;color:#6C3BFF;"></i></div><span style="font-size:12px;color:#4B5563;">Confirm booking completion</span></div>
+            <div style="display:flex;align-items:center;gap:10px;"><div style="width:26px;height:26px;border-radius:50%;background:#F3E8FF;display:flex;align-items:center;justify-content:center;"><i class="fa-solid fa-gift" style="font-size:10px;color:#6C3BFF;"></i></div><span style="font-size:12px;color:#4B5563;">Cashback credited to your Wallet!</span></div>
+          </div>
+        </div>
+
+        <!-- Important Note -->
+        <div style="margin-top:16px;background:#F8F6FF;border:1px solid #EDE9FE;border-radius:10px;padding:12px 14px;display:flex;align-items:flex-start;gap:8px;">
+          <i class="fa-solid fa-info-circle" style="color:#6C3BFF;margin-top:2px;"></i>
+          <p style="font-size:11px;color:#6B7280;line-height:1.5;margin:0;">Cashback is available only for customers who register and book directly through their own BookMyShot account. Manually created inquiries by creators are not eligible.</p>
+        </div>
+      </div>
+
       <!-- ─── PROFILE PANEL ─── -->
       <div class="panel" id="panel-profile">
         <div class="panel-header"><h2>My Profile</h2><p>Manage your personal information</p></div>
@@ -1092,6 +1182,7 @@
             case "favorites": loadFavorites(); break;
             case "messages": loadConversations(); break;
             case "profile": loadProfile(); break;
+            case "wallet": loadWalletPanel(); break;
           }
         });
       });
@@ -1958,6 +2049,133 @@
 
     window.toggleNotifPanel = () => {
       toast("No new notifications", "info");
+    };
+
+    // ─── CASHBACK WALLET ────────────────────────────────────────────────────
+    let walletData = null;
+    let withdrawalRequests = [];
+
+    async function loadWalletPanel() {
+      try {
+        const [walletRes, settingsRes, reqRes] = await Promise.all([
+          API.get("/cashback/wallet").catch(() => ({ data: null })),
+          API.get("/cashback/settings").catch(() => ({ data: null })),
+          API.get("/withdrawal/my-requests").catch(() => ({ data: [] })),
+        ]);
+
+        walletData = walletRes?.data || walletRes || {};
+        withdrawalRequests = reqRes?.data || [];
+
+        const earned = Number(walletData.earned || 0);
+        const pending = Number(walletData.pending || 0);
+        const available = earned;
+
+        document.getElementById("wAvailable").textContent = "₹" + available.toLocaleString("en-IN");
+        document.getElementById("wPending").textContent = "₹" + pending.toLocaleString("en-IN");
+        document.getElementById("wLifetime").textContent = "₹" + (earned + pending).toLocaleString("en-IN");
+
+        // Show/hide withdraw button
+        const showBtn = document.getElementById("showWithdrawBtn");
+        if (showBtn) showBtn.style.display = available >= 100 ? "inline-block" : "none";
+        if (available < 100) {
+          document.getElementById("withdrawFormArea").innerHTML = '<p style="color:#9CA3AF;font-size:12px;">Minimum ₹100 balance required to withdraw.</p>';
+        }
+
+        // Offer banner
+        const settings = settingsRes?.data || {};
+        const banner = document.getElementById("wOfferBanner");
+        if (settings.enabled && banner) {
+          banner.style.display = "flex";
+          document.getElementById("wOfferTitle").textContent = "Current Offer: " + (settings.percentage || 10) + "% Cashback";
+          document.getElementById("wOfferSub").textContent = "Earn up to ₹" + (settings.maxAmount || 5000).toLocaleString("en-IN") + " on your next booking";
+        }
+
+        // Withdrawal requests
+        renderWithdrawalRequests();
+
+        // Transactions
+        const txns = walletData.transactions || [];
+        const txEl = document.getElementById("wTransactionsList");
+        if (txns.length > 0) {
+          txEl.innerHTML = txns.map(tx => {
+            const color = tx.status === "credited" ? "#10B981" : "#F59E0B";
+            const icon = tx.status === "credited" ? "fa-circle-check" : "fa-clock";
+            const date = new Date(tx.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+            return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #F3F4F6;">
+              <div style="width:32px;height:32px;border-radius:10px;background:${tx.status === 'credited' ? '#ECFDF5' : '#FEF3C7'};display:flex;align-items:center;justify-content:center;"><i class="fa-solid ${icon}" style="font-size:12px;color:${color};"></i></div>
+              <div style="flex:1;"><p style="font-size:12px;font-weight:600;color:#1F2937;margin:0;">Booking Cashback</p><p style="font-size:10px;color:#6B7280;margin:2px 0 0;">${tx.percentage || ''}% of ₹${Number(tx.bookingAmount || 0).toLocaleString("en-IN")} • ${date}</p></div>
+              <div style="text-align:right;"><p style="font-size:13px;font-weight:700;color:${color};margin:0;">+₹${Number(tx.amount || 0).toLocaleString("en-IN")}</p><p style="font-size:9px;color:#6B7280;text-transform:capitalize;margin:2px 0 0;">${tx.status}</p></div>
+            </div>`;
+          }).join("");
+        } else {
+          txEl.innerHTML = '<div style="text-align:center;padding:20px;"><i class="fa-solid fa-wallet" style="font-size:24px;color:#E5E7EB;"></i><p style="font-size:12px;color:#9CA3AF;margin-top:8px;">No cashback yet. Book a creator and earn cashback!</p></div>';
+        }
+      } catch (e) {
+        console.error("Wallet load error:", e);
+      }
+    }
+
+    function renderWithdrawalRequests() {
+      const el = document.getElementById("wRequestsList");
+      if (withdrawalRequests.length === 0) {
+        el.innerHTML = '<p style="color:#9CA3AF;font-size:12px;">No withdrawal requests yet.</p>';
+        return;
+      }
+      el.innerHTML = withdrawalRequests.map(req => {
+        const colors = { pending: "#D97706", approved: "#2563EB", paid: "#059669", rejected: "#DC2626" };
+        const bgs = { pending: "#FEF3C7", approved: "#DBEAFE", paid: "#D1FAE5", rejected: "#FEE2E2" };
+        const date = new Date(req.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #F3F4F6;">
+          <div>
+            <p style="font-size:13px;font-weight:700;color:#1F2937;margin:0;">₹${req.amount?.toLocaleString("en-IN")}</p>
+            <p style="font-size:10px;color:#9CA3AF;margin:2px 0 0;">${date}</p>
+            ${req.rejectionReason ? '<p style="font-size:10px;color:#EF4444;margin:2px 0 0;">Reason: ' + req.rejectionReason + '</p>' : ''}
+            ${req.utrNumber ? '<p style="font-size:10px;color:#10B981;margin:2px 0 0;">UTR: ' + req.utrNumber + '</p>' : ''}
+          </div>
+          <span style="padding:3px 10px;border-radius:50px;font-size:10px;font-weight:600;text-transform:capitalize;background:${bgs[req.status] || '#F3F4F6'};color:${colors[req.status] || '#6B7280'};">${req.status}</span>
+        </div>`;
+      }).join("");
+    }
+
+    window.toggleWithdrawForm = function() {
+      const form = document.getElementById("withdrawForm");
+      form.style.display = form.style.display === "none" ? "block" : "none";
+    };
+
+    window.submitWithdrawal = async function() {
+      const accName = document.getElementById("wAccName").value.trim();
+      const accNum = document.getElementById("wAccNum").value.trim();
+      const ifsc = document.getElementById("wIfsc").value.trim().toUpperCase();
+      const upi = document.getElementById("wUpi").value.trim();
+      const amount = Number(document.getElementById("wAmount").value);
+
+      if (!accName) { toast("Account holder name is required", "error"); return; }
+      if (!accNum) { toast("Bank account number is required", "error"); return; }
+      if (!ifsc) { toast("IFSC code is required", "error"); return; }
+      if (!amount || amount < 100) { toast("Minimum withdrawal is ₹100", "error"); return; }
+
+      const earned = Number(walletData?.earned || 0);
+      if (amount > earned) { toast("Only ₹" + earned.toLocaleString("en-IN") + " available", "error"); return; }
+
+      try {
+        await API.post("/withdrawal/request", {
+          accountHolderName: accName,
+          bankAccountNumber: accNum,
+          ifscCode: ifsc,
+          upiId: upi || undefined,
+          amount: amount,
+        });
+        toast("Withdrawal request submitted! You'll receive payment within 2-3 business days.", "success");
+        document.getElementById("withdrawForm").style.display = "none";
+        document.getElementById("wAccName").value = "";
+        document.getElementById("wAccNum").value = "";
+        document.getElementById("wIfsc").value = "";
+        document.getElementById("wUpi").value = "";
+        document.getElementById("wAmount").value = "";
+        loadWalletPanel();
+      } catch (e) {
+        toast(e.message || "Failed to submit withdrawal", "error");
+      }
     };
   </script>
   <script src="/js/native-app.js"></script>

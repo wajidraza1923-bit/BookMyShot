@@ -34,23 +34,34 @@ router.get("/settings", async (req, res, next) => {
 router.get("/wallet", protect, async (req, res, next) => {
   try {
     const userId = req.user._id;
-    const [transactions, totals] = await Promise.all([
+    const WithdrawalRequest = require("../models/WithdrawalRequest");
+    const [transactions, totals, withdrawnAgg] = await Promise.all([
       CashbackTransaction.find({ user: userId }).sort("-createdAt").limit(50).populate("booking", "status totalAmount"),
       CashbackTransaction.aggregate([
         { $match: { user: userId } },
         { $group: { _id: "$status", total: { $sum: "$amount" } } },
       ]),
+      WithdrawalRequest.aggregate([
+        { $match: { user: userId, status: { $in: ["pending", "approved", "paid"] } } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ]),
     ]);
 
     const earned = totals.find(t => t._id === "credited")?.total || 0;
     const pending = totals.find(t => t._id === "pending")?.total || 0;
+    const cancelled = totals.find(t => t._id === "cancelled")?.total || 0;
+    const totalWithdrawn = withdrawnAgg[0]?.total || 0;
+    const available = earned - totalWithdrawn;
 
     res.json({
       success: true,
       data: {
-        earned,
+        earned: available, // Available after withdrawals
         pending,
         totalCashback: earned + pending,
+        totalEarned: earned,
+        totalWithdrawn,
+        cancelled,
         transactions,
       },
     });

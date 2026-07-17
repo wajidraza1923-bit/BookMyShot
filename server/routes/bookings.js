@@ -248,6 +248,19 @@ router.patch("/:id/status", protect, async (req, res, next) => {
     if (req.body.creatorNotes) booking.creatorNotes = req.body.creatorNotes;
     await booking.save();
 
+    // ═══ AUTO-CANCEL CASHBACK on booking cancellation/rejection ═══
+    if (status === "cancelled" || status === "rejected") {
+      try {
+        const CashbackTransaction = require("../models/CashbackTransaction");
+        const cashbackTx = await CashbackTransaction.findOne({ booking: booking._id });
+        if (cashbackTx && cashbackTx.status === "credited") {
+          cashbackTx.status = "cancelled";
+          cashbackTx.notes = `Auto-cancelled: Booking ${status} on ${new Date().toISOString().split('T')[0]}`;
+          await cashbackTx.save();
+        }
+      } catch (cbErr) { console.error("Cashback reversal error:", cbErr.message); }
+    }
+
     // Send detailed notification to user based on status
     const Notification = require("../models/Notification");
     const creatorName = booking.creator?.user?.name || "Creator";

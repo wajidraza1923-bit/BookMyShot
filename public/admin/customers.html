@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Management - BookMyShot Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Outfit', sans-serif; background: #FAFAFE; color: #1F2937; }
+    .page-header { background: #fff; border-bottom: 1px solid #F1F0F7; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+    .page-header h1 { font-size: 18px; font-weight: 700; }
+    .back-link { color: #6C3BFF; text-decoration: none; font-size: 13px; }
+    .container { max-width: 1300px; margin: 0 auto; padding: 20px 16px; }
+    .search-bar { display: flex; gap: 10px; margin-bottom: 20px; }
+    .search-bar input { flex: 1; padding: 10px 14px; border: 1px solid #E5E7EB; border-radius: 10px; font-size: 13px; }
+    .btn { padding: 8px 14px; border-radius: 8px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .btn-primary { background: #6C3BFF; color: #fff; }
+    /* Customer List */
+    .cust-table { width: 100%; border-collapse: collapse; font-size: 12px; background: #fff; border-radius: 14px; overflow: hidden; border: 1px solid #F1F0F7; }
+    .cust-table th { text-align: left; padding: 12px 14px; background: #F9FAFB; color: #6B7280; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+    .cust-table td { padding: 12px 14px; border-top: 1px solid #F9FAFB; vertical-align: middle; }
+    .cust-table tr:hover td { background: #FDFCFF; }
+    .cust-name { font-weight: 600; color: #1F2937; }
+    .cust-email { font-size: 10px; color: #9CA3AF; }
+    .badge { padding: 3px 8px; border-radius: 6px; font-size: 9px; font-weight: 600; }
+    .badge-active { background: #D1FAE5; color: #059669; }
+    .badge-suspended { background: #FEE2E2; color: #DC2626; }
+    .btn-view { background: #EEF2FF; color: #6C3BFF; padding: 5px 10px; border-radius: 6px; font-size: 10px; border: none; cursor: pointer; font-weight: 600; }
+    /* Detail Panel */
+    .detail-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 100; }
+    .detail-overlay.active { display: block; }
+    .detail-panel { position: fixed; top: 0; right: 0; width: 75%; max-width: 900px; height: 100%; background: #fff; z-index: 101; overflow-y: auto; box-shadow: -10px 0 40px rgba(0,0,0,0.1); transform: translateX(100%); transition: transform 0.3s ease; }
+    .detail-panel.active { transform: translateX(0); }
+    .dp-header { padding: 20px 24px; border-bottom: 1px solid #F1F0F7; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: #fff; z-index: 5; }
+    .dp-header h2 { font-size: 16px; font-weight: 700; }
+    .dp-close { background: #F3F4F6; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 14px; }
+    .dp-body { padding: 20px 24px; }
+    .dp-tabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; border-bottom: 1px solid #F1F0F7; padding-bottom: 12px; }
+    .dp-tab { padding: 6px 14px; border-radius: 8px; background: #F9FAFB; border: 1px solid #E5E7EB; font-size: 11px; font-weight: 600; cursor: pointer; color: #4B5563; }
+    .dp-tab.active { background: #6C3BFF; color: #fff; border-color: #6C3BFF; }
+    .dp-section { display: none; }
+    .dp-section.active { display: block; }
+    /* Profile cards */
+    .profile-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 20px; }
+    .p-stat { background: #F9FAFB; border-radius: 10px; padding: 12px; text-align: center; border: 1px solid #F1F0F7; }
+    .p-stat .val { font-size: 18px; font-weight: 700; color: #6C3BFF; }
+    .p-stat .lbl { font-size: 9px; color: #6B7280; margin-top: 2px; }
+    /* Info grid */
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+    .info-item { font-size: 12px; }
+    .info-item .lbl { color: #6B7280; font-size: 10px; }
+    .info-item .val { font-weight: 600; color: #1F2937; margin-top: 2px; }
+    /* Timeline */
+    .timeline-item { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid #F9FAFB; font-size: 11px; }
+    .timeline-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+    .timeline-desc { color: #374151; }
+    .timeline-date { color: #9CA3AF; font-size: 10px; }
+    /* Warning */
+    .warning-box { background: #FEF3C7; border: 1px solid #FBBF24; border-radius: 10px; padding: 12px; margin-bottom: 16px; font-size: 12px; color: #92400E; }
+    /* Table inside detail */
+    .dtable { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 10px; }
+    .dtable th { text-align: left; padding: 8px; background: #F9FAFB; font-size: 9px; color: #6B7280; text-transform: uppercase; }
+    .dtable td { padding: 8px; border-top: 1px solid #F9FAFB; }
+    .loader { text-align: center; padding: 40px; color: #9CA3AF; }
+    .actions-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+    .actions-bar .btn { font-size: 11px; padding: 7px 12px; }
+    @media(max-width:768px) { .detail-panel { width: 95%; } .profile-grid { grid-template-columns: 1fr 1fr; } .info-grid { grid-template-columns: 1fr; } }
+  </style>
+  <link rel="stylesheet" href="/css/admin-theme.css">
+</head>
+<body>
+  <div class="page-header"><h1>👤 Customer Management</h1><a href="/admin/dashboard.html" class="back-link"><i class="fa-solid fa-arrow-left"></i> Dashboard</a></div>
+  <div class="container">
+    <div class="search-bar"><input id="searchInput" placeholder="Search by name, email, phone..." onkeyup="if(event.key==='Enter')loadCustomers()"><button class="btn btn-primary" onclick="loadCustomers()"><i class="fa-solid fa-search"></i> Search</button></div>
+    <div style="overflow-x:auto;">
+      <table class="cust-table">
+        <thead><tr><th>Customer</th><th>Phone</th><th>Bookings</th><th>Wallet</th><th>Cashback</th><th>Status</th><th>Joined</th><th>Action</th></tr></thead>
+        <tbody id="custBody"><tr><td colspan="8" class="loader">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Detail Slide Panel -->
+  <div class="detail-overlay" id="detailOverlay" onclick="closeDetail()"></div>
+  <div class="detail-panel" id="detailPanel">
+    <div class="dp-header"><h2 id="dpName">Customer</h2><button class="dp-close" onclick="closeDetail()">✕</button></div>
+    <div class="dp-body" id="dpBody"><div class="loader">Loading...</div></div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    let customers = [];
+    document.addEventListener('DOMContentLoaded', loadCustomers);
+
+    async function loadCustomers() {
+      const search = document.getElementById('searchInput').value.trim();
+      try {
+        const res = await API.get('/admin/customers' + (search ? '?search=' + encodeURIComponent(search) : ''));
+        customers = res.data || [];
+        renderList();
+      } catch(e) { document.getElementById('custBody').innerHTML = '<tr><td colspan="8" style="color:red">Failed: ' + (e.message||'') + '</td></tr>'; }
+    }
+
+    function renderList() {
+      const tbody = document.getElementById('custBody');
+      if (!customers.length) { tbody.innerHTML = '<tr><td colspan="8" class="loader">No customers found</td></tr>'; return; }
+      tbody.innerHTML = customers.map(c => {
+        const status = c.accountDeleteRequested ? 'suspended' : 'active';
+        const joined = new Date(c.createdAt).toLocaleDateString('en-IN', {day:'numeric',month:'short',year:'numeric'});
+        return `<tr>
+          <td><span class="cust-name">${c.name}</span><br><span class="cust-email">${c.email}</span></td>
+          <td style="font-size:11px">${c.phone || '—'}</td>
+          <td><strong>${c.bookingCount || 0}</strong></td>
+          <td style="color:#6C3BFF;font-weight:600">₹${(c.walletBalance||0).toLocaleString('en-IN')}</td>
+          <td style="font-size:11px">₹${(c.totalEarned||0).toLocaleString('en-IN')}</td>
+          <td><span class="badge badge-${status}">${status}</span></td>
+          <td style="font-size:10px;color:#6B7280">${joined}</td>
+          <td><button class="btn-view" onclick="openDetail('${c._id}')">View</button></td>
+        </tr>`;
+      }).join('');
+    }
+
+    async function openDetail(id) {
+      document.getElementById('detailOverlay').classList.add('active');
+      document.getElementById('detailPanel').classList.add('active');
+      document.getElementById('dpBody').innerHTML = '<div class="loader">Loading customer data...</div>';
+      try {
+        const res = await API.get('/admin/customers/' + id);
+        const d = res.data;
+        renderDetail(d);
+      } catch(e) { document.getElementById('dpBody').innerHTML = '<p style="color:red">Failed: '+(e.message||'')+'</p>'; }
+    }
+
+    function closeDetail() {
+      document.getElementById('detailOverlay').classList.remove('active');
+      document.getElementById('detailPanel').classList.remove('active');
+    }
+
+    function renderDetail(d) {
+      const u = d.user; const s = d.summary;
+      document.getElementById('dpName').textContent = u.name;
+      let html = '';
+
+      // Warning
+      if (s.balanceMismatch) html += '<div class="warning-box">⚠ Wallet Balance Mismatch Detected — Expected: ₹' + s.expectedBalance.toLocaleString('en-IN') + ', Actual: ₹' + s.walletBalance.toLocaleString('en-IN') + '</div>';
+
+      // Profile Info
+      html += '<div class="info-grid">';
+      html += infoItem('Full Name', u.name);
+      html += infoItem('Email', u.email);
+      html += infoItem('Phone', u.phone || '—');
+      html += infoItem('User ID', u._id);
+      html += infoItem('Joined', new Date(u.createdAt).toLocaleDateString('en-IN'));
+      html += infoItem('Status', u.accountDeleteRequested ? '🔴 Suspended' : '🟢 Active');
+      html += '</div>';
+
+      // Stats
+      html += '<div class="profile-grid">';
+      html += pStat('₹' + s.walletBalance.toLocaleString('en-IN'), 'Wallet Balance');
+      html += pStat('₹' + s.totalCredited.toLocaleString('en-IN'), 'Total Earned');
+      html += pStat('₹' + s.totalWithdrawnPaid.toLocaleString('en-IN'), 'Withdrawn');
+      html += pStat('₹' + s.totalPending.toLocaleString('en-IN'), 'Pending');
+      html += pStat(s.totalBookings, 'Total Bookings');
+      html += pStat('₹' + s.totalSpent.toLocaleString('en-IN'), 'Fees Paid');
+      html += '</div>';
+
+      // Tabs
+      html += '<div class="dp-tabs">';
+      ['Bookings','Cashback','Withdrawals','Payments','Timeline','Actions'].forEach((t,i) => {
+        html += `<div class="dp-tab${i===0?' active':''}" onclick="switchTab(this,'tab-${t.toLowerCase()}')">${t}</div>`;
+      });
+      html += '</div>';
+
+      // Tab: Bookings
+      html += '<div class="dp-section active" id="tab-bookings">';
+      if (d.bookings.length) {
+        html += '<table class="dtable"><thead><tr><th>Date</th><th>Event</th><th>Creator</th><th>Amount</th><th>Fee</th><th>Status</th></tr></thead><tbody>';
+        d.bookings.forEach(b => {
+          const creator = b.creator?.user?.name || b.creator?.businessName || '—';
+          html += `<tr><td>${new Date(b.createdAt).toLocaleDateString('en-IN')}</td><td>${b.eventType}</td><td>${creator}</td><td>₹${(b.amount||b.budget||0).toLocaleString('en-IN')}</td><td>${b.bookingFeePaid?'₹'+b.bookingFeeAmount:'—'}</td><td><span class="badge" style="background:#EEF2FF;color:#6C3BFF">${b.status}</span></td></tr>`;
+        });
+        html += '</tbody></table>';
+      } else html += '<p style="color:#9CA3AF;font-size:12px;">No bookings</p>';
+      html += '</div>';
+
+      // Tab: Cashback
+      html += '<div class="dp-section" id="tab-cashback">';
+      html += '<div class="profile-grid">' + pStat('₹'+s.totalCredited.toLocaleString('en-IN'),'Credited') + pStat('₹'+s.totalCancelled.toLocaleString('en-IN'),'Cancelled') + pStat('₹'+s.totalPending.toLocaleString('en-IN'),'Pending') + '</div>';
+      if (d.cashbackTxns.length) {
+        html += '<table class="dtable"><thead><tr><th>Date</th><th>Amount</th><th>%</th><th>Booking Amt</th><th>Status</th><th>Notes</th></tr></thead><tbody>';
+        d.cashbackTxns.forEach(tx => {
+          html += `<tr><td>${new Date(tx.createdAt).toLocaleDateString('en-IN')}</td><td>₹${tx.amount}</td><td>${tx.percentage}%</td><td>₹${tx.bookingAmount}</td><td>${tx.status}</td><td style="font-size:10px">${tx.notes||''}</td></tr>`;
+        });
+        html += '</tbody></table>';
+      } else html += '<p style="color:#9CA3AF;font-size:12px;">No cashback transactions</p>';
+      html += '</div>';
+
+      // Tab: Withdrawals
+      html += '<div class="dp-section" id="tab-withdrawals">';
+      if (d.withdrawals.length) {
+        html += '<table class="dtable"><thead><tr><th>Date</th><th>Amount</th><th>Bank</th><th>Status</th><th>UTR</th></tr></thead><tbody>';
+        d.withdrawals.forEach(w => {
+          html += `<tr><td>${new Date(w.createdAt).toLocaleDateString('en-IN')}</td><td>₹${w.amount}</td><td>${w.accountHolderName}<br>${w.bankAccountNumber}</td><td>${w.status}</td><td>${w.utrNumber||'—'}</td></tr>`;
+        });
+        html += '</tbody></table>';
+      } else html += '<p style="color:#9CA3AF;font-size:12px;">No withdrawals</p>';
+      html += '</div>';
+
+      // Tab: Payments
+      html += '<div class="dp-section" id="tab-payments">';
+      if (d.payments.length) {
+        html += '<table class="dtable"><thead><tr><th>Date</th><th>Amount</th><th>Order ID</th><th>Payment ID</th><th>Status</th></tr></thead><tbody>';
+        d.payments.forEach(p => {
+          html += `<tr><td>${new Date(p.createdAt).toLocaleDateString('en-IN')}</td><td>₹${p.amount}</td><td style="font-size:9px">${p.razorpayOrderId||'—'}</td><td style="font-size:9px">${p.razorpayPaymentId||'—'}</td><td>${p.status}</td></tr>`;
+        });
+        html += '</tbody></table>';
+      } else html += '<p style="color:#9CA3AF;font-size:12px;">No payment records</p>';
+      html += '</div>';
+
+      // Tab: Timeline
+      html += '<div class="dp-section" id="tab-timeline">';
+      d.timeline.slice(0, 50).forEach(t => {
+        const colors = { account_created:'#6C3BFF', inquiry_sent:'#F59E0B', creator_accepted:'#10B981', advance_paid:'#3B82F6', booking_completed:'#10B981', booking_cancelled:'#EF4444', cashback_added:'#10B981', cashback_cancelled:'#EF4444', withdrawal_pending:'#F59E0B', withdrawal_paid:'#10B981', withdrawal_rejected:'#EF4444' };
+        const color = colors[t.type] || '#6B7280';
+        html += `<div class="timeline-item"><div class="timeline-dot" style="background:${color}"></div><div><div class="timeline-desc">${t.desc}</div><div class="timeline-date">${t.date ? new Date(t.date).toLocaleString('en-IN') : ''}</div></div></div>`;
+      });
+      html += '</div>';
+
+      // Tab: Actions
+      html += `<div class="dp-section" id="tab-actions">
+        <div class="actions-bar">
+          <button class="btn btn-primary" onclick="addCashback('${u._id}')"><i class="fa-solid fa-plus"></i> Add Cashback</button>
+          <button class="btn" style="background:#FEF3C7;color:#B45309;" onclick="deductCashback('${u._id}')"><i class="fa-solid fa-minus"></i> Deduct Cashback</button>
+          <button class="btn" style="background:${u.accountDeleteRequested?'#D1FAE5':'#FEE2E2'};color:${u.accountDeleteRequested?'#059669':'#DC2626'};" onclick="toggleUserStatus('${u._id}', ${u.accountDeleteRequested})">${u.accountDeleteRequested ? 'Reactivate User' : 'Suspend User'}</button>
+        </div>
+      </div>`;
+
+      document.getElementById('dpBody').innerHTML = html;
+    }
+
+    function switchTab(el, tabId) {
+      el.parentElement.querySelectorAll('.dp-tab').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+      document.querySelectorAll('.dp-section').forEach(s => s.classList.remove('active'));
+      document.getElementById(tabId)?.classList.add('active');
+    }
+
+    function infoItem(lbl, val) { return `<div class="info-item"><div class="lbl">${lbl}</div><div class="val">${val}</div></div>`; }
+    function pStat(val, lbl) { return `<div class="p-stat"><div class="val">${val}</div><div class="lbl">${lbl}</div></div>`; }
+
+    async function addCashback(id) {
+      const amount = prompt('Enter cashback amount (₹):');
+      if (!amount || isNaN(amount) || Number(amount) <= 0) return;
+      const reason = prompt('Reason:') || 'Admin adjustment';
+      try { await API.post('/admin/customers/' + id + '/add-cashback', { amount: Number(amount), reason }); alert('Added!'); openDetail(id); } catch(e) { alert('Failed: ' + e.message); }
+    }
+
+    async function deductCashback(id) {
+      const amount = prompt('Enter deduction amount (₹):');
+      if (!amount || isNaN(amount) || Number(amount) <= 0) return;
+      const reason = prompt('Reason:') || 'Admin deduction';
+      try { await API.post('/admin/customers/' + id + '/deduct-cashback', { amount: Number(amount), reason }); alert('Deducted!'); openDetail(id); } catch(e) { alert('Failed: ' + e.message); }
+    }
+
+    async function toggleUserStatus(id, isSuspended) {
+      if (!confirm(isSuspended ? 'Reactivate this user?' : 'Suspend this user?')) return;
+      try { await API.patch('/admin/customers/' + id + '/status', { status: isSuspended ? 'active' : 'suspended' }); alert('Done!'); loadCustomers(); openDetail(id); } catch(e) { alert('Failed: ' + e.message); }
+    }
+  </script>
+</body>
+</html>

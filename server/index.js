@@ -113,6 +113,13 @@ const startServer = async () => {
   try {
     await connectDB();
 
+    // Drop legacy unique index on CashbackTransaction.booking (allows manual cashback entries)
+    try {
+      const mongoose = require("mongoose");
+      const collection = mongoose.connection.collection("cashbacktransactions");
+      await collection.dropIndex("booking_1").catch(() => {});
+    } catch (e) { /* Index may not exist — ignore */ }
+
     // Seed default configuration documents on first run
     const configService = require("./services/configService");
     await configService.seedDefaults();
@@ -587,6 +594,8 @@ app.use("/api/booking-fee", require("./routes/bookingFee"));
 app.use("/api/withdrawal", require("./routes/withdrawal"));
 app.use("/api/live-stats", require("./routes/liveStats"));
 app.use("/api/app-version", require("./routes/appVersion"));
+app.use("/api/featured-moments", require("./routes/featuredMoments"));
+app.use("/api/admin/customers", require("./routes/adminCustomers"));
 app.use("/api/homepage-enquiries", homepageEnquiryRoutes);
 
 // APK download redirect — always redirects to latest build URL

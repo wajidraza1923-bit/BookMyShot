@@ -27,6 +27,7 @@
     .stat-card p { font-size: 11px; color: #6B7280; margin: 4px 0 0; }
     .success-msg { background: #ECFDF5; border: 1px solid #10B981; color: #065F46; padding: 10px 16px; border-radius: 8px; margin-bottom: 16px; display: none; }
   </style>
+  <link rel="stylesheet" href="/css/admin-theme.css">
 </head>
 <body>
   <div class="admin-container">
@@ -105,15 +106,16 @@
   </div>
 
   <script>
-    const API = '/api/cashback';
-    const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
+    const BASE = '';
+    const token = localStorage.getItem('bms_token') || localStorage.getItem('adminToken') || localStorage.getItem('token');
+    if (!token) { window.location.href = '/login.html'; }
     const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
 
     let settings = {};
 
     async function loadSettings() {
       try {
-        const res = await fetch(`${API}/admin/settings`, { headers });
+        const res = await fetch(`${BASE}/api/cashback/admin/settings`, { headers });
         const data = await res.json();
         if (data.success) {
           settings = data.data;
@@ -133,7 +135,7 @@
 
     async function loadReports() {
       try {
-        const res = await fetch(`${API}/admin/reports`, { headers });
+        const res = await fetch(`${BASE}/api/cashback/admin/reports`, { headers });
         const data = await res.json();
         if (data.success) {
           document.getElementById('totalGiven').textContent = '₹' + (data.data.totalCashbackGiven || 0).toLocaleString('en-IN');
@@ -158,7 +160,7 @@
         termsAndConditions: document.getElementById('termsAndConditions').value,
       };
       try {
-        const res = await fetch(`${API}/admin/settings`, { method: 'PUT', headers, body: JSON.stringify(body) });
+        const res = await fetch(`${BASE}/api/cashback/admin/settings`, { method: 'PUT', headers, body: JSON.stringify(body) });
         const data = await res.json();
         if (data.success) {
           const msg = document.getElementById('successMsg');

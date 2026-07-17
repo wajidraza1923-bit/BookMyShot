@@ -18,16 +18,16 @@ const { width } = Dimensions.get('window');
 const HERO_IMAGE_URI = 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80';
 
 const CATEGORIES_DEFAULT = [
-  { id: 'photography-videography', label: 'Photography', emoji: '📷', color: '#EEF2FF' },
-  { id: 'videography', label: 'Videography', emoji: '🎥', color: '#FDF2F8' },
-  { id: 'makeup-artists', label: 'Makeup Artists', emoji: '💄', color: '#FEF3C7' },
-  { id: 'decoration-floral', label: 'Decoration', emoji: '🌸', color: '#ECFDF5' },
-  { id: 'catering-services', label: 'Catering', emoji: '🍽️', color: '#FFF7ED' },
-  { id: 'mehndi-artist', label: 'Mehndi Artists', emoji: '🤲', color: '#FFF1F2' },
-  { id: 'venues', label: 'Venues', emoji: '🏛️', color: '#E0F2FE' },
-  { id: 'djs-entertainment', label: 'DJ & Music', emoji: '🎧', color: '#F3E8FF' },
-  { id: 'wedding-planners', label: 'Wedding Planners', emoji: '💍', color: '#F0FDF4' },
-  { id: 'more', label: 'More', emoji: '•••', color: '#F9FAFB' },
+  { id: 'photography-videography', label: 'Photography', emoji: '📷', color: '#EEF2FF', gradient: ['#818CF8', '#6366F1'], image: 'https://images.pexels.com/photos/3379934/pexels-photo-3379934.jpeg?auto=compress&cs=tinysrgb&w=200&h=200&fit=crop' },
+  { id: 'videography', label: 'Videography', emoji: '🎥', color: '#FDF2F8', gradient: ['#F472B6', '#EC4899'], image: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=200&h=200&fit=crop' },
+  { id: 'makeup-artists', label: 'Makeup', emoji: '💄', color: '#FEF3C7', gradient: ['#FBBF24', '#F59E0B'], image: 'https://images.pexels.com/photos/3065171/pexels-photo-3065171.jpeg?auto=compress&cs=tinysrgb&w=200&h=200&fit=crop' },
+  { id: 'decoration-floral', label: 'Decoration', emoji: '🌸', color: '#ECFDF5', gradient: ['#34D399', '#10B981'], image: 'https://images.pexels.com/photos/1616113/pexels-photo-1616113.jpeg?auto=compress&cs=tinysrgb&w=200&h=200&fit=crop' },
+  { id: 'catering-services', label: 'Catering', emoji: '🍽️', color: '#FFF7ED', gradient: ['#FB923C', '#F97316'], image: 'https://images.pexels.com/photos/587741/pexels-photo-587741.jpeg?auto=compress&cs=tinysrgb&w=200&h=200&fit=crop' },
+  { id: 'mehndi-artist', label: 'Mehndi', emoji: '🤲', color: '#FFF1F2', gradient: ['#FB7185', '#F43F5E'], image: 'https://images.pexels.com/photos/3014856/pexels-photo-3014856.jpeg?auto=compress&cs=tinysrgb&w=200&h=200&fit=crop' },
+  { id: 'venues', label: 'Venues', emoji: '🏛️', color: '#E0F2FE', gradient: ['#38BDF8', '#0EA5E9'], image: 'https://images.pexels.com/photos/169198/pexels-photo-169198.jpeg?auto=compress&cs=tinysrgb&w=200&h=200&fit=crop' },
+  { id: 'djs-entertainment', label: 'DJ & Music', emoji: '🎧', color: '#F3E8FF', gradient: ['#A78BFA', '#8B5CF6'], image: 'https://images.pexels.com/photos/1540406/pexels-photo-1540406.jpeg?auto=compress&cs=tinysrgb&w=200&h=200&fit=crop' },
+  { id: 'wedding-planners', label: 'Planners', emoji: '💍', color: '#F0FDF4', gradient: ['#4ADE80', '#22C55E'], image: 'https://images.pexels.com/photos/1024993/pexels-photo-1024993.jpeg?auto=compress&cs=tinysrgb&w=200&h=200&fit=crop' },
+  { id: 'more', label: 'More', emoji: '•••', color: '#F9FAFB', gradient: ['#94A3B8', '#64748B'], image: '' },
 ];
 
 // Smart number formatter: shows actual number below 1000, K+ format above
@@ -38,19 +38,73 @@ function formatStat(num: number): string {
   return `${Math.floor(num / 1000)}K+`;
 }
 
+// Animated Quick Action Button — gradient card with spring bounce
+function QAButton({ children, onPress, gradient }: { children: React.ReactNode; onPress: () => void; gradient: string[] }) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const onPressIn = () => { Animated.spring(scale, { toValue: 0.9, useNativeDriver: true, speed: 50, bounciness: 4 }).start(); };
+  const onPressOut = () => { Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 14, bounciness: 12 }).start(); };
+  return (
+    <Animated.View style={[st.qaCard, { transform: [{ scale }] }]}>
+      <TouchableOpacity onPressIn={onPressIn} onPressOut={onPressOut} onPress={onPress} activeOpacity={1} style={{ width: '100%', borderRadius: 16, overflow: 'hidden' }}>
+        <LinearGradient colors={gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.qaGradient}>
+          {children}
+        </LinearGradient>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
+// Animated Category Card — real photos with staggered entrance
+function CatCard({ cat, index, onPress }: { cat: any; index: number; onPress: () => void }) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const fadeIn = useRef(new Animated.Value(0)).current;
+  const slideUp = useRef(new Animated.Value(16)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeIn, { toValue: 1, duration: 500, delay: index * 70, useNativeDriver: true }),
+      Animated.spring(slideUp, { toValue: 0, delay: index * 70, useNativeDriver: true, speed: 12, bounciness: 8 }),
+    ]).start();
+  }, []);
+
+  const onPressIn = () => { Animated.spring(scale, { toValue: 0.85, useNativeDriver: true, speed: 50, bounciness: 4 }).start(); };
+  const onPressOut = () => { Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 12, bounciness: 14 }).start(); };
+
+  return (
+    <Animated.View style={[st.catCard, { opacity: fadeIn, transform: [{ translateY: slideUp }, { scale }] }]}>
+      <TouchableOpacity onPressIn={onPressIn} onPressOut={onPressOut} onPress={onPress} activeOpacity={1} style={{ alignItems: 'center' }}>
+        <View style={st.catIconWrap}>
+          {cat.image ? (
+            <Image source={{ uri: cat.image }} style={st.catImage} />
+          ) : (
+            <View style={[st.catFallback, { backgroundColor: cat.color }]}>
+              <Ionicons name={cat.icon as any} size={22} color="#6C3BFF" />
+            </View>
+          )}
+        </View>
+        <Text style={st.catName}>{cat.label}</Text>
+        {cat.count > 0 && <Text style={st.catCount}>{cat.count}+</Text>}
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
 export default function HomeScreen({ navigation }: any) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user, role } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<any[]>(CATEGORIES_DEFAULT);
   const [stats, setStats] = useState({ creators: 0, bookings: 0, cities: 0, avgRating: 0 });
   const [topCreators, setTopCreators] = useState<any[]>([]);
+  const [featuredMoments, setFeaturedMoments] = useState<any[]>([]);
   const [locationCity, setLocationCity] = useState('');
   const [locationArea, setLocationArea] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [heroConfig, setHeroConfig] = useState({ cashbackPercentage: 10, heroTitle: 'Your Dream Wedding,', heroTitleAccent: 'More Rewards!', heroSubtitle: 'Book verified wedding creators and get exciting cashback on every successful booking.', heroEyebrow: 'CELEBRATE BEAUTIFULLY. SAVE MORE.', heroCta1Text: 'Find Creator', heroCta2Text: 'Get Free Quote' });
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const shineAnim = useRef(new Animated.Value(-1)).current;
+  // Customer Quick Actions data
+  const [qaData, setQaData] = useState({ walletBalance: 0, bookingsCount: 0, inquiriesCount: 0, paymentDue: 0, paymentDueCount: 0 });
 
   // Shine animation loop for cashback card
   useEffect(() => {
@@ -97,30 +151,32 @@ export default function HomeScreen({ navigation }: any) {
       // Categories from DB
       const dbCats = catsRes.data?.data || [];
       if (dbCats.length > 0) {
-        // Map slug to icon/color for reliable matching
-        const iconMap: Record<string, { icon: string; color: string }> = {
-          'photography-videography': { icon: 'camera-outline', color: '#EEF2FF' },
-          'videography': { icon: 'videocam-outline', color: '#FDF2F8' },
-          'makeup-artists': { icon: 'color-palette-outline', color: '#FEF3C7' },
-          'decoration-floral': { icon: 'flower-outline', color: '#ECFDF5' },
-          'catering-services': { icon: 'restaurant-outline', color: '#FFF7ED' },
-          'mehndi-artist': { icon: 'hand-left-outline', color: '#FFF1F2' },
-          'venues': { icon: 'business-outline', color: '#E0F2FE' },
-          'djs-entertainment': { icon: 'musical-notes-outline', color: '#F3E8FF' },
-          'wedding-planners': { icon: 'clipboard-outline', color: '#F0FDF4' },
+        // Map slug to icon/color/image/gradient for reliable matching
+        const iconMap: Record<string, { icon: string; color: string; image: string; gradient: string[] }> = {
+          'photography-videography': { icon: 'camera-outline', color: '#EEF2FF', image: 'https://images.pexels.com/photos/3379934/pexels-photo-3379934.jpeg?auto=compress&cs=tinysrgb&w=200&h=200&fit=crop', gradient: ['#818CF8', '#6366F1'] },
+          'videography': { icon: 'videocam-outline', color: '#FDF2F8', image: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=200&h=200&fit=crop', gradient: ['#F472B6', '#EC4899'] },
+          'makeup-artists': { icon: 'color-palette-outline', color: '#FEF3C7', image: 'https://images.pexels.com/photos/3065171/pexels-photo-3065171.jpeg?auto=compress&cs=tinysrgb&w=200&h=200&fit=crop', gradient: ['#FBBF24', '#F59E0B'] },
+          'decoration-floral': { icon: 'flower-outline', color: '#ECFDF5', image: 'https://images.pexels.com/photos/1616113/pexels-photo-1616113.jpeg?auto=compress&cs=tinysrgb&w=200&h=200&fit=crop', gradient: ['#34D399', '#10B981'] },
+          'catering-services': { icon: 'restaurant-outline', color: '#FFF7ED', image: 'https://images.pexels.com/photos/587741/pexels-photo-587741.jpeg?auto=compress&cs=tinysrgb&w=200&h=200&fit=crop', gradient: ['#FB923C', '#F97316'] },
+          'mehndi-artist': { icon: 'hand-left-outline', color: '#FFF1F2', image: 'https://images.pexels.com/photos/3014856/pexels-photo-3014856.jpeg?auto=compress&cs=tinysrgb&w=200&h=200&fit=crop', gradient: ['#FB7185', '#F43F5E'] },
+          'venues': { icon: 'business-outline', color: '#E0F2FE', image: 'https://images.pexels.com/photos/169198/pexels-photo-169198.jpeg?auto=compress&cs=tinysrgb&w=200&h=200&fit=crop', gradient: ['#38BDF8', '#0EA5E9'] },
+          'djs-entertainment': { icon: 'musical-notes-outline', color: '#F3E8FF', image: 'https://images.pexels.com/photos/1540406/pexels-photo-1540406.jpeg?auto=compress&cs=tinysrgb&w=200&h=200&fit=crop', gradient: ['#A78BFA', '#8B5CF6'] },
+          'wedding-planners': { icon: 'clipboard-outline', color: '#F0FDF4', image: 'https://images.pexels.com/photos/1024993/pexels-photo-1024993.jpeg?auto=compress&cs=tinysrgb&w=200&h=200&fit=crop', gradient: ['#4ADE80', '#22C55E'] },
         };
         const mapped = dbCats.map((c: any) => {
           const slug = c.slug || c.name?.toLowerCase().replace(/\s+/g, '-');
           const match = iconMap[slug];
           return {
             id: slug,
-            label: c.name?.length > 14 ? c.name.split(' ')[0] : c.name,
+            label: c.name?.length > 12 ? c.name.split(' ')[0] : c.name,
             icon: c.icon ? `${c.icon}${c.icon.includes('-outline') ? '' : '-outline'}` : (match?.icon || 'grid-outline'),
             color: match?.color || '#F3E8FF',
+            image: match?.image || '',
+            gradient: match?.gradient || ['#6C3BFF', '#A78BFA'],
             count: c.creatorCount || 0,
           };
         });
-        if (mapped.length > 9) mapped.splice(9, mapped.length - 9, { id: 'more', label: 'More', icon: 'ellipsis-horizontal', color: '#F9FAFB', count: 0 });
+        if (mapped.length > 9) mapped.splice(9, mapped.length - 9, { id: 'more', label: 'More', icon: 'ellipsis-horizontal', color: '#F9FAFB', image: '', gradient: ['#94A3B8', '#64748B'], count: 0 });
         setCategories(mapped.length > 0 ? mapped : CATEGORIES_DEFAULT);
       }
 
@@ -128,6 +184,34 @@ export default function HomeScreen({ navigation }: any) {
       const all = creatorsRes.data?.creators || creatorsRes.data?.data || [];
       const top = [...all].sort((a: any, b: any) => (b.rating || 0) - (a.rating || 0)).slice(0, 10);
       setTopCreators(top);
+
+      // Featured Wedding Moments
+      try {
+        const momentsRes = await api.get('/featured-moments');
+        setFeaturedMoments(momentsRes.data?.data || []);
+      } catch {}
+
+      // Load Customer Quick Actions data (only for logged-in customers)
+      if (isAuthenticated && role === 'user') {
+        try {
+          const [walletRes, bookingsRes] = await Promise.all([
+            api.get('/cashback/wallet').catch(() => ({ data: { data: null } })),
+            api.get('/bookings/my').catch(() => ({ data: { bookings: [] } })),
+          ]);
+          const walletBalance = walletRes.data?.data?.earned || 0;
+          const bookings = bookingsRes.data?.bookings || [];
+          const bookingsCount = bookings.length;
+          // Inquiries = new/pending bookings
+          const inquiriesCount = bookings.filter((b: any) => b.status === 'Booking Created' || b.status === 'Creator Accepted').length;
+          // Payment due = accepted bookings where booking fee is not paid
+          const pendingPayments = bookings.filter((b: any) =>
+            (b.status === 'Creator Accepted' || b.status === 'Event Scheduled') && !b.bookingFeePaid
+          );
+          const paymentDueCount = pendingPayments.length;
+          const paymentDue = pendingPayments.reduce((sum: number, b: any) => sum + (b.bookingFeeAmount || Math.round((b.amount || b.budget || 0) * 0.05)), 0);
+          setQaData({ walletBalance, bookingsCount, inquiriesCount, paymentDue, paymentDueCount });
+        } catch {}
+      }
     } catch {} finally {
       setLoading(false);
       Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
@@ -246,6 +330,34 @@ export default function HomeScreen({ navigation }: any) {
           </View>
         </View>
 
+        {/* ═══ CUSTOMER QUICK ACTIONS ═══ */}
+        {isAuthenticated && role === 'user' && (
+          <View style={st.qaSection}>
+            <View style={st.qaRow}>
+              <QAButton onPress={() => navigation.navigate('Wallet')} gradient={['#FDF2F8', '#FCE7F3']}>
+                <Ionicons name="wallet" size={22} color="#BE185D" />
+                <Text style={[st.qaLabel, { color: '#9D174D' }]}>Wallet</Text>
+                <Text style={[st.qaBadge, { color: '#BE185D' }]}>₹{qaData.walletBalance.toLocaleString('en-IN')}</Text>
+              </QAButton>
+              <QAButton onPress={() => navigation.navigate('Bookings')} gradient={['#FDF2F8', '#FCE7F3']}>
+                <Ionicons name="calendar" size={22} color="#BE185D" />
+                <Text style={[st.qaLabel, { color: '#9D174D' }]}>Bookings</Text>
+                <Text style={[st.qaBadge, { color: '#BE185D' }]}>{qaData.bookingsCount > 0 ? `${qaData.bookingsCount} Active` : '—'}</Text>
+              </QAButton>
+              <QAButton onPress={() => navigation.navigate('Bookings')} gradient={['#FDF2F8', '#FCE7F3']}>
+                <Ionicons name="card" size={22} color="#BE185D" />
+                <Text style={[st.qaLabel, { color: '#9D174D' }]}>Pay Due</Text>
+                <Text style={[st.qaBadge, { color: '#BE185D' }]}>{qaData.paymentDueCount > 0 ? `${qaData.paymentDueCount} Pending` : '—'}</Text>
+              </QAButton>
+              <QAButton onPress={() => navigation.navigate('Info', { type: 'support' })} gradient={['#FDF2F8', '#FCE7F3']}>
+                <Ionicons name="headset" size={22} color="#BE185D" />
+                <Text style={[st.qaLabel, { color: '#9D174D' }]}>Support</Text>
+                <Text style={[st.qaBadge, { color: '#BE185D' }]}>Help?</Text>
+              </QAButton>
+            </View>
+          </View>
+        )}
+
         {/* ═══ STATS ═══ */}
         <View style={st.statsRow}>
           {[
@@ -261,14 +373,52 @@ export default function HomeScreen({ navigation }: any) {
         {/* ═══ CATEGORIES ═══ */}
         <View style={st.secHead}><Text style={st.secTitle}>Browse Categories</Text><TouchableOpacity onPress={() => navigation.navigate('Discover')}><Text style={st.viewAll}>View All →</Text></TouchableOpacity></View>
         <View style={st.catGrid}>
-          {categories.slice(0, 10).map(cat => (
-            <TouchableOpacity key={cat.id} style={st.catCard} onPress={() => cat.id === 'more' ? navigation.navigate('Discover') : navigation.navigate('SubCategories', { slug: cat.id, name: cat.label, icon: 'grid' })} activeOpacity={0.7}>
-              <View style={[st.catIconWrap, { backgroundColor: cat.color }]}><Ionicons name={cat.icon as any} size={20} color="#6C3BFF" /></View>
-              <Text style={st.catName}>{cat.label}</Text>
-              {cat.count > 0 && <Text style={st.catCount}>{cat.count}+ Creators</Text>}
-            </TouchableOpacity>
+          {categories.slice(0, 10).map((cat, idx) => (
+            <CatCard key={cat.id} cat={cat} index={idx} onPress={() => cat.id === 'more' ? navigation.navigate('Discover') : navigation.navigate('SubCategories', { slug: cat.id, name: cat.label, icon: 'grid' })} />
           ))}
         </View>
+
+        {/* ═══ FEATURED WEDDING MOMENTS ═══ */}
+        {featuredMoments.length > 0 && (
+          <View>
+            <View style={st.secHead}><Text style={st.secTitle}>✨ Featured Wedding Moments</Text><TouchableOpacity onPress={() => {}}><Text style={st.viewAll}>View All →</Text></TouchableOpacity></View>
+            <FlatList
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              data={featuredMoments}
+              contentContainerStyle={{ paddingHorizontal: 16 }}
+              keyExtractor={i => i._id}
+              snapToInterval={width * 0.75 + 12}
+              decelerationRate="fast"
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={st.fmCard}
+                  activeOpacity={0.9}
+                  onPress={() => {
+                    // Increment view + navigate to creator if available
+                    api.get(`/featured-moments/${item._id}`).catch(() => {});
+                    if (item.creator?._id) navigation.navigate('CreatorProfile', { id: item.creator._id });
+                  }}
+                >
+                  <Image source={{ uri: item.coverImage }} style={st.fmImage} />
+                  <LinearGradient colors={['transparent', 'rgba(0,0,0,0.7)']} style={st.fmOverlay}>
+                    <View style={st.fmBadge}><Text style={st.fmBadgeText}>{item.category}</Text></View>
+                    <Text style={st.fmTitle} numberOfLines={1}>{item.title}</Text>
+                    <View style={st.fmMeta}>
+                      <Text style={st.fmCreator}>{item.creatorName || 'Creator'}</Text>
+                      <Text style={st.fmCity}>📍 {item.city}</Text>
+                    </View>
+                    <View style={st.fmStats}>
+                      <View style={st.fmStatItem}><Ionicons name="heart" size={12} color="#F472B6" /><Text style={st.fmStatText}>{item.likes || 0}</Text></View>
+                      <View style={st.fmStatItem}><Ionicons name="eye" size={12} color="#A78BFA" /><Text style={st.fmStatText}>{item.views || 0}</Text></View>
+                      <View style={st.fmStatItem}><Ionicons name="star" size={12} color="#FBBF24" /><Text style={st.fmStatText}>{item.rating?.toFixed(1) || '0'}</Text></View>
+                    </View>
+                  </LinearGradient>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        )}
 
         {/* ═══ TOP CREATORS ═══ */}
         {topCreators.length > 0 && (
@@ -369,20 +519,43 @@ const st = StyleSheet.create({
   heroQuoteBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.95)', borderWidth: 1.5, borderColor: '#D1D5DB', paddingHorizontal: 16, paddingVertical: 13, borderRadius: 12, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4 },
   heroQuoteBtnText: { fontSize: 13, fontWeight: '600', color: '#374151' },
   // Stats
-  statsRow: { flexDirection: 'row', marginHorizontal: 16, marginTop: 28, gap: 8 },
-  stat: { flex: 1, alignItems: 'center', backgroundColor: '#F8F6FF', borderRadius: 16, paddingVertical: 16, borderWidth: 1, borderColor: '#EDE9FE', elevation: 1, shadowColor: '#6C3BFF', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4 },
-  statVal: { fontSize: 15, fontWeight: '800', color: '#1F2937', marginTop: 6 },
-  statLbl: { fontSize: 8.5, color: '#6B7280', marginTop: 3, textAlign: 'center', fontWeight: '500' },
+  statsRow: { flexDirection: 'row', marginHorizontal: 16, marginTop: 24, gap: 0 },
+  stat: { flex: 1, alignItems: 'center', paddingVertical: 12 },
+  statVal: { fontSize: 16, fontWeight: '800', color: '#1F2937', marginTop: 4 },
+  statLbl: { fontSize: 8, color: '#6B7280', marginTop: 2, textAlign: 'center', fontWeight: '500' },
+  // Quick Actions
+  qaSection: { marginTop: 20, marginBottom: -10 },
+  qaRow: { flexDirection: 'row', paddingHorizontal: 12, gap: 8 },
+  qaCard: { flex: 1, borderRadius: 16, elevation: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, overflow: 'hidden' },
+  qaGradient: { alignItems: 'center', paddingVertical: 14, paddingHorizontal: 4, borderRadius: 16 },
+  qaIcon: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 5 },
+  qaLabel: { fontSize: 9.5, fontWeight: '800', color: '#fff', textAlign: 'center', marginTop: 6, letterSpacing: 0.2 },
+  qaBadge: { fontSize: 8.5, fontWeight: '600', color: 'rgba(255,255,255,0.85)', marginTop: 3, textAlign: 'center' },
   // Sections
-  secHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginTop: 30, marginBottom: 14 },
-  secTitle: { fontSize: 17, fontWeight: '800', color: '#1F2937' },
+  secHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginTop: 28, marginBottom: 12 },
+  secTitle: { fontSize: 15, fontWeight: '700', color: '#1F2937', letterSpacing: -0.3 },
   viewAll: { fontSize: 11, fontWeight: '600', color: '#6C3BFF' },
-  // Categories — 5-column grid (matches reference)
-  catGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12, gap: 8 },
-  catCard: { width: (width - 24 - 32) / 5, alignItems: 'center', paddingVertical: 14 },
-  catIconWrap: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  catName: { fontSize: 9.5, fontWeight: '700', color: '#1F2937', textAlign: 'center' },
-  catCount: { fontSize: 8, color: '#374151', marginTop: 2, fontWeight: '500' },
+  // Categories — 5-column grid with real photos
+  catGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 10 },
+  catCard: { width: (width - 20) / 5, alignItems: 'center', paddingVertical: 8 },
+  catIconWrap: { width: 52, height: 52, borderRadius: 26, overflow: 'hidden', marginBottom: 6, elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.15, shadowRadius: 8, borderWidth: 2, borderColor: '#fff' },
+  catImage: { width: '100%', height: '100%', borderRadius: 26 },
+  catFallback: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', borderRadius: 26 },
+  catName: { fontSize: 9, fontWeight: '700', color: '#1F2937', textAlign: 'center', lineHeight: 12 },
+  catCount: { fontSize: 7.5, color: '#6C3BFF', marginTop: 1, fontWeight: '700' },
+  // Featured Moments
+  fmCard: { width: width * 0.75, height: 200, borderRadius: 20, overflow: 'hidden', marginRight: 12, elevation: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 12 },
+  fmImage: { width: '100%', height: '100%', resizeMode: 'cover' },
+  fmOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 14, paddingTop: 40 },
+  fmBadge: { position: 'absolute', top: -130, left: 14, backgroundColor: 'rgba(108,59,255,0.9)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  fmBadgeText: { fontSize: 9, fontWeight: '700', color: '#fff', textTransform: 'uppercase', letterSpacing: 0.5 },
+  fmTitle: { fontSize: 15, fontWeight: '800', color: '#fff', marginBottom: 4 },
+  fmMeta: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 },
+  fmCreator: { fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.9)' },
+  fmCity: { fontSize: 10, color: 'rgba(255,255,255,0.75)' },
+  fmStats: { flexDirection: 'row', gap: 12 },
+  fmStatItem: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  fmStatText: { fontSize: 10, fontWeight: '600', color: 'rgba(255,255,255,0.85)' },
   // Top Creators — clean white cards, no overlays
   tcCard: { width: 160, borderRadius: 16, overflow: 'hidden', marginRight: 12, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#F1F5F9', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4 },
   tcImg: { width: '100%', height: 110, resizeMode: 'cover' },

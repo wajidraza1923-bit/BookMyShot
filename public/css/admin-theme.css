@@ -1,0 +1,169 @@
+/* BookMyShot Admin — White + Purple + Pink Theme (Matches Home Screen) */
+body {
+  font-family: 'Outfit', system-ui, sans-serif !important;
+  background: #FFFFFF !important;
+  color: #1F2937 !important;
+  min-height: 100vh;
+}
+
+/* Header */
+.page-header {
+  background: #FFFFFF !important;
+  border-bottom: 1px solid #F1F0F7 !important;
+}
+.page-header h1 { color: #1F2937 !important; }
+.page-header .back-link { color: #6C3BFF !important; }
+.page-header .back-link:hover { color: #5B21B6 !important; }
+
+/* Containers & Cards */
+.stat-card, .card {
+  background: #FFFFFF !important;
+  border: 1px solid #EDE9FE !important;
+  color: #1F2937 !important;
+}
+.stat-card .stat-label { color: #6B7280 !important; }
+.stat-card.pending .stat-value { color: #F59E0B !important; }
+.stat-card.today .stat-value { color: #6C3BFF !important; }
+.stat-card.paid .stat-value { color: #10B981 !important; }
+.stat-card.rejected .stat-value { color: #EF4444 !important; }
+.stat-card::before { opacity: 1 !important; }
+.stat-card.pending::before { background: linear-gradient(90deg, #F59E0B, #FBBF24) !important; }
+.stat-card.today::before { background: linear-gradient(90deg, #6C3BFF, #A78BFA) !important; }
+.stat-card.paid::before { background: linear-gradient(90deg, #10B981, #34D399) !important; }
+.stat-card.rejected::before { background: linear-gradient(90deg, #EF4444, #F87171) !important; }
+
+/* Tables */
+.table-container, .table-wrap { background: #FFFFFF !important; border: 1px solid #F1F0F7 !important; }
+table { color: #1F2937 !important; }
+th { color: #6C3BFF !important; background: #F8F6FF !important; border-bottom: 1px solid #EDE9FE !important; }
+td { color: #374151 !important; border-bottom: 1px solid #F9FAFB !important; }
+tr:hover td { background: #FDFCFF !important; }
+.customer-name { color: #1F2937 !important; }
+.customer-info { color: #9CA3AF !important; }
+
+/* Badges */
+.badge-pending { background: #FEF3C7 !important; color: #D97706 !important; }
+.badge-approved { background: #DBEAFE !important; color: #2563EB !important; }
+.badge-paid, .badge-active { background: #D1FAE5 !important; color: #059669 !important; }
+.badge-rejected, .badge-inactive { background: #FEE2E2 !important; color: #DC2626 !important; }
+.badge-cat { background: #F3E8FF !important; color: #7C3AED !important; }
+
+/* Buttons */
+.btn-view { background: #F3E8FF !important; color: #6C3BFF !important; }
+.btn-view:hover { background: #EDE9FE !important; }
+.btn-approve { background: #D1FAE5 !important; color: #059669 !important; }
+.btn-approve:hover { background: #A7F3D0 !important; }
+.btn-pay { background: #DBEAFE !important; color: #2563EB !important; }
+.btn-pay:hover { background: #BFDBFE !important; }
+.btn-reject, .btn-danger { background: #FEE2E2 !important; color: #DC2626 !important; }
+.btn-reject:hover, .btn-danger:hover { background: #FECACA !important; }
+.btn-primary { background: #6C3BFF !important; color: #FFFFFF !important; font-weight: 700 !important; }
+.btn-primary:hover { background: #5B21B6 !important; box-shadow: 0 4px 14px rgba(108,59,255,0.25) !important; }
+
+/* Filters */
+.filter-btn, .filter-bar select {
+  background: #FFFFFF !important;
+  border: 1px solid #E5E7EB !important;
+  color: #4B5563 !important;
+}
+.filter-btn:hover { border-color: #6C3BFF !important; color: #6C3BFF !important; }
+.filter-btn.active { background: #6C3BFF !important; color: #FFFFFF !important; border-color: #6C3BFF !important; }
+
+/* Modals */
+.modal-overlay { background: rgba(0,0,0,0.4) !important; }
+.modal {
+  background: #FFFFFF !important;
+  border: 1px solid #EDE9FE !important;
+  color: #1F2937 !important;
+}
+.modal h3 { color: #1F2937 !important; }
+.modal-field label, .form-group label { color: #4B5563 !important; }
+.modal-field input, .modal-field textarea, .modal-field select,
+.form-group input, .form-group textarea, .form-group select {
+  background: #FFFFFF !important;
+  border: 1px solid #E5E7EB !important;
+  color: #1F2937 !important;
+}
+.modal-field input:focus, .modal-field textarea:focus,
+.form-group input:focus, .form-group textarea:focus {
+  border-color: #6C3BFF !important;
+  box-shadow: 0 0 0 3px rgba(108,59,255,0.08) !important;
+}
+.btn-modal-cancel { border: 1px solid #E5E7EB !important; color: #4B5563 !important; background: #FFFFFF !important; }
+.btn-modal-submit { background: #6C3BFF !important; color: #FFFFFF !important; }
+.btn-modal-submit:hover { background: #5B21B6 !important; }
+.btn-modal-submit.danger { background: #EF4444 !important; color: #FFFFFF !important; }
+
+/* Search */
+.search-bar input, .search-input, .top-bar input, .top-bar select {
+  background: #FFFFFF !important;
+  border: 1px solid #E5E7EB !important;
+  color: #1F2937 !important;
+}
+.search-bar input::placeholder, .search-input::placeholder { color: #9CA3AF !important; }
+
+/* Loader */
+.loader::after { border-color: #EDE9FE !important; border-top-color: #6C3BFF !important; }
+
+/* Toast */
+.toast.success { background: #D1FAE5 !important; color: #065F46 !important; border: 1px solid #A7F3D0 !important; }
+.toast.error { background: #FEE2E2 !important; color: #991B1B !important; border: 1px solid #FECACA !important; }
+
+/* Empty State */
+.empty-state { color: #9CA3AF !important; }
+.empty-state i { color: #D1D5DB !important; }
+
+/* Grid cards (Featured Moments) */
+.grid .card { background: #FFFFFF !important; border: 1px solid #F1F0F7 !important; }
+.grid .card:hover { box-shadow: 0 8px 24px rgba(108,59,255,0.08) !important; }
+.card-title { color: #1F2937 !important; }
+.card-meta, .card-stats { color: #6B7280 !important; }
+
+/* Detail panels */
+.detail-overlay { background: rgba(0,0,0,0.3) !important; }
+.detail-panel { background: #FFFFFF !important; box-shadow: -10px 0 40px rgba(108,59,255,0.08) !important; }
+.dp-header { background: #FFFFFF !important; border-bottom: 1px solid #F1F0F7 !important; }
+.dp-header h2 { color: #1F2937 !important; }
+.dp-close { background: #F3F4F6 !important; color: #4B5563 !important; }
+.dp-tab { background: #F9FAFB !important; border: 1px solid #E5E7EB !important; color: #4B5563 !important; }
+.dp-tab.active { background: #6C3BFF !important; color: #FFFFFF !important; border-color: #6C3BFF !important; }
+.dp-tabs { border-bottom: 1px solid #F1F0F7 !important; }
+.p-stat { background: #F8F6FF !important; border: 1px solid #EDE9FE !important; }
+.p-stat .val { color: #6C3BFF !important; }
+.p-stat .lbl { color: #6B7280 !important; }
+.info-item .lbl { color: #6B7280 !important; }
+.info-item .val { color: #1F2937 !important; }
+.dtable th { background: #F8F6FF !important; color: #6C3BFF !important; }
+.dtable td { color: #374151 !important; border-color: #F9FAFB !important; }
+.timeline-desc { color: #374151 !important; }
+.timeline-date { color: #9CA3AF !important; }
+.warning-box { background: #FEF3C7 !important; border: 1px solid #FBBF24 !important; color: #92400E !important; }
+
+/* Cashback page */
+.admin-container { color: #1F2937 !important; }
+.admin-container h1 { color: #1F2937 !important; }
+.stats-grid .stat-card { background: #F8F6FF !important; border: 1px solid #EDE9FE !important; }
+.stats-grid .stat-card h3 { color: #6C3BFF !important; }
+.stats-grid .stat-card p { color: #6B7280 !important; }
+.cashback-form .form-group label { color: #4B5563 !important; }
+.cashback-form .form-group input,
+.cashback-form .form-group textarea,
+.cashback-form .form-group select {
+  background: #FFFFFF !important; border: 1px solid #E5E7EB !important; color: #1F2937 !important;
+}
+.toggle.on { background: #6C3BFF !important; }
+.save-btn { background: #6C3BFF !important; color: #FFFFFF !important; }
+.save-btn:hover { background: #5B21B6 !important; }
+.success-msg { background: #D1FAE5 !important; border: 1px solid #10B981 !important; color: #065F46 !important; }
+
+/* Top bar */
+.top-bar { color: #1F2937 !important; }
+
+/* Customer table specifics */
+.cust-table { background: #FFFFFF !important; border: 1px solid #F1F0F7 !important; }
+.cust-table th { color: #6C3BFF !important; background: #F8F6FF !important; }
+.cust-table td { color: #374151 !important; border-top: 1px solid #F9FAFB !important; }
+.cust-table tr:hover td { background: #FDFCFF !important; }
+.cust-name { color: #1F2937 !important; }
+.cust-email { color: #9CA3AF !important; }
+.btn-view { background: #F3E8FF !important; color: #6C3BFF !important; }

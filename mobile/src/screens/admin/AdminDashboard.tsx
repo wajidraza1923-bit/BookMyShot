@@ -57,6 +57,8 @@ export default function AdminDashboard({ navigation }: any) {
     { icon: 'phone-portrait-outline', label: 'App Updates', desc: 'Manage versions, force update, APK', screen: 'AdminAppUpdates' },
     { icon: 'grid-outline', label: 'Categories', desc: 'Manage categories & subcategories', screen: 'ContentManager' },
     { icon: 'gift-outline', label: 'Cashback Management', desc: 'Cashback %, limits, offers, reports', screen: 'AdminCashback' },
+    { icon: 'cash-outline', label: 'Withdrawals', desc: 'Customer withdrawal requests & payouts', screen: 'AdminWithdrawals' },
+    { icon: 'images-outline', label: 'Featured Moments', desc: 'Wedding showcase gallery for homepage', screen: 'AdminFeaturedMoments' },
   ];
 
   return (

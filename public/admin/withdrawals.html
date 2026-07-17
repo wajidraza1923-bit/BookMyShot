@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Withdrawal Management - BookMyShot Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #FAFAFE; color: #1F2937; min-height: 100vh; }
+
+    /* Header */
+    .page-header { background: #fff; border-bottom: 1px solid #F1F0F7; padding: 20px 28px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+    .page-header h1 { font-size: 20px; font-weight: 700; color: #1F2937; display: flex; align-items: center; gap: 10px; }
+    .page-header .back-link { color: #6C3BFF; text-decoration: none; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
+    .page-header .back-link:hover { color: #5B2FD9; }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 24px 20px; }
+
+    /* Stats Cards */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 28px; }
+    .stat-card { background: #fff; border: 1px solid #F1F0F7; border-radius: 16px; padding: 20px; position: relative; overflow: hidden; }
+    .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 16px 16px 0 0; }
+    .stat-card.pending::before { background: linear-gradient(90deg, #F59E0B, #FBBF24); }
+    .stat-card.today::before { background: linear-gradient(90deg, #6C3BFF, #A78BFA); }
+    .stat-card.paid::before { background: linear-gradient(90deg, #10B981, #34D399); }
+    .stat-card.rejected::before { background: linear-gradient(90deg, #EF4444, #F87171); }
+    .stat-card .stat-label { font-size: 12px; color: #6B7280; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-card .stat-value { font-size: 28px; font-weight: 700; margin-top: 6px; }
+    .stat-card.pending .stat-value { color: #F59E0B; }
+    .stat-card.today .stat-value { color: #6C3BFF; }
+    .stat-card.paid .stat-value { color: #10B981; }
+    .stat-card.rejected .stat-value { color: #EF4444; }
+
+    /* Filter Tabs */
+    .filter-bar { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+    .filter-btn { padding: 8px 16px; border-radius: 10px; border: 1px solid #E5E7EB; background: #fff; color: #4B5563; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+    .filter-btn:hover { border-color: #6C3BFF; color: #6C3BFF; }
+    .filter-btn.active { background: #6C3BFF; color: #fff; border-color: #6C3BFF; }
+
+    /* Table */
+    .table-container { background: #fff; border-radius: 16px; border: 1px solid #F1F0F7; overflow: hidden; }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 800px; }
+    th { text-align: left; padding: 14px 16px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #6B7280; background: #F9FAFB; border-bottom: 1px solid #F1F0F7; }
+    td { padding: 14px 16px; border-bottom: 1px solid #F9FAFB; vertical-align: middle; }
+    tr:hover td { background: #FDFCFF; }
+    .customer-name { font-weight: 600; color: #1F2937; }
+    .customer-info { font-size: 11px; color: #9CA3AF; margin-top: 2px; }
+
+    /* Badges */
+    .badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 50px; font-size: 11px; font-weight: 600; text-transform: capitalize; }
+    .badge-pending { background: #FEF3C7; color: #D97706; }
+    .badge-approved { background: #DBEAFE; color: #2563EB; }
+    .badge-paid { background: #D1FAE5; color: #059669; }
+    .badge-rejected { background: #FEE2E2; color: #DC2626; }
+
+    /* Action Buttons */
+    .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; font-family: inherit; }
+    .btn-view { background: #F3F4F6; color: #374151; }
+    .btn-view:hover { background: #E5E7EB; }
+    .btn-approve { background: #D1FAE5; color: #059669; }
+    .btn-approve:hover { background: #A7F3D0; }
+    .btn-pay { background: #DBEAFE; color: #2563EB; }
+    .btn-pay:hover { background: #BFDBFE; }
+    .btn-reject { background: #FEE2E2; color: #DC2626; }
+    .btn-reject:hover { background: #FECACA; }
+
+    /* Modal */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 1000; justify-content: center; align-items: center; }
+    .modal-overlay.active { display: flex; }
+    .modal { background: #fff; border-radius: 20px; padding: 28px; width: 90%; max-width: 560px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
+    .modal h3 { font-size: 18px; font-weight: 700; color: #1F2937; margin-bottom: 20px; }
+    .modal-field { margin-bottom: 14px; }
+    .modal-field label { display: block; font-size: 12px; font-weight: 600; color: #4B5563; margin-bottom: 6px; }
+    .modal-field input, .modal-field textarea { width: 100%; padding: 10px 14px; border: 1px solid #E5E7EB; border-radius: 10px; font-size: 13px; font-family: inherit; outline: none; transition: border-color 0.2s; }
+    .modal-field input:focus, .modal-field textarea:focus { border-color: #6C3BFF; box-shadow: 0 0 0 3px rgba(108,59,255,0.08); }
+    .modal-field textarea { min-height: 80px; resize: vertical; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+    .btn-modal-cancel { padding: 10px 20px; border-radius: 10px; border: 1px solid #E5E7EB; background: #fff; color: #4B5563; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .btn-modal-submit { padding: 10px 20px; border-radius: 10px; border: none; background: #6C3BFF; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .btn-modal-submit:hover { background: #5B2FD9; }
+    .btn-modal-submit.danger { background: #EF4444; }
+    .btn-modal-submit.danger:hover { background: #DC2626; }
+
+    /* Detail Modal */
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .detail-item { }
+    .detail-item .dl { font-size: 11px; color: #6B7280; margin-bottom: 2px; }
+    .detail-item .dv { font-size: 13px; font-weight: 600; color: #1F2937; word-break: break-all; }
+
+    /* Loading */
+    .loader { display: flex; justify-content: center; padding: 60px; }
+    .loader::after { content: ''; width: 36px; height: 36px; border: 3px solid #EDE9FE; border-top-color: #6C3BFF; border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Empty */
+    .empty-state { text-align: center; padding: 60px 20px; color: #9CA3AF; }
+    .empty-state i { font-size: 36px; color: #E5E7EB; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; }
+
+    /* Toast */
+    .toast { position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: 12px; font-size: 13px; font-weight: 500; z-index: 2000; animation: slideIn 0.3s ease; }
+    .toast.success { background: #D1FAE5; color: #065F46; border: 1px solid #A7F3D0; }
+    .toast.error { background: #FEE2E2; color: #991B1B; border: 1px solid #FECACA; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .container { padding: 16px 12px; }
+      .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .stat-card { padding: 14px; }
+      .stat-card .stat-value { font-size: 22px; }
+      .page-header { padding: 14px 16px; }
+      .page-header h1 { font-size: 16px; }
+      table { min-width: 700px; }
+      .modal { width: 95%; padding: 20px; }
+    }
+  </style>
+  <link rel="stylesheet" href="/css/admin-theme.css">
+</head>
+<body>
+  <!-- Header -->
+  <div class="page-header">
+    <h1>💸 Withdrawal Requests</h1>
+    <a href="/admin/dashboard.html" class="back-link"><i class="fa-solid fa-arrow-left"></i> Back to Dashboard</a>
+  </div>
+
+  <div class="container">
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card pending"><p class="stat-label">Pending Requests</p><p class="stat-value" id="statPending">0</p></div>
+      <div class="stat-card today"><p class="stat-label">Today's Requests</p><p class="stat-value" id="statToday">0</p></div>
+      <div class="stat-card paid"><p class="stat-label">Total Paid</p><p class="stat-value" id="statPaid">₹0</p></div>
+      <div class="stat-card rejected"><p class="stat-label">Rejected</p><p class="stat-value" id="statRejected">0</p></div>
+    </div>
+
+    <!-- Filter -->
+    <div class="filter-bar">
+      <button class="filter-btn active" data-status="">All</button>
+      <button class="filter-btn" data-status="pending">Pending</button>
+      <button class="filter-btn" data-status="approved">Approved</button>
+      <button class="filter-btn" data-status="paid">Paid</button>
+      <button class="filter-btn" data-status="rejected">Rejected</button>
+    </div>
+
+    <!-- Table -->
+    <div class="table-container">
+      <div id="loader" class="loader"></div>
+      <div id="emptyState" class="empty-state" style="display:none;"><i class="fa-solid fa-inbox"></i><p>No withdrawal requests found</p></div>
+      <div class="table-wrap" id="tableWrap" style="display:none;">
+        <table>
+          <thead>
+            <tr>
+              <th>Customer</th>
+              <th>Amount</th>
+              <th>Bank Details</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- View Detail Modal -->
+  <div class="modal-overlay" id="viewModal">
+    <div class="modal">
+      <h3>📋 Withdrawal Details</h3>
+      <div class="detail-grid" id="viewDetails"></div>
+      <div class="modal-actions"><button class="btn-modal-cancel" onclick="closeModal('viewModal')">Close</button></div>
+    </div>
+  </div>
+
+  <!-- UTR Modal -->
+  <div class="modal-overlay" id="payModal">
+    <div class="modal">
+      <h3>💳 Mark as Paid</h3>
+      <div class="modal-field"><label>UTR / Transaction Number *</label><input type="text" id="utrInput" placeholder="Enter UTR number"></div>
+      <div class="modal-field"><label>Payment Date</label><input type="date" id="payDateInput"></div>
+      <div class="modal-field"><label>Admin Notes (optional)</label><textarea id="payNotesInput" placeholder="Any notes..."></textarea></div>
+      <div class="modal-actions">
+        <button class="btn-modal-cancel" onclick="closeModal('payModal')">Cancel</button>
+        <button class="btn-modal-submit" id="paySubmitBtn" onclick="submitPay()">Mark as Paid</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reject Modal -->
+  <div class="modal-overlay" id="rejectModal">
+    <div class="modal">
+      <h3>❌ Reject Withdrawal</h3>
+      <div class="modal-field"><label>Reason for Rejection *</label><textarea id="rejectReasonInput" placeholder="Explain why this request is being rejected..."></textarea></div>
+      <div class="modal-actions">
+        <button class="btn-modal-cancel" onclick="closeModal('rejectModal')">Cancel</button>
+        <button class="btn-modal-submit danger" id="rejectSubmitBtn" onclick="submitReject()">Reject Request</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    let requests = [];
+    let currentFilter = '';
+    let actionId = null;
+
+    // Init
+    document.addEventListener('DOMContentLoaded', () => {
+      loadRequests();
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentFilter = btn.dataset.status;
+          renderTable();
+        });
+      });
+    });
+
+    async function loadRequests() {
+      try {
+        document.getElementById('loader').style.display = 'flex';
+        document.getElementById('tableWrap').style.display = 'none';
+        document.getElementById('emptyState').style.display = 'none';
+
+        const res = await API.get('/withdrawal/admin/all');
+        requests = res.data || [];
+        updateStats();
+        renderTable();
+      } catch (e) {
+        showToast('Failed to load requests: ' + (e.message || 'Network error'), 'error');
+      } finally {
+        document.getElementById('loader').style.display = 'none';
+      }
+    }
+
+    function updateStats() {
+      const pending = requests.filter(r => r.status === 'pending').length;
+      const today = requests.filter(r => new Date(r.createdAt).toDateString() === new Date().toDateString()).length;
+      const totalPaid = requests.filter(r => r.status === 'paid').reduce((s, r) => s + r.amount, 0);
+      const rejected = requests.filter(r => r.status === 'rejected').length;
+
+      document.getElementById('statPending').textContent = pending;
+      document.getElementById('statToday').textContent = today;
+      document.getElementById('statPaid').textContent = '₹' + totalPaid.toLocaleString('en-IN');
+      document.getElementById('statRejected').textContent = rejected;
+    }
+
+    function renderTable() {
+      const filtered = currentFilter ? requests.filter(r => r.status === currentFilter) : requests;
+      const tbody = document.getElementById('tableBody');
+
+      if (filtered.length === 0) {
+        document.getElementById('tableWrap').style.display = 'none';
+        document.getElementById('emptyState').style.display = 'block';
+        return;
+      }
+
+      document.getElementById('tableWrap').style.display = 'block';
+      document.getElementById('emptyState').style.display = 'none';
+
+      tbody.innerHTML = filtered.map(r => {
+        const user = r.user || {};
+        const date = new Date(r.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+        const actions = getActions(r);
+        return `<tr>
+          <td><div class="customer-name">${user.name || 'Unknown'}</div><div class="customer-info">${user.email || ''} • ${user.phone || ''}</div></td>
+          <td><strong>₹${r.amount.toLocaleString('en-IN')}</strong><div style="font-size:10px;color:#6B7280;margin-top:2px;">Balance: ₹${(r.availableBalance || 0).toLocaleString('en-IN')}</div></td>
+          <td><div style="font-size:11px">${r.accountHolderName}<br>${r.bankAccountNumber}<br>IFSC: ${r.ifscCode}${r.upiId ? '<br>UPI: ' + r.upiId : ''}</div></td>
+          <td><span class="badge badge-${r.status}">${r.status}</span></td>
+          <td style="font-size:12px;color:#6B7280">${date}</td>
+          <td><div class="actions">${actions}</div></td>
+        </tr>`;
+      }).join('');
+    }
+
+    function getActions(r) {
+      let html = `<button class="btn btn-view" onclick="viewDetail('${r._id}')"><i class="fa-solid fa-eye"></i> View</button>`;
+      if (r.status === 'pending') {
+        html += `<button class="btn btn-approve" onclick="approveRequest('${r._id}')"><i class="fa-solid fa-check"></i> Approve</button>`;
+        html += `<button class="btn btn-pay" onclick="openPay('${r._id}')"><i class="fa-solid fa-money-bill-transfer"></i> Mark Paid</button>`;
+        html += `<button class="btn btn-reject" onclick="openReject('${r._id}')"><i class="fa-solid fa-times"></i> Reject</button>`;
+      }
+      if (r.status === 'approved') {
+        html += `<button class="btn btn-pay" onclick="openPay('${r._id}')"><i class="fa-solid fa-money-bill-transfer"></i> Mark Paid</button>`;
+        html += `<button class="btn btn-reject" onclick="openReject('${r._id}')"><i class="fa-solid fa-times"></i> Reject</button>`;
+      }
+      return html;
+    }
+
+    async function viewDetail(id) {
+      const r = requests.find(x => x._id === id);
+      if (!r) return;
+      const user = r.user || {};
+
+      // Basic details
+      let html = `
+        <div class="detail-grid">
+          <div class="detail-item"><p class="dl">Customer</p><p class="dv">${user.name || 'N/A'}</p></div>
+          <div class="detail-item"><p class="dl">Email</p><p class="dv">${user.email || 'N/A'}</p></div>
+          <div class="detail-item"><p class="dl">Phone</p><p class="dv">${user.phone || 'N/A'}</p></div>
+          <div class="detail-item"><p class="dl">Amount</p><p class="dv" style="font-size:16px;color:#6C3BFF;font-weight:700;">₹${r.amount.toLocaleString('en-IN')}</p></div>
+          <div class="detail-item"><p class="dl">Account Holder</p><p class="dv">${r.accountHolderName}</p></div>
+          <div class="detail-item"><p class="dl">Bank Account</p><p class="dv">${r.bankAccountNumber}</p></div>
+          <div class="detail-item"><p class="dl">IFSC Code</p><p class="dv">${r.ifscCode}</p></div>
+          <div class="detail-item"><p class="dl">UPI ID</p><p class="dv">${r.upiId || 'N/A'}</p></div>
+          <div class="detail-item"><p class="dl">Status</p><p class="dv"><span class="badge badge-${r.status}">${r.status}</span></p></div>
+          <div class="detail-item"><p class="dl">Requested</p><p class="dv">${new Date(r.createdAt).toLocaleString('en-IN')}</p></div>
+          ${r.utrNumber ? `<div class="detail-item"><p class="dl">UTR Number</p><p class="dv" style="color:#10B981;font-weight:700;">${r.utrNumber}</p></div>` : ''}
+          ${r.paidAt ? `<div class="detail-item"><p class="dl">Paid At</p><p class="dv">${new Date(r.paidAt).toLocaleString('en-IN')}</p></div>` : ''}
+          ${r.rejectionReason ? `<div class="detail-item"><p class="dl">Rejection Reason</p><p class="dv" style="color:#EF4444;">${r.rejectionReason}</p></div>` : ''}
+          ${r.adminNotes ? `<div class="detail-item"><p class="dl">Admin Notes</p><p class="dv">${r.adminNotes}</p></div>` : ''}
+        </div>
+        <div style="margin-top:16px;padding:12px;background:#F8F6FF;border-radius:10px;border:1px solid #EDE9FE;">
+          <p style="font-size:11px;color:#6B7280;margin-bottom:4px;">Customer Wallet Balance</p>
+          <p style="font-size:14px;font-weight:700;color:#6C3BFF;">Total Earned: ₹${(r.totalEarned || 0).toLocaleString('en-IN')} | Withdrawn: ₹${(r.totalWithdrawn || 0).toLocaleString('en-IN')} | Available: ₹${(r.availableBalance || 0).toLocaleString('en-IN')}</p>
+        </div>
+      `;
+
+      // Load full timeline
+      html += '<div id="customerTimeline" style="margin-top:16px;"><p style="font-size:12px;color:#9CA3AF;">Loading history...</p></div>';
+      document.getElementById('viewDetails').innerHTML = html;
+      openModal('viewModal');
+
+      // Fetch full customer history
+      try {
+        const userId = user._id || r.user;
+        const historyRes = await API.get('/withdrawal/admin/customer-history/' + userId);
+        const data = historyRes.data || {};
+        const timeline = data.timeline || [];
+        const summary = data.summary || {};
+
+        let timelineHtml = `
+          <div style="margin-bottom:12px;padding:10px;background:#ECFDF5;border-radius:8px;border:1px solid #A7F3D0;">
+            <p style="font-size:11px;font-weight:600;color:#065F46;">💰 Cashback: ₹${summary.totalCredited?.toLocaleString('en-IN') || 0} earned | ₹${summary.totalCancelled?.toLocaleString('en-IN') || 0} cancelled | ₹${summary.totalWithdrawnPaid?.toLocaleString('en-IN') || 0} withdrawn | ₹${summary.availableBalance?.toLocaleString('en-IN') || 0} available</p>
+          </div>
+          <p style="font-size:13px;font-weight:700;color:#1F2937;margin-bottom:8px;">📋 Full Transaction Timeline</p>
+        `;
+
+        if (timeline.length === 0) {
+          timelineHtml += '<p style="font-size:12px;color:#9CA3AF;">No history found.</p>';
+        } else {
+          timelineHtml += '<div style="max-height:300px;overflow-y:auto;">';
+          timeline.forEach(item => {
+            const date = new Date(item.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+            let icon = '📋', color = '#6B7280', bgColor = '#F9FAFB';
+            if (item.type === 'booking_fee') { icon = '💳'; color = '#6C3BFF'; bgColor = '#F8F6FF'; }
+            else if (item.type === 'cashback_credited') { icon = '🎁'; color = '#10B981'; bgColor = '#ECFDF5'; }
+            else if (item.type === 'cashback_cancelled') { icon = '❌'; color = '#EF4444'; bgColor = '#FEF2F2'; }
+            else if (item.type === 'withdrawal') { icon = '💸'; color = item.status === 'paid' ? '#10B981' : item.status === 'rejected' ? '#EF4444' : '#F59E0B'; bgColor = '#FFF7ED'; }
+
+            timelineHtml += `<div style="display:flex;gap:10px;padding:8px;margin-bottom:6px;background:${bgColor};border-radius:8px;align-items:center;">
+              <span style="font-size:16px;">${icon}</span>
+              <div style="flex:1;">
+                <p style="font-size:11px;font-weight:600;color:${color};margin:0;">${item.description}</p>
+                <p style="font-size:9px;color:#9CA3AF;margin:2px 0 0;">${date}${item.bookingStatus ? ' • Booking: ' + item.bookingStatus : ''}${item.utrNumber ? ' • UTR: ' + item.utrNumber : ''}</p>
+              </div>
+              <span style="font-size:12px;font-weight:700;color:${color};">₹${item.amount?.toLocaleString('en-IN') || 0}</span>
+            </div>`;
+          });
+          timelineHtml += '</div>';
+        }
+        document.getElementById('customerTimeline').innerHTML = timelineHtml;
+      } catch (e) {
+        document.getElementById('customerTimeline').innerHTML = '<p style="font-size:11px;color:#EF4444;">Failed to load history</p>';
+      }
+    }
+
+    async function approveRequest(id) {
+      if (!confirm('Approve this withdrawal request?')) return;
+      try {
+        await API.put('/withdrawal/admin/approve/' + id);
+        showToast('Request approved!', 'success');
+        loadRequests();
+      } catch (e) { showToast('Failed: ' + (e.message || 'Error'), 'error'); }
+    }
+
+    function openPay(id) { actionId = id; document.getElementById('utrInput').value = ''; document.getElementById('payDateInput').value = ''; document.getElementById('payNotesInput').value = ''; openModal('payModal'); }
+    function openReject(id) { actionId = id; document.getElementById('rejectReasonInput').value = ''; openModal('rejectModal'); }
+
+    async function submitPay() {
+      const utrNumber = document.getElementById('utrInput').value.trim();
+      if (!utrNumber) { showToast('UTR number is required', 'error'); return; }
+      const paymentDate = document.getElementById('payDateInput').value || undefined;
+      const adminNotes = document.getElementById('payNotesInput').value.trim() || undefined;
+      try {
+        await API.put('/withdrawal/admin/pay/' + actionId, { utrNumber, paymentDate, adminNotes });
+        showToast('Marked as paid!', 'success');
+        closeModal('payModal');
+        loadRequests();
+      } catch (e) { showToast('Failed: ' + (e.message || 'Error'), 'error'); }
+    }
+
+    async function submitReject() {
+      const rejectionReason = document.getElementById('rejectReasonInput').value.trim();
+      if (!rejectionReason) { showToast('Rejection reason is required', 'error'); return; }
+      try {
+        await API.put('/withdrawal/admin/reject/' + actionId, { rejectionReason });
+        showToast('Request rejected', 'success');
+        closeModal('rejectModal');
+        loadRequests();
+      } catch (e) { showToast('Failed: ' + (e.message || 'Error'), 'error'); }
+    }
+
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+    function showToast(msg, type) {
+      const t = document.createElement('div');
+      t.className = 'toast ' + type;
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 4000);
+    }
+  </script>
+</body>
+</html>
