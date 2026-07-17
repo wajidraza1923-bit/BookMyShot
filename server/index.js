@@ -584,6 +584,7 @@ app.use("/api/cashback", require("./routes/cashback"));
 app.use("/api/footer", require("./routes/footer"));
 app.use("/api/leads", require("./routes/leads"));
 app.use("/api/booking-fee", require("./routes/bookingFee"));
+app.use("/api/withdrawal", require("./routes/withdrawal"));
 app.use("/api/live-stats", require("./routes/liveStats"));
 app.use("/api/app-version", require("./routes/appVersion"));
 app.use("/api/homepage-enquiries", homepageEnquiryRoutes);
