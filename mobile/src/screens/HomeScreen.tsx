@@ -378,6 +378,29 @@ export default function HomeScreen({ navigation }: any) {
           ))}
         </View>
 
+        {/* ═══ TOP CREATORS ═══ */}
+        {topCreators.length > 0 && (
+          <View>
+            <View style={st.secHead}><Text style={st.secTitle}>🔥 Top Creators Near You</Text><TouchableOpacity onPress={() => navigation.navigate('Near Me')}><Text style={st.viewAll}>View All →</Text></TouchableOpacity></View>
+            <FlatList horizontal showsHorizontalScrollIndicator={false} data={topCreators.slice(0, 6)} contentContainerStyle={{ paddingHorizontal: 16 }} keyExtractor={i => i._id}
+              renderItem={({ item }) => (
+                <TouchableOpacity style={st.tcCard} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })} activeOpacity={0.8}>
+                  <Image source={{ uri: getCreatorImg(item) }} style={st.tcImg} />
+                  <View style={st.tcOnline}><View style={st.tcGreenDot} /><Text style={st.tcOnlineT}>Online</Text></View>
+                  <View style={st.tcRating}><Text style={st.tcRatingT}>{item.rating || '4.9'} ⭐</Text></View>
+                  <TouchableOpacity style={st.tcHeart}><Ionicons name="heart-outline" size={16} color="#9CA3AF" /></TouchableOpacity>
+                  <View style={st.tcInfo}>
+                    <Text style={st.tcName} numberOfLines={1}>{item.user?.name || 'Creator'}</Text>
+                    <Text style={st.tcSpec}>{item.specialty || 'Photographer'} • {item.experience || '5+'} Years</Text>
+                    <View style={st.tcMeta}><Ionicons name="location" size={9} color="#6C3BFF" /><Text style={st.tcMetaT}>{(Math.random() * 3 + 0.5).toFixed(1)} km away</Text></View>
+                    <Text style={st.tcPrice}>Starts from ₹{(item.startingPrice || item.budgetMin || 25000).toLocaleString('en-IN')}</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        )}
+
         {/* ═══ FEATURED WEDDING MOMENTS ═══ */}
         {featuredMoments.length > 0 && (
           <View>
@@ -395,7 +418,6 @@ export default function HomeScreen({ navigation }: any) {
                   style={st.fmCard}
                   activeOpacity={0.9}
                   onPress={() => {
-                    // Increment view + navigate to creator if available
                     api.get(`/featured-moments/${item._id}`).catch(() => {});
                     if (item.creator?._id) navigation.navigate('CreatorProfile', { id: item.creator._id });
                   }}
@@ -414,29 +436,6 @@ export default function HomeScreen({ navigation }: any) {
                       <View style={st.fmStatItem}><Ionicons name="star" size={12} color="#FBBF24" /><Text style={st.fmStatText}>{item.rating?.toFixed(1) || '0'}</Text></View>
                     </View>
                   </LinearGradient>
-                </TouchableOpacity>
-              )}
-            />
-          </View>
-        )}
-
-        {/* ═══ TOP CREATORS ═══ */}
-        {topCreators.length > 0 && (
-          <View>
-            <View style={st.secHead}><Text style={st.secTitle}>🔥 Top Creators Near You</Text><TouchableOpacity onPress={() => navigation.navigate('Near Me')}><Text style={st.viewAll}>View All →</Text></TouchableOpacity></View>
-            <FlatList horizontal showsHorizontalScrollIndicator={false} data={topCreators.slice(0, 6)} contentContainerStyle={{ paddingHorizontal: 16 }} keyExtractor={i => i._id}
-              renderItem={({ item }) => (
-                <TouchableOpacity style={st.tcCard} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })} activeOpacity={0.8}>
-                  <Image source={{ uri: getCreatorImg(item) }} style={st.tcImg} />
-                  <View style={st.tcOnline}><View style={st.tcGreenDot} /><Text style={st.tcOnlineT}>Online</Text></View>
-                  <View style={st.tcRating}><Text style={st.tcRatingT}>{item.rating || '4.9'} ⭐</Text></View>
-                  <TouchableOpacity style={st.tcHeart}><Ionicons name="heart-outline" size={16} color="#9CA3AF" /></TouchableOpacity>
-                  <View style={st.tcInfo}>
-                    <Text style={st.tcName} numberOfLines={1}>{item.user?.name || 'Creator'}</Text>
-                    <Text style={st.tcSpec}>{item.specialty || 'Photographer'} • {item.experience || '5+'} Years</Text>
-                    <View style={st.tcMeta}><Ionicons name="location" size={9} color="#6C3BFF" /><Text style={st.tcMetaT}>{(Math.random() * 3 + 0.5).toFixed(1)} km away</Text></View>
-                    <Text style={st.tcPrice}>Starts from ₹{(item.startingPrice || item.budgetMin || 25000).toLocaleString('en-IN')}</Text>
-                  </View>
                 </TouchableOpacity>
               )}
             />

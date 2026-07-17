@@ -103,6 +103,8 @@ export default function AdminUsers({ navigation }: any) {
       if (data.success) {
         Alert.alert('Success', data.message || `₹${amt} ${cbType === 'credit' ? 'credited' : 'debited'} successfully`);
         setCashbackModal(false);
+        // Reload both the detail view and the user list
+        await load();
         openDetail(detail.user._id);
       } else {
         // Show real server error including raw response if available
