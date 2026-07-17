@@ -411,7 +411,7 @@ export default function HomeScreen({ navigation }: any) {
               data={featuredMoments}
               contentContainerStyle={{ paddingHorizontal: 16 }}
               keyExtractor={i => i._id}
-              snapToInterval={width * 0.52 + 10}
+              snapToInterval={width * 0.38 + 8}
               decelerationRate="fast"
               renderItem={({ item }) => (
                 <TouchableOpacity
@@ -542,19 +542,19 @@ const st = StyleSheet.create({
   catFallback: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', borderRadius: 26 },
   catName: { fontSize: 9, fontWeight: '700', color: '#1F2937', textAlign: 'center', lineHeight: 12 },
   catCount: { fontSize: 7.5, color: '#6C3BFF', marginTop: 1, fontWeight: '700' },
-  // Featured Moments — compact 16:9 cards, 2-3 visible
-  fmCard: { width: width * 0.52, borderRadius: 16, overflow: 'hidden', marginRight: 10, elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 8 },
-  fmImage: { width: '100%', height: width * 0.52 * 9 / 16, resizeMode: 'cover' },
-  fmOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 8, paddingTop: 24 },
-  fmBadge: { position: 'absolute', top: 6, left: 8, backgroundColor: 'rgba(108,59,255,0.85)', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 },
-  fmBadgeText: { fontSize: 7, fontWeight: '700', color: '#fff', textTransform: 'uppercase', letterSpacing: 0.5 },
-  fmTitle: { fontSize: 11, fontWeight: '700', color: '#fff', marginBottom: 2 },
-  fmMeta: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
-  fmCreator: { fontSize: 9, fontWeight: '600', color: 'rgba(255,255,255,0.9)' },
-  fmCity: { fontSize: 9, color: 'rgba(255,255,255,0.7)' },
-  fmStats: { flexDirection: 'row', gap: 8 },
+  // Featured Moments — compact 16:9 cards, 3-4 visible
+  fmCard: { width: width * 0.38, borderRadius: 14, overflow: 'hidden', marginRight: 8, elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 6 },
+  fmImage: { width: '100%', height: width * 0.38 * 9 / 16, resizeMode: 'cover' },
+  fmOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 6, paddingTop: 18 },
+  fmBadge: { position: 'absolute', top: 5, left: 6, backgroundColor: 'rgba(108,59,255,0.85)', paddingHorizontal: 5, paddingVertical: 2, borderRadius: 5 },
+  fmBadgeText: { fontSize: 6, fontWeight: '700', color: '#fff', textTransform: 'uppercase', letterSpacing: 0.3 },
+  fmTitle: { fontSize: 9, fontWeight: '700', color: '#fff', marginBottom: 1 },
+  fmMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 3 },
+  fmCreator: { fontSize: 8, fontWeight: '600', color: 'rgba(255,255,255,0.9)' },
+  fmCity: { fontSize: 7, color: 'rgba(255,255,255,0.7)' },
+  fmStats: { flexDirection: 'row', gap: 6 },
   fmStatItem: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  fmStatText: { fontSize: 8, fontWeight: '600', color: 'rgba(255,255,255,0.85)' },
+  fmStatText: { fontSize: 7, fontWeight: '600', color: 'rgba(255,255,255,0.85)' },
   // Top Creators — clean white cards, no overlays
   tcCard: { width: 160, borderRadius: 16, overflow: 'hidden', marginRight: 12, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#F1F5F9', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4 },
   tcImg: { width: '100%', height: 110, resizeMode: 'cover' },
