@@ -9,6 +9,7 @@ export const colors = {
   background: '#FFFFFF',
   surface: '#F8F6FF',
   surfaceAlt: '#F9FAFB',
+  surfaceLight: '#F3F4F6',   // legacy alias
   card: '#FFFFFF',
 
   // Primary (Purple)
@@ -49,6 +50,7 @@ export const colors = {
   borderLight: '#F3F4F6',
   borderMedium: '#E5E7EB',
   borderDark: '#D1D5DB',
+  borderGold: 'rgba(212,175,55,0.2)',   // legacy alias used by some components
 
   // Gradients
   gradientPrimary: ['#6C3BFF', '#8B5CF6', '#FF4FA3'] as const,
@@ -89,10 +91,12 @@ export const typography = {
   h4: { fontSize: 15, fontWeight: '700' as const, color: colors.text, lineHeight: 20 },
 
   // Legacy aliases (used by admin screens)
-  displaySm: { fontSize: 18, fontWeight: '700' as const, color: colors.text },
-  headlineMd: { fontSize: 16, fontWeight: '700' as const, color: colors.text },
-  headlineSm: { fontSize: 14, fontWeight: '600' as const, color: colors.text },
-  caption: { fontSize: 11, fontWeight: '400' as const, color: colors.textMuted },
+  displayLg:   { fontSize: 34, fontWeight: '700' as const, color: colors.text, lineHeight: 42 },  // legacy
+  displaySm:   { fontSize: 18, fontWeight: '700' as const, color: colors.text },
+  headlineLg:  { fontSize: 20, fontWeight: '700' as const, color: colors.text },   // legacy alias
+  headlineMd:  { fontSize: 16, fontWeight: '700' as const, color: colors.text },
+  headlineSm:  { fontSize: 14, fontWeight: '600' as const, color: colors.text },
+  caption:     { fontSize: 11, fontWeight: '400' as const, color: colors.textMuted },
 
   // Body
   bodyLg: { fontSize: 15, fontWeight: '400' as const, color: colors.textSecondary, lineHeight: 22 },

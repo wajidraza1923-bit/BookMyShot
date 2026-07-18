@@ -14,7 +14,7 @@ import { colors, spacing, radius, typography } from '../../theme';
 import api from '../../services/api';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { buildInvoiceHTML } from '../../utils/buildInvoice';
 
 // ─── Safe ₹ formatter (Unicode — no encoding issues) ────────────────────────
