@@ -1,4 +1,4 @@
-/**
+﻿/**
  * buildInvoiceHTML — BookMyShot professional invoice
  * Theme: White background · Purple (#7C3AED) · Pink (#EC4899)
  * Hermes-safe: plain string concatenation, no nested template literals
@@ -34,24 +34,22 @@ export function buildInvoiceHTML(booking: any, paymentRecords: any[], isPartial:
     const cEmail = (b.creator && b.creator.user && b.creator.user.email) || '';
     const cCity  = (b.creator && b.creator.city) || '';
     const cSpec  = (b.creator && b.creator.specialty) || '';
+    const cCategoryGroup = (b.creator && b.creator.categoryGroup) || '';
     const cuName = b.clientName || (b.user && b.user.name) || '-';
     const cuPhone = b.clientPhone || (b.user && b.user.phone) || '';
     const cuEmail = b.clientEmail || (b.user && b.user.email) || '';
     const cuLoc  = b.eventLocation || '';
-    const pkgName = b.packageName || b.eventType || '-';
+    const serviceCategory = b.eventType || (b.creator && b.creator.specialty) || 'Wedding Service';
+    const pkgName = (b.packageName && b.packageName !== 'Standard') ? b.packageName : null;
+    const vendorGroup = cCategoryGroup || 'Wedding Professional';
+    const eventDate = b.scheduledDate || b.eventDate;
+    const eventTime = b.scheduledTime || b.eventTime || '';
+    const eventVenue = b.scheduledLocation || b.eventLocation || '';
+    const payStatusMap: Record<string,string> = { unpaid:'Unpaid', partial:'Partially Paid', 'proof-submitted':'Proof Submitted', 'pending-verification':'Pending Verification', verified:'Approved', rejected:'Rejected', paid:'Fully Paid' };
+    const paymentStatusLabel = payStatusMap[b.paymentStatus] || b.paymentStatus || '-';
 
-    // Party info lines
-    const cInfo = [
-      cPhone ? 'Tel: ' + cPhone : '',
-      cEmail ? cEmail : '',
-      cCity  ? cCity  : '',
-      cSpec  ? cSpec  : '',
-    ].filter(Boolean).join('<br>');
-    const cuInfo = [
-      cuPhone ? 'Tel: ' + cuPhone : '',
-      cuEmail ? cuEmail : '',
-      cuLoc   ? cuLoc   : '',
-    ].filter(Boolean).join('<br>');
+    const cInfo = [cPhone ? 'Tel: ' + cPhone : '', cEmail ? cEmail : '', cCity ? cCity : '', cSpec ? cSpec : ''].filter(Boolean).join('<br>');
+    const cuInfo = [cuPhone ? 'Tel: ' + cuPhone : '', cuEmail ? cuEmail : '', cuLoc ? cuLoc : ''].filter(Boolean).join('<br>');
 
     // Payment rows
     let payHtml = '';
@@ -203,12 +201,24 @@ export function buildInvoiceHTML(booking: any, paymentRecords: any[], isPartial:
       // ── BODY ──
       + '<div class="body">'
 
+      // Service category banner
+      + '<div style="background:linear-gradient(135deg,#faf5ff,#fce7f3);border:1px solid #e9d5ff;border-radius:12px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;gap:10px">'
+      + '<span style="font-size:20px">✨</span>'
+      + '<div>'
+      + '<div style="font-size:8px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#EC4899;margin-bottom:2px">Service Category</div>'
+      + '<div style="font-size:15px;font-weight:800;color:#1e1b4b">' + serviceCategory + '</div>'
+      + (pkgName ? '<div style="font-size:10px;color:#7C3AED;margin-top:2px;font-weight:600">Package: ' + pkgName + '</div>' : '')
+      + '<div style="font-size:9px;color:#9ca3af;margin-top:1px">' + vendorGroup + '</div>'
+      + '</div>'
+      + '</div>'
+
       // Parties
       + '<div class="sec-title">Parties</div>'
       + '<div class="party-grid">'
       + '<div class="party-card">'
-      + '<div class="party-role">Creator / Service Provider</div>'
+      + '<div class="party-role">Vendor / Service Provider</div>'
       + '<div class="party-name">' + cName + '</div>'
+      + (cSpec ? '<div style="font-size:9px;color:#7C3AED;font-weight:600;margin-bottom:4px">' + cSpec + '</div>' : '')
       + '<div class="party-info">' + (cInfo || 'No contact details') + '</div>'
       + '</div>'
       + '<div class="party-card">'
@@ -222,12 +232,14 @@ export function buildInvoiceHTML(booking: any, paymentRecords: any[], isPartial:
       // Booking Details
       + '<div class="sec-title">Booking Details</div>'
       + '<div class="chips">'
-      + '<div class="chip"><div class="chip-l">Package / Service</div><div class="chip-v">' + pkgName + '</div></div>'
-      + '<div class="chip"><div class="chip-l">Event Date</div><div class="chip-v">' + fmtD(b.eventDate) + '</div></div>'
-      + '<div class="chip"><div class="chip-l">Event Location</div><div class="chip-v">' + (cuLoc || '-') + '</div></div>'
-      + '<div class="chip"><div class="chip-l">Booking ID</div><div class="chip-v" style="font-size:9px">' + docNo + '</div></div>'
+      + '<div class="chip"><div class="chip-l">Service</div><div class="chip-v">' + serviceCategory + '</div></div>'
+      + (pkgName ? '<div class="chip"><div class="chip-l">Package</div><div class="chip-v">' + pkgName + '</div></div>' : '<div class="chip"><div class="chip-l">Event Type</div><div class="chip-v">' + (b.eventType || '-') + '</div></div>')
+      + '<div class="chip"><div class="chip-l">Event Date</div><div class="chip-v">' + fmtD(eventDate) + '</div></div>'
+      + (eventTime ? '<div class="chip"><div class="chip-l">Event Time</div><div class="chip-v">' + eventTime + '</div></div>' : '')
+      + '<div class="chip"><div class="chip-l">Venue / Location</div><div class="chip-v">' + (eventVenue || '-') + '</div></div>'
       + '<div class="chip"><div class="chip-l">Booking Status</div><div class="chip-v" style="color:' + statusColor + '">' + (b.status || '-') + '</div></div>'
-      + '<div class="chip"><div class="chip-l">Generated</div><div class="chip-v">' + fmtD(new Date()) + '</div></div>'
+      + '<div class="chip"><div class="chip-l">Payment Status</div><div class="chip-v">' + paymentStatusLabel + '</div></div>'
+      + '<div class="chip"><div class="chip-l">Booking ID</div><div class="chip-v" style="font-size:9px">' + docNo + '</div></div>'
       + '</div>'
       + '<div class="divider"></div>'
 
@@ -237,7 +249,7 @@ export function buildInvoiceHTML(booking: any, paymentRecords: any[], isPartial:
       + '<div class="sr g"><span class="l">Total Paid</span><span class="v">' + fmtC(totalPaid) + '</span></div>'
       + '<div class="sr ' + (remaining > 0 ? 'y' : 'g') + '"><span class="l">Remaining Balance</span><span class="v">' + (remaining > 0 ? fmtC(remaining) + ' pending' : 'Nil') + '</span></div>'
       + '<div class="sr r"><span class="l">Platform Commission (' + (b.commissionPercent || 0) + '%)</span><span class="v">- ' + fmtC(comm) + '</span></div>'
-      + '<div class="sr-total"><span class="l">Creator Receivable (Net)</span><span class="v">' + fmtC(receivable) + '</span></div>'
+      + '<div class="sr-total"><span class="l">Vendor Receivable (Net)</span><span class="v">' + fmtC(receivable) + '</span></div>'
 
       // Payment table
       + payTable
@@ -253,7 +265,7 @@ export function buildInvoiceHTML(booking: any, paymentRecords: any[], isPartial:
       + '<img src="' + qrUrl + '" alt="QR" />'
       + '<div>'
       + '<div class="qr-lbl">Scan to verify this document</div>'
-      + '<div class="qr-sub">Auto-generated by BookMyShot. Valid digital document. No physical signature required.</div>'
+      + '<div class="qr-sub">Auto-generated by BookMyShot — India\'s Complete Wedding Marketplace. No physical signature required.</div>'
       + '</div>'
       + '</div>'
 
@@ -264,7 +276,7 @@ export function buildInvoiceHTML(booking: any, paymentRecords: any[], isPartial:
       + '<div class="ty">Thank You!</div>'
       + '<div class="copy">'
       + '<strong style="color:#fff">BookMyShot</strong><br>'
-      + 'India\'s Premium Photography &amp; Videography Marketplace<br>'
+      + 'India\'s Complete Wedding Marketplace<br>'
       + 'bookmyshot.in | (c) ' + year + ' BookMyShot. All rights reserved.'
       + '</div>'
       + '</div>'

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * BookMyShot Invoice Routes
  * Theme: White · Purple (#7C3AED) · Pink (#EC4899)
  * GET /api/invoice/:id         — invoice / receipt (auto-detects status)
@@ -90,10 +90,23 @@ tr:nth-child(even) td{background:#faf5ff}
 
 /* ── Build HTML ── */
 function buildHTML(o) {
-  const { docType, docNo, booking, cName, cPhone, cEmail, cCity, cSpec,
-    cuName, cuPhone, cuEmail, cuLoc, pkgName,
+  const { docType, docNo, booking, cName, cPhone, cEmail, cCity, cSpec, cCategory, cCategoryGroup,
+    cuName, cuPhone, cuEmail, cuLoc,
     amt, totalPaid, remaining, comm, receivable, payments,
     isComplete, isPartial, year } = o;
+
+  // ── Dynamic service label (never hardcode Photography/Cameraman) ──
+  const serviceCategory   = booking.eventType || cCategory || cSpec || "Wedding Service";
+  const pkgName           = booking.packageName && booking.packageName !== "Standard" ? booking.packageName : null;
+  const vendorGroup       = cCategoryGroup || "Wedding Professional";
+  const eventDate         = booking.scheduledDate || booking.eventDate;
+  const eventTime         = booking.scheduledTime || booking.eventTime || "";
+  const eventVenue        = booking.scheduledLocation || booking.eventLocation || "";
+  const paymentStatusLabel = {
+    unpaid: "Unpaid", partial: "Partially Paid",
+    "proof-submitted": "Proof Submitted", "pending-verification": "Pending Verification",
+    verified: "Approved", rejected: "Rejected", paid: "Fully Paid"
+  }[booking.paymentStatus] || booking.paymentStatus || "—";
 
   const statusLabel  = isComplete ? "Completed"     : "Partially Paid";
   const statusColor  = isComplete ? "#15803d"       : "#b45309";
@@ -101,11 +114,20 @@ function buildHTML(o) {
   const statusBorder = isComplete ? "#86efac"       : "#fde68a";
   const bannerCls    = isComplete ? "done"          : "pend";
   const bannerTxt    = isComplete
-    ? "&#10003; Payment Completed — Booking Officially Closed"
+    ? "&#10003; Service Completed — Booking Officially Closed"
     : "&#9888; Partial Payment Receipt — Balance Pending";
 
-  const cInfo = [cPhone && `&#9742; ${cPhone}`, cEmail && `&#9993; ${cEmail}`, cCity && `&#128205; ${cCity}`, cSpec && cSpec].filter(Boolean).join("<br>");
-  const cuInfo = [cuPhone && `&#9742; ${cuPhone}`, cuEmail && `&#9993; ${cuEmail}`, cuLoc && `&#128205; ${cuLoc}`].filter(Boolean).join("<br>");
+  const cInfo = [
+    cPhone && `&#9742; ${cPhone}`,
+    cEmail && `&#9993; ${cEmail}`,
+    cCity  && `&#128205; ${cCity}`,
+    cSpec  && cSpec
+  ].filter(Boolean).join("<br>");
+  const cuInfo = [
+    cuPhone && `&#9742; ${cuPhone}`,
+    cuEmail && `&#9993; ${cuEmail}`,
+    cuLoc   && `&#128205; ${cuLoc}`
+  ].filter(Boolean).join("<br>");
 
   const rows = payments.map((p, i) =>
     `<tr style="background:${i%2===0?'#fff':'#faf5ff'}"><td>${fd(p.createdAt)}</td><td style="color:#7C3AED;font-weight:700">${fc(p.amount)}</td><td class="cap">${p.paymentType||"—"}</td><td class="cap">${p.addedBy||"—"}</td><td><span style="background:#f0fdf4;color:#15803d;font-size:9px;font-weight:700;padding:2px 8px;border-radius:12px">Approved</span></td></tr>`
@@ -139,7 +161,7 @@ function buildHTML(o) {
       <div class="logo-box">BM</div>
       <div>
         <div class="brand">BookMyShot</div>
-        <div class="tagline">Premium Wedding Photography &amp; Videography Marketplace</div>
+        <div class="tagline">India's Complete Wedding Marketplace</div>
       </div>
     </div>
     <div class="contact-row">bookmyshot.in &nbsp;|&nbsp; support@bookmyshot.in &nbsp;|&nbsp; +91 8492922173</div>
@@ -153,11 +175,24 @@ function buildHTML(o) {
 </div>
 
 <div class="body">
+
+  <!-- SERVICE CATEGORY BANNER -->
+  <div style="background:linear-gradient(135deg,#faf5ff,#fce7f3);border:1px solid #e9d5ff;border-radius:12px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;gap:10px">
+    <span style="font-size:20px">✨</span>
+    <div>
+      <div style="font-size:8px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#EC4899;margin-bottom:2px">Service Category</div>
+      <div style="font-size:15px;font-weight:800;color:#1e1b4b">${serviceCategory}</div>
+      ${pkgName ? `<div style="font-size:10px;color:#7C3AED;margin-top:2px;font-weight:600">Package: ${pkgName}</div>` : ""}
+      <div style="font-size:9px;color:#9ca3af;margin-top:1px">${vendorGroup}</div>
+    </div>
+  </div>
+
   <div class="sec">Parties</div>
   <div class="g2">
     <div class="pc">
-      <div class="pc-role">Creator / Service Provider</div>
+      <div class="pc-role">Vendor / Service Provider</div>
       <div class="pc-name">${cName}</div>
+      ${cSpec ? `<div style="font-size:9px;color:#7C3AED;font-weight:600;margin-bottom:4px">${cSpec}</div>` : ""}
       <div class="pc-info">${cInfo||"—"}</div>
     </div>
     <div class="pc">
@@ -170,11 +205,14 @@ function buildHTML(o) {
 
   <div class="sec">Booking Details</div>
   <div class="chips">
-    <div class="chip"><div class="chip-l">Package / Service</div><div class="chip-v">${pkgName}</div></div>
-    <div class="chip"><div class="chip-l">Event Date</div><div class="chip-v">${fd(booking.eventDate)}</div></div>
-    <div class="chip"><div class="chip-l">Event Location</div><div class="chip-v">${cuLoc||"—"}</div></div>
-    <div class="chip"><div class="chip-l">Booking ID</div><div class="chip-v" style="font-size:9px">${docNo}</div></div>
+    <div class="chip"><div class="chip-l">Service</div><div class="chip-v">${serviceCategory}</div></div>
+    ${pkgName ? `<div class="chip"><div class="chip-l">Package</div><div class="chip-v">${pkgName}</div></div>` : `<div class="chip"><div class="chip-l">Event Type</div><div class="chip-v">${booking.eventType||"—"}</div></div>`}
+    <div class="chip"><div class="chip-l">Event Date</div><div class="chip-v">${fd(eventDate)}</div></div>
+    ${eventTime ? `<div class="chip"><div class="chip-l">Event Time</div><div class="chip-v">${eventTime}</div></div>` : ""}
+    <div class="chip"><div class="chip-l">Venue / Location</div><div class="chip-v">${eventVenue||"—"}</div></div>
     <div class="chip"><div class="chip-l">Booking Status</div><div class="chip-v" style="color:${statusColor}">${booking.status}</div></div>
+    <div class="chip"><div class="chip-l">Payment Status</div><div class="chip-v">${paymentStatusLabel}</div></div>
+    <div class="chip"><div class="chip-l">Booking ID</div><div class="chip-v" style="font-size:9px">${docNo}</div></div>
     <div class="chip"><div class="chip-l">Generated On</div><div class="chip-v">${fd(new Date())}</div></div>
   </div>
   <div class="hr"></div>
@@ -184,7 +222,7 @@ function buildHTML(o) {
   <div class="sr g"><span class="l">Total Paid</span><span class="v">${fc(totalPaid)}</span></div>
   <div class="sr ${remaining>0?"y":"g"}"><span class="l">Remaining Balance</span><span class="v">${remaining>0?fc(remaining)+" pending":"Nil"}</span></div>
   <div class="sr r"><span class="l">Platform Commission (${booking.commissionPercent||0}%)</span><span class="v">&minus; ${fc(comm)}</span></div>
-  <div class="sr-total"><span class="l">Creator Receivable (Net)</span><span class="v">${fc(receivable)}</span></div>
+  <div class="sr-total"><span class="l">Vendor Receivable (Net)</span><span class="v">${fc(receivable)}</span></div>
 
   ${payTable}
 
@@ -195,7 +233,7 @@ function buildHTML(o) {
     <img src="${qrUrl}" alt="QR Code">
     <div>
       <div class="qr-lbl">Scan to verify this document</div>
-      <div class="qr-sub">Auto-generated by BookMyShot. Valid digital document. No physical signature required.</div>
+      <div class="qr-sub">Auto-generated by BookMyShot — India's Complete Wedding Marketplace.<br>Valid digital document. No physical signature required.</div>
     </div>
   </div>
 </div>
@@ -204,7 +242,7 @@ function buildHTML(o) {
   <div class="ty">Thank You!</div>
   <div class="copy">
     <strong style="color:#fff">BookMyShot</strong><br>
-    India&rsquo;s Premium Photography &amp; Videography Marketplace<br>
+    India&rsquo;s Complete Wedding Marketplace<br>
     bookmyshot.in &bull; &copy; ${year} BookMyShot. All rights reserved.
   </div>
 </div>
@@ -220,7 +258,7 @@ router.get("/:id", async (req, res, next) => {
 
     const booking = await Booking.findById(req.params.id)
       .populate("user", "name email phone")
-      .populate({ path: "creator", populate: { path: "user", select: "name email phone" }, select: "user specialty city businessName" });
+      .populate({ path: "creator", populate: { path: "user", select: "name email phone" }, select: "user specialty city businessName category categoryGroup categorySlug" });
     if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
 
     const uid  = user._id.toString();
@@ -242,16 +280,17 @@ router.get("/:id", async (req, res, next) => {
       docType: isComplete ? "Tax Invoice" : "Payment Receipt",
       docNo:   isComplete ? invNo : "BMS-PR-" + booking._id.toString().slice(-8).toUpperCase(),
       booking,
-      cName:  booking.creator?.user?.name  || "—",
-      cPhone: booking.creator?.user?.phone || "",
-      cEmail: booking.creator?.user?.email || "",
-      cCity:  booking.creator?.city        || "",
-      cSpec:  booking.creator?.specialty   || "",
-      cuName: booking.clientName  || booking.user?.name  || "—",
-      cuPhone: booking.clientPhone || booking.user?.phone || "",
-      cuEmail: booking.clientEmail || booking.user?.email || "",
-      cuLoc:  booking.eventLocation || "",
-      pkgName: booking.packageName || booking.eventType || "—",
+      cName:         booking.creator?.user?.name        || "—",
+      cPhone:        booking.creator?.user?.phone       || "",
+      cEmail:        booking.creator?.user?.email       || "",
+      cCity:         booking.creator?.city              || "",
+      cSpec:         booking.creator?.specialty         || "",
+      cCategory:     booking.creator?.category          || "",
+      cCategoryGroup: booking.creator?.categoryGroup    || "",
+      cuName:        booking.clientName  || booking.user?.name  || "—",
+      cuPhone:       booking.clientPhone || booking.user?.phone || "",
+      cuEmail:       booking.clientEmail || booking.user?.email || "",
+      cuLoc:         booking.eventLocation || "",
       amt, totalPaid, remaining, comm, receivable, payments,
       isComplete, isPartial: !isComplete,
       year: new Date().getFullYear()
@@ -270,7 +309,7 @@ router.get("/:id/partial", async (req, res, next) => {
 
     const booking = await Booking.findById(req.params.id)
       .populate("user", "name email phone")
-      .populate({ path: "creator", populate: { path: "user", select: "name email phone" }, select: "user specialty city businessName" });
+      .populate({ path: "creator", populate: { path: "user", select: "name email phone" }, select: "user specialty city businessName category categoryGroup categorySlug" });
     if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
 
     const uid  = user._id.toString();
@@ -294,16 +333,17 @@ router.get("/:id/partial", async (req, res, next) => {
       docType: "Payment Receipt",
       docNo:   receiptNo,
       booking,
-      cName:  booking.creator?.user?.name  || "—",
-      cPhone: booking.creator?.user?.phone || "",
-      cEmail: booking.creator?.user?.email || "",
-      cCity:  booking.creator?.city        || "",
-      cSpec:  booking.creator?.specialty   || "",
-      cuName: booking.clientName  || booking.user?.name  || "—",
-      cuPhone: booking.clientPhone || booking.user?.phone || "",
-      cuEmail: booking.clientEmail || booking.user?.email || "",
-      cuLoc:  booking.eventLocation || "",
-      pkgName: booking.packageName || booking.eventType || "—",
+      cName:         booking.creator?.user?.name        || "—",
+      cPhone:        booking.creator?.user?.phone       || "",
+      cEmail:        booking.creator?.user?.email       || "",
+      cCity:         booking.creator?.city              || "",
+      cSpec:         booking.creator?.specialty         || "",
+      cCategory:     booking.creator?.category          || "",
+      cCategoryGroup: booking.creator?.categoryGroup    || "",
+      cuName:        booking.clientName  || booking.user?.name  || "—",
+      cuPhone:       booking.clientPhone || booking.user?.phone || "",
+      cuEmail:       booking.clientEmail || booking.user?.email || "",
+      cuLoc:         booking.eventLocation || "",
       amt, totalPaid, remaining, comm, receivable, payments,
       isComplete, isPartial: true,
       year: new Date().getFullYear()
