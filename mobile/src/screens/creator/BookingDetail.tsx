@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert,
-  TextInput, Modal, RefreshControl, Linking, ActivityIndicator, Share,
+  TextInput, Modal, RefreshControl, Linking, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 // Import from theme.ts (white theme) NOT theme/index.ts (dark theme)
@@ -14,6 +14,7 @@ import { colors, spacing, radius, typography } from '../../theme';
 import api from '../../services/api';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system';
 import { buildInvoiceHTML } from '../../utils/buildInvoice';
 
 // ─── Safe ₹ formatter (Unicode — no encoding issues) ────────────────────────
@@ -203,48 +204,55 @@ export default function BookingDetail({ route, navigation }: any) {
       const html = buildInvoiceHTML(booking, paymentRecords, false);
       if (!html) { Alert.alert('Error', 'Booking data not loaded'); return; }
 
-      // Step 1: Generate PDF
-      let pdfResult: { uri: string } | null = null;
+      const docNo = booking.invoiceNumber || ('BMS-' + (booking._id || '').slice(-8).toUpperCase());
+
+      // Step 1: Generate PDF to temp file
+      let pdfUri: string | null = null;
       try {
-        pdfResult = await Print.printToFileAsync({ html, base64: false });
+        const result = await Print.printToFileAsync({ html, base64: false });
+        pdfUri = result.uri;
       } catch (e: any) {
-        Alert.alert('PDF Error', 'Could not generate PDF: ' + (e.message || ''));
+        console.log('[Share] printToFileAsync failed:', e.message);
+        Alert.alert('PDF Error', 'Could not generate PDF. Try the Download button instead.');
         return;
       }
-      if (!pdfResult?.uri) { Alert.alert('Error', 'PDF generation failed'); return; }
 
-      // Step 2: Copy to a shareable cache path (fixes Android sandboxed storage)
-      const FileSystem = require('expo-file-system');
-      const docNo = booking.invoiceNumber || ('BMS-' + (booking._id || '').slice(-8).toUpperCase());
-      const destUri = FileSystem.cacheDirectory + 'BookMyShot_Invoice_' + docNo + '.pdf';
+      if (!pdfUri) { Alert.alert('Error', 'PDF generation failed'); return; }
+      console.log('[Share] PDF generated at:', pdfUri);
+
+      // Step 2: Copy to named file in cache (makes filename nice in WhatsApp/Gmail)
+      const namedUri = (FileSystem.cacheDirectory || '') + 'BookMyShot_Invoice_' + docNo + '.pdf';
       try {
-        await FileSystem.copyAsync({ from: pdfResult.uri, to: destUri });
-      } catch {
-        // If copy fails, use original path
+        await FileSystem.copyAsync({ from: pdfUri, to: namedUri });
+        pdfUri = namedUri;
+        console.log('[Share] Copied to:', namedUri);
+      } catch (copyErr: any) {
+        console.log('[Share] Copy failed (using original):', copyErr.message);
+        // Continue with original pdfUri — still works
       }
-      const shareUri = destUri || pdfResult.uri;
 
-      // Step 3: Share
-      const sharingAvailable = await Sharing.isAvailableAsync();
-      if (sharingAvailable) {
-        await Sharing.shareAsync(shareUri, {
+      // Step 3: Check sharing availability
+      const canShare = await Sharing.isAvailableAsync();
+      console.log('[Share] Sharing available:', canShare);
+
+      if (canShare) {
+        // Native share sheet — opens WhatsApp, Gmail, Drive, etc.
+        await Sharing.shareAsync(pdfUri, {
           mimeType: 'application/pdf',
           dialogTitle: 'Share Invoice — ' + docNo,
           UTI: 'com.adobe.pdf',
         });
       } else {
-        // Fallback: system Share sheet with text message
-        const clientName = booking.clientName || 'Customer';
-        await Share.share({
-          message: 'Hi ' + clientName + ',\n\nYour BookMyShot invoice is ready.\nBooking ID: ' + docNo + '\n\nThank you for booking with us!',
-          title: 'BookMyShot Invoice',
-        });
+        // Fallback: open PDF directly (user can long-press save or share)
+        console.log('[Share] Sharing not available, opening PDF directly');
+        await Print.printAsync({ html });
       }
     } catch (e: any) {
-      const msg = e.message || '';
-      // Ignore user cancellation silently
-      if (msg.toLowerCase().includes('cancel') || msg.toLowerCase().includes('dismiss')) return;
-      Alert.alert('Share Failed', msg || 'Could not share invoice. Please try Download instead.');
+      const msg = (e.message || '').toLowerCase();
+      // User cancelled — silent
+      if (msg.includes('cancel') || msg.includes('dismiss') || msg.includes('denied')) return;
+      console.log('[Share] Error:', e.message);
+      Alert.alert('Share Failed', 'Could not share PDF. Use the Download button to view/print the invoice instead.');
     }
   };
 
