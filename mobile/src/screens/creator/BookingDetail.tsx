@@ -1,10 +1,38 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal, RefreshControl, Linking, ActivityIndicator } from 'react-native';
+﻿/**
+ * BookingDetail — Creator Dashboard · Booking · View Full
+ * Theme: White + Green + Gold (BookMyShot premium)
+ * Fix: ₹ symbol via Unicode \u20B9 — no encoding issues
+ */
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert,
+  TextInput, Modal, RefreshControl, Linking, ActivityIndicator, Share,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
-import { colors, spacing, typography, radius } from '../../theme';
+// Import from theme.ts (white theme) NOT theme/index.ts (dark theme)
+import { colors, spacing, radius, typography } from '../../theme';
 import api from '../../services/api';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import { buildInvoiceHTML } from '../../utils/buildInvoice';
+
+// ─── Safe ₹ formatter (Unicode — no encoding issues) ────────────────────────
+const rs = (n: number) => '\u20B9' + (n || 0).toLocaleString('en-IN');
+
+// ─── Safe date formatter ─────────────────────────────────────────────────────
+const fmtDate = (d: any, opts?: object) => {
+  if (!d) return '\u2014';
+  try { return new Date(d).toLocaleDateString('en-IN', opts || { day: '2-digit', month: 'short', year: 'numeric' }); }
+  catch { return '\u2014'; }
+};
+
+// ─── BookMyShot theme constants ──────────────────────────────────────────────
+const G = '#0F5132';   // Emerald green
+const GOLD = '#D4AF37';
+const CHAMP = '#F8F5EF';
+const WHITE = '#FFFFFF';
+const TXT = '#1a1a1a';
+const MUTED = '#6b7280';
 
 export default function BookingDetail({ route, navigation }: any) {
   const { bookingId } = route.params;
@@ -13,8 +41,6 @@ export default function BookingDetail({ route, navigation }: any) {
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
-  // Modals
   const [showAmountModal, setShowAmountModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showEventModal, setShowEventModal] = useState(false);
@@ -23,264 +49,124 @@ export default function BookingDetail({ route, navigation }: any) {
   const [eventForm, setEventForm] = useState({ name: '', date: '', location: '', notes: '' });
   const [savingPayment, setSavingPayment] = useState(false);
   const [completing, setCompleting] = useState(false);
-  const [pendingComplete, setPendingComplete] = useState(false); // Shows Mark Complete after Mark Paid with due > 0
+  const [pendingComplete, setPendingComplete] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const [bookingRes, paymentsRes, eventsRes] = await Promise.all([
+      const [bRes, pRes, eRes] = await Promise.all([
         api.get('/creator/booking-requests'),
         api.get(`/payment-records/booking/${bookingId}`).catch(() => ({ data: { records: [] } })),
         api.get(`/booking-events/booking/${bookingId}`).catch(() => ({ data: { events: [] } })),
       ]);
-      const b = (bookingRes.data?.bookings || []).find((x: any) => x._id === bookingId);
+      const b = (bRes.data?.bookings || []).find((x: any) => x._id === bookingId);
       if (b) setBooking(b);
-      setPaymentRecords(paymentsRes.data?.records || paymentsRes.data?.data || []);
-      setEvents(eventsRes.data?.events || eventsRes.data?.data || []);
+      setPaymentRecords(pRes.data?.records || pRes.data?.data || []);
+      setEvents(eRes.data?.events || eRes.data?.data || []);
     } catch {} finally { setLoading(false); }
   }, [bookingId]);
 
   useEffect(() => { load(); }, []);
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
-  // â•â•â• SET AMOUNT (same as website: highest-amount-wins commission logic) â•â•â•
+  // ── Set Amount ────────────────────────────────────────────────────────────
   const setProjectAmount = async () => {
     const amount = Number(amountInput);
-    if (!amount || amount <= 0 || isNaN(amount)) { Alert.alert('Invalid Amount', 'Please enter a valid amount'); return; }
+    if (!amount || amount <= 0) { Alert.alert('Invalid Amount', 'Please enter a valid amount'); return; }
     try {
-      console.log('[Payment] Setting amount:', { bookingId, amount });
-      const res = await api.patch(`/payment-records/booking/${bookingId}/amount`, { amount });
-      console.log('[Payment] Amount set response:', res.data?.booking?.amount);
+      await api.patch(`/payment-records/booking/${bookingId}/amount`, { amount });
       setShowAmountModal(false);
       await load();
-      Alert.alert('Amount Set', `Project amount set to â‚¹${amount.toLocaleString('en-IN')}`);
-    } catch (e: any) {
-      console.log('[Payment] Set amount error:', e.response?.status, e.response?.data);
-      Alert.alert('Failed', e.response?.data?.message || 'Failed to set amount');
-    }
+      Alert.alert('Amount Set', 'Project amount set to ' + rs(amount));
+    } catch (e: any) { Alert.alert('Failed', e.response?.data?.message || 'Failed to set amount'); }
   };
 
-  // â•â•â• RECORD PAYMENT (same as website: advance/partial/final) â•â•â•
+  // ── Record Payment ────────────────────────────────────────────────────────
   const recordPayment = async () => {
-    if (savingPayment) return; // Prevent double-clicks
-    
+    if (savingPayment) return;
     const amount = Number(payForm.amount);
-    if (!amount || amount <= 0 || isNaN(amount)) { Alert.alert('Invalid Amount', 'Please enter a valid amount greater than 0'); return; }
-    
-    // Client-side validation: check against remaining
+    if (!amount || amount <= 0) { Alert.alert('Invalid Amount', 'Enter a valid amount'); return; }
     const bookingTotal = booking.amount || 0;
-    if (bookingTotal > 0) {
-      const alreadyPaid = paymentRecords.filter(r => r.status === 'approved').reduce((sum: number, r: any) => sum + (r.amount || 0), 0);
-      if (alreadyPaid + amount > bookingTotal) {
-        const maxAllowed = Math.max(0, bookingTotal - alreadyPaid);
-        Alert.alert('Amount Exceeds Limit', `Booking total: â‚¹${bookingTotal.toLocaleString('en-IN')}\nAlready paid: â‚¹${alreadyPaid.toLocaleString('en-IN')}\nMaximum allowed: â‚¹${maxAllowed.toLocaleString('en-IN')}`);
-        return;
-      }
-    }
-    
-    if (bookingTotal <= 0) {
-      Alert.alert('Set Amount First', 'Please set the booking deal amount before recording payments.');
+    if (bookingTotal <= 0) { Alert.alert('Set Amount First', 'Set the booking amount first'); return; }
+    const alreadyPaid = paymentRecords.filter((r: any) => r.status === 'approved').reduce((s: number, r: any) => s + (r.amount || 0), 0);
+    if (alreadyPaid + amount > bookingTotal) {
+      Alert.alert('Exceeds Limit', 'Total: ' + rs(bookingTotal) + '\nPaid: ' + rs(alreadyPaid) + '\nMax allowed: ' + rs(Math.max(0, bookingTotal - alreadyPaid)));
       return;
     }
-
     setSavingPayment(true);
     try {
-      console.log('[Payment] Recording:', { bookingId, amount, type: payForm.type, notes: payForm.notes });
-      const res = await api.post('/payment-records/creator', {
-        bookingId,
-        amount,
-        paymentType: payForm.type,
-        notes: payForm.notes,
-      });
-      console.log('[Payment] Success:', res.data);
+      await api.post('/payment-records/creator', { bookingId, amount, paymentType: payForm.type, notes: payForm.notes });
       setShowPaymentModal(false);
       setPayForm({ amount: '', type: 'advance', notes: '' });
       await load();
-      Alert.alert('Recorded', `â‚¹${amount.toLocaleString('en-IN')} ${payForm.type} payment recorded successfully`);
-    } catch (e: any) {
-      console.log('[Payment] Error:', e.response?.status, e.response?.data);
-      const msg = e.response?.data?.message || e.message || 'Network error';
-      Alert.alert('Payment Failed', msg);
-    } finally {
-      setSavingPayment(false);
-    }
+      Alert.alert('Recorded', rs(amount) + ' ' + payForm.type + ' payment recorded');
+    } catch (e: any) { Alert.alert('Failed', e.response?.data?.message || 'Network error'); }
+    finally { setSavingPayment(false); }
   };
 
-  // â•â•â• MARK PAID â€” just a UI confirmation step, does NOT change backend data â•â•â•
-  const markPaid = () => {
-    // Simply switch to pending complete state â€” shows Mark Complete + Cancel
-    setPendingComplete(true);
-  };
-
-  // â•â•â• CANCEL PENDING COMPLETE (go back to payment buttons) â•â•â•
+  const markPaid = () => setPendingComplete(true);
   const cancelPendingComplete = () => setPendingComplete(false);
 
-  // â•â•â• ACCEPT (with amount) â•â•â•
+  // ── Accept Booking ────────────────────────────────────────────────────────
   const acceptBooking = async () => {
     const amount = Number(amountInput);
-    if (!amount || amount <= 0 || isNaN(amount)) { Alert.alert('Invalid Amount', 'Please enter the booking amount'); return; }
+    if (!amount || amount <= 0) { Alert.alert('Invalid Amount', 'Enter the booking amount'); return; }
     try {
-      console.log('[Booking] Accepting:', { bookingId, amount });
       await api.patch(`/creator/booking-requests/${bookingId}`, { status: 'Creator Accepted', amount });
       setShowAmountModal(false);
       await load();
-      Alert.alert('Accepted', `Booking accepted for â‚¹${amount.toLocaleString('en-IN')}`);
-    } catch (e: any) {
-      console.log('[Booking] Accept error:', e.response?.status, e.response?.data);
-      Alert.alert('Failed', e.response?.data?.message || 'Failed to accept booking');
-    }
+      Alert.alert('Accepted', 'Booking accepted for ' + rs(amount));
+    } catch (e: any) { Alert.alert('Failed', e.response?.data?.message || 'Failed'); }
   };
 
-  // â•â•â• REJECT â•â•â•
-  const rejectBooking = () => Alert.alert('Reject', 'Reject this booking?', [
+  const rejectBooking = () => Alert.alert('Reject Booking', 'Reject this booking?', [
     { text: 'Cancel' },
     { text: 'Reject', style: 'destructive', onPress: async () => {
-      try { await api.patch(`/creator/booking-requests/${bookingId}`, { status: 'rejected' }); await load(); } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
-    }}
+      try { await api.patch(`/creator/booking-requests/${bookingId}`, { status: 'rejected' }); await load(); }
+      catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
+    }},
   ]);
 
-  // â•â•â• COMPLETE â€” called only after Mark Paid â†’ Mark Complete confirmation â•â•â•
+  // ── Complete Booking ──────────────────────────────────────────────────────
   const completeBooking = () => {
     if (completing) return;
-    Alert.alert('Complete Booking', 'This will mark the booking as fully paid and completed. Payment records will be locked and an invoice will be generated.', [
+    Alert.alert('Complete Booking', 'This will lock payment records and generate an invoice.', [
       { text: 'Cancel' },
       { text: 'Complete', onPress: async () => {
         setCompleting(true);
         try {
-          // Mark as paid in backend (sets remaining to 0)
           await api.patch(`/payment-records/booking/${bookingId}/mark-paid`);
-          // Then complete the booking
           await api.patch(`/creator/bookings/${bookingId}/complete`);
           await load();
           setPendingComplete(false);
-          Alert.alert('Done! ðŸŽ‰', 'Booking completed. Invoice is ready for download.');
-        } catch (e: any) {
-          Alert.alert('Error', e.response?.data?.message || e.message || 'Failed to complete booking');
-        } finally {
-          setCompleting(false);
-        }
-      }}
+          Alert.alert('Done!', 'Booking completed. Invoice ready for download.');
+        } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
+        finally { setCompleting(false); }
+      }},
     ]);
   };
 
-  // ═══ DOWNLOAD INVOICE ═══
-  const downloadInvoice = async () => {
-    try {
-      const html = buildInvoiceHTML(booking, paymentRecords, false);
-      if (!html) { Alert.alert('Error', 'Booking data not loaded yet'); return; }
-      const Print = require('expo-print');
-      await Print.printAsync({ html });
-    } catch (e: any) {
-      console.log('[Invoice] Download error:', e.message);
-      Alert.alert('Error', 'Failed to download invoice. Please try again.');
-    }
+  // ── Contact ───────────────────────────────────────────────────────────────
+  const callCustomer = () => booking?.clientPhone && Linking.openURL('tel:' + booking.clientPhone);
+  const whatsApp = () => booking?.clientPhone && Linking.openURL('https://wa.me/91' + booking.clientPhone.replace(/\D/g, '').slice(-10));
+
+  // ── Payment Reminder ──────────────────────────────────────────────────────
+  const sendPaymentReminder = () => {
+    if (!booking?.clientPhone) { Alert.alert('No Phone', 'Customer phone not available'); return; }
+    const phone = booking.clientPhone.replace(/\D/g, '').slice(-10);
+    const paid = paymentRecords.filter((r: any) => r.status === 'approved').reduce((s: number, r: any) => s + (r.amount || 0), 0);
+    const pending = Math.max(0, (booking.amount || 0) - paid);
+    const msg = 'Hi ' + (booking.clientName || 'there') + ',\n\nFriendly payment reminder from ' + (booking.creatorName || 'your vendor') + ' via BookMyShot.\n\n'
+      + 'Booking: ' + (booking.eventType || 'Service') + '\n'
+      + 'Event Date: ' + fmtDate(booking.eventDate) + '\n'
+      + 'Total: ' + rs(booking.amount || 0) + '\n'
+      + 'Paid: ' + rs(paid) + '\n'
+      + 'Pending: ' + rs(pending) + '\n\nPlease clear the pending amount at your earliest. Thank you!';
+    Linking.openURL('https://wa.me/91' + phone + '?text=' + encodeURIComponent(msg));
   };
 
-  // â•â•â• DOWNLOAD PARTIAL PAYMENT RECEIPT â•â•â•
-  const downloadPartialInvoice = async () => {
-    try {
-      const html = buildInvoiceHTML(booking, paymentRecords, true);
-      if (!html) { Alert.alert('Error', 'Booking data not loaded yet'); return; }
-      const Print = require('expo-print');
-      await Print.printAsync({ html });
-    } catch (e: any) {
-      Alert.alert('Error', 'Failed to download payment receipt.');
-    }
-  };
-  // â•â•â• SEND INVOICE PDF VIA SHARE SHEET (WhatsApp etc.) â•â•â•
-  const shareInvoicePDF = async () => {
-    try {
-      let html = buildInvoiceHTML(booking, paymentRecords, false);
-      if (!html) { Alert.alert('Error', 'Booking data not loaded yet'); return; }
-
-      let Print: any = null;
-      let Sharing: any = null;
-      try {
-        Print = require('expo-print');
-        Sharing = require('expo-sharing');
-      } catch {
-        Alert.alert('Error', 'PDF module not available.');
-        return;
-      }
-
-      if (!Print?.printToFileAsync) {
-        Alert.alert('Error', 'PDF generation not supported in this build.');
-        return;
-      }
-
-      let pdfResult: any = null;
-      try {
-        pdfResult = await Print.printToFileAsync({ html, base64: false });
-      } catch (pdfErr: any) {
-        Alert.alert('PDF Error', 'Failed to generate PDF: ' + (pdfErr.message || 'Unknown error'));
-        return;
-      }
-
-      if (!pdfResult || !pdfResult.uri) {
-        Alert.alert('PDF Error', 'PDF was generated but file path is invalid.');
-        return;
-      }
-      console.log('[Invoice] Step 4: PDF generated âœ… at:', pdfResult.uri);
-
-      // Step 5: Share the PDF
-      if (!Sharing?.shareAsync) {
-        // No sharing API â€” open WhatsApp with booking link as fallback
-        const fallbackUrl = `https://bookmyshot.in`;
-        openWhatsAppFallback(fallbackUrl);
-        return;
-      }
-
-      const sharingAvailable = await Sharing.isAvailableAsync();
-      if (!sharingAvailable) {
-        const fallbackUrl = `https://bookmyshot.in`;
-        openWhatsAppFallback(fallbackUrl);
-        return;
-      }
-
-      console.log('[Invoice] Step 5: Opening share sheet...');
-      try {
-        await Sharing.shareAsync(pdfResult.uri, {
-          mimeType: 'application/pdf',
-          dialogTitle: 'Send Invoice',
-          UTI: 'com.adobe.pdf',
-        });
-        console.log('[Invoice] âœ… Share completed');
-      } catch (shareErr: any) {
-        // User might have cancelled the share â€” that's not an error
-        if (shareErr.message?.includes('cancelled') || shareErr.message?.includes('dismiss')) {
-          console.log('[Invoice] Share cancelled by user');
-          return;
-        }
-        console.log('[Invoice] Share sheet error:', shareErr.message);
-        // Try WhatsApp fallback
-        Alert.alert(
-          'Share Issue',
-          'Could not open share sheet. Would you like to send via WhatsApp link instead?',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Send via WhatsApp', onPress: () => openWhatsAppFallback('https://bookmyshot.in') },
-          ]
-        );
-      }
-    } catch (e: any) {
-      console.log('[Invoice] Unexpected error:', e.message);
-      Alert.alert('Error', 'Invoice sharing failed: ' + (e.message || 'Unknown error'));
-    }
-  };
-
-  // WhatsApp fallback â€” sends invoice link directly
-  const openWhatsAppFallback = (invoiceUrl: string) => {
-    const phone = (booking.clientPhone || '').replace(/\D/g, '').slice(-10);
-    const msg = `Hi ${booking.clientName || 'there'},\n\nYour booking invoice is ready.\n\nðŸ“„ View/Download Invoice:\n${invoiceUrl}\n\nThank you!\nâ€” ${booking.creator?.user?.name || 'Your Creator'} via BookMyShot`;
-    if (phone) {
-      Linking.openURL(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`);
-    } else {
-      Linking.openURL(invoiceUrl);
-    }
-  };
-
-  // â•â•â• ADD EVENT â•â•â•
+  // ── Add Event ─────────────────────────────────────────────────────────────
   const addEvent = async () => {
-    if (!eventForm.name || !eventForm.date) { Alert.alert('Error', 'Event name and date are required'); return; }
+    if (!eventForm.name) { Alert.alert('Name required'); return; }
     try {
       await api.post('/booking-events', { bookingId, eventName: eventForm.name, eventDate: eventForm.date, location: eventForm.location, notes: eventForm.notes });
       setShowEventModal(false);
@@ -289,315 +175,607 @@ export default function BookingDetail({ route, navigation }: any) {
     } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
   };
 
-  // â•â•â• DELETE EVENT â•â•â•
   const deleteEvent = (id: string) => Alert.alert('Delete Event', 'Remove this event?', [
     { text: 'Cancel' },
-    { text: 'Delete', style: 'destructive', onPress: async () => { try { await api.delete(`/booking-events/${id}`); await load(); } catch {} }}
+    { text: 'Delete', style: 'destructive', onPress: async () => { try { await api.delete('/booking-events/' + id); await load(); } catch {} } },
   ]);
 
-  // â•â•â• CONTACT â•â•â•
-  const callCustomer = () => booking?.clientPhone && Linking.openURL(`tel:${booking.clientPhone}`);
-  const whatsApp = () => booking?.clientPhone && Linking.openURL(`https://wa.me/91${booking.clientPhone.replace(/\D/g, '').slice(-10)}`);
-
-  // â•â•â• WHATSAPP PAYMENT REMINDER â•â•â•
-  const sendPaymentReminder = () => {
-    if (!booking?.clientPhone) { Alert.alert('No Phone', 'Customer phone number not available'); return; }
-    const phone = booking.clientPhone.replace(/\D/g, '').slice(-10);
-    const customerName = booking.clientName || 'Customer';
-    const creatorName = user?.name || 'Creator';
-    const eventDate = booking.eventDate ? new Date(booking.eventDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'TBD';
-    const bookingAmount = booking.amount || 0;
-    const paidAmount = paymentRecords.filter((r: any) => r.status === 'approved').reduce((sum: number, r: any) => sum + (r.amount || 0), 0);
-    const pendingAmount = Math.max(0, bookingAmount - paidAmount);
-
-    const message = `Hi ${customerName},\n\nThis is a friendly payment reminder from *${creatorName}* via BookMyShot.\n\nYour booking details:\nâ€¢ Booking ID: ${booking.invoiceNumber || booking._id?.slice(-8)}\nâ€¢ Event: ${booking.eventType || 'Booking'}\nâ€¢ Event Date: ${eventDate}\nâ€¢ Total Project Amount: â‚¹${bookingAmount.toLocaleString('en-IN')}\nâ€¢ Amount Paid: â‚¹${paidAmount.toLocaleString('en-IN')}\nâ€¢ *Pending Amount: â‚¹${pendingAmount.toLocaleString('en-IN')}*\n\nKindly clear your pending payment of â‚¹${pendingAmount.toLocaleString('en-IN')} at your earliest convenience.\n\nThank you for choosing BookMyShot. ðŸ™`;
-
-    const encoded = encodeURIComponent(message);
-    Linking.openURL(`https://wa.me/91${phone}?text=${encoded}`);
+  // ── Download Invoice ──────────────────────────────────────────────────────
+  const downloadInvoice = async () => {
+    try {
+      const html = buildInvoiceHTML(booking, paymentRecords, false);
+      if (!html) { Alert.alert('Error', 'Booking data not loaded'); return; }
+      await Print.printAsync({ html });
+    } catch (e: any) { Alert.alert('Error', 'Failed to open invoice: ' + (e.message || '')); }
   };
 
-  if (loading || !booking) return <View style={s.container}><ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 80 }} /></View>;
+  const downloadPartialInvoice = async () => {
+    try {
+      const html = buildInvoiceHTML(booking, paymentRecords, true);
+      if (!html) { Alert.alert('Error', 'Booking data not loaded'); return; }
+      await Print.printAsync({ html });
+    } catch (e: any) { Alert.alert('Error', 'Failed to generate receipt'); }
+  };
 
-  const totalPaid = paymentRecords.filter(r => r.status === 'approved').reduce((sum, r) => sum + (r.amount || 0), 0);
-  const remaining = (booking.amount || 0) - totalPaid;
-  const progress = booking.amount > 0 ? Math.min(100, Math.round((totalPaid / booking.amount) * 100)) : 0;
-  const statusColor = booking.status === 'Completed' ? colors.success : booking.status === 'rejected' ? colors.error : booking.status === 'Booking Created' ? colors.warning : colors.info;
+  // ── Share Invoice PDF ─────────────────────────────────────────────────────
+  const shareInvoicePDF = async () => {
+    try {
+      const html = buildInvoiceHTML(booking, paymentRecords, false);
+      if (!html) { Alert.alert('Error', 'Booking data not loaded'); return; }
+
+      // Generate PDF file
+      let pdfResult: { uri: string } | null = null;
+      try { pdfResult = await Print.printToFileAsync({ html, base64: false }); }
+      catch (e: any) { Alert.alert('PDF Error', 'Could not generate PDF: ' + (e.message || '')); return; }
+
+      if (!pdfResult?.uri) { Alert.alert('Error', 'PDF file path invalid'); return; }
+
+      // Try native share sheet first
+      const sharingAvailable = await Sharing.isAvailableAsync();
+      if (sharingAvailable) {
+        await Sharing.shareAsync(pdfResult.uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: 'Share Invoice',
+          UTI: 'com.adobe.pdf',
+        });
+      } else {
+        // Fallback: React Native Share (text link)
+        const clientName = booking.clientName || 'Customer';
+        const msg = 'Hi ' + clientName + ',\n\nYour BookMyShot invoice is ready. Please contact your service provider to receive the invoice document.\n\nBooking ID: ' + (booking.invoiceNumber || booking._id?.slice(-8)) + '\nThank you!';
+        await Share.share({ message: msg, title: 'BookMyShot Invoice' });
+      }
+    } catch (e: any) {
+      // Ignore user cancellation
+      if (e.message?.toLowerCase().includes('cancel') || e.message?.toLowerCase().includes('dismiss')) return;
+      Alert.alert('Share Failed', e.message || 'Could not share invoice');
+    }
+  };
+
+  // ── Loading state ─────────────────────────────────────────────────────────
+  if (loading || !booking) {
+    return (
+      <View style={s.center}>
+        <ActivityIndicator size="large" color={G} />
+        <Text style={s.loadingTxt}>Loading booking...</Text>
+      </View>
+    );
+  }
+
+  // ── Computed values ───────────────────────────────────────────────────────
+  const approvedPays = paymentRecords.filter((r: any) => r.status === 'approved');
+  const totalPaid = approvedPays.reduce((s: number, r: any) => s + (r.amount || 0), 0);
+  const bookingAmt = booking.amount || 0;
+  const remaining = Math.max(0, bookingAmt - totalPaid);
+  const progress = bookingAmt > 0 ? Math.min(100, Math.round((totalPaid / bookingAmt) * 100)) : 0;
+  const advancePaid = booking.bookingFeeAmount || Math.round(bookingAmt * 0.05);
+  const receivable = booking.creatorReceivable || (bookingAmt - (booking.commissionAmount || 0));
+  const isCompleted = booking.status === 'Completed' || booking.status === 'completed';
+
+  const statusColors: Record<string, string> = {
+    'Completed': '#0F5132', 'completed': '#0F5132',
+    'rejected': '#DC2626', 'cancelled': '#DC2626',
+    'Booking Created': '#D97706',
+    'Creator Accepted': '#2563EB',
+    'Payment Submitted': '#7C3AED',
+    'Payment Approved': '#0891B2',
+    'Event Scheduled': '#059669',
+  };
+  const statusColor = statusColors[booking.status] || '#6B7280';
+
+  const payStatusMap: Record<string, string> = {
+    unpaid: 'Unpaid', partial: 'Partially Paid',
+    'proof-submitted': 'Proof Submitted', 'pending-verification': 'Pending',
+    verified: 'Approved', rejected: 'Rejected', paid: 'Fully Paid',
+  };
+  const payStatusLabel = payStatusMap[booking.paymentStatus] || booking.paymentStatus || '\u2014';
 
   return (
-    <View style={s.container}>
+    <View style={s.root}>
+      {/* ── HEADER ──────────────────────────────────────────────────────── */}
       <View style={s.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}><Ionicons name="arrow-back" size={20} color={colors.text} /></TouchableOpacity>
-        <Text style={s.title} numberOfLines={1}>{booking.clientName || 'Booking'}</Text>
-        <View style={[s.statusBadge, { backgroundColor: statusColor + '15', borderColor: statusColor + '30' }]}><Text style={[s.statusText, { color: statusColor }]}>{booking.status}</Text></View>
+        <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={20} color={G} />
+        </TouchableOpacity>
+        <View style={{ flex: 1 }}>
+          <Text style={s.headerTitle} numberOfLines={1}>{booking.clientName || 'Booking'}</Text>
+          <Text style={s.headerSub}>{booking.eventType || 'Service'}</Text>
+        </View>
+        <View style={[s.statusPill, { backgroundColor: statusColor + '15', borderColor: statusColor + '40' }]}>
+          <Text style={[s.statusPillTxt, { color: statusColor }]}>{booking.status}</Text>
+        </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />} contentContainerStyle={{ paddingBottom: 120 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={G} colors={[G]} />}
+        contentContainerStyle={{ paddingBottom: 130 }}
+      >
 
-        {/* â•â•â• PAYMENT DASHBOARD â•â•â• */}
+        {/* ── PAYMENT DASHBOARD ─────────────────────────────────────────── */}
         <View style={s.payDash}>
-          <View style={s.payRow}><Text style={s.payLabel}>Total</Text><Text style={s.payVal}>â‚¹{(booking.amount || 0).toLocaleString('en-IN')}</Text></View>
-          <View style={s.payRow}><Text style={s.payLabel}>Paid</Text><Text style={[s.payVal, { color: colors.success }]}>â‚¹{totalPaid.toLocaleString('en-IN')}</Text></View>
-          <View style={s.payRow}><Text style={s.payLabel}>Remaining</Text><Text style={[s.payVal, { color: remaining > 0 ? colors.warning : colors.success }]}>â‚¹{Math.max(0, remaining).toLocaleString('en-IN')}</Text></View>
+          <Text style={s.payDashTitle}>Payment Summary</Text>
+
+          <View style={s.payCardRow}>
+            <View style={[s.payCard, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
+              <Text style={s.payCardLabel}>Booking Amount</Text>
+              <Text style={[s.payCardAmt, { color: G }]}>{rs(bookingAmt)}</Text>
+            </View>
+            <View style={[s.payCard, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
+              <Text style={s.payCardLabel}>Advance (5%)</Text>
+              <Text style={[s.payCardAmt, { color: '#92400E' }]}>{rs(advancePaid)}</Text>
+              <Text style={s.payCardSub}>Paid to BookMyShot</Text>
+            </View>
+          </View>
+
+          <View style={s.payCardRow}>
+            <View style={[s.payCard, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA' }]}>
+              <Text style={s.payCardLabel}>Remaining to Vendor</Text>
+              <Text style={[s.payCardAmt, { color: remaining > 0 ? '#B45309' : G }]}>
+                {remaining > 0 ? rs(remaining) : 'Settled'}
+              </Text>
+            </View>
+            <View style={[s.payCard, { backgroundColor: '#F0F9FF', borderColor: '#BAE6FD' }]}>
+              <Text style={s.payCardLabel}>Vendor Receivable</Text>
+              <Text style={[s.payCardAmt, { color: '#0369A1' }]}>{rs(receivable)}</Text>
+            </View>
+          </View>
+
           {/* Progress bar */}
-          <View style={s.progressBar}><View style={[s.progressFill, { width: `${progress}%` }]} /></View>
-          <Text style={s.progressText}>{progress}% paid</Text>
-          <View style={s.payRow}><Text style={s.payLabel}>Commission ({booking.commissionPercent || 0}%)</Text><Text style={[s.payVal, { color: colors.error, fontSize: 13 }]}>-â‚¹{(booking.commissionAmount || 0).toLocaleString('en-IN')}</Text></View>
-          <View style={s.payRow}><Text style={[s.payLabel, { fontWeight: '600' }]}>Net Receivable</Text><Text style={[s.payVal, { color: colors.primary }]}>â‚¹{(booking.creatorReceivable || 0).toLocaleString('en-IN')}</Text></View>
+          <View style={s.progressWrap}>
+            <View style={s.progressTrack}>
+              <View style={[s.progressFill, { width: progress + '%' as any }]} />
+            </View>
+            <View style={s.progressRow}>
+              <Text style={s.progressLbl}>{rs(totalPaid)} paid</Text>
+              <Text style={[s.progressPct, { color: progress >= 100 ? G : GOLD }]}>{progress}%</Text>
+              <Text style={s.progressLbl}>{rs(remaining)} due</Text>
+            </View>
+          </View>
+
+          {/* Advance note */}
+          <View style={s.advanceNote}>
+            <Ionicons name="information-circle-outline" size={14} color={GOLD} />
+            <Text style={s.advanceNoteTxt}>
+              5% advance ({rs(advancePaid)}) paid to BookMyShot as booking confirmation. Remaining ({rs(remaining)}) payable directly to vendor.
+            </Text>
+          </View>
         </View>
 
-        {/* â•â•â• QUICK ACTIONS â€” 3 states â•â•â• */}
-        {booking.status === 'Completed' || booking.status === 'completed' ? (
-          /* STATE 3: COMPLETED â€” Chat + Invoice + Send Invoice */
-          <View style={s.actionsRow}>
-            <ActionBtn icon="chatbubble-outline" label="Chat" onPress={() => navigation.navigate('BookingChat', { bookingId })} />
-            <ActionBtn icon="download-outline" label="Invoice" onPress={downloadInvoice} />
-            <ActionBtn icon="share-social-outline" label="Send Invoice" onPress={shareInvoicePDF} />
+        {/* ── ACTION BUTTONS ────────────────────────────────────────────── */}
+        {isCompleted ? (
+          <View style={s.actionGrid}>
+            <ABtn icon="chatbubble-outline" label="Chat" color={G} onPress={() => navigation.navigate('BookingChat', { bookingId })} />
+            <ABtn icon="document-text-outline" label="Invoice" color={G} onPress={downloadInvoice} />
+            <ABtn icon="share-social-outline" label="Share PDF" color={GOLD} onPress={shareInvoicePDF} />
           </View>
         ) : pendingComplete ? (
-          /* STATE 2: PENDING COMPLETE (Mark Paid clicked, due > 0) â€” Mark Complete + Cancel */
-          <View style={s.actionsRow}>
-            <ActionBtn icon="checkmark-circle-outline" label="Complete" onPress={completeBooking} />
-            <ActionBtn icon="chatbubble-outline" label="Chat" onPress={() => navigation.navigate('BookingChat', { bookingId })} />
-            <ActionBtn icon="close-circle-outline" label="Cancel" onPress={cancelPendingComplete} />
+          <View style={s.actionGrid}>
+            <ABtn icon="checkmark-circle" label="Complete" color={G} onPress={completeBooking} loading={completing} />
+            <ABtn icon="chatbubble-outline" label="Chat" color={G} onPress={() => navigation.navigate('BookingChat', { bookingId })} />
+            <ABtn icon="close-circle-outline" label="Cancel" color="#EF4444" onPress={cancelPendingComplete} />
           </View>
         ) : (
-          /* STATE 1: ACTIVE â€” Payment controls */
           <>
-            <View style={s.actionsRow}>
-              <ActionBtn icon="cash-outline" label="Set Amount" onPress={() => { setAmountInput(String(booking.amount || '')); setShowAmountModal(true); }} />
-              <ActionBtn icon="card-outline" label="Record Pay" onPress={() => setShowPaymentModal(true)} />
-              <ActionBtn icon="checkmark-done" label="Mark Paid" onPress={markPaid} />
-              <ActionBtn icon="chatbubble-outline" label="Chat" onPress={() => navigation.navigate('BookingChat', { bookingId })} />
+            <View style={s.actionGrid}>
+              <ABtn icon="pencil-outline" label="Set Amount" color={G} onPress={() => { setAmountInput(String(booking.amount || '')); setShowAmountModal(true); }} />
+              <ABtn icon="card-outline" label="Record Pay" color={GOLD} onPress={() => setShowPaymentModal(true)} />
+              <ABtn icon="checkmark-done-outline" label="Mark Paid" color="#059669" onPress={markPaid} />
+              <ABtn icon="chatbubble-outline" label="Chat" color={G} onPress={() => navigation.navigate('BookingChat', { bookingId })} />
             </View>
-            {remaining > 0 && booking.amount > 0 && (
-              <View style={[s.actionsRow, { marginTop: 0 }]}>
-                <ActionBtn icon="logo-whatsapp" label="Remind" onPress={sendPaymentReminder} />
-                {totalPaid > 0 && <ActionBtn icon="receipt-outline" label="Payment Invoice" onPress={downloadPartialInvoice} />}
-              </View>
-            )}
-            {remaining <= 0 && totalPaid > 0 && booking.amount > 0 && (
-              <View style={[s.actionsRow, { marginTop: 0 }]}>
-                <ActionBtn icon="receipt-outline" label="Payment Invoice" onPress={downloadPartialInvoice} />
+            {totalPaid > 0 && (
+              <View style={[s.actionGrid, { marginTop: 0, marginBottom: 20 }]}>
+                <ABtn icon="logo-whatsapp" label="Remind" color="#25D366" onPress={sendPaymentReminder} />
+                <ABtn icon="receipt-outline" label="Receipt" color="#7C3AED" onPress={downloadPartialInvoice} />
+                <ABtn icon="calendar-outline" label="Add Event" color={G} onPress={() => setShowEventModal(true)} />
               </View>
             )}
           </>
         )}
 
-        {/* â•â•â• CUSTOMER â•â•â• */}
-        <Section title="Customer">
-          <Row label="Name" value={booking.clientName || 'â€”'} />
-          <Row label="Phone" value={booking.clientPhone || 'â€”'} />
-          <Row label="Email" value={booking.clientEmail || 'â€”'} />
-          <View style={s.contactRow}>
-            <TouchableOpacity style={s.contactBtn} onPress={callCustomer}><Ionicons name="call" size={15} color={colors.info} /><Text style={s.contactText}>Call</Text></TouchableOpacity>
-            <TouchableOpacity style={s.contactBtn} onPress={whatsApp}><Ionicons name="logo-whatsapp" size={15} color={colors.success} /><Text style={s.contactText}>WhatsApp</Text></TouchableOpacity>
+        {/* ── CUSTOMER CARD ─────────────────────────────────────────────── */}
+        <Card icon="person-circle-outline" title="Customer">
+          <View style={s.customerTop}>
+            <View style={s.avatarCircle}>
+              <Text style={s.avatarTxt}>{(booking.clientName || 'C')[0].toUpperCase()}</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.customerName}>{booking.clientName || '\u2014'}</Text>
+              <Text style={s.customerPhone}>{booking.clientPhone || 'No phone'}</Text>
+              {booking.clientEmail && <Text style={s.customerEmail}>{booking.clientEmail}</Text>}
+            </View>
           </View>
-          {/* WhatsApp Payment Reminder */}
-          {remaining > 0 && booking.amount > 0 ? (
-            <TouchableOpacity style={s.waReminderBtn} onPress={sendPaymentReminder} activeOpacity={0.8}>
-              <Ionicons name="logo-whatsapp" size={16} color="#fff" />
-              <Text style={s.waReminderText}>Send Payment Reminder</Text>
-              <Text style={s.waReminderAmount}>â‚¹{remaining.toLocaleString('en-IN')} pending</Text>
+          <View style={s.contactRow}>
+            <ContactBtn icon="call" label="Call" color="#2563EB" onPress={callCustomer} />
+            <ContactBtn icon="logo-whatsapp" label="WhatsApp" color="#25D366" onPress={whatsApp} />
+            {booking.clientEmail && (
+              <ContactBtn icon="mail-outline" label="Email" color={G} onPress={() => Linking.openURL('mailto:' + booking.clientEmail)} />
+            )}
+          </View>
+          {remaining > 0 && bookingAmt > 0 && (
+            <TouchableOpacity style={s.reminderBtn} onPress={sendPaymentReminder}>
+              <Ionicons name="logo-whatsapp" size={15} color="#fff" />
+              <Text style={s.reminderBtnTxt}>Send Payment Reminder</Text>
+              <Text style={s.reminderAmt}>{rs(remaining)} pending</Text>
             </TouchableOpacity>
-          ) : booking.amount > 0 ? (
-            <View style={s.payCompleteBadge}>
-              <Ionicons name="checkmark-circle" size={14} color={colors.success} />
-              <Text style={s.payCompleteText}>Payment Completed âœ…</Text>
+          )}
+          {bookingAmt > 0 && remaining <= 0 && (
+            <View style={s.paidBadge}>
+              <Ionicons name="checkmark-circle" size={14} color={G} />
+              <Text style={[s.paidBadgeTxt, { color: G }]}>Payment Completed</Text>
             </View>
-          ) : null}
-        </Section>
+          )}
+        </Card>
 
-        {/* â•â•â• EVENT â•â•â• */}
-        <Section title="Event Details">
-          <Row label="Type" value={booking.eventType || 'â€”'} />
-          <Row label="Date" value={booking.eventDate ? new Date(booking.eventDate).toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'long', year: 'numeric' }) : 'â€”'} />
-          {booking.eventTime && <Row label="Time" value={booking.eventTime} />}
-          <Row label="Location" value={booking.eventLocation || booking.scheduledLocation || 'â€”'} />
-          <Row label="Package" value={booking.packageName || 'Standard'} />
-          <Row label="Source" value={booking.leadSource || 'bookmyshot'} />
-          <Row label="Invoice" value={booking.invoiceNumber || 'â€”'} />
-        </Section>
+        {/* ── EVENT DETAILS CARD ─────────────────────────────────────────── */}
+        <Card icon="calendar-outline" title="Event Details">
+          <View style={s.chipGrid}>
+            <DetailChip label="Service" value={booking.eventType || '\u2014'} highlight />
+            <DetailChip label="Package" value={booking.packageName || 'Standard'} />
+            <DetailChip label="Event Date" value={fmtDate(booking.scheduledDate || booking.eventDate, { weekday: 'short', day: '2-digit', month: 'long', year: 'numeric' })} />
+            {(booking.scheduledTime || booking.eventTime) && <DetailChip label="Time" value={booking.scheduledTime || booking.eventTime} />}
+            <DetailChip label="Venue" value={booking.scheduledLocation || booking.eventLocation || '\u2014'} />
+            <DetailChip label="Booking Status" value={booking.status} statusColor={statusColor} />
+            <DetailChip label="Payment Status" value={payStatusLabel} />
+            <DetailChip label="Booking ID" value={(booking.invoiceNumber || booking._id?.slice(-8) || '\u2014').toString().toUpperCase()} />
+          </View>
+        </Card>
 
-        {/* â•â•â• PAYMENT HISTORY â•â•â• */}
-        <Section title={`Payment History (${paymentRecords.length})`}>
-          {paymentRecords.length > 0 ? paymentRecords.map((r, i) => (
-            <View key={r._id || i} style={s.payRecord}>
-              <View style={s.payRecordLeft}>
-                <Text style={s.payRecordType}>{r.paymentType || 'Payment'}</Text>
-                <Text style={s.payRecordDate}>{r.createdAt ? new Date(r.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : ''} â€¢ {r.addedBy || 'creator'}</Text>
-                {r.notes && <Text style={s.payRecordNotes}>{r.notes}</Text>}
+        {/* ── PAYMENT HISTORY ───────────────────────────────────────────── */}
+        <Card icon="receipt-outline" title={'Payment History (' + paymentRecords.length + ')'}>
+          {paymentRecords.length > 0 ? paymentRecords.map((r: any, i: number) => (
+            <View key={r._id || i} style={[s.payRecord, i === paymentRecords.length - 1 && { borderBottomWidth: 0 }]}>
+              <View style={[s.payRecordDot, { backgroundColor: r.status === 'approved' ? G : GOLD }]} />
+              <View style={{ flex: 1 }}>
+                <Text style={s.payRecordType}>{(r.paymentType || 'Payment').toUpperCase()}</Text>
+                <Text style={s.payRecordMeta}>
+                  {fmtDate(r.createdAt)} \u00B7 {r.addedBy || 'creator'}
+                  {r.notes ? ' \u00B7 ' + r.notes : ''}
+                </Text>
               </View>
-              <View style={s.payRecordRight}>
-                <Text style={s.payRecordAmount}>â‚¹{(r.amount || 0).toLocaleString('en-IN')}</Text>
-                <Text style={[s.payRecordStatus, { color: r.status === 'approved' ? colors.success : colors.warning }]}>{r.status}</Text>
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={[s.payRecordAmt, { color: r.status === 'approved' ? G : GOLD }]}>{rs(r.amount || 0)}</Text>
+                <View style={[s.payRecordBadge, { backgroundColor: r.status === 'approved' ? '#F0FDF4' : '#FFFBEB', borderColor: r.status === 'approved' ? '#BBF7D0' : '#FDE68A' }]}>
+                  <Text style={[s.payRecordBadgeTxt, { color: r.status === 'approved' ? G : '#92400E' }]}>{r.status}</Text>
+                </View>
               </View>
             </View>
-          )) : <Text style={s.emptyText}>No payments recorded yet</Text>}
-        </Section>
+          )) : (
+            <View style={s.emptyWrap}>
+              <Ionicons name="receipt-outline" size={28} color={GOLD + '60'} />
+              <Text style={s.emptyTxt}>No payments recorded yet</Text>
+            </View>
+          )}
+        </Card>
 
-        {/* â•â•â• EVENTS â•â•â• */}
-        <Section title={`Events (${events.length})`}>
-          {events.length > 0 ? events.map((ev, i) => (
-            <View key={ev._id || i} style={s.eventItem}>
+        {/* ── EVENTS ────────────────────────────────────────────────────── */}
+        <Card icon="calendar-clear-outline" title={'Events (' + events.length + ')'} action={{ label: '+ Add', onPress: () => setShowEventModal(true) }}>
+          {events.length > 0 ? events.map((ev: any, i: number) => (
+            <View key={ev._id || i} style={[s.eventRow, i === events.length - 1 && { borderBottomWidth: 0 }]}>
               <View style={s.eventDot} />
-              <View style={s.eventInfo}>
+              <View style={{ flex: 1 }}>
                 <Text style={s.eventName}>{ev.eventName || 'Event'}</Text>
-                <Text style={s.eventDate}>{ev.eventDate ? new Date(ev.eventDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : ''} {ev.location ? `â€¢ ${ev.location}` : ''}</Text>
+                <Text style={s.eventMeta}>{fmtDate(ev.eventDate)}{ev.location ? ' \u00B7 ' + ev.location : ''}</Text>
               </View>
-              <TouchableOpacity onPress={() => deleteEvent(ev._id)}><Ionicons name="trash-outline" size={14} color={colors.error} /></TouchableOpacity>
+              <TouchableOpacity style={s.eventDel} onPress={() => deleteEvent(ev._id)}>
+                <Ionicons name="trash-outline" size={14} color="#EF4444" />
+              </TouchableOpacity>
             </View>
-          )) : <Text style={s.emptyText}>No events added yet</Text>}
-        </Section>
+          )) : (
+            <View style={s.emptyWrap}>
+              <Text style={s.emptyTxt}>No events added yet</Text>
+            </View>
+          )}
+        </Card>
 
-        {/* â•â•â• NOTES â•â•â• */}
-        {booking.message && <Section title="Client Message"><Text style={s.messageText}>"{booking.message}"</Text></Section>}
-        {booking.creatorNotes && <Section title="Creator Notes"><Text style={s.messageText}>{booking.creatorNotes}</Text></Section>}
+        {/* ── NOTES ─────────────────────────────────────────────────────── */}
+        {(booking.message || booking.creatorNotes) && (
+          <Card icon="chatbubble-ellipses-outline" title="Notes">
+            {booking.message && (
+              <View style={s.noteBlock}>
+                <Text style={s.noteLabel}>Client Message</Text>
+                <Text style={s.noteText}>"{booking.message}"</Text>
+              </View>
+            )}
+            {booking.creatorNotes && (
+              <View style={[s.noteBlock, { marginTop: booking.message ? 8 : 0, borderBottomWidth: 0 }]}>
+                <Text style={s.noteLabel}>Creator Notes</Text>
+                <Text style={s.noteText}>{booking.creatorNotes}</Text>
+              </View>
+            )}
+          </Card>
+        )}
       </ScrollView>
 
-      {/* â•â•â• BOTTOM ACTIONS â•â•â• */}
+      {/* ── BOTTOM BAR ───────────────────────────────────────────────────── */}
       <View style={s.bottomBar}>
-        {booking.status === 'Booking Created' && <>
-          <TouchableOpacity style={s.btnReject} onPress={rejectBooking}><Text style={s.btnRejectText}>Reject</Text></TouchableOpacity>
-          <TouchableOpacity style={s.btnAccept} onPress={() => { setAmountInput(String(booking.amount || booking.budget || '')); setShowAmountModal(true); }}><Text style={s.btnAcceptText}>Accept</Text></TouchableOpacity>
-        </>}
-        {(booking.status === 'Completed' || booking.status === 'completed') && (
-          <TouchableOpacity style={[s.btnComplete, { backgroundColor: colors.primary }]} onPress={downloadInvoice}>
-            <Text style={s.btnCompleteText}>ðŸ“¥ Download Invoice</Text>
+        {booking.status === 'Booking Created' && (
+          <>
+            <TouchableOpacity style={s.btnReject} onPress={rejectBooking}>
+              <Ionicons name="close-circle-outline" size={16} color="#EF4444" />
+              <Text style={s.btnRejectTxt}>Reject</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={s.btnAccept} onPress={() => { setAmountInput(String(booking.amount || booking.budget || '')); setShowAmountModal(true); }}>
+              <Ionicons name="checkmark-circle-outline" size={16} color="#fff" />
+              <Text style={s.btnAcceptTxt}>Accept Booking</Text>
+            </TouchableOpacity>
+          </>
+        )}
+        {isCompleted && (
+          <TouchableOpacity style={s.btnDownload} onPress={downloadInvoice}>
+            <Ionicons name="document-text-outline" size={16} color="#fff" />
+            <Text style={s.btnDownloadTxt}>Download Invoice</Text>
           </TouchableOpacity>
         )}
       </View>
 
-      {/* â•â•â• SET AMOUNT MODAL â•â•â• */}
+      {/* ── SET AMOUNT MODAL ──────────────────────────────────────────────── */}
       <Modal visible={showAmountModal} transparent animationType="fade">
-        <View style={s.modalBg}><View style={s.modal}>
-          <Text style={s.modalTitle}>{booking.status === 'Booking Created' ? 'Accept & Set Amount' : 'Update Project Amount'}</Text>
-          <Text style={s.modalSub}>Commission is calculated on highest amount ever set (never decreases)</Text>
-          <TextInput style={s.modalInput} value={amountInput} onChangeText={setAmountInput} keyboardType="numeric" placeholder="â‚¹ Amount" placeholderTextColor={colors.textMuted} selectionColor={colors.primary} autoFocus />
-          <View style={s.modalBtns}>
-            <TouchableOpacity style={s.modalCancel} onPress={() => setShowAmountModal(false)}><Text style={s.modalCancelText}>Cancel</Text></TouchableOpacity>
-            <TouchableOpacity style={s.modalConfirm} onPress={booking.status === 'Booking Created' ? acceptBooking : setProjectAmount}><Text style={s.modalConfirmText}>{booking.status === 'Booking Created' ? 'Accept' : 'Save'}</Text></TouchableOpacity>
-          </View>
-        </View></View>
-      </Modal>
-
-      {/* â•â•â• RECORD PAYMENT MODAL â•â•â• */}
-      <Modal visible={showPaymentModal} transparent animationType="fade">
-        <View style={s.modalBg}><View style={s.modal}>
-          <Text style={s.modalTitle}>Record Payment</Text>
-          <View style={s.payTypeRow}>
-            {['advance', 'partial', 'final'].map(t => (
-              <TouchableOpacity key={t} style={[s.payTypeBtn, payForm.type === t && s.payTypeBtnActive]} onPress={() => setPayForm({ ...payForm, type: t })} disabled={savingPayment}>
-                <Text style={[s.payTypeText, payForm.type === t && s.payTypeTextActive]}>{t.charAt(0).toUpperCase() + t.slice(1)}</Text>
+        <View style={s.modalOverlay}>
+          <View style={s.modalCard}>
+            <Text style={s.modalTitle}>{booking.status === 'Booking Created' ? 'Accept & Set Amount' : 'Update Project Amount'}</Text>
+            <Text style={s.modalSub}>Amount affects platform fee calculation. Once set, it only increases.</Text>
+            <TextInput style={s.modalInput} value={amountInput} onChangeText={setAmountInput} keyboardType="numeric" placeholder="\u20B9 Enter amount" placeholderTextColor={MUTED} autoFocus />
+            <View style={s.modalBtns}>
+              <TouchableOpacity style={s.modalCancel} onPress={() => setShowAmountModal(false)}>
+                <Text style={s.modalCancelTxt}>Cancel</Text>
               </TouchableOpacity>
-            ))}
+              <TouchableOpacity style={s.modalConfirm} onPress={booking.status === 'Booking Created' ? acceptBooking : setProjectAmount}>
+                <Text style={s.modalConfirmTxt}>{booking.status === 'Booking Created' ? 'Accept' : 'Save'}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-          <TextInput style={s.modalInput} value={payForm.amount} onChangeText={v => setPayForm({ ...payForm, amount: v })} keyboardType="numeric" placeholder="â‚¹ Amount" placeholderTextColor={colors.textMuted} selectionColor={colors.primary} editable={!savingPayment} />
-          <TextInput style={[s.modalInput, { height: 60 }]} value={payForm.notes} onChangeText={v => setPayForm({ ...payForm, notes: v })} placeholder="Notes (optional)" placeholderTextColor={colors.textMuted} selectionColor={colors.primary} multiline editable={!savingPayment} />
-          <View style={s.modalBtns}>
-            <TouchableOpacity style={s.modalCancel} onPress={() => setShowPaymentModal(false)} disabled={savingPayment}><Text style={s.modalCancelText}>Cancel</Text></TouchableOpacity>
-            <TouchableOpacity style={[s.modalConfirm, savingPayment && { opacity: 0.6 }]} onPress={recordPayment} disabled={savingPayment}>
-              {savingPayment ? <ActivityIndicator size="small" color={colors.textInverse} /> : <Text style={s.modalConfirmText}>Record</Text>}
-            </TouchableOpacity>
-          </View>
-        </View></View>
+        </View>
       </Modal>
 
-      {/* â•â•â• ADD EVENT MODAL â•â•â• */}
-      <Modal visible={showEventModal} transparent animationType="fade">
-        <View style={s.modalBg}><View style={s.modal}>
-          <Text style={s.modalTitle}>Add Event</Text>
-          <TextInput style={s.modalInput} value={eventForm.name} onChangeText={v => setEventForm({ ...eventForm, name: v })} placeholder="Event name (e.g. Haldi, Wedding)" placeholderTextColor={colors.textMuted} selectionColor={colors.primary} />
-          <TextInput style={s.modalInput} value={eventForm.date} onChangeText={v => setEventForm({ ...eventForm, date: v })} placeholder="Date (YYYY-MM-DD)" placeholderTextColor={colors.textMuted} selectionColor={colors.primary} />
-          <TextInput style={s.modalInput} value={eventForm.location} onChangeText={v => setEventForm({ ...eventForm, location: v })} placeholder="Location (optional)" placeholderTextColor={colors.textMuted} selectionColor={colors.primary} />
-          <TextInput style={[s.modalInput, { height: 60 }]} value={eventForm.notes} onChangeText={v => setEventForm({ ...eventForm, notes: v })} placeholder="Notes (optional)" placeholderTextColor={colors.textMuted} selectionColor={colors.primary} multiline />
-          <View style={s.modalBtns}>
-            <TouchableOpacity style={s.modalCancel} onPress={() => setShowEventModal(false)}><Text style={s.modalCancelText}>Cancel</Text></TouchableOpacity>
-            <TouchableOpacity style={s.modalConfirm} onPress={addEvent}><Text style={s.modalConfirmText}>Add</Text></TouchableOpacity>
+
+      {/* ── RECORD PAYMENT MODAL ─────────────────────────────────────────── */}
+      <Modal visible={showPaymentModal} transparent animationType="fade">
+        <View style={s.modalOverlay}>
+          <View style={s.modalCard}>
+            <Text style={s.modalTitle}>Record Payment</Text>
+            <View style={s.payTypeRow}>
+              {['advance', 'partial', 'final'].map(t => (
+                <TouchableOpacity key={t}
+                  style={[s.payTypeBtn, payForm.type === t && s.payTypeBtnActive]}
+                  onPress={() => setPayForm({ ...payForm, type: t })}
+                  disabled={savingPayment}>
+                  <Text style={[s.payTypeTxt, payForm.type === t && { color: '#0F5132', fontWeight: '700' as const }]}>
+                    {t.charAt(0).toUpperCase() + t.slice(1)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TextInput style={s.modalInput} value={payForm.amount}
+              onChangeText={v => setPayForm({ ...payForm, amount: v })}
+              keyboardType="numeric" placeholder={'\u20B9 Amount'} placeholderTextColor="#9CA3AF"
+              editable={!savingPayment} />
+            <TextInput style={[s.modalInput, { height: 64 }]} value={payForm.notes}
+              onChangeText={v => setPayForm({ ...payForm, notes: v })}
+              placeholder="Notes (optional)" placeholderTextColor="#9CA3AF"
+              multiline editable={!savingPayment} />
+            <View style={s.modalBtns}>
+              <TouchableOpacity style={s.modalCancel} onPress={() => setShowPaymentModal(false)} disabled={savingPayment}>
+                <Text style={s.modalCancelTxt}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[s.modalConfirm, savingPayment && { opacity: 0.6 }]}
+                onPress={recordPayment} disabled={savingPayment}>
+                {savingPayment
+                  ? <ActivityIndicator size="small" color="#fff" />
+                  : <Text style={s.modalConfirmTxt}>Record</Text>}
+              </TouchableOpacity>
+            </View>
           </View>
-        </View></View>
+        </View>
+      </Modal>
+
+      {/* ── ADD EVENT MODAL ───────────────────────────────────────────────── */}
+      <Modal visible={showEventModal} transparent animationType="fade">
+        <View style={s.modalOverlay}>
+          <View style={s.modalCard}>
+            <Text style={s.modalTitle}>Add Event</Text>
+            <TextInput style={s.modalInput} value={eventForm.name}
+              onChangeText={v => setEventForm({ ...eventForm, name: v })}
+              placeholder="Event name (e.g. Haldi, Wedding)" placeholderTextColor="#9CA3AF" />
+            <TextInput style={s.modalInput} value={eventForm.date}
+              onChangeText={v => setEventForm({ ...eventForm, date: v })}
+              placeholder="Date (YYYY-MM-DD)" placeholderTextColor="#9CA3AF" />
+            <TextInput style={s.modalInput} value={eventForm.location}
+              onChangeText={v => setEventForm({ ...eventForm, location: v })}
+              placeholder="Location (optional)" placeholderTextColor="#9CA3AF" />
+            <TextInput style={[s.modalInput, { height: 64 }]} value={eventForm.notes}
+              onChangeText={v => setEventForm({ ...eventForm, notes: v })}
+              placeholder="Notes (optional)" placeholderTextColor="#9CA3AF" multiline />
+            <View style={s.modalBtns}>
+              <TouchableOpacity style={s.modalCancel} onPress={() => setShowEventModal(false)}>
+                <Text style={s.modalCancelTxt}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={s.modalConfirm} onPress={addEvent}>
+                <Text style={s.modalConfirmTxt}>Add Event</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
     </View>
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return <View style={s.section}><Text style={s.sectionTitle}>{title}</Text><View style={s.sectionCard}>{children}</View></View>;
-}
-function Row({ label, value }: { label: string; value: string }) {
-  return <View style={s.row}><Text style={s.rowLabel}>{label}</Text><Text style={s.rowValue} numberOfLines={1}>{value}</Text></View>;
-}
-function ActionBtn({ icon, label, onPress }: { icon: string; label: string; onPress: () => void }) {
-  return <TouchableOpacity style={s.actionBtn} onPress={onPress}><Ionicons name={icon as any} size={18} color={colors.primary} /><Text style={s.actionLabel}>{label}</Text></TouchableOpacity>;
+// ─── Sub-components ──────────────────────────────────────────────────────────
+
+function Card({ icon, title, children, action }: {
+  icon: string; title: string; children: React.ReactNode;
+  action?: { label: string; onPress: () => void };
+}) {
+  return (
+    <View style={s.card}>
+      <View style={s.cardHdr}>
+        <View style={s.cardIconBox}>
+          <Ionicons name={icon as any} size={15} color="#0F5132" />
+        </View>
+        <Text style={s.cardTitle}>{title}</Text>
+        {action && (
+          <TouchableOpacity onPress={action.onPress} style={s.cardAction}>
+            <Text style={s.cardActionTxt}>{action.label}</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+      {children}
+    </View>
+  );
 }
 
+function ABtn({ icon, label, color, onPress, loading }: {
+  icon: string; label: string; color: string;
+  onPress: () => void; loading?: boolean;
+}) {
+  return (
+    <TouchableOpacity style={[s.aBtn, { borderColor: color + '30' }]} onPress={onPress} activeOpacity={0.75}>
+      {loading
+        ? <ActivityIndicator size="small" color={color} />
+        : <Ionicons name={icon as any} size={18} color={color} />}
+      <Text style={[s.aBtnTxt, { color }]}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+function ContactBtn({ icon, label, color, onPress }: {
+  icon: string; label: string; color: string; onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity style={[s.contactBtn, { borderColor: color + '25' }]} onPress={onPress}>
+      <Ionicons name={icon as any} size={15} color={color} />
+      <Text style={[s.contactBtnTxt, { color }]}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+function DetailChip({ label, value, highlight, statusColor }: {
+  label: string; value: string; highlight?: boolean; statusColor?: string;
+}) {
+  return (
+    <View style={[s.chip, highlight && { borderColor: '#D4AF3730', backgroundColor: '#FFFBEB' }]}>
+      <Text style={s.chipLabel}>{label}</Text>
+      <Text style={[s.chipValue, statusColor ? { color: statusColor } : highlight ? { color: '#0F5132' } : {}]}
+        numberOfLines={2}>
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+// ─── StyleSheet ──────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.xl, paddingTop: spacing['5xl'], paddingBottom: spacing.md, gap: spacing.sm },
-  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
-  title: { ...typography.headlineMd, color: colors.text, flex: 1 },
-  statusBadge: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 1, borderRadius: radius.full, borderWidth: 1 },
-  statusText: { ...typography.labelSm, fontWeight: '700', fontSize: 9 },
-  payDash: { marginHorizontal: spacing.xl, backgroundColor: colors.surface, borderRadius: radius.xl, padding: spacing.lg, borderWidth: 1, borderColor: colors.borderGold, marginBottom: spacing.lg },
-  payRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.xs + 2 },
-  payLabel: { ...typography.bodySm, color: colors.textSecondary },
-  payVal: { ...typography.headlineSm, color: colors.text },
-  progressBar: { height: 6, backgroundColor: colors.border, borderRadius: 3, marginTop: spacing.md, marginBottom: spacing.xs, overflow: 'hidden' },
-  progressFill: { height: 6, backgroundColor: colors.success, borderRadius: 3 },
-  progressText: { ...typography.caption, color: colors.textMuted, textAlign: 'right' },
-  actionsRow: { flexDirection: 'row', marginHorizontal: spacing.xl, gap: spacing.sm, marginBottom: spacing.xl },
-  actionBtn: { flex: 1, alignItems: 'center', paddingVertical: spacing.md, backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, gap: spacing.xs },
-  actionLabel: { ...typography.labelSm, color: colors.textSecondary },
-  section: { marginHorizontal: spacing.xl, marginBottom: spacing.xl },
-  sectionTitle: { ...typography.labelMd, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: spacing.sm },
-  sectionCard: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.border },
-  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
-  rowLabel: { ...typography.bodySm, color: colors.textMuted, width: 80 },
-  rowValue: { ...typography.bodyMd, color: colors.text, flex: 1, textAlign: 'right' },
-  contactRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.md },
-  contactBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingVertical: spacing.sm + 2, borderRadius: radius.sm, backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border },
-  contactText: { ...typography.labelMd, color: colors.text },
-  // WhatsApp Reminder
-  waReminderBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, marginTop: spacing.md, paddingVertical: spacing.md, borderRadius: radius.md, backgroundColor: '#25D366' },
-  waReminderText: { ...typography.labelMd, color: '#fff', fontWeight: '600' },
-  waReminderAmount: { ...typography.caption, color: 'rgba(255,255,255,0.7)', marginLeft: spacing.xs },
-  payCompleteBadge: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, marginTop: spacing.md, paddingVertical: spacing.sm + 2, borderRadius: radius.sm, backgroundColor: 'rgba(16,185,129,0.06)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.15)' },
-  payCompleteText: { ...typography.labelMd, color: colors.success },
-  payRecord: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
-  payRecordLeft: { flex: 1 },
-  payRecordType: { ...typography.labelMd, color: colors.text, textTransform: 'capitalize' },
-  payRecordDate: { ...typography.caption, color: colors.textMuted, marginTop: 1 },
-  payRecordNotes: { ...typography.caption, color: colors.textMuted, fontStyle: 'italic', marginTop: 2 },
-  payRecordRight: { alignItems: 'flex-end' },
-  payRecordAmount: { ...typography.headlineSm, color: colors.success },
-  payRecordStatus: { ...typography.labelSm, marginTop: 1 },
-  eventItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
-  eventDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary, marginRight: spacing.md },
-  eventInfo: { flex: 1 },
-  eventName: { ...typography.labelLg, color: colors.text },
-  eventDate: { ...typography.caption, color: colors.textMuted, marginTop: 1 },
-  emptyText: { ...typography.bodySm, color: colors.textMuted, textAlign: 'center', paddingVertical: spacing.lg },
-  messageText: { ...typography.bodyMd, color: colors.textSecondary, fontStyle: 'italic', lineHeight: 20 },
-  bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', gap: spacing.md, paddingHorizontal: spacing.xl, paddingVertical: spacing.lg, paddingBottom: spacing['2xl'], backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border },
-  btnReject: { flex: 1, paddingVertical: spacing.md, alignItems: 'center', borderRadius: radius.md, borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)' },
-  btnRejectText: { ...typography.labelLg, color: colors.error },
-  btnAccept: { flex: 2, paddingVertical: spacing.md, alignItems: 'center', borderRadius: radius.md, backgroundColor: colors.primary },
-  btnAcceptText: { ...typography.labelLg, color: colors.textInverse, fontWeight: '600' },
-  btnComplete: { flex: 1, paddingVertical: spacing.md, alignItems: 'center', borderRadius: radius.md, backgroundColor: colors.success },
-  btnCompleteText: { ...typography.labelLg, color: colors.textInverse, fontWeight: '600' },
+  root: { flex: 1, backgroundColor: '#FFFFFF' },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF' },
+  loadingTxt: { marginTop: 12, fontSize: 13, color: '#6B7280' },
+
+  // Header
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 52, paddingBottom: 14, gap: 10, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
+  backBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#F8F5EF', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#D4AF3740' },
+  headerTitle: { fontSize: 16, fontWeight: '700', color: '#1a1a1a', flex: 1 },
+  headerSub: { fontSize: 11, color: '#6B7280', marginTop: 1 },
+  statusPill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, borderWidth: 1 },
+  statusPillTxt: { fontSize: 9, fontWeight: '700', letterSpacing: 0.3 },
+
+  // Payment Dashboard
+  payDash: { margin: 16, backgroundColor: '#FFFFFF', borderRadius: 18, padding: 18, borderWidth: 1, borderColor: '#D4AF3730', shadowColor: '#D4AF37', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 2 },
+  payDashTitle: { fontSize: 11, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase', color: '#0F5132', marginBottom: 14 },
+  payCardRow: { flexDirection: 'row', gap: 10, marginBottom: 10 },
+  payCard: { flex: 1, borderRadius: 12, padding: 12, borderWidth: 1 },
+  payCardLabel: { fontSize: 9, fontWeight: '600', color: '#6B7280', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 4 },
+  payCardAmt: { fontSize: 18, fontWeight: '800', lineHeight: 22 },
+  payCardSub: { fontSize: 9, color: '#9CA3AF', marginTop: 2 },
+  progressWrap: { marginTop: 8 },
+  progressTrack: { height: 8, backgroundColor: '#F0F0F0', borderRadius: 4, overflow: 'hidden' },
+  progressFill: { height: 8, backgroundColor: '#0F5132', borderRadius: 4 },
+  progressRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
+  progressLbl: { fontSize: 10, color: '#6B7280' },
+  progressPct: { fontSize: 11, fontWeight: '700' },
+  advanceNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 12, padding: 10, backgroundColor: '#FFFBEB', borderRadius: 10, borderWidth: 1, borderColor: '#FDE68A' },
+  advanceNoteTxt: { flex: 1, fontSize: 10, color: '#92400E', lineHeight: 15 },
+
+  // Action buttons
+  actionGrid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: 16, gap: 8, marginBottom: 6 },
+  aBtn: { flex: 1, minWidth: 70, alignItems: 'center', paddingVertical: 11, backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, gap: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 3, elevation: 1 },
+  aBtnTxt: { fontSize: 10, fontWeight: '600' },
+
+  // Card
+  card: { marginHorizontal: 16, marginBottom: 14, backgroundColor: '#FFFFFF', borderRadius: 16, borderWidth: 1, borderColor: '#E8E0D0', shadowColor: '#D4AF37', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 1, overflow: 'hidden' },
+  cardHdr: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F8F5EF', backgroundColor: '#FDFCFA' },
+  cardIconBox: { width: 28, height: 28, borderRadius: 8, backgroundColor: '#F8F5EF', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#D4AF3730' },
+  cardTitle: { flex: 1, fontSize: 12, fontWeight: '700', color: '#0F5132', letterSpacing: 0.3 },
+  cardAction: { paddingHorizontal: 10, paddingVertical: 4, backgroundColor: '#F8F5EF', borderRadius: 8, borderWidth: 1, borderColor: '#D4AF3740' },
+  cardActionTxt: { fontSize: 10, fontWeight: '700', color: '#0F5132' },
+
+  // Customer card
+  customerTop: { flexDirection: 'row', gap: 12, padding: 16, alignItems: 'flex-start' },
+  avatarCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F8F5EF', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#D4AF3740' },
+  avatarTxt: { fontSize: 18, fontWeight: '800', color: '#0F5132' },
+  customerName: { fontSize: 15, fontWeight: '700', color: '#1a1a1a' },
+  customerPhone: { fontSize: 12, color: '#0F5132', marginTop: 2, fontWeight: '600' },
+  customerEmail: { fontSize: 11, color: '#6B7280', marginTop: 2 },
+  contactRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingBottom: 14 },
+  contactBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 9, borderRadius: 10, borderWidth: 1, backgroundColor: '#FAFAFA' },
+  contactBtnTxt: { fontSize: 12, fontWeight: '600' },
+  reminderBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginHorizontal: 16, marginBottom: 14, paddingVertical: 11, borderRadius: 11, backgroundColor: '#25D366' },
+  reminderBtnTxt: { fontSize: 12, fontWeight: '700', color: '#fff' },
+  reminderAmt: { fontSize: 10, color: 'rgba(255,255,255,.75)' },
+  paidBadge: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginHorizontal: 16, marginBottom: 14, paddingVertical: 8, borderRadius: 10, backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0' },
+  paidBadgeTxt: { fontSize: 12, fontWeight: '700' },
+
+  // Detail chips
+  chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, padding: 14 },
+  chip: { width: '47%', backgroundColor: '#F8F5EF', borderRadius: 10, padding: 10, borderWidth: 1, borderColor: '#E8E0D0' },
+  chipLabel: { fontSize: 8, fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+  chipValue: { fontSize: 12, fontWeight: '700', color: '#1a1a1a' },
+
+  // Payment records
+  payRecord: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F8F5EF' },
+  payRecordDot: { width: 8, height: 8, borderRadius: 4, flexShrink: 0 },
+  payRecordType: { fontSize: 11, fontWeight: '700', color: '#1a1a1a', textTransform: 'uppercase', letterSpacing: 0.3 },
+  payRecordMeta: { fontSize: 10, color: '#6B7280', marginTop: 2 },
+  payRecordAmt: { fontSize: 15, fontWeight: '800' },
+  payRecordBadge: { marginTop: 3, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 8, borderWidth: 1 },
+  payRecordBadgeTxt: { fontSize: 9, fontWeight: '700' },
+
+  // Events
+  eventRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F8F5EF' },
+  eventDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#D4AF37' },
+  eventName: { fontSize: 13, fontWeight: '600', color: '#1a1a1a' },
+  eventMeta: { fontSize: 10, color: '#6B7280', marginTop: 2 },
+  eventDel: { padding: 4 },
+
+  // Notes
+  noteBlock: { paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F8F5EF' },
+  noteLabel: { fontSize: 9, fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+  noteText: { fontSize: 13, color: '#374151', fontStyle: 'italic', lineHeight: 19 },
+
+  // Empty state
+  emptyWrap: { alignItems: 'center', paddingVertical: 24, gap: 8 },
+  emptyTxt: { fontSize: 12, color: '#9CA3AF' },
+
+  // Bottom bar
+  bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', gap: 10, paddingHorizontal: 16, paddingVertical: 14, paddingBottom: 28, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#F0F0F0', shadowColor: '#000', shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 4 },
+  btnReject: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 13, borderRadius: 13, borderWidth: 1, borderColor: '#FECACA' },
+  btnRejectTxt: { fontSize: 13, fontWeight: '700', color: '#EF4444' },
+  btnAccept: { flex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 13, borderRadius: 13, backgroundColor: '#0F5132', shadowColor: '#0F5132', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 4 },
+  btnAcceptTxt: { fontSize: 13, fontWeight: '700', color: '#fff' },
+  btnDownload: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 13, borderRadius: 13, backgroundColor: '#0F5132' },
+  btnDownloadTxt: { fontSize: 13, fontWeight: '700', color: '#fff' },
+
   // Modals
-  modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: spacing.xl },
-  modal: { backgroundColor: colors.surface, borderRadius: radius.xl, padding: spacing.xl, borderWidth: 1, borderColor: colors.border },
-  modalTitle: { ...typography.headlineLg, color: colors.text, marginBottom: spacing.xs },
-  modalSub: { ...typography.caption, color: colors.textMuted, marginBottom: spacing.xl, lineHeight: 16 },
-  modalInput: { backgroundColor: colors.background, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, ...typography.bodyMd, color: colors.text, marginBottom: spacing.md },
-  modalBtns: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
-  modalCancel: { flex: 1, paddingVertical: spacing.md, alignItems: 'center', borderRadius: radius.md, borderWidth: 1, borderColor: colors.border },
-  modalCancelText: { ...typography.labelLg, color: colors.textSecondary },
-  modalConfirm: { flex: 1, paddingVertical: spacing.md, alignItems: 'center', borderRadius: radius.md, backgroundColor: colors.primary },
-  modalConfirmText: { ...typography.labelLg, color: colors.textInverse, fontWeight: '600' },
-  payTypeRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
-  payTypeBtn: { flex: 1, paddingVertical: spacing.sm + 2, alignItems: 'center', borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border },
-  payTypeBtnActive: { borderColor: colors.primary, backgroundColor: colors.primaryMuted },
-  payTypeText: { ...typography.labelMd, color: colors.textMuted },
-  payTypeTextActive: { color: colors.primary },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', padding: 20 },
+  modalCard: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 22, borderWidth: 1, borderColor: '#E8E0D0', shadowColor: '#D4AF37', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 16, elevation: 8 },
+  modalTitle: { fontSize: 18, fontWeight: '800', color: '#0F5132', marginBottom: 6 },
+  modalSub: { fontSize: 11, color: '#6B7280', marginBottom: 18, lineHeight: 16 },
+  modalInput: { backgroundColor: '#F8F5EF', borderRadius: 12, borderWidth: 1, borderColor: '#E8E0D0', paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: '#1a1a1a', marginBottom: 12 },
+  modalBtns: { flexDirection: 'row', gap: 10, marginTop: 6 },
+  modalCancel: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 11, borderWidth: 1, borderColor: '#E5E7EB' },
+  modalCancelTxt: { fontSize: 13, fontWeight: '600', color: '#6B7280' },
+  modalConfirm: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 11, backgroundColor: '#0F5132', shadowColor: '#0F5132', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 6, elevation: 3 },
+  modalConfirmTxt: { fontSize: 13, fontWeight: '700', color: '#fff' },
+  payTypeRow: { flexDirection: 'row', gap: 8, marginBottom: 14 },
+  payTypeBtn: { flex: 1, paddingVertical: 9, alignItems: 'center', borderRadius: 10, borderWidth: 1, borderColor: '#E5E7EB' },
+  payTypeBtnActive: { borderColor: '#0F5132', backgroundColor: '#F0FDF4' },
+  payTypeTxt: { fontSize: 12, fontWeight: '600', color: '#6B7280' },
 });
