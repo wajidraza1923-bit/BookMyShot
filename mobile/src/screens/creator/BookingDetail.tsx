@@ -206,53 +206,33 @@ export default function BookingDetail({ route, navigation }: any) {
 
       const docNo = booking.invoiceNumber || ('BMS-' + (booking._id || '').slice(-8).toUpperCase());
 
-      // Step 1: Generate PDF to temp file
-      let pdfUri: string | null = null;
-      try {
-        const result = await Print.printToFileAsync({ html, base64: false });
-        pdfUri = result.uri;
-      } catch (e: any) {
-        console.log('[Share] printToFileAsync failed:', e.message);
-        Alert.alert('PDF Error', 'Could not generate PDF. Try the Download button instead.');
-        return;
-      }
+      // Step 1: Generate PDF
+      let pdfUri = '';
+      const result = await Print.printToFileAsync({ html, base64: false });
+      pdfUri = result.uri;
 
-      if (!pdfUri) { Alert.alert('Error', 'PDF generation failed'); return; }
-      console.log('[Share] PDF generated at:', pdfUri);
+      if (!pdfUri) { Alert.alert('Error', 'PDF generation failed — no file path returned'); return; }
 
-      // Step 2: Copy to named file in cache (makes filename nice in WhatsApp/Gmail)
-      const namedUri = (FileSystem.cacheDirectory || '') + 'BookMyShot_Invoice_' + docNo + '.pdf';
+      // Step 2: Copy to named cache file so filename is readable in WhatsApp/Gmail
+      const namedUri = (FileSystem.cacheDirectory || '') + 'Invoice_' + docNo + '.pdf';
       try {
         await FileSystem.copyAsync({ from: pdfUri, to: namedUri });
         pdfUri = namedUri;
-        console.log('[Share] Copied to:', namedUri);
-      } catch (copyErr: any) {
-        console.log('[Share] Copy failed (using original):', copyErr.message);
-        // Continue with original pdfUri — still works
-      }
+      } catch {}
 
-      // Step 3: Check sharing availability
-      const canShare = await Sharing.isAvailableAsync();
-      console.log('[Share] Sharing available:', canShare);
+      // Step 3: Share via native sheet
+      await Sharing.shareAsync(pdfUri, {
+        mimeType: 'application/pdf',
+        dialogTitle: 'Share Invoice',
+        UTI: 'com.adobe.pdf',
+      });
 
-      if (canShare) {
-        // Native share sheet — opens WhatsApp, Gmail, Drive, etc.
-        await Sharing.shareAsync(pdfUri, {
-          mimeType: 'application/pdf',
-          dialogTitle: 'Share Invoice — ' + docNo,
-          UTI: 'com.adobe.pdf',
-        });
-      } else {
-        // Fallback: open PDF directly (user can long-press save or share)
-        console.log('[Share] Sharing not available, opening PDF directly');
-        await Print.printAsync({ html });
-      }
     } catch (e: any) {
-      const msg = (e.message || '').toLowerCase();
-      // User cancelled — silent
-      if (msg.includes('cancel') || msg.includes('dismiss') || msg.includes('denied')) return;
-      console.log('[Share] Error:', e.message);
-      Alert.alert('Share Failed', 'Could not share PDF. Use the Download button to view/print the invoice instead.');
+      const msg = (e?.message || String(e) || '').toLowerCase();
+      // Silent on user cancellation
+      if (msg.includes('cancel') || msg.includes('dismiss') || msg.includes('denied') || msg.includes('user')) return;
+      // Show actual error so we can diagnose
+      Alert.alert('Share Failed', e?.message || 'Unknown error. Please use the Download button instead.');
     }
   };
 
