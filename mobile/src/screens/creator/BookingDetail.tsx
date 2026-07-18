@@ -203,31 +203,48 @@ export default function BookingDetail({ route, navigation }: any) {
       const html = buildInvoiceHTML(booking, paymentRecords, false);
       if (!html) { Alert.alert('Error', 'Booking data not loaded'); return; }
 
-      // Generate PDF file
+      // Step 1: Generate PDF
       let pdfResult: { uri: string } | null = null;
-      try { pdfResult = await Print.printToFileAsync({ html, base64: false }); }
-      catch (e: any) { Alert.alert('PDF Error', 'Could not generate PDF: ' + (e.message || '')); return; }
+      try {
+        pdfResult = await Print.printToFileAsync({ html, base64: false });
+      } catch (e: any) {
+        Alert.alert('PDF Error', 'Could not generate PDF: ' + (e.message || ''));
+        return;
+      }
+      if (!pdfResult?.uri) { Alert.alert('Error', 'PDF generation failed'); return; }
 
-      if (!pdfResult?.uri) { Alert.alert('Error', 'PDF file path invalid'); return; }
+      // Step 2: Copy to a shareable cache path (fixes Android sandboxed storage)
+      const FileSystem = require('expo-file-system');
+      const docNo = booking.invoiceNumber || ('BMS-' + (booking._id || '').slice(-8).toUpperCase());
+      const destUri = FileSystem.cacheDirectory + 'BookMyShot_Invoice_' + docNo + '.pdf';
+      try {
+        await FileSystem.copyAsync({ from: pdfResult.uri, to: destUri });
+      } catch {
+        // If copy fails, use original path
+      }
+      const shareUri = destUri || pdfResult.uri;
 
-      // Try native share sheet first
+      // Step 3: Share
       const sharingAvailable = await Sharing.isAvailableAsync();
       if (sharingAvailable) {
-        await Sharing.shareAsync(pdfResult.uri, {
+        await Sharing.shareAsync(shareUri, {
           mimeType: 'application/pdf',
-          dialogTitle: 'Share Invoice',
+          dialogTitle: 'Share Invoice — ' + docNo,
           UTI: 'com.adobe.pdf',
         });
       } else {
-        // Fallback: React Native Share (text link)
+        // Fallback: system Share sheet with text message
         const clientName = booking.clientName || 'Customer';
-        const msg = 'Hi ' + clientName + ',\n\nYour BookMyShot invoice is ready. Please contact your service provider to receive the invoice document.\n\nBooking ID: ' + (booking.invoiceNumber || booking._id?.slice(-8)) + '\nThank you!';
-        await Share.share({ message: msg, title: 'BookMyShot Invoice' });
+        await Share.share({
+          message: 'Hi ' + clientName + ',\n\nYour BookMyShot invoice is ready.\nBooking ID: ' + docNo + '\n\nThank you for booking with us!',
+          title: 'BookMyShot Invoice',
+        });
       }
     } catch (e: any) {
-      // Ignore user cancellation
-      if (e.message?.toLowerCase().includes('cancel') || e.message?.toLowerCase().includes('dismiss')) return;
-      Alert.alert('Share Failed', e.message || 'Could not share invoice');
+      const msg = e.message || '';
+      // Ignore user cancellation silently
+      if (msg.toLowerCase().includes('cancel') || msg.toLowerCase().includes('dismiss')) return;
+      Alert.alert('Share Failed', msg || 'Could not share invoice. Please try Download instead.');
     }
   };
 
@@ -347,6 +364,13 @@ export default function BookingDetail({ route, navigation }: any) {
             <ABtn icon="chatbubble-outline" label="Chat" color={G} onPress={() => navigation.navigate('BookingChat', { bookingId })} />
             <ABtn icon="document-text-outline" label="Invoice" color={G} onPress={downloadInvoice} />
             <ABtn icon="share-social-outline" label="Share PDF" color={GOLD} onPress={shareInvoicePDF} />
+            <ABtn icon="logo-whatsapp" label="WhatsApp" color="#25D366" onPress={() => {
+              const phone = (booking.clientPhone || '').replace(/\D/g, '').slice(-10);
+              const docNo = booking.invoiceNumber || ('BMS-' + (booking._id || '').slice(-8).toUpperCase());
+              const msg = 'Hi ' + (booking.clientName || 'there') + ',\n\nYour BookMyShot invoice is ready!\n\nBooking ID: ' + docNo + '\nService: ' + (booking.eventType || 'Booking') + '\nDate: ' + (booking.eventDate ? new Date(booking.eventDate).toLocaleDateString('en-IN') : 'TBD') + '\nAmount: \u20B9' + (booking.amount || 0).toLocaleString('en-IN') + '\n\nThank you for choosing BookMyShot!';
+              const url = phone ? 'https://wa.me/91' + phone + '?text=' + encodeURIComponent(msg) : 'https://wa.me/?text=' + encodeURIComponent(msg);
+              Linking.openURL(url);
+            }} />
           </View>
         ) : pendingComplete ? (
           <View style={s.actionGrid}>
