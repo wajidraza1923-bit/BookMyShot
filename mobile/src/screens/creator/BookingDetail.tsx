@@ -198,45 +198,36 @@ export default function BookingDetail({ route, navigation }: any) {
     } catch (e: any) { Alert.alert('Error', 'Failed to generate receipt'); }
   };
 
-  // ── Share Invoice via WhatsApp ────────────────────────────────────────────
+  // ── Share Invoice PDF ─────────────────────────────────────────────────────
   const shareInvoicePDF = async () => {
     try {
-      const phone = (booking.clientPhone || '').replace(/\D/g, '').slice(-10);
+      const html = buildInvoiceHTML(booking, paymentRecords, false);
+      if (!html) { Alert.alert('Error', 'Booking data not loaded'); return; }
+
       const docNo = booking.invoiceNumber || ('BMS-' + (booking._id || '').slice(-8).toUpperCase());
-      const eventType = booking.eventType || 'your event';
-      const eventDate = booking.eventDate
-        ? new Date(booking.eventDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
-        : '';
-      const creatorName = booking.creator?.user?.name || booking.creatorName || 'your service provider';
-      const amt = rs(booking.amount || 0);
+      const fileName = 'BookMyShot_Invoice_' + docNo + '.pdf';
 
-      const msg = 'Hello ' + (booking.clientName || 'there') + ',\n\n'
-        + '*BookMyShot \u2014 Invoice Ready* \u2705\n\n'
-        + 'Thank you for booking *' + eventType + '*'
-        + (eventDate ? ' on ' + eventDate : '') + '.\n\n'
-        + '*Booking ID:* ' + docNo + '\n'
-        + '*Service Provider:* ' + creatorName + '\n'
-        + '*Total Amount:* ' + amt + '\n'
-        + '*Status:* Completed \u2705\n\n'
-        + 'Your booking has been completed successfully. '
-        + 'Please keep this message for your records.\n\n'
-        + '_Powered by BookMyShot \u2014 India\'s Complete Wedding Marketplace_\n'
-        + 'www.bookmyshot.in';
+      // Generate PDF as base64 string (avoids Android sandboxed temp path issues)
+      const { base64 } = await Print.printToFileAsync({ html, base64: true });
+      if (!base64) { Alert.alert('Error', 'PDF generation failed'); return; }
 
-      const waUrl = 'https://wa.me/' + (phone ? '91' + phone : '') + '?text=' + encodeURIComponent(msg);
+      // Write base64 PDF to app cache directory (readable by sharing module)
+      const fileUri = FileSystem.cacheDirectory + fileName;
+      await FileSystem.writeAsStringAsync(fileUri, base64, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
 
-      const canOpen = await Linking.canOpenURL(waUrl);
-      if (canOpen) {
-        await Linking.openURL(waUrl);
-      } else {
-        // WhatsApp not installed — open SMS or generic share
-        const smsUrl = 'sms:' + (phone ? '+91' + phone : '') + '?body=' + encodeURIComponent(
-          'BookMyShot Invoice\nBooking ID: ' + docNo + '\nAmount: ' + amt + '\nStatus: Completed\nwww.bookmyshot.in'
-        );
-        await Linking.openURL(smsUrl);
-      }
+      // Share via native sheet (WhatsApp, Gmail, Drive, etc.)
+      await Sharing.shareAsync(fileUri, {
+        mimeType: 'application/pdf',
+        dialogTitle: 'Share Invoice — ' + docNo,
+        UTI: 'com.adobe.pdf',
+      });
+
     } catch (e: any) {
-      Alert.alert('Error', 'Could not open WhatsApp. Please ensure WhatsApp is installed.');
+      const msg = (e?.message || String(e) || '').toLowerCase();
+      if (msg.includes('cancel') || msg.includes('dismiss') || msg.includes('denied')) return;
+      Alert.alert('Share Failed', e?.message || 'Could not share. Use Download instead.');
     }
   };
 
@@ -355,7 +346,7 @@ export default function BookingDetail({ route, navigation }: any) {
           <View style={s.actionGrid}>
             <ABtn icon="chatbubble-outline" label="Chat" color={G} onPress={() => navigation.navigate('BookingChat', { bookingId })} />
             <ABtn icon="document-text-outline" label="Invoice" color={G} onPress={downloadInvoice} />
-            <ABtn icon="logo-whatsapp" label="WhatsApp" color="#25D366" onPress={shareInvoicePDF} />
+            <ABtn icon="share-social-outline" label="Share PDF" color={GOLD} onPress={shareInvoicePDF} />
             <ABtn icon="logo-whatsapp" label="WhatsApp" color="#25D366" onPress={() => {
               const phone = (booking.clientPhone || '').replace(/\D/g, '').slice(-10);
               const docNo = booking.invoiceNumber || ('BMS-' + (booking._id || '').slice(-8).toUpperCase());
