@@ -207,27 +207,43 @@ export default function BookingDetail({ route, navigation }: any) {
       const docNo = booking.invoiceNumber || ('BMS-' + (booking._id || '').slice(-8).toUpperCase());
       const fileName = 'BookMyShot_Invoice_' + docNo + '.pdf';
 
-      // Generate PDF as base64 string (avoids Android sandboxed temp path issues)
-      const { base64 } = await Print.printToFileAsync({ html, base64: true });
-      if (!base64) { Alert.alert('Error', 'PDF generation failed'); return; }
+      // Step 1: Generate PDF — get uri (always present) and optionally base64
+      const printResult = await Print.printToFileAsync({ html, base64: true });
+      const srcUri = printResult.uri;
+      if (!srcUri) { Alert.alert('Error', 'PDF generation failed'); return; }
 
-      // Write base64 PDF to app cache directory (readable by sharing module)
-      const fileUri = FileSystem.cacheDirectory + fileName;
-      await FileSystem.writeAsStringAsync(fileUri, base64, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
+      // Step 2: Write to cache dir using base64 if available, else copy the file
+      const cacheDir = FileSystem.cacheDirectory;
+      if (!cacheDir) { Alert.alert('Error', 'Cache directory unavailable'); return; }
+      const destUri = cacheDir + fileName;
 
-      // Share via native sheet (WhatsApp, Gmail, Drive, etc.)
-      await Sharing.shareAsync(fileUri, {
-        mimeType: 'application/pdf',
-        dialogTitle: 'Share Invoice — ' + docNo,
-        UTI: 'com.adobe.pdf',
-      });
+      if (printResult.base64) {
+        // Write base64 string directly — most reliable across Android versions
+        await FileSystem.writeAsStringAsync(destUri, printResult.base64, {
+          encoding: 'base64' as any,
+        });
+      } else {
+        // Fallback: copy the file
+        await FileSystem.copyAsync({ from: srcUri, to: destUri });
+      }
 
+      // Step 3: Open native share sheet
+      const available = await Sharing.isAvailableAsync();
+      if (available) {
+        await Sharing.shareAsync(destUri, {
+          mimeType: 'application/pdf',
+          dialogTitle: 'Share Invoice',
+          UTI: 'com.adobe.pdf',
+        });
+      } else {
+        // On devices without native sharing, open the print dialog so user can save/share
+        await Print.printAsync({ html });
+      }
     } catch (e: any) {
       const msg = (e?.message || String(e) || '').toLowerCase();
+      // Silently ignore user cancellation
       if (msg.includes('cancel') || msg.includes('dismiss') || msg.includes('denied')) return;
-      Alert.alert('Share Failed', e?.message || 'Could not share. Use Download instead.');
+      Alert.alert('Share Failed', e?.message || 'Please use the Download button instead.');
     }
   };
 
