@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal, RefreshControl, Linking, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { colors, spacing, typography, radius } from '../../theme';
 import api from '../../services/api';
+import { buildInvoiceHTML } from '../../utils/buildInvoice';
 
 export default function BookingDetail({ route, navigation }: any) {
   const { bookingId } = route.params;
@@ -41,7 +42,7 @@ export default function BookingDetail({ route, navigation }: any) {
   useEffect(() => { load(); }, []);
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
-  // ═══ SET AMOUNT (same as website: highest-amount-wins commission logic) ═══
+  // â•â•â• SET AMOUNT (same as website: highest-amount-wins commission logic) â•â•â•
   const setProjectAmount = async () => {
     const amount = Number(amountInput);
     if (!amount || amount <= 0 || isNaN(amount)) { Alert.alert('Invalid Amount', 'Please enter a valid amount'); return; }
@@ -51,14 +52,14 @@ export default function BookingDetail({ route, navigation }: any) {
       console.log('[Payment] Amount set response:', res.data?.booking?.amount);
       setShowAmountModal(false);
       await load();
-      Alert.alert('Amount Set', `Project amount set to ₹${amount.toLocaleString('en-IN')}`);
+      Alert.alert('Amount Set', `Project amount set to â‚¹${amount.toLocaleString('en-IN')}`);
     } catch (e: any) {
       console.log('[Payment] Set amount error:', e.response?.status, e.response?.data);
       Alert.alert('Failed', e.response?.data?.message || 'Failed to set amount');
     }
   };
 
-  // ═══ RECORD PAYMENT (same as website: advance/partial/final) ═══
+  // â•â•â• RECORD PAYMENT (same as website: advance/partial/final) â•â•â•
   const recordPayment = async () => {
     if (savingPayment) return; // Prevent double-clicks
     
@@ -71,7 +72,7 @@ export default function BookingDetail({ route, navigation }: any) {
       const alreadyPaid = paymentRecords.filter(r => r.status === 'approved').reduce((sum: number, r: any) => sum + (r.amount || 0), 0);
       if (alreadyPaid + amount > bookingTotal) {
         const maxAllowed = Math.max(0, bookingTotal - alreadyPaid);
-        Alert.alert('Amount Exceeds Limit', `Booking total: ₹${bookingTotal.toLocaleString('en-IN')}\nAlready paid: ₹${alreadyPaid.toLocaleString('en-IN')}\nMaximum allowed: ₹${maxAllowed.toLocaleString('en-IN')}`);
+        Alert.alert('Amount Exceeds Limit', `Booking total: â‚¹${bookingTotal.toLocaleString('en-IN')}\nAlready paid: â‚¹${alreadyPaid.toLocaleString('en-IN')}\nMaximum allowed: â‚¹${maxAllowed.toLocaleString('en-IN')}`);
         return;
       }
     }
@@ -94,7 +95,7 @@ export default function BookingDetail({ route, navigation }: any) {
       setShowPaymentModal(false);
       setPayForm({ amount: '', type: 'advance', notes: '' });
       await load();
-      Alert.alert('Recorded', `₹${amount.toLocaleString('en-IN')} ${payForm.type} payment recorded successfully`);
+      Alert.alert('Recorded', `â‚¹${amount.toLocaleString('en-IN')} ${payForm.type} payment recorded successfully`);
     } catch (e: any) {
       console.log('[Payment] Error:', e.response?.status, e.response?.data);
       const msg = e.response?.data?.message || e.message || 'Network error';
@@ -104,16 +105,16 @@ export default function BookingDetail({ route, navigation }: any) {
     }
   };
 
-  // ═══ MARK PAID — just a UI confirmation step, does NOT change backend data ═══
+  // â•â•â• MARK PAID â€” just a UI confirmation step, does NOT change backend data â•â•â•
   const markPaid = () => {
-    // Simply switch to pending complete state — shows Mark Complete + Cancel
+    // Simply switch to pending complete state â€” shows Mark Complete + Cancel
     setPendingComplete(true);
   };
 
-  // ═══ CANCEL PENDING COMPLETE (go back to payment buttons) ═══
+  // â•â•â• CANCEL PENDING COMPLETE (go back to payment buttons) â•â•â•
   const cancelPendingComplete = () => setPendingComplete(false);
 
-  // ═══ ACCEPT (with amount) ═══
+  // â•â•â• ACCEPT (with amount) â•â•â•
   const acceptBooking = async () => {
     const amount = Number(amountInput);
     if (!amount || amount <= 0 || isNaN(amount)) { Alert.alert('Invalid Amount', 'Please enter the booking amount'); return; }
@@ -122,14 +123,14 @@ export default function BookingDetail({ route, navigation }: any) {
       await api.patch(`/creator/booking-requests/${bookingId}`, { status: 'Creator Accepted', amount });
       setShowAmountModal(false);
       await load();
-      Alert.alert('Accepted', `Booking accepted for ₹${amount.toLocaleString('en-IN')}`);
+      Alert.alert('Accepted', `Booking accepted for â‚¹${amount.toLocaleString('en-IN')}`);
     } catch (e: any) {
       console.log('[Booking] Accept error:', e.response?.status, e.response?.data);
       Alert.alert('Failed', e.response?.data?.message || 'Failed to accept booking');
     }
   };
 
-  // ═══ REJECT ═══
+  // â•â•â• REJECT â•â•â•
   const rejectBooking = () => Alert.alert('Reject', 'Reject this booking?', [
     { text: 'Cancel' },
     { text: 'Reject', style: 'destructive', onPress: async () => {
@@ -137,7 +138,7 @@ export default function BookingDetail({ route, navigation }: any) {
     }}
   ]);
 
-  // ═══ COMPLETE — called only after Mark Paid → Mark Complete confirmation ═══
+  // â•â•â• COMPLETE â€” called only after Mark Paid â†’ Mark Complete confirmation â•â•â•
   const completeBooking = () => {
     if (completing) return;
     Alert.alert('Complete Booking', 'This will mark the booking as fully paid and completed. Payment records will be locked and an invoice will be generated.', [
@@ -151,7 +152,7 @@ export default function BookingDetail({ route, navigation }: any) {
           await api.patch(`/creator/bookings/${bookingId}/complete`);
           await load();
           setPendingComplete(false);
-          Alert.alert('Done! 🎉', 'Booking completed. Invoice is ready for download.');
+          Alert.alert('Done! ðŸŽ‰', 'Booking completed. Invoice is ready for download.');
         } catch (e: any) {
           Alert.alert('Error', e.response?.data?.message || e.message || 'Failed to complete booking');
         } finally {
@@ -164,122 +165,48 @@ export default function BookingDetail({ route, navigation }: any) {
   // ═══ DOWNLOAD INVOICE ═══
   const downloadInvoice = async () => {
     try {
-      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-      const token = await AsyncStorage.getItem('bms_token');
-      
-      // Use direct fetch with token as both header AND query param (proxy-proof)
-      const baseUrl = 'https://site--bookmyshot--ykz2mr8mzlrv.code.run/api';
-      const url = `${baseUrl}/invoice/${bookingId}?token=${encodeURIComponent(token || '')}`;
-      
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'x-access-token': token || '',
-        },
-      });
-      
-      const html = await response.text();
-      
-      if (!response.ok || !html || html.includes('"success":false') || html.includes('"success": false')) {
-        try {
-          const err = JSON.parse(html);
-          Alert.alert('Error', err.message || 'Failed to generate invoice');
-        } catch {
-          Alert.alert('Error', 'Failed to generate invoice. Please try again.');
-        }
-        return;
-      }
-
-      // Convert HTML to PDF locally and open print dialog
+      const html = buildInvoiceHTML(booking, paymentRecords, false);
+      if (!html) { Alert.alert('Error', 'Booking data not loaded yet'); return; }
       const Print = require('expo-print');
       await Print.printAsync({ html });
     } catch (e: any) {
       console.log('[Invoice] Download error:', e.message);
-      Alert.alert('Error', 'Failed to download invoice. Check your connection and try again.');
+      Alert.alert('Error', 'Failed to download invoice. Please try again.');
     }
   };
 
-  // ═══ DOWNLOAD PARTIAL PAYMENT RECEIPT ═══
+  // â•â•â• DOWNLOAD PARTIAL PAYMENT RECEIPT â•â•â•
   const downloadPartialInvoice = async () => {
     try {
-      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-      const token = await AsyncStorage.getItem('bms_token');
-      const baseUrl = 'https://site--bookmyshot--ykz2mr8mzlrv.code.run/api';
-      const url = `${baseUrl}/invoice/${bookingId}/partial?token=${encodeURIComponent(token || '')}`;
-      const response = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${token}`, 'x-access-token': token || '' },
-      });
-      const html = await response.text();
-      if (!response.ok || !html || html.includes('"success":false')) {
-        try {
-          const err = JSON.parse(html);
-          Alert.alert('Error', err.message || 'Failed to generate payment receipt');
-        } catch { Alert.alert('Error', 'Failed to generate payment receipt.'); }
-        return;
-      }
+      const html = buildInvoiceHTML(booking, paymentRecords, true);
+      if (!html) { Alert.alert('Error', 'Booking data not loaded yet'); return; }
       const Print = require('expo-print');
       await Print.printAsync({ html });
     } catch (e: any) {
       Alert.alert('Error', 'Failed to download payment receipt.');
     }
   };
-
-  // ═══ SEND INVOICE PDF VIA SHARE SHEET (WhatsApp etc.) ═══
+  // â•â•â• SEND INVOICE PDF VIA SHARE SHEET (WhatsApp etc.) â•â•â•
   const shareInvoicePDF = async () => {
     try {
-      // Step 1: Get auth token
-      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-      const token = await AsyncStorage.getItem('bms_token');
-      if (!token) { Alert.alert('Error', 'Not authenticated. Please login again.'); return; }
+      let html = buildInvoiceHTML(booking, paymentRecords, false);
+      if (!html) { Alert.alert('Error', 'Booking data not loaded yet'); return; }
 
-      const baseUrl = 'https://site--bookmyshot--ykz2mr8mzlrv.code.run/api';
-      const invoiceUrl = `${baseUrl}/invoice/${bookingId}?token=${encodeURIComponent(token)}`;
-
-      // Step 2: Fetch invoice HTML from server
-      console.log('[Invoice] Step 1: Fetching invoice HTML...');
-      const response = await fetch(invoiceUrl, {
-        headers: { 'Authorization': `Bearer ${token}`, 'x-access-token': token },
-      });
-
-      if (!response.ok) {
-        const errText = await response.text();
-        try {
-          const errJson = JSON.parse(errText);
-          Alert.alert('Invoice Error', errJson.message || `Server error (${response.status})`);
-        } catch {
-          Alert.alert('Invoice Error', `Server returned status ${response.status}`);
-        }
-        return;
-      }
-
-      let html = await response.text();
-      if (!html || html.length < 100 || html.includes('"success":false')) {
-        Alert.alert('Invoice Error', 'Server returned empty or invalid invoice data.');
-        return;
-      }
-      console.log('[Invoice] Step 2: HTML received ✅ (' + html.length + ' chars)');
-
-      // Step 3: Remove print button from PDF
-      html = html.replace(/<button[^>]*class="print-btn"[^>]*>.*?<\/button>/gi, '');
-
-      // Step 4: Generate PDF file
       let Print: any = null;
       let Sharing: any = null;
       try {
         Print = require('expo-print');
         Sharing = require('expo-sharing');
-      } catch (modErr: any) {
-        Alert.alert('Error', 'PDF module not available. Use Download Invoice instead.');
+      } catch {
+        Alert.alert('Error', 'PDF module not available.');
         return;
       }
 
       if (!Print?.printToFileAsync) {
-        Alert.alert('Error', 'PDF generation not supported in this build. Use Download Invoice instead.');
+        Alert.alert('Error', 'PDF generation not supported in this build.');
         return;
       }
 
-      console.log('[Invoice] Step 3: Generating PDF...');
       let pdfResult: any = null;
       try {
         pdfResult = await Print.printToFileAsync({ html, base64: false });
@@ -292,20 +219,20 @@ export default function BookingDetail({ route, navigation }: any) {
         Alert.alert('PDF Error', 'PDF was generated but file path is invalid.');
         return;
       }
-      console.log('[Invoice] Step 4: PDF generated ✅ at:', pdfResult.uri);
+      console.log('[Invoice] Step 4: PDF generated âœ… at:', pdfResult.uri);
 
       // Step 5: Share the PDF
       if (!Sharing?.shareAsync) {
-        // No sharing API — open WhatsApp with link as fallback
-        console.log('[Invoice] Sharing module not available, using WhatsApp link fallback');
-        openWhatsAppFallback(invoiceUrl);
+        // No sharing API â€” open WhatsApp with booking link as fallback
+        const fallbackUrl = `https://bookmyshot.in`;
+        openWhatsAppFallback(fallbackUrl);
         return;
       }
 
       const sharingAvailable = await Sharing.isAvailableAsync();
       if (!sharingAvailable) {
-        console.log('[Invoice] Sharing not available on device, using WhatsApp fallback');
-        openWhatsAppFallback(invoiceUrl);
+        const fallbackUrl = `https://bookmyshot.in`;
+        openWhatsAppFallback(fallbackUrl);
         return;
       }
 
@@ -316,9 +243,9 @@ export default function BookingDetail({ route, navigation }: any) {
           dialogTitle: 'Send Invoice',
           UTI: 'com.adobe.pdf',
         });
-        console.log('[Invoice] ✅ Share completed');
+        console.log('[Invoice] âœ… Share completed');
       } catch (shareErr: any) {
-        // User might have cancelled the share — that's not an error
+        // User might have cancelled the share â€” that's not an error
         if (shareErr.message?.includes('cancelled') || shareErr.message?.includes('dismiss')) {
           console.log('[Invoice] Share cancelled by user');
           return;
@@ -330,7 +257,7 @@ export default function BookingDetail({ route, navigation }: any) {
           'Could not open share sheet. Would you like to send via WhatsApp link instead?',
           [
             { text: 'Cancel', style: 'cancel' },
-            { text: 'Send via WhatsApp', onPress: () => openWhatsAppFallback(invoiceUrl) },
+            { text: 'Send via WhatsApp', onPress: () => openWhatsAppFallback('https://bookmyshot.in') },
           ]
         );
       }
@@ -340,10 +267,10 @@ export default function BookingDetail({ route, navigation }: any) {
     }
   };
 
-  // WhatsApp fallback — sends invoice link directly
+  // WhatsApp fallback â€” sends invoice link directly
   const openWhatsAppFallback = (invoiceUrl: string) => {
     const phone = (booking.clientPhone || '').replace(/\D/g, '').slice(-10);
-    const msg = `Hi ${booking.clientName || 'there'},\n\nYour booking invoice is ready.\n\n📄 View/Download Invoice:\n${invoiceUrl}\n\nThank you!\n— ${booking.creator?.user?.name || 'Your Creator'} via BookMyShot`;
+    const msg = `Hi ${booking.clientName || 'there'},\n\nYour booking invoice is ready.\n\nðŸ“„ View/Download Invoice:\n${invoiceUrl}\n\nThank you!\nâ€” ${booking.creator?.user?.name || 'Your Creator'} via BookMyShot`;
     if (phone) {
       Linking.openURL(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`);
     } else {
@@ -351,7 +278,7 @@ export default function BookingDetail({ route, navigation }: any) {
     }
   };
 
-  // ═══ ADD EVENT ═══
+  // â•â•â• ADD EVENT â•â•â•
   const addEvent = async () => {
     if (!eventForm.name || !eventForm.date) { Alert.alert('Error', 'Event name and date are required'); return; }
     try {
@@ -362,17 +289,17 @@ export default function BookingDetail({ route, navigation }: any) {
     } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
   };
 
-  // ═══ DELETE EVENT ═══
+  // â•â•â• DELETE EVENT â•â•â•
   const deleteEvent = (id: string) => Alert.alert('Delete Event', 'Remove this event?', [
     { text: 'Cancel' },
     { text: 'Delete', style: 'destructive', onPress: async () => { try { await api.delete(`/booking-events/${id}`); await load(); } catch {} }}
   ]);
 
-  // ═══ CONTACT ═══
+  // â•â•â• CONTACT â•â•â•
   const callCustomer = () => booking?.clientPhone && Linking.openURL(`tel:${booking.clientPhone}`);
   const whatsApp = () => booking?.clientPhone && Linking.openURL(`https://wa.me/91${booking.clientPhone.replace(/\D/g, '').slice(-10)}`);
 
-  // ═══ WHATSAPP PAYMENT REMINDER ═══
+  // â•â•â• WHATSAPP PAYMENT REMINDER â•â•â•
   const sendPaymentReminder = () => {
     if (!booking?.clientPhone) { Alert.alert('No Phone', 'Customer phone number not available'); return; }
     const phone = booking.clientPhone.replace(/\D/g, '').slice(-10);
@@ -383,7 +310,7 @@ export default function BookingDetail({ route, navigation }: any) {
     const paidAmount = paymentRecords.filter((r: any) => r.status === 'approved').reduce((sum: number, r: any) => sum + (r.amount || 0), 0);
     const pendingAmount = Math.max(0, bookingAmount - paidAmount);
 
-    const message = `Hi ${customerName},\n\nThis is a friendly payment reminder from *${creatorName}* via BookMyShot.\n\nYour booking details:\n• Booking ID: ${booking.invoiceNumber || booking._id?.slice(-8)}\n• Event: ${booking.eventType || 'Booking'}\n• Event Date: ${eventDate}\n• Total Project Amount: ₹${bookingAmount.toLocaleString('en-IN')}\n• Amount Paid: ₹${paidAmount.toLocaleString('en-IN')}\n• *Pending Amount: ₹${pendingAmount.toLocaleString('en-IN')}*\n\nKindly clear your pending payment of ₹${pendingAmount.toLocaleString('en-IN')} at your earliest convenience.\n\nThank you for choosing BookMyShot. 🙏`;
+    const message = `Hi ${customerName},\n\nThis is a friendly payment reminder from *${creatorName}* via BookMyShot.\n\nYour booking details:\nâ€¢ Booking ID: ${booking.invoiceNumber || booking._id?.slice(-8)}\nâ€¢ Event: ${booking.eventType || 'Booking'}\nâ€¢ Event Date: ${eventDate}\nâ€¢ Total Project Amount: â‚¹${bookingAmount.toLocaleString('en-IN')}\nâ€¢ Amount Paid: â‚¹${paidAmount.toLocaleString('en-IN')}\nâ€¢ *Pending Amount: â‚¹${pendingAmount.toLocaleString('en-IN')}*\n\nKindly clear your pending payment of â‚¹${pendingAmount.toLocaleString('en-IN')} at your earliest convenience.\n\nThank you for choosing BookMyShot. ðŸ™`;
 
     const encoded = encodeURIComponent(message);
     Linking.openURL(`https://wa.me/91${phone}?text=${encoded}`);
@@ -406,35 +333,35 @@ export default function BookingDetail({ route, navigation }: any) {
 
       <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />} contentContainerStyle={{ paddingBottom: 120 }}>
 
-        {/* ═══ PAYMENT DASHBOARD ═══ */}
+        {/* â•â•â• PAYMENT DASHBOARD â•â•â• */}
         <View style={s.payDash}>
-          <View style={s.payRow}><Text style={s.payLabel}>Total</Text><Text style={s.payVal}>₹{(booking.amount || 0).toLocaleString('en-IN')}</Text></View>
-          <View style={s.payRow}><Text style={s.payLabel}>Paid</Text><Text style={[s.payVal, { color: colors.success }]}>₹{totalPaid.toLocaleString('en-IN')}</Text></View>
-          <View style={s.payRow}><Text style={s.payLabel}>Remaining</Text><Text style={[s.payVal, { color: remaining > 0 ? colors.warning : colors.success }]}>₹{Math.max(0, remaining).toLocaleString('en-IN')}</Text></View>
+          <View style={s.payRow}><Text style={s.payLabel}>Total</Text><Text style={s.payVal}>â‚¹{(booking.amount || 0).toLocaleString('en-IN')}</Text></View>
+          <View style={s.payRow}><Text style={s.payLabel}>Paid</Text><Text style={[s.payVal, { color: colors.success }]}>â‚¹{totalPaid.toLocaleString('en-IN')}</Text></View>
+          <View style={s.payRow}><Text style={s.payLabel}>Remaining</Text><Text style={[s.payVal, { color: remaining > 0 ? colors.warning : colors.success }]}>â‚¹{Math.max(0, remaining).toLocaleString('en-IN')}</Text></View>
           {/* Progress bar */}
           <View style={s.progressBar}><View style={[s.progressFill, { width: `${progress}%` }]} /></View>
           <Text style={s.progressText}>{progress}% paid</Text>
-          <View style={s.payRow}><Text style={s.payLabel}>Commission ({booking.commissionPercent || 0}%)</Text><Text style={[s.payVal, { color: colors.error, fontSize: 13 }]}>-₹{(booking.commissionAmount || 0).toLocaleString('en-IN')}</Text></View>
-          <View style={s.payRow}><Text style={[s.payLabel, { fontWeight: '600' }]}>Net Receivable</Text><Text style={[s.payVal, { color: colors.primary }]}>₹{(booking.creatorReceivable || 0).toLocaleString('en-IN')}</Text></View>
+          <View style={s.payRow}><Text style={s.payLabel}>Commission ({booking.commissionPercent || 0}%)</Text><Text style={[s.payVal, { color: colors.error, fontSize: 13 }]}>-â‚¹{(booking.commissionAmount || 0).toLocaleString('en-IN')}</Text></View>
+          <View style={s.payRow}><Text style={[s.payLabel, { fontWeight: '600' }]}>Net Receivable</Text><Text style={[s.payVal, { color: colors.primary }]}>â‚¹{(booking.creatorReceivable || 0).toLocaleString('en-IN')}</Text></View>
         </View>
 
-        {/* ═══ QUICK ACTIONS — 3 states ═══ */}
+        {/* â•â•â• QUICK ACTIONS â€” 3 states â•â•â• */}
         {booking.status === 'Completed' || booking.status === 'completed' ? (
-          /* STATE 3: COMPLETED — Chat + Invoice + Send Invoice */
+          /* STATE 3: COMPLETED â€” Chat + Invoice + Send Invoice */
           <View style={s.actionsRow}>
             <ActionBtn icon="chatbubble-outline" label="Chat" onPress={() => navigation.navigate('BookingChat', { bookingId })} />
             <ActionBtn icon="download-outline" label="Invoice" onPress={downloadInvoice} />
             <ActionBtn icon="share-social-outline" label="Send Invoice" onPress={shareInvoicePDF} />
           </View>
         ) : pendingComplete ? (
-          /* STATE 2: PENDING COMPLETE (Mark Paid clicked, due > 0) — Mark Complete + Cancel */
+          /* STATE 2: PENDING COMPLETE (Mark Paid clicked, due > 0) â€” Mark Complete + Cancel */
           <View style={s.actionsRow}>
             <ActionBtn icon="checkmark-circle-outline" label="Complete" onPress={completeBooking} />
             <ActionBtn icon="chatbubble-outline" label="Chat" onPress={() => navigation.navigate('BookingChat', { bookingId })} />
             <ActionBtn icon="close-circle-outline" label="Cancel" onPress={cancelPendingComplete} />
           </View>
         ) : (
-          /* STATE 1: ACTIVE — Payment controls */
+          /* STATE 1: ACTIVE â€” Payment controls */
           <>
             <View style={s.actionsRow}>
               <ActionBtn icon="cash-outline" label="Set Amount" onPress={() => { setAmountInput(String(booking.amount || '')); setShowAmountModal(true); }} />
@@ -456,11 +383,11 @@ export default function BookingDetail({ route, navigation }: any) {
           </>
         )}
 
-        {/* ═══ CUSTOMER ═══ */}
+        {/* â•â•â• CUSTOMER â•â•â• */}
         <Section title="Customer">
-          <Row label="Name" value={booking.clientName || '—'} />
-          <Row label="Phone" value={booking.clientPhone || '—'} />
-          <Row label="Email" value={booking.clientEmail || '—'} />
+          <Row label="Name" value={booking.clientName || 'â€”'} />
+          <Row label="Phone" value={booking.clientPhone || 'â€”'} />
+          <Row label="Email" value={booking.clientEmail || 'â€”'} />
           <View style={s.contactRow}>
             <TouchableOpacity style={s.contactBtn} onPress={callCustomer}><Ionicons name="call" size={15} color={colors.info} /><Text style={s.contactText}>Call</Text></TouchableOpacity>
             <TouchableOpacity style={s.contactBtn} onPress={whatsApp}><Ionicons name="logo-whatsapp" size={15} color={colors.success} /><Text style={s.contactText}>WhatsApp</Text></TouchableOpacity>
@@ -470,64 +397,64 @@ export default function BookingDetail({ route, navigation }: any) {
             <TouchableOpacity style={s.waReminderBtn} onPress={sendPaymentReminder} activeOpacity={0.8}>
               <Ionicons name="logo-whatsapp" size={16} color="#fff" />
               <Text style={s.waReminderText}>Send Payment Reminder</Text>
-              <Text style={s.waReminderAmount}>₹{remaining.toLocaleString('en-IN')} pending</Text>
+              <Text style={s.waReminderAmount}>â‚¹{remaining.toLocaleString('en-IN')} pending</Text>
             </TouchableOpacity>
           ) : booking.amount > 0 ? (
             <View style={s.payCompleteBadge}>
               <Ionicons name="checkmark-circle" size={14} color={colors.success} />
-              <Text style={s.payCompleteText}>Payment Completed ✅</Text>
+              <Text style={s.payCompleteText}>Payment Completed âœ…</Text>
             </View>
           ) : null}
         </Section>
 
-        {/* ═══ EVENT ═══ */}
+        {/* â•â•â• EVENT â•â•â• */}
         <Section title="Event Details">
-          <Row label="Type" value={booking.eventType || '—'} />
-          <Row label="Date" value={booking.eventDate ? new Date(booking.eventDate).toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'long', year: 'numeric' }) : '—'} />
+          <Row label="Type" value={booking.eventType || 'â€”'} />
+          <Row label="Date" value={booking.eventDate ? new Date(booking.eventDate).toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'long', year: 'numeric' }) : 'â€”'} />
           {booking.eventTime && <Row label="Time" value={booking.eventTime} />}
-          <Row label="Location" value={booking.eventLocation || booking.scheduledLocation || '—'} />
+          <Row label="Location" value={booking.eventLocation || booking.scheduledLocation || 'â€”'} />
           <Row label="Package" value={booking.packageName || 'Standard'} />
           <Row label="Source" value={booking.leadSource || 'bookmyshot'} />
-          <Row label="Invoice" value={booking.invoiceNumber || '—'} />
+          <Row label="Invoice" value={booking.invoiceNumber || 'â€”'} />
         </Section>
 
-        {/* ═══ PAYMENT HISTORY ═══ */}
+        {/* â•â•â• PAYMENT HISTORY â•â•â• */}
         <Section title={`Payment History (${paymentRecords.length})`}>
           {paymentRecords.length > 0 ? paymentRecords.map((r, i) => (
             <View key={r._id || i} style={s.payRecord}>
               <View style={s.payRecordLeft}>
                 <Text style={s.payRecordType}>{r.paymentType || 'Payment'}</Text>
-                <Text style={s.payRecordDate}>{r.createdAt ? new Date(r.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : ''} • {r.addedBy || 'creator'}</Text>
+                <Text style={s.payRecordDate}>{r.createdAt ? new Date(r.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : ''} â€¢ {r.addedBy || 'creator'}</Text>
                 {r.notes && <Text style={s.payRecordNotes}>{r.notes}</Text>}
               </View>
               <View style={s.payRecordRight}>
-                <Text style={s.payRecordAmount}>₹{(r.amount || 0).toLocaleString('en-IN')}</Text>
+                <Text style={s.payRecordAmount}>â‚¹{(r.amount || 0).toLocaleString('en-IN')}</Text>
                 <Text style={[s.payRecordStatus, { color: r.status === 'approved' ? colors.success : colors.warning }]}>{r.status}</Text>
               </View>
             </View>
           )) : <Text style={s.emptyText}>No payments recorded yet</Text>}
         </Section>
 
-        {/* ═══ EVENTS ═══ */}
+        {/* â•â•â• EVENTS â•â•â• */}
         <Section title={`Events (${events.length})`}>
           {events.length > 0 ? events.map((ev, i) => (
             <View key={ev._id || i} style={s.eventItem}>
               <View style={s.eventDot} />
               <View style={s.eventInfo}>
                 <Text style={s.eventName}>{ev.eventName || 'Event'}</Text>
-                <Text style={s.eventDate}>{ev.eventDate ? new Date(ev.eventDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : ''} {ev.location ? `• ${ev.location}` : ''}</Text>
+                <Text style={s.eventDate}>{ev.eventDate ? new Date(ev.eventDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : ''} {ev.location ? `â€¢ ${ev.location}` : ''}</Text>
               </View>
               <TouchableOpacity onPress={() => deleteEvent(ev._id)}><Ionicons name="trash-outline" size={14} color={colors.error} /></TouchableOpacity>
             </View>
           )) : <Text style={s.emptyText}>No events added yet</Text>}
         </Section>
 
-        {/* ═══ NOTES ═══ */}
+        {/* â•â•â• NOTES â•â•â• */}
         {booking.message && <Section title="Client Message"><Text style={s.messageText}>"{booking.message}"</Text></Section>}
         {booking.creatorNotes && <Section title="Creator Notes"><Text style={s.messageText}>{booking.creatorNotes}</Text></Section>}
       </ScrollView>
 
-      {/* ═══ BOTTOM ACTIONS ═══ */}
+      {/* â•â•â• BOTTOM ACTIONS â•â•â• */}
       <View style={s.bottomBar}>
         {booking.status === 'Booking Created' && <>
           <TouchableOpacity style={s.btnReject} onPress={rejectBooking}><Text style={s.btnRejectText}>Reject</Text></TouchableOpacity>
@@ -535,17 +462,17 @@ export default function BookingDetail({ route, navigation }: any) {
         </>}
         {(booking.status === 'Completed' || booking.status === 'completed') && (
           <TouchableOpacity style={[s.btnComplete, { backgroundColor: colors.primary }]} onPress={downloadInvoice}>
-            <Text style={s.btnCompleteText}>📥 Download Invoice</Text>
+            <Text style={s.btnCompleteText}>ðŸ“¥ Download Invoice</Text>
           </TouchableOpacity>
         )}
       </View>
 
-      {/* ═══ SET AMOUNT MODAL ═══ */}
+      {/* â•â•â• SET AMOUNT MODAL â•â•â• */}
       <Modal visible={showAmountModal} transparent animationType="fade">
         <View style={s.modalBg}><View style={s.modal}>
           <Text style={s.modalTitle}>{booking.status === 'Booking Created' ? 'Accept & Set Amount' : 'Update Project Amount'}</Text>
           <Text style={s.modalSub}>Commission is calculated on highest amount ever set (never decreases)</Text>
-          <TextInput style={s.modalInput} value={amountInput} onChangeText={setAmountInput} keyboardType="numeric" placeholder="₹ Amount" placeholderTextColor={colors.textMuted} selectionColor={colors.primary} autoFocus />
+          <TextInput style={s.modalInput} value={amountInput} onChangeText={setAmountInput} keyboardType="numeric" placeholder="â‚¹ Amount" placeholderTextColor={colors.textMuted} selectionColor={colors.primary} autoFocus />
           <View style={s.modalBtns}>
             <TouchableOpacity style={s.modalCancel} onPress={() => setShowAmountModal(false)}><Text style={s.modalCancelText}>Cancel</Text></TouchableOpacity>
             <TouchableOpacity style={s.modalConfirm} onPress={booking.status === 'Booking Created' ? acceptBooking : setProjectAmount}><Text style={s.modalConfirmText}>{booking.status === 'Booking Created' ? 'Accept' : 'Save'}</Text></TouchableOpacity>
@@ -553,7 +480,7 @@ export default function BookingDetail({ route, navigation }: any) {
         </View></View>
       </Modal>
 
-      {/* ═══ RECORD PAYMENT MODAL ═══ */}
+      {/* â•â•â• RECORD PAYMENT MODAL â•â•â• */}
       <Modal visible={showPaymentModal} transparent animationType="fade">
         <View style={s.modalBg}><View style={s.modal}>
           <Text style={s.modalTitle}>Record Payment</Text>
@@ -564,7 +491,7 @@ export default function BookingDetail({ route, navigation }: any) {
               </TouchableOpacity>
             ))}
           </View>
-          <TextInput style={s.modalInput} value={payForm.amount} onChangeText={v => setPayForm({ ...payForm, amount: v })} keyboardType="numeric" placeholder="₹ Amount" placeholderTextColor={colors.textMuted} selectionColor={colors.primary} editable={!savingPayment} />
+          <TextInput style={s.modalInput} value={payForm.amount} onChangeText={v => setPayForm({ ...payForm, amount: v })} keyboardType="numeric" placeholder="â‚¹ Amount" placeholderTextColor={colors.textMuted} selectionColor={colors.primary} editable={!savingPayment} />
           <TextInput style={[s.modalInput, { height: 60 }]} value={payForm.notes} onChangeText={v => setPayForm({ ...payForm, notes: v })} placeholder="Notes (optional)" placeholderTextColor={colors.textMuted} selectionColor={colors.primary} multiline editable={!savingPayment} />
           <View style={s.modalBtns}>
             <TouchableOpacity style={s.modalCancel} onPress={() => setShowPaymentModal(false)} disabled={savingPayment}><Text style={s.modalCancelText}>Cancel</Text></TouchableOpacity>
@@ -575,7 +502,7 @@ export default function BookingDetail({ route, navigation }: any) {
         </View></View>
       </Modal>
 
-      {/* ═══ ADD EVENT MODAL ═══ */}
+      {/* â•â•â• ADD EVENT MODAL â•â•â• */}
       <Modal visible={showEventModal} transparent animationType="fade">
         <View style={s.modalBg}><View style={s.modal}>
           <Text style={s.modalTitle}>Add Event</Text>

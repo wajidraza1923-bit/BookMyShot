@@ -2410,6 +2410,11 @@
                 actions += '<button class="btn btn-outline btn-sm" onclick="window.setBookingAmount(\'' + b._id + '\',' + totalAmount + ')">✏️ Set Amount</button>';
                 actions += '<button class="btn btn-success btn-sm" onclick="window.markFullyPaid(\'' + b._id + '\')">✅ Mark Paid</button>';
               }
+              // Invoice / Receipt button — always show when payment data exists
+              if (advance > 0 || b.status === 'Completed') {
+                var invoiceLabel = b.status === 'Completed' ? '📄 Invoice' : '📄 Receipt';
+                actions += '<button class="btn btn-outline btn-sm" style="border-color:rgba(59,130,246,0.4);color:#93C5FD" onclick="window.openCreatorInvoice(\'' + b._id + '\')">' + invoiceLabel + '</button>';
+              }
             }
             actions += '</div>';
 
@@ -2801,7 +2806,7 @@
             } else if (b.status === 'Event Scheduled') {
               actions = '<button class="btn btn-success btn-sm" onclick="completeBooking(\'' + b._id + '\')">✓ Mark Completed</button>';
             } else if (b.status === 'Completed') {
-              actions = '<span style="color:var(--success);font-size:0.8rem">✅ Completed</span>';
+              actions = '<span style="color:var(--success);font-size:0.8rem">✅ Completed</span> <button class="btn btn-outline btn-sm" style="font-size:0.7rem;margin-left:0.3rem" onclick="window.openCreatorInvoice(\'' + b._id + '\')">📄 Invoice</button>';
             } else if (b.status === 'rejected') {
               actions = '<span style="color:var(--danger);font-size:0.8rem">❌ Rejected</span>';
             }
@@ -2864,6 +2869,11 @@
       API.patch('/creator/bookings/' + id + '/complete')
         .then(function() { toast('Booking completed!', 'success'); loadBookingRequests(); })
         .catch(function(err) { toast(err.message || 'Failed to complete', 'error'); });
+    };
+
+    window.openCreatorInvoice = function(id) {
+      var token = API.getToken();
+      window.open('/api/invoice/' + id + '?token=' + encodeURIComponent(token), '_blank');
     };
 
     // ─── Inquiries ──────────────────────────────────────────────────────────

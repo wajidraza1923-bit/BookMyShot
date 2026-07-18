@@ -416,26 +416,30 @@ export default function HomeScreen({ navigation }: any) {
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={st.fmCard}
-                  activeOpacity={0.9}
+                  activeOpacity={0.88}
                   onPress={() => {
                     api.get(`/featured-moments/${item._id}`).catch(() => {});
                     if (item.creator?._id) navigation.navigate('CreatorProfile', { id: item.creator._id });
                   }}
                 >
+                  {/* Full-bleed image — card height = image height */}
                   <Image source={{ uri: item.coverImage }} style={st.fmImage} />
-                  <LinearGradient colors={['transparent', 'rgba(0,0,0,0.7)']} style={st.fmOverlay}>
-                    <View style={st.fmBadge}><Text style={st.fmBadgeText}>{item.category}</Text></View>
+                  {/* Top-left category badge */}
+                  <View style={st.fmTopOverlay}>
+                    {item.category ? <View style={st.fmBadge}><Text style={st.fmBadgeText}>{item.category}</Text></View> : null}
+                  </View>
+                  {/* Bottom gradient overlay with title + city + stats */}
+                  <View style={st.fmBottomOverlay}>
                     <Text style={st.fmTitle} numberOfLines={1}>{item.title}</Text>
                     <View style={st.fmMeta}>
-                      <Text style={st.fmCreator}>{item.creatorName || 'Creator'}</Text>
-                      <Text style={st.fmCity}>📍 {item.city}</Text>
+                      <Text style={st.fmCity} numberOfLines={1}>📍 {item.city}</Text>
+                      <View style={st.fmStats}>
+                        <View style={st.fmStatItem}><Ionicons name="heart" size={8} color="#F472B6" /><Text style={st.fmStatText}>{item.likes || 0}</Text></View>
+                        <View style={st.fmStatItem}><Ionicons name="eye" size={8} color="#A78BFA" /><Text style={st.fmStatText}>{item.views || 0}</Text></View>
+                        <View style={st.fmStatItem}><Ionicons name="star" size={8} color="#FBBF24" /><Text style={st.fmStatText}>{item.rating?.toFixed(1) || '5.0'}</Text></View>
+                      </View>
                     </View>
-                    <View style={st.fmStats}>
-                      <View style={st.fmStatItem}><Ionicons name="heart" size={12} color="#F472B6" /><Text style={st.fmStatText}>{item.likes || 0}</Text></View>
-                      <View style={st.fmStatItem}><Ionicons name="eye" size={12} color="#A78BFA" /><Text style={st.fmStatText}>{item.views || 0}</Text></View>
-                      <View style={st.fmStatItem}><Ionicons name="star" size={12} color="#FBBF24" /><Text style={st.fmStatText}>{item.rating?.toFixed(1) || '0'}</Text></View>
-                    </View>
-                  </LinearGradient>
+                  </View>
                 </TouchableOpacity>
               )}
             />
@@ -542,19 +546,20 @@ const st = StyleSheet.create({
   catFallback: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', borderRadius: 26 },
   catName: { fontSize: 9, fontWeight: '700', color: '#1F2937', textAlign: 'center', lineHeight: 12 },
   catCount: { fontSize: 7.5, color: '#6C3BFF', marginTop: 1, fontWeight: '700' },
-  // Featured Moments — compact 16:9 cards, 3-4 visible
-  fmCard: { width: width * 0.38, borderRadius: 14, overflow: 'hidden', marginRight: 8, elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 6 },
-  fmImage: { width: '100%', height: width * 0.38 * 9 / 16, resizeMode: 'cover' },
-  fmOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 6, paddingTop: 18 },
-  fmBadge: { position: 'absolute', top: 5, left: 6, backgroundColor: 'rgba(108,59,255,0.85)', paddingHorizontal: 5, paddingVertical: 2, borderRadius: 5 },
-  fmBadgeText: { fontSize: 6, fontWeight: '700', color: '#fff', textTransform: 'uppercase', letterSpacing: 0.3 },
-  fmTitle: { fontSize: 9, fontWeight: '700', color: '#fff', marginBottom: 1 },
-  fmMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 3 },
-  fmCreator: { fontSize: 8, fontWeight: '600', color: 'rgba(255,255,255,0.9)' },
-  fmCity: { fontSize: 7, color: 'rgba(255,255,255,0.7)' },
+  // Featured Moments — compact 250×130px landscape cards, 2+ visible on screen
+  fmCard: { width: 250, height: 130, borderRadius: 12, overflow: 'hidden', marginRight: 10, elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 6 },
+  fmImage: { width: 250, height: 130, resizeMode: 'cover' },
+  fmTopOverlay: { position: 'absolute', top: 6, left: 6, right: 6 },
+  fmBadge: { backgroundColor: 'rgba(108,59,255,0.85)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5, alignSelf: 'flex-start' },
+  fmBadgeText: { fontSize: 7, fontWeight: '700', color: '#fff', textTransform: 'uppercase' },
+  fmBottomOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.55)', paddingHorizontal: 8, paddingTop: 6, paddingBottom: 6 },
+  fmTitle: { fontSize: 10, fontWeight: '700', color: '#fff', marginBottom: 2 },
+  fmMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  fmCreator: { fontSize: 9, color: 'rgba(255,255,255,0.7)' },
+  fmCity: { fontSize: 8, color: 'rgba(255,255,255,0.8)', flex: 1 },
   fmStats: { flexDirection: 'row', gap: 6 },
   fmStatItem: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  fmStatText: { fontSize: 7, fontWeight: '600', color: 'rgba(255,255,255,0.85)' },
+  fmStatText: { fontSize: 8, color: 'rgba(255,255,255,0.85)' },
   // Top Creators — clean white cards, no overlays
   tcCard: { width: 160, borderRadius: 16, overflow: 'hidden', marginRight: 12, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#F1F5F9', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4 },
   tcImg: { width: '100%', height: 110, resizeMode: 'cover' },

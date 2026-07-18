@@ -177,7 +177,8 @@ export default function BookingsScreen({ navigation }: any) {
                         const AsyncStorage = require('@react-native-async-storage/async-storage').default;
                         const Print = require('expo-print');
                         const tkn = await AsyncStorage.getItem('bms_token');
-                        const resp = await fetch(`https://site--bookmyshot--ykz2mr8mzlrv.code.run/api/invoice/${b._id}?token=${encodeURIComponent(tkn || '')}`, { headers: { 'Authorization': `Bearer ${tkn}`, 'x-access-token': tkn || '' } });
+                        const baseUrl = (api.defaults.baseURL || '').replace(/\/api$/, '') + '/api';
+                        const resp = await fetch(`${baseUrl}/invoice/${b._id}?token=${encodeURIComponent(tkn || '')}`, { headers: { 'Authorization': `Bearer ${tkn}`, 'x-access-token': tkn || '' } });
                         const htm = await resp.text();
                         if (!resp.ok || htm.includes('"success":false')) { Alert.alert('Error', 'Failed to load invoice'); return; }
                         await Print.printAsync({ html: htm });
@@ -190,7 +191,8 @@ export default function BookingsScreen({ navigation }: any) {
                       try {
                         const AsyncStorage = require('@react-native-async-storage/async-storage').default;
                         const tkn = await AsyncStorage.getItem('bms_token');
-                        const invoiceUrl = `https://site--bookmyshot--ykz2mr8mzlrv.code.run/api/invoice/${b._id}?token=${encodeURIComponent(tkn || '')}`;
+                        const baseUrl = (api.defaults.baseURL || '').replace(/\/api$/, '') + '/api';
+                        const invoiceUrl = `${baseUrl}/invoice/${b._id}?token=${encodeURIComponent(tkn || '')}`;
                         let shared = false;
                         try {
                           const Print = require('expo-print');

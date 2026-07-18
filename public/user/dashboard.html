@@ -1513,6 +1513,7 @@
           ${isPaid ? `<span style="font-size:0.75rem;color:var(--accent-green)">✅ Fully Paid</span>` : ""}
           ${isScheduled ? `<span style="font-size:0.75rem;color:var(--info)">📅 ${b.scheduledDate ? new Date(b.scheduledDate).toLocaleDateString() : ''} ${b.scheduledTime || ''}</span>` : ""}
           ${b.status === "Completed" ? `<button class="btn btn-outline btn-sm" onclick="downloadInvoice('${b._id}')">📄 Invoice</button>` : ""}
+          ${b.status !== "Completed" && isPaid ? `<button class="btn btn-outline btn-sm" onclick="downloadInvoice('${b._id}')">📄 Receipt</button>` : ""}
         </div>
       </div>`;
     }
@@ -1554,12 +1555,10 @@
       return html;
     }
 
-    window.downloadInvoice = async (id) => {
-      try {
-        const res = await fetch(`/api/user/bookings/${id}/invoice`, { headers: { Authorization: `Bearer ${API.getToken()}` } });
-        const blob = await res.blob();
-        const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "invoice.pdf"; a.click();
-      } catch { toast("Failed to download invoice", "error"); }
+    window.downloadInvoice = (id) => {
+      // Open the professional HTML invoice — uses the shared invoice route which accepts token in query
+      const token = API.getToken();
+      window.open(`/api/invoice/${id}?token=${encodeURIComponent(token)}`, '_blank');
     };
 
     // ─── BOOKING DETAIL ─────────────────────────────────────────────────────

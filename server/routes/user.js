@@ -1,4 +1,4 @@
-const express = require("express");
+﻿const express = require("express");
 const User = require("../models/User");
 const Creator = require("../models/Creator");
 const Booking = require("../models/Booking");
@@ -18,63 +18,28 @@ router.get("/bookings", async (req, res, next) => {
       .populate({ path: "creator", populate: { path: "user", select: "name avatar" }, select: "user creatorId specialty city" })
       .sort("-createdAt")
       .lean();
-
     res.json({ success: true, bookings });
   } catch (e) { next(e); }
 });
 
-// Favorites
-router.get("/favorites", async (req, res, next) => {
-  try {
-    const user = await User.findById(req.user._id).populate({
-      path: "favorites",
-      populate: { path: "user", select: "name avatar" },
-    });
-    res.json({ success: true, favorites: user.favorites });
-  } catch (e) {
-    next(e);
-  }
-});
-
-router.post("/favorites/:creatorId", async (req, res, next) => {
-  try {
-    const user = await User.findById(req.user._id);
-    const id = req.params.creatorId;
-    if (!user.favorites.includes(id)) user.favorites.push(id);
-    else user.favorites = user.favorites.filter((f) => f.toString() !== id);
-    await user.save();
-    res.json({ success: true, favorites: user.favorites });
-  } catch (e) {
-    next(e);
-  }
-});
-
-// Invoice PDF
+// Invoice — redirects to the shared /api/invoice route (purple/pink/white theme)
 router.get("/bookings/:id/invoice", async (req, res, next) => {
   try {
-    const booking = await Booking.findOne({ _id: req.params.id, user: req.user._id }).populate({
-      path: "creator",
-      populate: { path: "user", select: "name" },
-    });
+    const booking = await Booking.findOne({ _id: req.params.id, user: req.user._id });
     if (!booking) return res.status(404).json({ success: false, message: "Not found" });
+    const token = (req.headers.authorization || "").replace("Bearer ", "") || req.query.token || "";
+    return res.redirect(`/api/invoice/${req.params.id}?token=${encodeURIComponent(token)}`);
+  } catch (e) { next(e); }
+});
+router.get("/bookings", async (req, res, next) => {
+  try {
+    const bookings = await Booking.find({ user: req.user._id })
+      .populate({ path: "creator", populate: { path: "user", select: "name avatar" }, select: "user creatorId specialty city" })
+      .sort("-createdAt")
+      .lean();
 
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename=invoice-${booking.invoiceNumber}.pdf`);
-
-    const doc = new PDFDocument();
-    doc.pipe(res);
-    doc.fontSize(22).text("BookMyShot Invoice", { align: "center" });
-    doc.fontSize(10).text(`Invoice #: ${booking.invoiceNumber}`, { align: "center" });
-    doc.moveDown();
-    doc.fontSize(12).text(`Photographer: ${booking.creator?.user?.name || "N/A"}`);
-    doc.text(`Client: ${booking.clientName}`);
-    doc.text(`Event Date: ${new Date(booking.eventDate).toLocaleDateString()}`);
-    doc.text(`Amount: $${booking.amount || booking.budget}`);
-    doc.text(`Status: ${booking.status}`);
-    doc.end();
-  } catch (e) {
-    next(e);
-  }
+    res.json({ success: true, bookings });
+  } catch (e) { next(e); }
 });
 
 // Get user's inquiries
