@@ -3,25 +3,29 @@ const path = require('path');
 
 const config = getDefaultConfig(__dirname);
 
-// Ensure Metro ONLY resolves within the mobile directory
+// Keep Metro scoped to the mobile directory only
 config.projectRoot = __dirname;
 config.watchFolders = [__dirname];
 
-// Force module resolution to ONLY look in mobile/node_modules
+// Only resolve modules from mobile/node_modules
 config.resolver.nodeModulesPaths = [path.resolve(__dirname, 'node_modules')];
 
-// Block parent directory content from being bundled (cross-platform)
+// Block server and public directories from being bundled
+// Use path.join for cross-platform compatibility (no manual regex escaping)
 const parentDir = path.resolve(__dirname, '..');
-// Use a platform-aware separator for regex
-const sep = path.sep === '\\' ? '\\\\' : '/';
-const escParent = parentDir.replace(/[\\/]/g, sep);
+
+function blockPath(relPath) {
+  // Escape all path separators and dots for use in RegExp
+  const full = path.join(parentDir, relPath);
+  const escaped = full.replace(/[\\]/g, '\\\\').replace(/\./g, '\\.').replace(/\//g, '\\/');
+  return new RegExp('^' + escaped);
+}
 
 config.resolver.blockList = [
-  new RegExp(escParent + sep + 'server' + sep + '.*'),
-  new RegExp(escParent + sep + 'public' + sep + '.*'),
-  new RegExp(escParent + sep + 'node_modules' + sep + '.*'),
-  new RegExp(escParent + sep + 'package\\.json$'),
-  /node_modules\/.*\/node_modules/,
+  blockPath('server'),
+  blockPath('public'),
+  // Block parent package.json specifically
+  new RegExp('^' + parentDir.replace(/[\\]/g, '\\\\').replace(/\./g, '\\.').replace(/\//g, '\\/') + '[/\\\\]package\\.json$'),
 ];
 
 module.exports = config;
