@@ -15,12 +15,6 @@ export default function CreatorSubscription({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
   const [cancelling, setCancelling] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('monthly');
-
-  // Auto-set selected plan to match current active plan on load
-  useEffect(() => {
-    if (creator?.subscriptionPlanType === 'yearly') setSelectedPlan('yearly');
-  }, [creator?.subscriptionPlanType]);
   // WebView Razorpay state for subscription
   const [showRazorpay, setShowRazorpay] = useState(false);
   const [rpSubConfig, setRpSubConfig] = useState<{ keyId: string; subscriptionId: string; name: string; email: string }>({ keyId: '', subscriptionId: '', name: '', email: '' });
@@ -265,13 +259,14 @@ export default function CreatorSubscription({ navigation }: any) {
 
   // Status
   const isActive = subStatus === 'active' || subStatus === 'trial';
-  const isTrial = subStatus === 'trial';
+  const isTrial = false; // Trial system removed
   const isExpired = subStatus === 'expired' || subStatus === 'suspended' || subStatus === 'overdue';
   const isOverdue = subStatus === 'overdue';
 
-  // Is the user viewing the yearly preview (selected yearly but doesn't have it yet)
-  const isViewingYearlyPreview = selectedPlan === 'yearly' && !(isActive && currentPlanType === 'yearly');
-  const isViewingMonthlyPreview = selectedPlan === 'monthly' && !(isActive && currentPlanType === 'monthly');
+  // Yearly plan removed — always monthly
+  const isViewingYearlyPreview = false;
+  const isViewingMonthlyPreview = false;
+  const selectedPlan = 'monthly' as const;
 
   const statusColor = subStatus === 'active' ? colors.success
     : subStatus === 'trial' ? colors.primary
