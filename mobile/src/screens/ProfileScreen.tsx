@@ -5,11 +5,15 @@ import * as Haptics from 'expo-haptics';
 import { colors, spacing, typography, radius } from '../theme';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import SignOutModal from '../components/SignOutModal';
+import DeleteAccountModal from '../components/DeleteAccountModal';
 
 export default function ProfileScreen({ navigation }: any) {
   const { user, role, isAuthenticated, logout } = useAuth();
   const [stats, setStats] = useState({ bookings: 0, saved: 0, reviews: 0, notifications: 0 });
   const [refreshing, setRefreshing] = useState(false);
+  const [showSignOut, setShowSignOut] = useState(false);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
 
   const loadStats = useCallback(async () => {
     if (!isAuthenticated) return;
@@ -31,13 +35,13 @@ export default function ProfileScreen({ navigation }: any) {
   const onRefresh = async () => { setRefreshing(true); await loadStats(); setRefreshing(false); };
 
   const handleLogout = () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel' },
-      { text: 'Sign Out', style: 'destructive', onPress: async () => {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-        await logout();
-      }}
-    ]);
+    setShowSignOut(true);
+  };
+
+  const executeLogout = async () => {
+    setShowSignOut(false);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    await logout();
   };
 
   const navigateTo = (screen: string) => {
@@ -72,6 +76,7 @@ export default function ProfileScreen({ navigation }: any) {
       title: 'Account',
       items: [
         { icon: 'calendar-outline', label: 'My Bookings', screen: 'Bookings', badge: stats.bookings > 0 ? String(stats.bookings) : null },
+        { icon: 'bookmark-outline', label: 'Saved Creators', screen: 'SavedCreators' },
         { icon: 'wallet-outline', label: 'Cashback Wallet', screen: 'Wallet' },
         { icon: 'notifications-outline', label: 'Notifications', screen: 'CreatorNotifications', badge: stats.notifications > 0 ? String(stats.notifications) : null },
       ],
@@ -91,6 +96,7 @@ export default function ProfileScreen({ navigation }: any) {
   };
 
   return (
+    <>
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />}>
 
       {/* Profile Header */}
@@ -167,10 +173,23 @@ export default function ProfileScreen({ navigation }: any) {
         </TouchableOpacity>
       )}
 
+      {/* Delete Account */}
+      {isAuthenticated && (
+        <TouchableOpacity style={[styles.logoutBtn, { marginTop: 10, borderColor: 'rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.03)' }]} onPress={() => setShowDeleteAccount(true)} activeOpacity={0.7}>
+          <Ionicons name="trash-outline" size={18} color={colors.error} />
+          <Text style={styles.logoutText}>Delete BookMyShot Account</Text>
+        </TouchableOpacity>
+      )}
+
       <Text style={styles.version}>BookMyShot v2.0.0 • Made with ❤️ in India</Text>
       <View style={{ height: spacing['4xl'] }} />
     </ScrollView>
-  );
+
+    {/* Sign Out Modal */}
+    <SignOutModal visible={showSignOut} onClose={() => setShowSignOut(false)} onConfirm={executeLogout} />
+    {/* Delete Account Modal */}
+    <DeleteAccountModal visible={showDeleteAccount} role={role as any || 'user'} onClose={() => setShowDeleteAccount(false)} onConfirm={async () => { try { await api.delete('/account/my-account'); await logout(); } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed to delete account'); } }} />
+    </>  );
 }
 
 const styles = StyleSheet.create({

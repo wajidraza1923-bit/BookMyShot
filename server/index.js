@@ -595,6 +595,7 @@ app.use("/api/withdrawal", require("./routes/withdrawal"));
 app.use("/api/reviews", require("./routes/reviews"));
 app.use("/api/profile-interactions", require("./routes/profileInteractions"));
 app.use("/api/support-tickets", require("./routes/support"));
+app.use("/api/account", require("./routes/deleteAccount"));
 app.use("/api/live-stats", require("./routes/liveStats"));
 app.use("/api/app-version", require("./routes/appVersion"));
 app.use("/api/featured-moments", require("./routes/featuredMoments"));
