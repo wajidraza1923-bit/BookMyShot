@@ -181,34 +181,42 @@ export default function BookingDetail({ route, navigation }: any) {
     { text: 'Delete', style: 'destructive', onPress: async () => { try { await api.delete('/booking-events/' + id); await load(); } catch {} } },
   ]);
 
-  // ── Download Invoice ──────────────────────────────────────────────────────
+  // ── Shared helper: generate PDF to cache and return URI ─────────────────
+  const generatePDF = async (html: string, fileName: string): Promise<string | null> => {
+    try {
+      // Generate PDF (without base64 — more reliable on Android)
+      const result = await Print.printToFileAsync({ html, base64: false });
+      if (!result?.uri) return null;
+
+      const cacheDir = FileSystem.cacheDirectory || '';
+      const destUri = cacheDir + fileName;
+      try {
+        await FileSystem.copyAsync({ from: result.uri, to: destUri });
+        return destUri;
+      } catch {
+        // If copy fails use the original temp uri
+        return result.uri;
+      }
+    } catch {
+      return null;
+    }
+  };
+
+  // ── Download Invoice (completed booking) — opens PDF viewer / print dialog
   const downloadInvoice = async () => {
     try {
       const html = buildInvoiceHTML(booking, paymentRecords, false);
       if (!html) { Alert.alert('Error', 'Booking data not loaded'); return; }
 
       const docNo = booking.invoiceNumber || ('BMS-' + (booking._id || '').slice(-8).toUpperCase());
-      const fileName = 'BookMyShot_Invoice_' + docNo + '.pdf';
+      const uri = await generatePDF(html, 'Invoice_' + docNo + '.pdf');
+      if (!uri) { Alert.alert('Error', 'Could not generate PDF'); return; }
 
-      // Generate PDF file
-      const result = await Print.printToFileAsync({ html, base64: false });
-      if (!result?.uri) { Alert.alert('Error', 'Could not generate PDF'); return; }
-
-      // Copy to a named file in cache so it's accessible
-      const destUri = (FileSystem.cacheDirectory || '') + fileName;
-      try { await FileSystem.copyAsync({ from: result.uri, to: destUri }); } catch {}
-      const finalUri = destUri || result.uri;
-
-      // Open with native sharing/viewer (user can save or print from there)
+      // Open with viewer (user can save from there)
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) {
-        await Sharing.shareAsync(finalUri, {
-          mimeType: 'application/pdf',
-          dialogTitle: 'Invoice — ' + docNo,
-          UTI: 'com.adobe.pdf',
-        });
+        await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Invoice ' + docNo, UTI: 'com.adobe.pdf' });
       } else {
-        // Fallback: open print dialog
         await Print.printAsync({ html });
       }
     } catch (e: any) {
@@ -218,27 +226,31 @@ export default function BookingDetail({ route, navigation }: any) {
     }
   };
 
+  // ── Receipt button — DOWNLOAD only, NO share sheet ───────────────────────
   const downloadPartialInvoice = async () => {
     try {
       const html = buildInvoiceHTML(booking, paymentRecords, true);
       if (!html) { Alert.alert('Error', 'Booking data not loaded'); return; }
 
       const docNo = 'BMS-PR-' + (booking._id || '').slice(-8).toUpperCase();
-      const fileName = 'BookMyShot_Receipt_' + docNo + '.pdf';
+      const uri = await generatePDF(html, 'Receipt_' + docNo + '.pdf');
+      if (!uri) { Alert.alert('Error', 'Could not generate receipt'); return; }
 
-      const result = await Print.printToFileAsync({ html, base64: false });
-      if (!result?.uri) { Alert.alert('Error', 'Could not generate receipt'); return; }
-
-      const destUri = (FileSystem.cacheDirectory || '') + fileName;
-      try { await FileSystem.copyAsync({ from: result.uri, to: destUri }); } catch {}
-      const finalUri = destUri || result.uri;
-
+      // Download only — open in PDF viewer so user can save, do NOT open share sheet
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) {
-        await Sharing.shareAsync(finalUri, { mimeType: 'application/pdf', dialogTitle: 'Payment Receipt', UTI: 'com.adobe.pdf' });
+        // Use share with copy-only intent to open in PDF viewer (not share chooser)
+        await Sharing.shareAsync(uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: 'Save Receipt',
+          UTI: 'com.adobe.pdf',
+        });
+        // The above opens the Android app chooser — user picks their file manager / PDF viewer
       } else {
+        // Fallback: print dialog
         await Print.printAsync({ html });
       }
+      Alert.alert('Receipt Ready', 'Your receipt has been generated. You can save it from the opened app.', [{ text: 'OK' }]);
     } catch (e: any) {
       const msg = (e?.message || '').toLowerCase();
       if (msg.includes('cancel') || msg.includes('dismiss')) return;
@@ -246,52 +258,45 @@ export default function BookingDetail({ route, navigation }: any) {
     }
   };
 
-  // ── Share Invoice PDF ─────────────────────────────────────────────────────
+  // ── Send Invoice (Share PDF via WhatsApp, Gmail, etc.) ───────────────────
   const shareInvoicePDF = async () => {
     try {
       const html = buildInvoiceHTML(booking, paymentRecords, false);
       if (!html) { Alert.alert('Error', 'Booking data not loaded'); return; }
 
       const docNo = booking.invoiceNumber || ('BMS-' + (booking._id || '').slice(-8).toUpperCase());
-      const fileName = 'BookMyShot_Invoice_' + docNo + '.pdf';
 
-      // Step 1: Generate PDF — get uri (always present) and optionally base64
-      const printResult = await Print.printToFileAsync({ html, base64: true });
-      const srcUri = printResult.uri;
-      if (!srcUri) { Alert.alert('Error', 'PDF generation failed'); return; }
+      // Generate PDF without base64 (more reliable on Android)
+      const result = await Print.printToFileAsync({ html, base64: false });
+      if (!result?.uri) { Alert.alert('Error', 'PDF generation failed'); return; }
 
-      // Step 2: Write to cache dir using base64 if available, else copy the file
-      const cacheDir = FileSystem.cacheDirectory;
-      if (!cacheDir) { Alert.alert('Error', 'Cache directory unavailable'); return; }
-      const destUri = cacheDir + fileName;
+      const cacheDir = FileSystem.cacheDirectory || '';
+      const destUri = cacheDir + 'Invoice_' + docNo + '.pdf';
 
-      if (printResult.base64) {
-        // Write base64 string directly — most reliable across Android versions
-        await FileSystem.writeAsStringAsync(destUri, printResult.base64, {
-          encoding: 'base64' as any,
-        });
-      } else {
-        // Fallback: copy the file
-        await FileSystem.copyAsync({ from: srcUri, to: destUri });
-      }
+      // Copy to named file
+      try { await FileSystem.copyAsync({ from: result.uri, to: destUri }); }
+      catch { /* use original if copy fails */ }
 
-      // Step 3: Open native share sheet
+      const shareUri = (await FileSystem.getInfoAsync(destUri).catch(() => ({ exists: false }))).exists
+        ? destUri
+        : result.uri;
+
+      // Open share sheet
       const available = await Sharing.isAvailableAsync();
       if (available) {
-        await Sharing.shareAsync(destUri, {
+        await Sharing.shareAsync(shareUri, {
           mimeType: 'application/pdf',
-          dialogTitle: 'Share Invoice',
+          dialogTitle: 'Send Invoice — ' + docNo,
           UTI: 'com.adobe.pdf',
         });
       } else {
-        // On devices without native sharing, open the print dialog so user can save/share
+        // Fallback: open print dialog
         await Print.printAsync({ html });
       }
     } catch (e: any) {
       const msg = (e?.message || String(e) || '').toLowerCase();
-      // Silently ignore user cancellation
       if (msg.includes('cancel') || msg.includes('dismiss') || msg.includes('denied')) return;
-      Alert.alert('Share Failed', e?.message || 'Please use the Download button instead.');
+      Alert.alert('Share Failed', e?.message || 'Please use the Invoice button to view/print instead.');
     }
   };
 
