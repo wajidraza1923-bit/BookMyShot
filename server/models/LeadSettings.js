@@ -2,30 +2,38 @@ const mongoose = require("mongoose");
 
 const leadSettingsSchema = new mongoose.Schema(
   {
+    // ═══ BUSINESS MODEL SETTINGS (Admin Controlled) ═══
+    // Unlock mode: "booking" = count bookings, "lead" = count inquiries
+    leadCountMode: { type: String, enum: ["booking", "lead"], default: "booking" },
+    // Free quota
     freeLeadLimit: { type: Number, default: 3 },
-    // Lead count mode: "booking" = count on booking creation, "inquiry" = count on inquiry creation
-    leadCountMode: { type: String, enum: ["booking", "inquiry"], default: "booking" },
-    // Feature toggles
+    // Per-lead unlock price (₹)
+    leadUnlockPrice: { type: Number, default: 70 },
+    // Monthly subscription price (₹)
+    monthlyPrice: { type: Number, default: 199 },
+    yearlyPrice: { type: Number, default: 1999 },
+    // Toggles
     enableLeadLimit: { type: Boolean, default: true },
+    enablePerLeadPurchase: { type: Boolean, default: true },
+    enableSubscription: { type: Boolean, default: true },
     showLeadDashboardCard: { type: Boolean, default: true },
-    // Subscription pricing
-    monthlyPrice: { type: Number, default: 499 },
-    yearlyPrice: { type: Number, default: 4999 },
     subscriptionEnabled: { type: Boolean, default: true },
+    // Benefits lists
     benefits: {
       type: [String],
       default: [
-        "Unlimited Lead Unlocks",
-        "Unlimited Customer Chats",
-        "Unlimited Booking Requests",
-        "Priority Support",
+        "Unlimited Leads",
+        "Unlimited Bookings",
+        "Full Customer Details",
+        "Better Visibility",
+        "Higher Search Ranking",
         "Premium Badge",
       ],
     },
     freePlanBenefits: {
       type: [String],
       default: [
-        "3 Free Lead Unlocks",
+        "3 Free Bookings/Leads",
         "Create Profile & Portfolio",
         "Receive Booking Requests",
         "Basic Chat Access",

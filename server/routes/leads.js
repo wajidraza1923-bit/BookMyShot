@@ -17,38 +17,46 @@ router.get("/settings", async (req, res, next) => {
 // ═══ CREATOR: Get my lead usage ═══
 router.get("/my-usage", protect, authorize("creator"), async (req, res, next) => {
   try {
-    const creator = await Creator.findOne({ user: req.user._id }).select("_id subscriptionStatus subscriptionEndDate subscriptionExpiry freeLeadsUsed freeLeadsLimit").lean();
+    const creator = await Creator.findOne({ user: req.user._id }).select("_id subscriptionStatus subscriptionEndDate subscriptionExpiry freeLeadsUsed freeLeadsLimit assignedMode quotaCompleted unlockedLeads").lean();
     if (!creator) return res.status(404).json({ success: false, message: "Creator profile not found" });
 
     const settings = await LeadSettings.getSettings();
 
-    // Use creator.freeLeadsUsed (set by accept inquiry logic) as primary source
     const freeUsed = creator.freeLeadsUsed || 0;
     const freeLimit = creator.freeLeadsLimit || settings.freeLeadLimit || 3;
-
     const isSubscribed = (creator.subscriptionStatus === "active" || creator.subscriptionStatus === "trial") && 
       (creator.subscriptionEndDate || creator.subscriptionExpiry) && 
       new Date(creator.subscriptionEndDate || creator.subscriptionExpiry) > new Date();
     const freeRemaining = Math.max(0, freeLimit - freeUsed);
-    const canUnlock = isSubscribed || freeRemaining > 0;
+    const quotaCompleted = creator.quotaCompleted || freeRemaining <= 0;
+    const canAccess = isSubscribed || !quotaCompleted;
+
+    // Determine active mode for this creator
+    const activeMode = creator.assignedMode || settings.leadCountMode || 'booking';
 
     res.json({
       success: true,
       data: {
+        // Creator's status
         freeLeadLimit: freeLimit,
         freeUsed,
         freeRemaining,
-        totalUnlocked: freeUsed,
         isSubscribed,
-        subscriptionExpiry: creator.subscriptionEndDate || creator.subscriptionExpiry,
-        canUnlock,
+        canAccess,
+        quotaCompleted,
+        unlockedCount: (creator.unlockedLeads || []).length,
+        // Admin-configured settings
+        activeMode,
         leadCountMode: settings.leadCountMode || 'booking',
+        leadUnlockPrice: settings.leadUnlockPrice || 70,
+        monthlyPrice: settings.monthlyPrice || 199,
+        yearlyPrice: settings.yearlyPrice || 1999,
         enableLeadLimit: settings.enableLeadLimit !== false,
+        enablePerLeadPurchase: settings.enablePerLeadPurchase !== false,
+        enableSubscription: settings.enableSubscription !== false,
         showLeadDashboardCard: settings.showLeadDashboardCard !== false,
-        monthlyPrice: settings.monthlyPrice,
-        yearlyPrice: settings.yearlyPrice,
-        benefits: settings.benefits,
-        freePlanBenefits: settings.freePlanBenefits,
+        benefits: settings.benefits || [],
+        freePlanBenefits: settings.freePlanBenefits || [],
       },
     });
   } catch (e) { next(e); }
@@ -128,6 +136,57 @@ router.get("/admin/stats", protect, authorize("admin"), async (req, res, next) =
       LeadUnlock.countDocuments({ isFree: false }),
     ]);
     res.json({ success: true, data: { total, free, paid } });
+  } catch (e) { next(e); }
+});
+
+// ═══ CREATOR: Create Razorpay order for per-lead unlock ═══
+router.post("/unlock-order", protect, authorize("creator"), async (req, res, next) => {
+  try {
+    const { inquiryId } = req.body;
+    if (!inquiryId) return res.status(400).json({ success: false, message: "inquiryId required" });
+
+    const settings = await LeadSettings.getSettings();
+    const price = settings.leadUnlockPrice || 70;
+
+    const Razorpay = require("razorpay");
+    const razorpay = new Razorpay({ key_id: process.env.RAZORPAY_KEY_ID, key_secret: process.env.RAZORPAY_KEY_SECRET });
+
+    const order = await razorpay.orders.create({
+      amount: price * 100,
+      currency: "INR",
+      receipt: `lead_${inquiryId}`,
+      notes: { inquiryId, creatorUserId: String(req.user._id), type: "lead_unlock" },
+    });
+
+    res.json({ success: true, data: { orderId: order.id, amount: price, keyId: process.env.RAZORPAY_KEY_ID } });
+  } catch (e) { next(e); }
+});
+
+// ═══ CREATOR: Verify lead unlock payment and unlock ═══
+router.post("/unlock-verify", protect, authorize("creator"), async (req, res, next) => {
+  try {
+    const { inquiryId, razorpay_payment_id, razorpay_order_id, razorpay_signature } = req.body;
+    if (!inquiryId || !razorpay_payment_id || !razorpay_order_id || !razorpay_signature) {
+      return res.status(400).json({ success: false, message: "Missing payment data" });
+    }
+
+    // Verify signature
+    const crypto = require("crypto");
+    const generated = crypto.createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .update(`${razorpay_order_id}|${razorpay_payment_id}`).digest("hex");
+    if (generated !== razorpay_signature) return res.status(400).json({ success: false, message: "Payment verification failed" });
+
+    // Unlock the lead for this creator
+    const creator = await Creator.findOne({ user: req.user._id });
+    if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
+
+    if (!creator.unlockedLeads) creator.unlockedLeads = [];
+    if (!creator.unlockedLeads.includes(inquiryId)) {
+      creator.unlockedLeads.push(inquiryId);
+      await creator.save();
+    }
+
+    res.json({ success: true, message: "Lead unlocked successfully!" });
   } catch (e) { next(e); }
 });
 

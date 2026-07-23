@@ -72,6 +72,10 @@ const creatorSchema = new mongoose.Schema(
     },
     freeLeadsUsed: { type: Number, default: 0 },
     freeLeadsLimit: { type: Number, default: 3 },
+    // Business model tracking — per creator
+    assignedMode: { type: String, enum: ["booking", "lead", ""], default: "" }, // Mode at registration time
+    quotaCompleted: { type: Boolean, default: false }, // True when free quota exhausted
+    unlockedLeads: [{ type: mongoose.Schema.Types.ObjectId, ref: "Inquiry" }], // Individually purchased leads
     autoRenew: { type: Boolean, default: false },
     lastPaymentDate: { type: Date },
     // Payment gateway fields (Razorpay ready)
