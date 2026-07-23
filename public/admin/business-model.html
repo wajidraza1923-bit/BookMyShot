@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Business Model Settings — BookMyShot Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/admin-theme.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Outfit', sans-serif; background: #0A0A0A; color: #fff; min-height: 100vh; padding: 24px; }
+    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; }
+    .header h1 { font-family: 'Playfair Display', serif; font-size: 28px; color: #DAAF37; }
+    .header a { color: #888; text-decoration: none; font-size: 14px; }
+    .card { background: #1B1B1B; border: 1px solid rgba(218,175,55,0.15); border-radius: 16px; padding: 24px; margin-bottom: 20px; }
+    .card-title { font-size: 16px; font-weight: 600; color: #DAAF37; margin-bottom: 16px; }
+    .field { margin-bottom: 16px; }
+    .field label { display: block; font-size: 12px; color: #999; margin-bottom: 6px; font-weight: 500; }
+    .field input, .field select { width: 100%; padding: 12px 14px; background: #222; border: 1px solid rgba(218,175,55,0.2); border-radius: 10px; color: #fff; font-size: 14px; outline: none; }
+    .field input:focus, .field select:focus { border-color: #DAAF37; }
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .toggle-row:last-child { border: none; }
+    .toggle-label { font-size: 14px; color: #ccc; }
+    .toggle { width: 44px; height: 24px; background: #333; border-radius: 12px; cursor: pointer; position: relative; transition: .3s; }
+    .toggle.active { background: #DAAF37; }
+    .toggle::after { content: ''; width: 18px; height: 18px; background: #fff; border-radius: 50%; position: absolute; top: 3px; left: 3px; transition: .3s; }
+    .toggle.active::after { left: 23px; }
+    .btn { padding: 14px 28px; border: none; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; transition: .2s; }
+    .btn-primary { background: linear-gradient(135deg, #DAAF37, #F4C542); color: #000; }
+    .btn-primary:hover { transform: scale(1.02); }
+    .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .mode-card { padding: 16px; border-radius: 12px; border: 2px solid #333; cursor: pointer; text-align: center; transition: .2s; }
+    .mode-card.active { border-color: #DAAF37; background: rgba(218,175,55,0.08); }
+    .mode-card h3 { font-size: 14px; color: #fff; margin-bottom: 4px; }
+    .mode-card p { font-size: 11px; color: #888; }
+    .status-bar { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+    .status-item { background: #1B1B1B; border: 1px solid rgba(218,175,55,0.15); border-radius: 12px; padding: 14px 18px; flex: 1; min-width: 140px; }
+    .status-item .val { font-size: 20px; font-weight: 700; color: #DAAF37; }
+    .status-item .lbl { font-size: 11px; color: #888; margin-top: 4px; }
+    .toast { position: fixed; bottom: 24px; right: 24px; background: #10b981; color: #fff; padding: 14px 20px; border-radius: 10px; font-size: 13px; display: none; z-index: 999; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Business Model Settings</h1>
+    <a href="/admin/dashboard.html">← Back to Dashboard</a>
+  </div>
+
+  <div class="status-bar" id="stats"></div>
+
+  <!-- Unlock Mode -->
+  <div class="card">
+    <div class="card-title">Unlock Mode</div>
+    <div class="mode-grid">
+      <div class="mode-card" id="mode-booking" onclick="setMode('booking')">
+        <h3>📅 Booking Based</h3>
+        <p>Count when booking is created</p>
+      </div>
+      <div class="mode-card" id="mode-lead" onclick="setMode('lead')">
+        <h3>📩 Lead Based</h3>
+        <p>Count when inquiry is received</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pricing -->
+  <div class="card">
+    <div class="card-title">Pricing</div>
+    <div class="field"><label>Free Limit (Bookings/Leads)</label><input type="number" id="freeLimit" min="0" max="100"></div>
+    <div class="field"><label>Per Lead Unlock Price (₹)</label><input type="number" id="leadPrice" min="0"></div>
+    <div class="field"><label>Monthly Subscription (₹)</label><input type="number" id="monthlyPrice" min="0"></div>
+    <div class="field"><label>Yearly Subscription (₹)</label><input type="number" id="yearlyPrice" min="0"></div>
+  </div>
+
+  <!-- Toggles -->
+  <div class="card">
+    <div class="card-title">Feature Toggles</div>
+    <div class="toggle-row"><span class="toggle-label">Enable Lead/Booking Limit</span><div class="toggle" id="tog-limit" onclick="toggleField('enableLeadLimit')"></div></div>
+    <div class="toggle-row"><span class="toggle-label">Enable Per-Lead Purchase</span><div class="toggle" id="tog-perlead" onclick="toggleField('enablePerLeadPurchase')"></div></div>
+    <div class="toggle-row"><span class="toggle-label">Enable Subscription</span><div class="toggle" id="tog-sub" onclick="toggleField('enableSubscription')"></div></div>
+    <div class="toggle-row"><span class="toggle-label">Show Lead Card in Creator Dashboard</span><div class="toggle" id="tog-card" onclick="toggleField('showLeadDashboardCard')"></div></div>
+  </div>
+
+  <!-- Save -->
+  <button class="btn btn-primary" onclick="saveSettings()" id="saveBtn">💾 Save Settings</button>
+
+  <div class="toast" id="toast">✅ Settings saved!</div>
+
+<script>
+const API = 'https://site--bookmyshot--ykz2mr8mzlrv.code.run/api';
+let token = localStorage.getItem('bms_admin_token') || '';
+let settings = {};
+
+async function api(url, method = 'GET', body) {
+  const opts = { method, headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(API + url, opts);
+  return r.json();
+}
+
+async function load() {
+  const r = await api('/leads/admin/settings');
+  if (r.success) {
+    settings = r.data;
+    document.getElementById('freeLimit').value = settings.freeLeadLimit || 3;
+    document.getElementById('leadPrice').value = settings.leadUnlockPrice || 70;
+    document.getElementById('monthlyPrice').value = settings.monthlyPrice || 199;
+    document.getElementById('yearlyPrice').value = settings.yearlyPrice || 1999;
+    // Mode
+    document.getElementById('mode-booking').className = 'mode-card' + (settings.leadCountMode === 'booking' ? ' active' : '');
+    document.getElementById('mode-lead').className = 'mode-card' + (settings.leadCountMode === 'lead' ? ' active' : '');
+    // Toggles
+    setToggle('tog-limit', settings.enableLeadLimit !== false);
+    setToggle('tog-perlead', settings.enablePerLeadPurchase !== false);
+    setToggle('tog-sub', settings.enableSubscription !== false);
+    setToggle('tog-card', settings.showLeadDashboardCard !== false);
+  }
+}
+
+function setMode(mode) {
+  settings.leadCountMode = mode;
+  document.getElementById('mode-booking').className = 'mode-card' + (mode === 'booking' ? ' active' : '');
+  document.getElementById('mode-lead').className = 'mode-card' + (mode === 'lead' ? ' active' : '');
+}
+
+function setToggle(id, val) {
+  const el = document.getElementById(id);
+  if (val) el.classList.add('active'); else el.classList.remove('active');
+}
+
+function toggleField(key) {
+  settings[key] = !settings[key];
+  const map = { enableLeadLimit: 'tog-limit', enablePerLeadPurchase: 'tog-perlead', enableSubscription: 'tog-sub', showLeadDashboardCard: 'tog-card' };
+  setToggle(map[key], settings[key]);
+}
+
+async function saveSettings() {
+  const btn = document.getElementById('saveBtn');
+  btn.textContent = 'Saving...'; btn.disabled = true;
+  const body = {
+    leadCountMode: settings.leadCountMode || 'booking',
+    freeLeadLimit: Number(document.getElementById('freeLimit').value) || 3,
+    leadUnlockPrice: Number(document.getElementById('leadPrice').value) || 70,
+    monthlyPrice: Number(document.getElementById('monthlyPrice').value) || 199,
+    yearlyPrice: Number(document.getElementById('yearlyPrice').value) || 1999,
+    enableLeadLimit: settings.enableLeadLimit !== false,
+    enablePerLeadPurchase: settings.enablePerLeadPurchase !== false,
+    enableSubscription: settings.enableSubscription !== false,
+    showLeadDashboardCard: settings.showLeadDashboardCard !== false,
+  };
+  const r = await api('/leads/admin/settings', 'PUT', body);
+  btn.textContent = '💾 Save Settings'; btn.disabled = false;
+  if (r.success) { document.getElementById('toast').style.display = 'block'; setTimeout(() => document.getElementById('toast').style.display = 'none', 3000); }
+  else { alert('Failed: ' + (r.message || 'Unknown error')); }
+}
+
+load();
+</script>
+</body>
+</html>
