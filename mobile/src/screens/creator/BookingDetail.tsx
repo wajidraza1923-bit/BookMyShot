@@ -181,10 +181,10 @@ export default function BookingDetail({ route, navigation }: any) {
     { text: 'Delete', style: 'destructive', onPress: async () => { try { await api.delete('/booking-events/' + id); await load(); } catch {} } },
   ]);
 
-  // ── Shared helper: generate PDF to cache and return URI ─────────────────
-  const generatePDF = async (html: string, fileName: string): Promise<string | null> => {
+  // ── Shared helper: generate PDF and return URI ───────────────────────────
+  const generatePDF = async (html: string, _fileName: string): Promise<string | null> => {
     try {
-      console.log('[PDF] Starting generation for:', fileName, 'HTML length:', html.length);
+      console.log('[PDF] Starting generation, HTML length:', html.length);
 
       // Strip CSS that Android WebView PDF engine cannot handle
       const safeHtml = html
@@ -192,43 +192,29 @@ export default function BookingDetail({ route, navigation }: any) {
         .replace(/backdrop-filter[^;]+;/g, '')
         .replace(/@import[^;]+;/g, '');
 
-      console.log('[PDF] Calling printToFileAsync...');
       const result = await Print.printToFileAsync({ html: safeHtml, base64: false });
-      console.log('[PDF] Result:', JSON.stringify({ uri: result?.uri, pages: result?.numberOfPages }));
+      console.log('[PDF] Generated:', JSON.stringify({ uri: result?.uri, pages: result?.numberOfPages }));
 
       if (!result?.uri) {
-        console.log('[PDF] No URI returned');
-        return null;
+        console.log('[PDF] No URI returned — trying simple fallback');
+        const simpleHtml = buildSimpleInvoiceHTML();
+        const r2 = await Print.printToFileAsync({ html: simpleHtml, base64: false });
+        return r2?.uri || null;
       }
 
-      const cacheDir = FileSystem.cacheDirectory || '';
-      const destUri = cacheDir + fileName;
-      console.log('[PDF] Copying to:', destUri);
-      try {
-        await FileSystem.copyAsync({ from: result.uri, to: destUri });
-        const info = await FileSystem.getInfoAsync(destUri);
-        console.log('[PDF] Dest file exists:', info.exists);
-        return info.exists ? destUri : result.uri;
-      } catch (copyErr: any) {
-        console.log('[PDF] Copy failed:', copyErr.message, '— using original:', result.uri);
-        return result.uri;
-      }
+      // Return the uri directly — do NOT copy (cross-folder copy fails in Expo Go sandbox)
+      return result.uri;
     } catch (e: any) {
-      console.log('[PDF] printToFileAsync FAILED:', e?.message, e?.code, e?.stack?.substring(0, 200));
-      // Fallback: ultra-simple HTML guaranteed to work
+      console.log('[PDF] printToFileAsync FAILED:', e?.message);
       try {
-        console.log('[PDF] Trying simple fallback HTML...');
-        const simpleHtml = buildSimpleInvoiceHTML();
-        const result2 = await Print.printToFileAsync({ html: simpleHtml, base64: false });
-        console.log('[PDF] Fallback result:', JSON.stringify({ uri: result2?.uri }));
-        if (result2?.uri) {
-          const dest = (FileSystem.cacheDirectory || '') + fileName;
-          try { await FileSystem.copyAsync({ from: result2.uri, to: dest }); return dest; } catch { return result2.uri; }
-        }
+        console.log('[PDF] Trying simple fallback...');
+        const r2 = await Print.printToFileAsync({ html: buildSimpleInvoiceHTML(), base64: false });
+        console.log('[PDF] Fallback result:', r2?.uri);
+        return r2?.uri || null;
       } catch (e2: any) {
         console.log('[PDF] Fallback also failed:', e2?.message);
+        return null;
       }
-      return null;
     }
   };
 
