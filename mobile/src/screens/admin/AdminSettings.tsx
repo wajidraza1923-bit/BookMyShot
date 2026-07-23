@@ -183,6 +183,14 @@ export default function AdminSettings({ navigation }: any) {
             </View>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
+          <TouchableOpacity style={s.navCard} onPress={() => navigation.navigate('AdminBusinessModel')} activeOpacity={0.7}>
+            <Ionicons name="options-outline" size={18} color="#F59E0B" />
+            <View style={{ flex: 1 }}>
+              <Text style={s.navTitle}>Business Model</Text>
+              <Text style={s.navDesc}>Lead mode, pricing, free limits, unlock price</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+          </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>

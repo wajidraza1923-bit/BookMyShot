@@ -12,6 +12,8 @@ const leadSettingsSchema = new mongoose.Schema(
     // Monthly subscription price (₹)
     monthlyPrice: { type: Number, default: 199 },
     yearlyPrice: { type: Number, default: 1999 },
+    // Subscription duration in days (default 30)
+    subscriptionDurationDays: { type: Number, default: 30 },
     // Toggles
     enableLeadLimit: { type: Boolean, default: true },
     enablePerLeadPurchase: { type: Boolean, default: true },

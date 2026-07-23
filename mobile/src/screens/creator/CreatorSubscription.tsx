@@ -27,14 +27,22 @@ export default function CreatorSubscription({ navigation }: any) {
 
   const load = useCallback(async () => {
     try {
-      const [dashRes, configRes, autopayRes] = await Promise.all([
+      const [dashRes, configRes, autopayRes, leadRes] = await Promise.all([
         api.get('/creator/dashboard'),
         api.get('/config/public'),
         api.get('/razorpay/autopay-status').catch(() => ({ data: { data: {} } })),
+        api.get('/leads/my-usage').catch(() => ({ data: { data: {} } })),
       ]);
       setCreator(dashRes.data);
-      setConfig(configRes.data);
-      // Store autopay status in creator state
+      // Merge Business Model pricing into config
+      const leadData = leadRes.data?.data || {};
+      const configData = configRes.data || {};
+      if (leadData.monthlyPrice) {
+        if (!configData.subscription) configData.subscription = {};
+        configData.subscription.monthlyPlanPrice = leadData.monthlyPrice;
+        configData.subscription.yearlyPlanPrice = leadData.yearlyPrice || leadData.monthlyPrice * 10;
+      }
+      setConfig(configData);
       if (autopayRes.data?.data) {
         setCreator((prev: any) => ({ ...prev, _autopay: autopayRes.data.data }));
       }

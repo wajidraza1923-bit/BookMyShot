@@ -24,6 +24,7 @@ import AdminCreatorLedger from '../screens/admin/AdminCreatorLedger';
 import AdminCashback from '../screens/admin/AdminCashback';
 import AdminWithdrawals from '../screens/admin/AdminWithdrawals';
 import AdminFeaturedMoments from '../screens/admin/AdminFeaturedMoments';
+import AdminBusinessModel from '../screens/admin/AdminBusinessModel';
 
 const Stack = createNativeStackNavigator();
 
@@ -53,6 +54,7 @@ export default function AdminNavigator() {
       <Stack.Screen name="AdminCashback" component={AdminCashback} />
       <Stack.Screen name="AdminWithdrawals" component={AdminWithdrawals} />
       <Stack.Screen name="AdminFeaturedMoments" component={AdminFeaturedMoments} />
+      <Stack.Screen name="AdminBusinessModel" component={AdminBusinessModel} />
     </Stack.Navigator>
   );
 }
