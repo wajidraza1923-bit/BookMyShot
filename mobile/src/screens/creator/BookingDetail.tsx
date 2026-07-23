@@ -186,16 +186,64 @@ export default function BookingDetail({ route, navigation }: any) {
     try {
       const html = buildInvoiceHTML(booking, paymentRecords, false);
       if (!html) { Alert.alert('Error', 'Booking data not loaded'); return; }
-      await Print.printAsync({ html });
-    } catch (e: any) { Alert.alert('Error', 'Failed to open invoice: ' + (e.message || '')); }
+
+      const docNo = booking.invoiceNumber || ('BMS-' + (booking._id || '').slice(-8).toUpperCase());
+      const fileName = 'BookMyShot_Invoice_' + docNo + '.pdf';
+
+      // Generate PDF file
+      const result = await Print.printToFileAsync({ html, base64: false });
+      if (!result?.uri) { Alert.alert('Error', 'Could not generate PDF'); return; }
+
+      // Copy to a named file in cache so it's accessible
+      const destUri = (FileSystem.cacheDirectory || '') + fileName;
+      try { await FileSystem.copyAsync({ from: result.uri, to: destUri }); } catch {}
+      const finalUri = destUri || result.uri;
+
+      // Open with native sharing/viewer (user can save or print from there)
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(finalUri, {
+          mimeType: 'application/pdf',
+          dialogTitle: 'Invoice — ' + docNo,
+          UTI: 'com.adobe.pdf',
+        });
+      } else {
+        // Fallback: open print dialog
+        await Print.printAsync({ html });
+      }
+    } catch (e: any) {
+      const msg = (e?.message || '').toLowerCase();
+      if (msg.includes('cancel') || msg.includes('dismiss')) return;
+      Alert.alert('Error', 'Could not open invoice: ' + (e.message || ''));
+    }
   };
 
   const downloadPartialInvoice = async () => {
     try {
       const html = buildInvoiceHTML(booking, paymentRecords, true);
       if (!html) { Alert.alert('Error', 'Booking data not loaded'); return; }
-      await Print.printAsync({ html });
-    } catch (e: any) { Alert.alert('Error', 'Failed to generate receipt'); }
+
+      const docNo = 'BMS-PR-' + (booking._id || '').slice(-8).toUpperCase();
+      const fileName = 'BookMyShot_Receipt_' + docNo + '.pdf';
+
+      const result = await Print.printToFileAsync({ html, base64: false });
+      if (!result?.uri) { Alert.alert('Error', 'Could not generate receipt'); return; }
+
+      const destUri = (FileSystem.cacheDirectory || '') + fileName;
+      try { await FileSystem.copyAsync({ from: result.uri, to: destUri }); } catch {}
+      const finalUri = destUri || result.uri;
+
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(finalUri, { mimeType: 'application/pdf', dialogTitle: 'Payment Receipt', UTI: 'com.adobe.pdf' });
+      } else {
+        await Print.printAsync({ html });
+      }
+    } catch (e: any) {
+      const msg = (e?.message || '').toLowerCase();
+      if (msg.includes('cancel') || msg.includes('dismiss')) return;
+      Alert.alert('Error', 'Could not generate receipt');
+    }
   };
 
   // ── Share Invoice PDF ─────────────────────────────────────────────────────
