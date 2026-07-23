@@ -167,11 +167,11 @@ export default function AdminSettings({ navigation }: any) {
 
           {/* Navigation helpers */}
           <Text style={s.sectionLabel}>Other Settings</Text>
-          <TouchableOpacity style={s.navCard} onPress={() => navigation.navigate('AdminSubscriptions')} activeOpacity={0.7}>
+          <TouchableOpacity style={s.navCard} onPress={() => navigation.navigate('AdminBusinessModel')} activeOpacity={0.7}>
             <Ionicons name="diamond-outline" size={18} color={colors.primary} />
             <View style={{ flex: 1 }}>
-              <Text style={s.navTitle}>Subscription Settings</Text>
-              <Text style={s.navDesc}>Monthly price, trial days, renewal</Text>
+              <Text style={s.navTitle}>Subscription & Business Model</Text>
+              <Text style={s.navDesc}>Lead mode, pricing, free limits</Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
