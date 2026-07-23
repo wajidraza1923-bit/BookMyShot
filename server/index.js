@@ -95,7 +95,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(mongoSanitize());
 
 // Rate limiting — global
-const globalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 500, message: { success: false, message: "Too many requests" } });
+const globalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 2000, message: { success: false, message: "Too many requests. Please wait a moment." }, skip: (req) => req.method === 'GET' && (req.path.includes('/bookings') || req.path.includes('/payment-records') || req.path.includes('/booking-events') || req.path.includes('/invoice')) });
 app.use("/api/", globalLimiter);
 
 // Rate limiting — auth routes (strict)
