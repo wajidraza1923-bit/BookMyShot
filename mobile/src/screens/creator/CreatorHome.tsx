@@ -5,6 +5,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { colors, spacing, typography, radius } from '../../theme';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
+import { useAutoRefresh } from '../../hooks/useRealTimeUpdates';
 import { getRazorpayConfig, createCommissionOrder, verifyCommissionPayment } from '../../services/payment';
 import RazorpayWebCheckout from '../../components/RazorpayWebCheckout';
 
@@ -39,6 +40,12 @@ export default function CreatorHome({ navigation }: any) {
   useEffect(() => { loadDashboard(); }, []);
   useFocusEffect(useCallback(() => { loadDashboard(); }, []));
   const onRefresh = async () => { setRefreshing(true); await loadDashboard(); setRefreshing(false); };
+
+  // ═══ REAL-TIME: Auto-refresh dashboard on any relevant event ═══
+  useAutoRefresh(
+    ['booking:updated', 'inquiry:new', 'inquiry:updated', 'payment:updated', 'commission:new', 'dashboard:refresh'],
+    loadDashboard
+  );
 
   // ═══ PAY COMMISSION DIRECTLY FROM DASHBOARD ═══
   const handlePayNow = async () => {
@@ -104,7 +111,7 @@ export default function CreatorHome({ navigation }: any) {
           </View>
           <TouchableOpacity style={styles.notifBtn} onPress={() => navigation.navigate('CreatorNotifications')}>
             <Ionicons name="notifications-outline" size={20} color={colors.text} />
-            <View style={styles.notifDot} />
+            {stats.newInquiries > 0 && <View style={styles.notifDot} />}
           </TouchableOpacity>
         </View>
 
@@ -121,15 +128,22 @@ export default function CreatorHome({ navigation }: any) {
           ))}
         </View>
 
-        {/* Lead Usage Card */}
+        {/* Lead Usage Card — Dynamic from Business Model */}
         <View style={styles.leadCard}>
           <View style={styles.leadHeader}>
             <View style={styles.leadIconWrap}><Ionicons name="people" size={18} color="#6C3BFF" /></View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.leadTitle}>Lead Usage</Text>
-              <Text style={styles.leadSub}>{leadUsage.isSubscribed ? 'Unlimited Leads • Premium Active' : `${leadUsage.freeUsed} of ${leadUsage.freeLeadLimit} free leads used`}</Text>
+              <Text style={styles.leadTitle}>{(leadUsage as any).activeMode === 'lead' ? 'Lead Usage' : 'Booking Usage'}</Text>
+              <Text style={styles.leadSub}>
+                {leadUsage.isSubscribed
+                  ? '✅ Subscribed • Unlimited Access'
+                  : (leadUsage as any).quotaCompleted
+                    ? '🔒 Free limit reached'
+                    : `${leadUsage.freeUsed} of ${leadUsage.freeLeadLimit} free ${(leadUsage as any).activeMode === 'lead' ? 'leads' : 'bookings'} used`
+                }
+              </Text>
             </View>
-            {!leadUsage.isSubscribed && !leadUsage.canUnlock && (
+            {!leadUsage.isSubscribed && (leadUsage as any).quotaCompleted && (
               <TouchableOpacity style={styles.upgradeBtn} onPress={() => navigation.navigate('CreatorSubscription')}>
                 <Ionicons name="lock-open" size={12} color="#fff" /><Text style={styles.upgradeBtnText}>Upgrade</Text>
               </TouchableOpacity>
@@ -139,6 +153,23 @@ export default function CreatorHome({ navigation }: any) {
             <View style={styles.leadProgress}>
               <View style={styles.leadBar}><View style={[styles.leadBarFill, { width: `${Math.min(100, (leadUsage.freeUsed / leadUsage.freeLeadLimit) * 100)}%` }]} /></View>
               <Text style={styles.leadRemaining}>{leadUsage.freeRemaining} remaining</Text>
+            </View>
+          )}
+          {/* Limit Reached Card */}
+          {!leadUsage.isSubscribed && (leadUsage as any).quotaCompleted && (
+            <View style={{ marginTop: 12, backgroundColor: '#FEF3C7', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#FDE68A' }}>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: '#92400E', marginBottom: 6 }}>Free limit completed</Text>
+              <Text style={{ fontSize: 11, color: '#92400E', lineHeight: 16 }}>To continue receiving customer details, unlock leads individually or subscribe for unlimited access.</Text>
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+                {(leadUsage as any).enablePerLeadPurchase && (
+                  <TouchableOpacity style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: 10, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: '#E5E7EB' }} onPress={() => navigation.navigate('CreatorLeads')}>
+                    <Text style={{ fontSize: 11, fontWeight: '700', color: '#6C3BFF' }}>🔓 Unlock ₹{(leadUsage as any).leadUnlockPrice || 70}</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity style={{ flex: 1, backgroundColor: '#6C3BFF', borderRadius: 10, paddingVertical: 10, alignItems: 'center' }} onPress={() => navigation.navigate('CreatorSubscription')}>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: '#FFFFFF' }}>⭐ Subscribe ₹{(leadUsage as any).monthlyPrice || 199}</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
         </View>
