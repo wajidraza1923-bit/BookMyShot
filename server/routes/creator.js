@@ -787,13 +787,18 @@ router.patch("/inquiries/:id/reply", async (req, res, next) => {
     // If accepted AND inquiry has a linked user, create a Booking automatically
     let createdBooking = null;
     if (inquiry.status === "accepted" && inquiry.user) {
-      // ═══ FREE LEADS LIMIT CHECK ═══
-      if (creator.subscriptionStatus === "free") {
-        const freeLimit = creator.freeLeadsLimit || 3;
+      // ═══ FREE LEADS LIMIT CHECK (only in booking mode) ═══
+      const LeadSettings = require("../models/LeadSettings");
+      const leadSettings = await LeadSettings.getSettings();
+      const leadMode = leadSettings.leadCountMode || "booking";
+      const leadLimitEnabled = leadSettings.enableLeadLimit !== false;
+
+      if (leadLimitEnabled && leadMode === "booking" && creator.subscriptionStatus === "free") {
+        const freeLimit = creator.freeLeadsLimit || leadSettings.freeLeadLimit || 3;
         if ((creator.freeLeadsUsed || 0) >= freeLimit) {
           return res.status(403).json({
             success: false,
-            message: `You have used all ${freeLimit} free accepted bookings. Please subscribe to accept more leads.`,
+            message: `You have used all ${freeLimit} free leads. Please subscribe to accept more.`,
             requiresSubscription: true,
           });
         }

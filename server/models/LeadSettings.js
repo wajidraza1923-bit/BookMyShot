@@ -3,6 +3,12 @@ const mongoose = require("mongoose");
 const leadSettingsSchema = new mongoose.Schema(
   {
     freeLeadLimit: { type: Number, default: 3 },
+    // Lead count mode: "booking" = count on booking creation, "inquiry" = count on inquiry creation
+    leadCountMode: { type: String, enum: ["booking", "inquiry"], default: "booking" },
+    // Feature toggles
+    enableLeadLimit: { type: Boolean, default: true },
+    showLeadDashboardCard: { type: Boolean, default: true },
+    // Subscription pricing
     monthlyPrice: { type: Number, default: 499 },
     yearlyPrice: { type: Number, default: 4999 },
     subscriptionEnabled: { type: Boolean, default: true },

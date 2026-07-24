@@ -86,6 +86,21 @@ router.post("/", optionalAuth, async (req, res, next) => {
       type: "inquiry",
     });
 
+    // ═══ LEAD COUNT (Inquiry Mode) ═══
+    try {
+      const LeadSettings = require("../models/LeadSettings");
+      const leadSettings = await LeadSettings.getSettings();
+      if (leadSettings.leadCountMode === "inquiry" && leadSettings.enableLeadLimit) {
+        // Only count if creator is on free plan
+        if (creator.subscriptionStatus === "free" || !creator.subscriptionStatus) {
+          const freeLimit = creator.freeLeadsLimit || leadSettings.freeLeadLimit || 3;
+          if ((creator.freeLeadsUsed || 0) < freeLimit) {
+            await Creator.findByIdAndUpdate(creator._id, { $inc: { freeLeadsUsed: 1 } });
+          }
+        }
+      }
+    } catch {}
+
     // Log live activity
     try {
       const LiveActivity = require("../models/LiveActivity");
