@@ -1,317 +1,157 @@
+/**
+ * Reviews API — Verified reviews for creators
+ */
 const express = require("express");
-const mongoose = require("mongoose");
 const Review = require("../models/Review");
-const PlatformReview = require("../models/PlatformReview");
-const Creator = require("../models/Creator");
 const Booking = require("../models/Booking");
+const Creator = require("../models/Creator");
+const Notification = require("../models/Notification");
 const { protect, authorize } = require("../middleware/auth");
-const jwt = require("jsonwebtoken");
-const User = require("../models/User");
 
 const router = express.Router();
 
-// Phone validation: exactly 10 digits, no letters
-function isValidPhone(phone) {
-  return /^\d{10}$/.test(phone);
-}
-
-// Optional auth middleware
-async function optionalAuth(req, res, next) {
+// GET reviews for a creator (public)
+router.get("/creator/:creatorId", async (req, res, next) => {
   try {
-    let token;
-    if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
-      token = req.headers.authorization.split(" ")[1];
-    }
-    if (token) {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = await User.findById(decoded.id).select("-password");
-    }
-  } catch {}
-  next();
-}
+    const { sort = "newest", page = 1, limit = 20 } = req.query;
+    const filter = { creator: req.params.creatorId, status: "active" };
+    let sortObj = { createdAt: -1 };
+    if (sort === "highest") sortObj = { rating: -1, createdAt: -1 };
+    if (sort === "lowest") sortObj = { rating: 1, createdAt: -1 };
 
-// Helper: recalculate creator rating
-async function recalcCreatorRating(creatorId) {
-  const avg = await Review.aggregate([
-    { $match: { creator: new mongoose.Types.ObjectId(creatorId), approved: true, hidden: false } },
-    { $group: { _id: null, avg: { $avg: "$rating" }, count: { $sum: 1 } } },
-  ]);
-  if (avg[0]) {
-    await Creator.findByIdAndUpdate(creatorId, { rating: Math.round(avg[0].avg * 10) / 10, reviewCount: avg[0].count });
-  } else {
-    await Creator.findByIdAndUpdate(creatorId, { rating: 5.0, reviewCount: 0 });
-  }
-}
-
-// ═══ PUBLIC ═══
-
-// Get approved visible reviews for a creator
-router.get("/creator/:id", async (req, res, next) => {
-  try {
-    const reviews = await Review.find({ creator: req.params.id, approved: true, hidden: false })
-      .populate("user", "name avatar").sort("-createdAt");
-    const stats = await Review.aggregate([
-      { $match: { creator: new mongoose.Types.ObjectId(req.params.id), approved: true, hidden: false } },
-      { $group: { _id: null, avg: { $avg: "$rating" }, count: { $sum: 1 } } },
+    const [reviews, total] = await Promise.all([
+      Review.find(filter).sort(sortObj).skip((page - 1) * limit).limit(Number(limit))
+        .populate("user", "name avatar"),
+      Review.countDocuments(filter),
     ]);
-    res.json({ success: true, reviews, stats: stats[0] || { avg: 0, count: 0 } });
+
+    // Aggregate stats
+    const stats = await Review.aggregate([
+      { $match: { creator: require("mongoose").Types.ObjectId.createFromHexString(req.params.creatorId), status: "active" } },
+      { $group: { _id: null, avg: { $avg: "$rating" }, count: { $sum: 1 }, sum5: { $sum: { $cond: [{ $eq: ["$rating", 5] }, 1, 0] } }, sum4: { $sum: { $cond: [{ $eq: ["$rating", 4] }, 1, 0] } }, sum3: { $sum: { $cond: [{ $eq: ["$rating", 3] }, 1, 0] } }, sum2: { $sum: { $cond: [{ $eq: ["$rating", 2] }, 1, 0] } }, sum1: { $sum: { $cond: [{ $eq: ["$rating", 1] }, 1, 0] } } } },
+    ]);
+
+    res.json({ success: true, reviews, total, page: Number(page), stats: stats[0] || { avg: 0, count: 0 } });
   } catch (e) { next(e); }
 });
 
-// Get platform reviews (for homepage/app)
-router.get("/platform", async (req, res, next) => {
+// POST create review (customer only, must have completed booking)
+router.post("/", protect, async (req, res, next) => {
   try {
-    const reviews = await PlatformReview.find({ isActive: true }).populate("user", "name avatar").sort("-createdAt").limit(20);
-    res.json({ success: true, data: reviews });
-  } catch (e) { next(e); }
-});
+    const { bookingId, creatorId, rating, title, text, photos } = req.body;
+    if (!rating) return res.status(400).json({ success: false, message: "Rating required" });
+    if (rating < 1 || rating > 5) return res.status(400).json({ success: false, message: "Rating must be 1-5" });
 
-// ═══ SUBMIT CREATOR REVIEW (Logged-in OR Guest with phone) ═══
-router.post("/", optionalAuth, async (req, res, next) => {
-  try {
-    const { creatorId, rating, title, text, phone, name, professionalism, qualityOfWork, communication, valueForMoney, wouldRecommend, eventType } = req.body;
+    let targetCreatorId = creatorId;
+    let targetBookingId = bookingId;
 
-    if (!creatorId) return res.status(400).json({ success: false, message: "Creator is required" });
-    if (!rating || rating < 1 || rating > 5) return res.status(400).json({ success: false, message: "Rating must be between 1 and 5" });
-    if (!text || text.trim().length < 5) return res.status(400).json({ success: false, message: "Please write at least a short review (5+ characters)" });
-
-    // Verify creator exists
-    const creator = await Creator.findById(creatorId);
-    if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
-
-    // Shared review fields
-    const reviewFields = {
-      rating, title: title || "", text: text.trim(),
-      professionalism: professionalism || 0,
-      qualityOfWork: qualityOfWork || 0,
-      communication: communication || 0,
-      valueForMoney: valueForMoney || 0,
-      wouldRecommend: wouldRecommend !== false,
-      eventType: eventType || "",
-    };
-
-    // MODE A: Logged-in user
-    if (req.user) {
+    if (bookingId) {
+      // Verified review path — verify booking
+      const booking = await Booking.findById(bookingId);
+      if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
+      if (String(booking.user) !== String(req.user._id)) return res.status(403).json({ success: false, message: "Not your booking" });
+      if (booking.status !== "Completed" && booking.status !== "completed") return res.status(400).json({ success: false, message: "Can only review completed bookings" });
+      targetCreatorId = booking.creator;
+      // Prevent duplicate per booking
+      const existing = await Review.findOne({ user: req.user._id, booking: bookingId });
+      if (existing) return res.status(409).json({ success: false, message: "You already reviewed this booking" });
+    } else if (creatorId) {
+      // Direct review path — verify user has at least one completed booking with this creator
+      const completedBooking = await Booking.findOne({ user: req.user._id, creator: creatorId, status: { $in: ["Completed", "completed"] } });
+      if (!completedBooking) return res.status(403).json({ success: false, message: "Only customers with completed bookings can review" });
+      targetBookingId = completedBooking._id;
+      // Prevent duplicate per creator
       const existing = await Review.findOne({ user: req.user._id, creator: creatorId });
-      if (existing) return res.status(400).json({ success: false, message: "You have already reviewed this creator. You can edit your existing review." });
-
-      const review = await Review.create({ user: req.user._id, creator: creatorId, name: req.user.name, ...reviewFields });
-
-      await recalcCreatorRating(creatorId);
-
-      // ═══ NOTIFICATION: New Review Received (to creator) ═══
-      try {
-        const Notification = require("../models/Notification");
-        await Notification.create({
-          user: creator.user,
-          type: "review",
-          title: "⭐ New Review Received",
-          message: `${req.user.name} left a ${rating}★ review${reviewFields.eventType ? ` for ${reviewFields.eventType}` : ''}: "${text.substring(0, 60)}${text.length > 60 ? '...' : ''}"`,
-          targetScreen: "CreatorReviews",
-        });
-      } catch (e) { /* non-fatal */ }
-
-      // Log activity
-      try { const LA = require("../models/LiveActivity"); await LA.create({ type: "review", text: `New ${rating}★ review in ${creator.city || 'India'}`, icon: "⭐", city: creator.city }); } catch {}
-      return res.status(201).json({ success: true, data: review });
+      if (existing) return res.status(409).json({ success: false, message: "You already reviewed this creator" });
+    } else {
+      return res.status(400).json({ success: false, message: "bookingId or creatorId required" });
     }
 
-    // MODE B: Guest user with phone number
-    if (!phone) return res.status(400).json({ success: false, message: "Phone number is required for guest reviews" });
-    if (!isValidPhone(phone)) return res.status(400).json({ success: false, message: "Phone must be exactly 10 digits (numbers only, no letters)" });
-    if (!name || name.trim().length < 2) return res.status(400).json({ success: false, message: "Name is required (at least 2 characters)" });
+    const review = await Review.create({
+      user: req.user._id,
+      creator: targetCreatorId,
+      booking: targetBookingId,
+      rating,
+      title: title || "",
+      text: text || "",
+      photos: photos || [],
+    });
 
-    const existingByPhone = await Review.findOne({ phone, creator: creatorId });
-    if (existingByPhone) return res.status(400).json({ success: false, message: "This phone number has already submitted a review for this creator" });
+    // Update creator's average rating
+    const allReviews = await Review.find({ creator: targetCreatorId, status: "active" });
+    const avgRating = allReviews.reduce((s, r) => s + r.rating, 0) / allReviews.length;
+    await Creator.findByIdAndUpdate(targetCreatorId, { rating: Math.round(avgRating * 10) / 10 });
 
-    const review = await Review.create({ creator: creatorId, phone, name: name.trim(), ...reviewFields });
+    // Notify creator
+    const creator = await Creator.findById(targetCreatorId).select("user");
+    if (creator) {
+      await Notification.create({ user: creator.user, title: "⭐ New Review", message: `You received a ${rating}-star review!`, type: "review", targetScreen: "CreatorReviews" });
+    }
 
-    await recalcCreatorRating(creatorId);
-
-    // ═══ NOTIFICATION: New Review Received (guest review → creator) ═══
-    try {
-      const Notification = require("../models/Notification");
-      await Notification.create({
-        user: creator.user,
-        type: "review",
-        title: "⭐ New Review Received",
-        message: `${name.trim()} left a ${rating}★ review${reviewFields.eventType ? ` for ${reviewFields.eventType}` : ''}: "${text.substring(0, 60)}${text.length > 60 ? '...' : ''}"`,
-        targetScreen: "CreatorReviews",
-      });
-    } catch (e) { /* non-fatal */ }
-
-    try { const LA = require("../models/LiveActivity"); await LA.create({ type: "review", text: `New ${rating}★ review in ${creator.city || 'India'}`, icon: "⭐", city: creator.city }); } catch {}
-    res.status(201).json({ success: true, data: review });
+    res.status(201).json({ success: true, review });
   } catch (e) {
-    if (e.code === 11000) return res.status(400).json({ success: false, message: "You have already reviewed this creator" });
+    if (e.code === 11000) return res.status(409).json({ success: false, message: "Already reviewed" });
     next(e);
   }
 });
 
-// ═══ SUBMIT PLATFORM REVIEW (Logged-in OR Guest) ═══
-router.post("/platform", optionalAuth, async (req, res, next) => {
+// PATCH creator reply to review
+router.patch("/:id/reply", protect, authorize("creator"), async (req, res, next) => {
   try {
-    const { rating, text, phone, name, city } = req.body;
-    if (!rating || rating < 1 || rating > 5) return res.status(400).json({ success: false, message: "Rating must be between 1 and 5" });
-    if (!text || text.trim().length < 5) return res.status(400).json({ success: false, message: "Review text is required (5+ characters)" });
-
-    // MODE A: Logged-in user
-    if (req.user) {
-      const existing = await PlatformReview.findOne({ user: req.user._id });
-      if (existing) return res.status(400).json({ success: false, message: "You have already reviewed BookMyShot. You can edit your existing review." });
-
-      const review = await PlatformReview.create({ user: req.user._id, name: req.user.name, rating, text: text.trim(), city: city || "", addedBy: "user" });
-      return res.status(201).json({ success: true, data: review });
-    }
-
-    // MODE B: Guest with phone
-    if (!phone) return res.status(400).json({ success: false, message: "Phone number is required for guest reviews" });
-    if (!isValidPhone(phone)) return res.status(400).json({ success: false, message: "Phone must be exactly 10 digits (numbers only, no letters)" });
-    if (!name || name.trim().length < 2) return res.status(400).json({ success: false, message: "Name is required" });
-
-    const existingByPhone = await PlatformReview.findOne({ phone });
-    if (existingByPhone) return res.status(400).json({ success: false, message: "This phone number has already reviewed BookMyShot" });
-
-    const review = await PlatformReview.create({ phone, name: name.trim(), rating, text: text.trim(), city: city || "", addedBy: "guest" });
-    res.status(201).json({ success: true, data: review });
-  } catch (e) {
-    if (e.code === 11000) return res.status(400).json({ success: false, message: "Duplicate review not allowed" });
-    next(e);
-  }
-});
-
-// ═══ EDIT OWN REVIEW (logged-in) ═══
-router.put("/:id", protect, async (req, res, next) => {
-  try {
-    const review = await Review.findOne({ _id: req.params.id, user: req.user._id });
-    if (!review) return res.status(404).json({ success: false, message: "Review not found or not yours" });
-    const { rating, title, text } = req.body;
-    if (rating && rating >= 1 && rating <= 5) review.rating = rating;
-    if (title !== undefined) review.title = title;
-    if (text !== undefined) review.text = text;
-    await review.save();
-    await recalcCreatorRating(review.creator);
-    res.json({ success: true, data: review });
-  } catch (e) { next(e); }
-});
-
-// ═══ DELETE OWN REVIEW (logged-in) ═══
-router.delete("/:id", protect, async (req, res, next) => {
-  try {
-    const review = await Review.findOne({ _id: req.params.id, user: req.user._id });
-    if (!review) return res.status(404).json({ success: false, message: "Review not found or not yours" });
-    const creatorId = review.creator;
-    await Review.findByIdAndDelete(req.params.id);
-    await recalcCreatorRating(creatorId);
-    res.json({ success: true });
-  } catch (e) { next(e); }
-});
-
-// ═══ CREATOR ═══
-
-// Get my reviews (creator dashboard)
-router.get("/my-reviews", protect, authorize("creator"), async (req, res, next) => {
-  try {
-    const creator = await Creator.findOne({ user: req.user._id });
-    if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
-    const reviews = await Review.find({ creator: creator._id }).populate("user", "name avatar").sort("-createdAt");
-    const stats = await Review.aggregate([
-      { $match: { creator: creator._id, approved: true, hidden: false } },
-      { $group: { _id: null, avg: { $avg: "$rating" }, count: { $sum: 1 }, r1: { $sum: { $cond: [{ $eq: ["$rating", 1] }, 1, 0] } }, r2: { $sum: { $cond: [{ $eq: ["$rating", 2] }, 1, 0] } }, r3: { $sum: { $cond: [{ $eq: ["$rating", 3] }, 1, 0] } }, r4: { $sum: { $cond: [{ $eq: ["$rating", 4] }, 1, 0] } }, r5: { $sum: { $cond: [{ $eq: ["$rating", 5] }, 1, 0] } } } },
-    ]);
-    const totalReviews = reviews.length;
-    const hiddenCount = reviews.filter(r => r.hidden).length;
-    const visibleCount = totalReviews - hiddenCount;
-    res.json({ success: true, reviews, stats: stats[0] || {}, counts: { total: totalReviews, visible: visibleCount, hidden: hiddenCount } });
-  } catch (e) { next(e); }
-});
-
-// Creator hide/show review
-router.patch("/creator/:id/hide", protect, authorize("creator"), async (req, res, next) => {
-  try {
+    const { reply } = req.body;
+    if (!reply) return res.status(400).json({ success: false, message: "Reply text required" });
     const creator = await Creator.findOne({ user: req.user._id });
     const review = await Review.findOne({ _id: req.params.id, creator: creator._id });
     if (!review) return res.status(404).json({ success: false, message: "Review not found" });
-    
-    // If admin hid it, creator cannot unhide
-    if (review.hiddenBy === "admin" && review.hidden) {
-      return res.status(403).json({ success: false, message: "This review was hidden by admin and cannot be changed" });
-    }
-    
-    review.hidden = !review.hidden;
-    review.hiddenBy = review.hidden ? "creator" : "";
+    review.reply = reply;
+    review.repliedAt = new Date();
     await review.save();
-    await recalcCreatorRating(creator._id);
-    res.json({ success: true, data: review });
+    res.json({ success: true, review });
   } catch (e) { next(e); }
 });
 
-// Creator reply to review
-router.patch("/creator/:id/reply", protect, authorize("creator"), async (req, res, next) => {
+// POST mark review helpful
+router.post("/:id/helpful", protect, async (req, res, next) => {
   try {
-    const creator = await Creator.findOne({ user: req.user._id });
-    const review = await Review.findOne({ _id: req.params.id, creator: creator._id });
+    const review = await Review.findById(req.params.id);
     if (!review) return res.status(404).json({ success: false, message: "Review not found" });
-    review.reply = req.body.reply || "";
-    review.repliedAt = review.reply ? new Date() : undefined;
+    if (review.helpfulUsers.includes(req.user._id)) return res.status(400).json({ success: false, message: "Already marked" });
+    review.helpfulUsers.push(req.user._id);
+    review.helpfulCount = review.helpfulUsers.length;
     await review.save();
-    res.json({ success: true, data: review });
+    res.json({ success: true, helpfulCount: review.helpfulCount });
   } catch (e) { next(e); }
 });
 
-// ═══ ADMIN ═══
+// PATCH report review
+router.patch("/:id/report", protect, async (req, res, next) => {
+  try {
+    const { reason } = req.body;
+    await Review.findByIdAndUpdate(req.params.id, { status: "reported", reportReason: reason || "Inappropriate", reportedBy: req.user._id });
+    res.json({ success: true, message: "Review reported" });
+  } catch (e) { next(e); }
+});
 
+// ADMIN: Get all reviews with moderation
 router.get("/admin/all", protect, authorize("admin"), async (req, res, next) => {
   try {
-    const reviews = await Review.find().populate("user", "name email").populate({ path: "creator", populate: { path: "user", select: "name" } }).sort("-createdAt");
-    res.json({ success: true, data: reviews });
+    const { status, page = 1, limit = 20 } = req.query;
+    const filter = status ? { status } : {};
+    const reviews = await Review.find(filter).sort("-createdAt").skip((page - 1) * limit).limit(Number(limit))
+      .populate("user", "name avatar").populate("creator", "specialty city");
+    const total = await Review.countDocuments(filter);
+    res.json({ success: true, reviews, total });
   } catch (e) { next(e); }
 });
 
-router.put("/admin/:id", protect, authorize("admin"), async (req, res, next) => {
+// ADMIN: Moderate review
+router.patch("/admin/:id", protect, authorize("admin"), async (req, res, next) => {
   try {
-    const review = await Review.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true });
-    res.json({ success: true, data: review });
+    const { status } = req.body;
+    if (!["active", "hidden", "removed"].includes(status)) return res.status(400).json({ success: false, message: "Invalid status" });
+    await Review.findByIdAndUpdate(req.params.id, { status });
+    res.json({ success: true, message: `Review ${status}` });
   } catch (e) { next(e); }
-});
-
-router.delete("/admin/:id", protect, authorize("admin"), async (req, res, next) => {
-  try {
-    const review = await Review.findById(req.params.id);
-    if (review) {
-      const creatorId = review.creator;
-      await Review.findByIdAndDelete(req.params.id);
-      await recalcCreatorRating(creatorId);
-    }
-    res.json({ success: true });
-  } catch (e) { next(e); }
-});
-
-router.patch("/admin/:id/visibility", protect, authorize("admin"), async (req, res, next) => {
-  try {
-    const review = await Review.findById(req.params.id);
-    if (!review) return res.status(404).json({ success: false, message: "Not found" });
-    review.hidden = !review.hidden;
-    review.hiddenBy = review.hidden ? "admin" : "";
-    await review.save();
-    await recalcCreatorRating(review.creator);
-    res.json({ success: true, data: review });
-  } catch (e) { next(e); }
-});
-
-// Platform reviews admin
-router.get("/admin/platform", protect, authorize("admin"), async (req, res, next) => {
-  try { res.json({ success: true, data: await PlatformReview.find().sort("-createdAt") }); } catch (e) { next(e); }
-});
-router.post("/admin/platform", protect, authorize("admin"), async (req, res, next) => {
-  try {
-    const { name, rating, text, city, featured } = req.body;
-    const review = await PlatformReview.create({ name, rating, text, city, featured, addedBy: "admin" });
-    res.status(201).json({ success: true, data: review });
-  } catch (e) { next(e); }
-});
-router.delete("/admin/platform/:id", protect, authorize("admin"), async (req, res, next) => {
-  try { await PlatformReview.findByIdAndDelete(req.params.id); res.json({ success: true }); } catch (e) { next(e); }
 });
 
 module.exports = router;

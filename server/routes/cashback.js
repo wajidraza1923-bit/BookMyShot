@@ -142,6 +142,8 @@ router.get("/admin/reports", protect, authorize("admin"), async (req, res, next)
 });
 
 // ═══ CUSTOMER: Confirm booking completion & trigger cashback ═══
+// NOTE: Cashback is now primarily auto-credited when creator marks "Payment Completed".
+// This endpoint remains as a fallback for edge cases.
 router.post("/confirm-completion", protect, async (req, res, next) => {
   try {
     const { bookingId } = req.body;
@@ -151,62 +153,82 @@ router.post("/confirm-completion", protect, async (req, res, next) => {
     const booking = await Booking.findById(bookingId);
     if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
 
-    // ═══ ELIGIBILITY CHECKS ═══
-
-    // 1. Must be the customer who made the booking (self-registered)
-    if (String(booking.customer) !== String(req.user._id)) {
+    // 1. Must be the customer who made the booking
+    if (String(booking.user) !== String(req.user._id)) {
       return res.status(403).json({ success: false, message: "Only the booking customer can confirm completion" });
     }
 
-    // 2. Must NOT be a creator-created inquiry (manual/walk-in)
+    // 2. Booking must be completed by creator first
+    if (booking.status !== "Completed") {
+      return res.status(400).json({ success: false, message: "Booking must be marked as completed by the creator first." });
+    }
+
+    // 3. Must NOT be a creator-created inquiry
     if (booking.createdByCreator || booking.source === 'creator_manual' || booking.source === 'walk_in') {
       return res.status(400).json({
         success: false,
-        message: "Cashback is available only for customers who register and book directly through their own BookMyShot account. Manually created inquiries are not eligible.",
+        message: "Cashback is available only for customers who register and book directly through their own BookMyShot account.",
         code: "CREATOR_CREATED_NOT_ELIGIBLE",
       });
     }
 
-    // 3. Booking fee must have been paid by the customer via Razorpay
+    // 4. Booking fee must have been paid
     if (!booking.bookingFeePaid) {
-      return res.status(400).json({ success: false, message: "Booking fee was not paid. Cashback requires 5% booking fee payment." });
+      return res.status(400).json({ success: false, message: "Booking fee was not paid. Cashback requires booking fee payment via Razorpay." });
     }
 
-    // 4. Booking must not be cancelled/refunded
-    if (booking.status === "Cancelled" || booking.status === "Refunded" || booking.status === "Rejected") {
-      return res.status(400).json({ success: false, message: "Cancelled/refunded/rejected bookings are not eligible for cashback" });
-    }
-
-    // 5. Prevent duplicate cashback
+    // 5. Check for existing cashback
     const existing = await CashbackTransaction.findOne({ booking: bookingId });
-    if (existing) return res.json({ success: true, data: existing, message: "Cashback already credited" });
+    if (existing) {
+      if (existing.status === "credited") return res.json({ success: true, data: existing, message: "Cashback already credited" });
+      if (existing.status === "expired") return res.status(400).json({ success: false, message: "Cashback expired — 30-day deadline exceeded.", code: "CASHBACK_DEADLINE_EXPIRED" });
+    }
 
-    // ═══ CALCULATE & CREDIT ═══
+    // 6. 30-Day Deadline
+    const bookingCreatedAt = booking.createdAt || booking.bookingFeePaidAt || new Date();
+    const cashbackDeadline = new Date(bookingCreatedAt);
+    cashbackDeadline.setDate(cashbackDeadline.getDate() + 30);
+    if (new Date() > cashbackDeadline) {
+      await CashbackTransaction.create({
+        user: req.user._id,
+        booking: bookingId,
+        amount: 0,
+        percentage: 0,
+        bookingAmount: booking.bookingFeeAmount || 0,
+        status: "expired",
+        notes: "Payment completed after 30-day cashback deadline. Cashback retained by BookMyShot.",
+      });
+      return res.status(400).json({
+        success: false,
+        message: "Cashback expired. Confirmation was after the 30-day deadline.",
+        code: "CASHBACK_DEADLINE_EXPIRED",
+      });
+    }
+
+    // 7. Calculate & Credit (based on booking fee, not total amount)
     const settings = await CashbackSettings.getSettings();
     const now = new Date();
     const isActive = settings.enabled && (!settings.startDate || new Date(settings.startDate) <= now) && (!settings.endDate || new Date(settings.endDate) >= now);
-
     if (!isActive) return res.status(400).json({ success: false, message: "Cashback is currently not active" });
 
-    const bookingAmount = booking.totalAmount || booking.quotedAmount || booking.amount || 0;
-    if (bookingAmount < settings.minBookingAmount) return res.status(400).json({ success: false, message: `Minimum ₹${settings.minBookingAmount} booking required for cashback` });
+    const feeAmount = booking.bookingFeeAmount || 0;
+    if (feeAmount < settings.minBookingAmount) return res.status(400).json({ success: false, message: `Minimum ₹${settings.minBookingAmount} booking fee required for cashback` });
 
-    let cashbackAmount = Math.round((bookingAmount * settings.percentage) / 100);
+    let cashbackAmount = Math.round((feeAmount * settings.percentage) / 100);
     if (cashbackAmount > settings.maxAmount) cashbackAmount = settings.maxAmount;
     if (cashbackAmount <= 0) return res.status(400).json({ success: false, message: "Cashback amount is zero" });
 
-    // Credit to customer wallet
     const transaction = await CashbackTransaction.create({
       user: req.user._id,
       booking: bookingId,
       amount: cashbackAmount,
       percentage: settings.percentage,
-      bookingAmount,
+      bookingAmount: feeAmount,
       status: "credited",
       creditedAt: new Date(),
+      notes: `Cashback: ${settings.percentage}% of ₹${feeAmount} booking fee. Customer confirmed.`,
     });
 
-    // Mark booking as customer-confirmed
     await Booking.findByIdAndUpdate(bookingId, { $set: { customerConfirmedCompletion: true } });
 
     res.status(201).json({
@@ -262,6 +284,27 @@ router.post("/credit", protect, async (req, res, next) => {
     // Check if cashback already exists for this booking
     const existing = await CashbackTransaction.findOne({ booking: bookingId });
     if (existing) return res.status(409).json({ success: false, message: "Cashback already processed for this booking" });
+
+    // 30-Day Deadline Check
+    const Booking = require("../models/Booking");
+    const booking = await Booking.findById(bookingId);
+    if (booking) {
+      const bookingCreatedAt = booking.createdAt || new Date();
+      const cashbackDeadline = new Date(bookingCreatedAt);
+      cashbackDeadline.setDate(cashbackDeadline.getDate() + 30);
+      if (new Date() > cashbackDeadline) {
+        await CashbackTransaction.create({
+          user: req.user._id,
+          booking: bookingId,
+          amount: 0,
+          percentage: 0,
+          bookingAmount,
+          status: "expired",
+          notes: "Payment completed after 30-day cashback deadline.",
+        });
+        return res.status(400).json({ success: false, message: "Cashback expired — 30-day deadline exceeded.", code: "CASHBACK_DEADLINE_EXPIRED" });
+      }
+    }
 
     // Get settings
     const settings = await CashbackSettings.getSettings();

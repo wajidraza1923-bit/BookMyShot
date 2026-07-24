@@ -17,26 +17,30 @@ router.get("/settings", async (req, res, next) => {
 // ═══ CREATOR: Get my lead usage ═══
 router.get("/my-usage", protect, authorize("creator"), async (req, res, next) => {
   try {
-    const creator = await Creator.findOne({ user: req.user._id }).select("_id subscriptionStatus subscriptionExpiry").lean();
+    const creator = await Creator.findOne({ user: req.user._id }).select("_id subscriptionStatus subscriptionEndDate subscriptionExpiry freeLeadsUsed freeLeadsLimit").lean();
     if (!creator) return res.status(404).json({ success: false, message: "Creator profile not found" });
 
     const settings = await LeadSettings.getSettings();
-    const freeUsed = await LeadUnlock.countDocuments({ creator: creator._id, isFree: true });
-    const totalUnlocked = await LeadUnlock.countDocuments({ creator: creator._id });
 
-    const isSubscribed = creator.subscriptionStatus === "active" && creator.subscriptionExpiry && new Date(creator.subscriptionExpiry) > new Date();
-    const freeRemaining = Math.max(0, settings.freeLeadLimit - freeUsed);
+    // Use creator.freeLeadsUsed (set by accept inquiry logic) as primary source
+    const freeUsed = creator.freeLeadsUsed || 0;
+    const freeLimit = creator.freeLeadsLimit || settings.freeLeadLimit || 3;
+
+    const isSubscribed = (creator.subscriptionStatus === "active" || creator.subscriptionStatus === "trial") && 
+      (creator.subscriptionEndDate || creator.subscriptionExpiry) && 
+      new Date(creator.subscriptionEndDate || creator.subscriptionExpiry) > new Date();
+    const freeRemaining = Math.max(0, freeLimit - freeUsed);
     const canUnlock = isSubscribed || freeRemaining > 0;
 
     res.json({
       success: true,
       data: {
-        freeLeadLimit: settings.freeLeadLimit,
+        freeLeadLimit: freeLimit,
         freeUsed,
         freeRemaining,
-        totalUnlocked,
+        totalUnlocked: freeUsed,
         isSubscribed,
-        subscriptionExpiry: creator.subscriptionExpiry,
+        subscriptionExpiry: creator.subscriptionEndDate || creator.subscriptionExpiry,
         canUnlock,
         monthlyPrice: settings.monthlyPrice,
         yearlyPrice: settings.yearlyPrice,

@@ -1,43 +1,34 @@
+/**
+ * Review — Verified customer reviews for creators
+ * Only customers with completed bookings can leave reviews.
+ */
 const mongoose = require("mongoose");
 
 const reviewSchema = new mongoose.Schema(
   {
-    user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     creator: { type: mongoose.Schema.Types.ObjectId, ref: "Creator", required: true },
-    booking: { type: mongoose.Schema.Types.ObjectId, ref: "Booking" },
-    phone: { type: String, default: "" },
-    name: { type: String, default: "" },
-    // Overall rating
-    rating: { type: Number, min: 1, max: 5, required: true },
+    booking: { type: mongoose.Schema.Types.ObjectId, ref: "Booking", required: true },
+    rating: { type: Number, required: true, min: 1, max: 5 },
     title: { type: String, default: "" },
     text: { type: String, default: "" },
-    // Detailed ratings
-    professionalism: { type: Number, min: 1, max: 5, default: 0 },
-    qualityOfWork: { type: Number, min: 1, max: 5, default: 0 },
-    communication: { type: Number, min: 1, max: 5, default: 0 },
-    valueForMoney: { type: Number, min: 1, max: 5, default: 0 },
-    wouldRecommend: { type: Boolean, default: true },
-    // Event info
-    eventType: { type: String, default: "" },
-    // Media
-    photos: [{ type: String }],
-    videos: [{ type: String }],
-    // Moderation
-    approved: { type: Boolean, default: true },
-    hidden: { type: Boolean, default: false },
-    hiddenBy: { type: String, enum: ["admin", "creator", ""], default: "" },
-    featured: { type: Boolean, default: false },
-    reported: { type: Boolean, default: false },
-    reportReason: { type: String, default: "" },
+    photos: [{ type: String }], // Cloudinary URLs
     // Creator reply
     reply: { type: String, default: "" },
-    repliedAt: { type: Date },
+    repliedAt: { type: Date, default: null },
+    // Moderation
+    status: { type: String, enum: ["active", "hidden", "reported", "removed"], default: "active" },
+    reportReason: { type: String, default: "" },
+    reportedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+    // Helpful votes
+    helpfulCount: { type: Number, default: 0 },
+    helpfulUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   },
   { timestamps: true }
 );
 
-reviewSchema.index({ user: 1, creator: 1 }, { unique: true, sparse: true });
-reviewSchema.index({ phone: 1, creator: 1 }, { unique: true, sparse: true });
-reviewSchema.index({ creator: 1, approved: 1, hidden: 1 });
+// One review per user per booking
+reviewSchema.index({ user: 1, booking: 1 }, { unique: true });
+reviewSchema.index({ creator: 1, status: 1, createdAt: -1 });
 
 module.exports = mongoose.model("Review", reviewSchema);

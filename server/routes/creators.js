@@ -15,37 +15,26 @@ const router = express.Router();
 router.get("/", async (req, res, next) => {
   try {
     const { city, category, subcategory, budget, search, featured } = req.query;
-    const filter = { status: "approved", subscriptionStatus: { $in: ["free", "active", "trial"] } };
+    const filter = { status: "approved" };
+    // Include creators with free/active/trial OR missing subscriptionStatus (legacy)
+    const conditions = [{ $or: [{ subscriptionStatus: { $in: ["free", "active", "trial"] } }, { subscriptionStatus: { $exists: false } }, { subscriptionStatus: "" }, { subscriptionStatus: null }] }];
+
     if (city) filter.city = new RegExp(city, "i");
     if (category) {
-      // Match on categorySlug first, fallback to category text
-      filter.$or = [
+      conditions.push({ $or: [
         { categorySlug: category },
         { category: new RegExp(category.replace(/[-\s]+/g, '.*'), "i") },
-      ];
+      ]});
     }
     if (subcategory) {
-      // Filter by subcategory slug — match on subcategorySlug or specialty text
-      if (filter.$or) {
-        // Category already set $or, combine with subcategory using $and
-        const categoryOr = filter.$or;
-        delete filter.$or;
-        filter.$and = [
-          { $or: categoryOr },
-          { $or: [
-            { subcategorySlug: subcategory },
-            { specialty: new RegExp(subcategory.replace(/[-\s]+/g, '.*'), "i") },
-          ]},
-        ];
-      } else {
-        filter.$or = [
-          { subcategorySlug: subcategory },
-          { specialty: new RegExp(subcategory.replace(/[-\s]+/g, '.*'), "i") },
-        ];
-      }
+      conditions.push({ $or: [
+        { subcategorySlug: subcategory },
+        { specialty: new RegExp(subcategory.replace(/[-\s]+/g, '.*'), "i") },
+      ]});
     }
     if (featured === "true") filter.featured = true;
     if (budget) filter.budgetMax = { $gte: Number(budget) };
+    if (conditions.length > 0) filter.$and = conditions;
 
     let creators = await Creator.find(filter).populate("user", "name avatar");
 
@@ -142,7 +131,7 @@ router.get("/profile", protect, authorize("creator"), async (req, res, next) => 
 router.put("/profile", protect, authorize("creator"), async (req, res, next) => {
   try {
     // Whitelist allowed fields — prevent creators from modifying sensitive fields
-    const ALLOWED_FIELDS = ['specialty', 'bio', 'experience', 'location', 'city', 'category', 'categorySlug', 'categoryGroup', 'categoryData', 'budgetMin', 'budgetMax', 'social', 'gear', 'team', 'darkMode'];
+    const ALLOWED_FIELDS = ['specialty', 'bio', 'experience', 'location', 'city', 'category', 'categorySlug', 'categoryGroup', 'categoryData', 'budgetMin', 'budgetMax', 'social', 'gear', 'team', 'darkMode', 'coverImage'];
     const update = {};
     for (const key of ALLOWED_FIELDS) {
       if (req.body[key] !== undefined) update[key] = req.body[key];
@@ -297,6 +286,64 @@ router.post(
     }
   }
 );
+
+// Upload cover image
+router.post(
+  "/upload/cover",
+  protect,
+  authorize("creator"),
+  upload.single("cover"),
+  async (req, res, next) => {
+    try {
+      if (!req.file) return res.status(400).json({ success: false, message: "No file" });
+
+      const { uploadBuffer, deleteFile, isConfigured } = require("../services/cloudinaryService");
+      let url, publicId = "";
+
+      if (isConfigured()) {
+        const result = await uploadBuffer(req.file.buffer, {
+          folder: "bookmyshot/covers",
+          resourceType: "image",
+          transformation: { width: 1200, height: 400, crop: "fill", gravity: "auto" },
+        });
+        url = result.url;
+        publicId = result.publicId;
+
+        // Delete old cover from Cloudinary if exists
+        const creator = await Creator.findOne({ user: req.user._id }).select("coverImagePublicId");
+        if (creator && creator.coverImagePublicId) {
+          await deleteFile(creator.coverImagePublicId, "image");
+        }
+      } else {
+        const fs = require("fs");
+        const path = require("path");
+        const uploadDir = path.join(__dirname, "../../public/uploads/covers");
+        if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+        const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(req.file.originalname)}`;
+        fs.writeFileSync(path.join(uploadDir, filename), req.file.buffer);
+        url = `/uploads/covers/${filename}`;
+      }
+
+      await Creator.findOneAndUpdate({ user: req.user._id }, { coverImage: url, coverImagePublicId: publicId });
+      res.json({ success: true, url });
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+// Remove cover image
+router.delete("/cover", protect, authorize("creator"), async (req, res, next) => {
+  try {
+    const creator = await Creator.findOne({ user: req.user._id }).select("coverImagePublicId");
+    if (creator && creator.coverImagePublicId) {
+      const { deleteFile, isConfigured } = require("../services/cloudinaryService");
+      if (isConfigured()) await deleteFile(creator.coverImagePublicId, "image");
+    }
+    await Creator.findOneAndUpdate({ user: req.user._id }, { coverImage: "", coverImagePublicId: "" });
+    res.json({ success: true, message: "Cover image removed" });
+  } catch (e) { next(e); }
+});
 
 // Upload portfolio
 router.post(

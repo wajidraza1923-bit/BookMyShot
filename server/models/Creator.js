@@ -17,6 +17,8 @@ const creatorSchema = new mongoose.Schema(
     experience: { type: String, default: "" },
     location: { type: String, default: "" },
     city: { type: String, default: "" },
+    latitude: { type: Number, default: null },
+    longitude: { type: Number, default: null },
     category: { type: String, default: "wedding" },
     categorySlug: { type: String, default: "wedding-photographer" }, // matches Category.slug
     categoryGroup: { type: String, default: "Photography & Video" },
@@ -41,6 +43,8 @@ const creatorSchema = new mongoose.Schema(
     rank: { type: Number, default: 0 },
     portfolio: [{ type: mongoose.Schema.Types.Mixed }],
     videos: [{ type: mongoose.Schema.Types.Mixed }],
+    coverImage: { type: String, default: "" },
+    coverImagePublicId: { type: String, default: "" },
     packages: [packageSchema],
     gear: [{ name: String, model: String }],
     team: [{ name: String, role: String }],

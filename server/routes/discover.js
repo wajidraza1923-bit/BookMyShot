@@ -41,7 +41,7 @@ router.get("/categories", async (req, res, next) => {
           count = await Creator.countDocuments({
             categorySlug: c.slug,
             status: "approved",
-            subscriptionStatus: { $in: ["free", "active", "trial"] }
+            $or: [{ subscriptionStatus: { $in: ["free", "active", "trial"] } }, { subscriptionStatus: { $exists: false } }, { subscriptionStatus: null }]
           });
           // Fallback to category text match for legacy creators
           if (count === 0) {
@@ -49,7 +49,7 @@ router.get("/categories", async (req, res, next) => {
             count = await Creator.countDocuments({
               category: new RegExp(safeSlug, "i"),
               status: "approved",
-              subscriptionStatus: { $in: ["free", "active", "trial"] }
+              $or: [{ subscriptionStatus: { $in: ["free", "active", "trial"] } }, { subscriptionStatus: { $exists: false } }, { subscriptionStatus: null }]
             });
           }
         }
@@ -91,7 +91,7 @@ router.get("/districts", async (req, res, next) => {
       districts = await District.find({ isActive: true }).sort("sortOrder").lean();
     }
     const withCounts = await Promise.all(districts.map(async (d) => {
-      const count = await Creator.countDocuments({ city: new RegExp(d.name, "i"), status: "approved", subscriptionStatus: { $in: ["active", "trial"] } });
+      const count = await Creator.countDocuments({ city: new RegExp(d.name, "i"), status: "approved", $or: [{ subscriptionStatus: { $in: ["free", "active", "trial"] } }, { subscriptionStatus: { $exists: false } }, { subscriptionStatus: null }] });
       return { ...d, creatorCount: count };
     }));
     res.json({ success: true, data: withCounts });

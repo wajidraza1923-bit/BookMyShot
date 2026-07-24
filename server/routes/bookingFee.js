@@ -1,14 +1,25 @@
 /**
- * Booking Fee Routes — Customer pays 5% to BookMyShot to confirm booking
+ * Booking Fee Routes — Customer pays X% (from Admin Panel) to BookMyShot to confirm booking
  * Creator never pays anything.
  */
 const express = require("express");
 const Booking = require("../models/Booking");
+const Creator = require("../models/Creator");
+const Notification = require("../models/Notification");
 const { protect } = require("../middleware/auth");
 
 const router = express.Router();
 
-const BOOKING_FEE_PERCENT = 5;
+// Get dynamic fee percent from Admin Panel (CommissionSettings)
+async function getBookingFeePercent() {
+  try {
+    const configService = require("../services/configService");
+    const settings = await configService.getCommissionSettings();
+    return settings.bmsLeadCommissionPercent || 5;
+  } catch {
+    return 5; // fallback
+  }
+}
 
 // ═══ Calculate booking fee ═══
 router.get("/calculate/:bookingId", protect, async (req, res, next) => {
@@ -16,6 +27,7 @@ router.get("/calculate/:bookingId", protect, async (req, res, next) => {
     const booking = await Booking.findById(req.params.bookingId).populate("creator", "user").lean();
     if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
 
+    const BOOKING_FEE_PERCENT = await getBookingFeePercent();
     const totalAmount = booking.totalAmount || booking.quotedAmount || booking.amount || 0;
     const bookingFee = Math.round(totalAmount * BOOKING_FEE_PERCENT / 100);
     const remainingAmount = totalAmount - bookingFee;
@@ -46,6 +58,7 @@ router.post("/create-order/:bookingId", protect, async (req, res, next) => {
     if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
     if (booking.bookingFeePaid) return res.status(400).json({ success: false, message: "Booking fee already paid" });
 
+    const BOOKING_FEE_PERCENT = await getBookingFeePercent();
     const totalAmount = booking.totalAmount || booking.quotedAmount || booking.amount || 0;
     if (totalAmount <= 0) return res.status(400).json({ success: false, message: "Invalid booking amount" });
 
@@ -105,11 +118,17 @@ router.post("/verify/:bookingId", protect, async (req, res, next) => {
       return res.status(400).json({ success: false, message: "Payment verification failed" });
     }
 
+    // Calculate fee amount for saving
+    const BOOKING_FEE_PERCENT = await getBookingFeePercent();
+    const existingBooking = await Booking.findById(req.params.bookingId);
+    const totalAmount = existingBooking ? (existingBooking.totalAmount || existingBooking.quotedAmount || existingBooking.amount || 0) : 0;
+    const bookingFeeAmount = Math.round(totalAmount * BOOKING_FEE_PERCENT / 100);
+
     // Update booking
-    const totalAmount = 0;
     const booking = await Booking.findByIdAndUpdate(req.params.bookingId, {
       $set: {
         bookingFeePaid: true,
+        bookingFeeAmount: bookingFeeAmount,
         bookingFeePaymentId: razorpay_payment_id,
         bookingFeeOrderId: razorpay_order_id,
         bookingFeePaidAt: new Date(),
@@ -119,7 +138,45 @@ router.post("/verify/:bookingId", protect, async (req, res, next) => {
 
     if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
 
-    // TODO: Send notifications to both customer and creator
+    // ═══ NOTIFICATIONS ═══
+    // Notify customer
+    await Notification.create({
+      user: booking.user,
+      title: "✅ Booking Confirmed!",
+      message: `Your booking fee of ₹${bookingFeeAmount.toLocaleString('en-IN')} has been received. Booking is now confirmed. Pay the remaining ₹${(totalAmount - bookingFeeAmount).toLocaleString('en-IN')} directly to the creator.`,
+      type: "payment",
+      targetScreen: "Bookings",
+      targetId: booking._id.toString(),
+    });
+
+    // Notify creator
+    const creator = await Creator.findById(booking.creator).select("user");
+    if (creator) {
+      await Notification.create({
+        user: creator.user,
+        title: "💰 Booking Fee Received!",
+        message: `Customer has paid ₹${bookingFeeAmount.toLocaleString('en-IN')} booking fee to BookMyShot. Booking is now confirmed. Collect the remaining ₹${(totalAmount - bookingFeeAmount).toLocaleString('en-IN')} directly from the customer.`,
+        type: "payment",
+        targetScreen: "CreatorBookings",
+        targetId: booking._id.toString(),
+      });
+    }
+
+    // ═══ REAL-TIME SOCKET.IO ═══
+    try {
+      const socketService = require("../services/socketService");
+      socketService.notifyPaymentUpdate(
+        booking.user.toString(),
+        creator ? creator.user.toString() : null,
+        { bookingId: booking._id, status: 'Payment Approved', bookingFeePaid: true, bookingFeeAmount }
+      );
+      socketService.notifyBookingUpdate(
+        booking.user.toString(),
+        creator ? creator.user.toString() : null,
+        { bookingId: booking._id, status: 'Payment Approved' }
+      );
+      socketService.emitToRole("admin", "dashboard:refresh", { type: "payment" });
+    } catch (e) {}
 
     res.json({
       success: true,
@@ -128,6 +185,7 @@ router.post("/verify/:bookingId", protect, async (req, res, next) => {
         bookingId: booking._id,
         status: booking.status,
         paymentId: razorpay_payment_id,
+        bookingFeeAmount,
       },
     });
   } catch (e) { next(e); }

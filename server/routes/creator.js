@@ -1020,12 +1020,202 @@ router.patch("/payment-proofs/:id/verify", async (req, res, next) => {
   }
 });
 
+// ═══ CONFIRM FULL PAYMENT RECEIVED — Triggers cashback automatically ═══
+// This is the ONLY way cashback gets released. One-time only. Atomic protection.
+router.patch("/bookings/:id/confirm-payment", async (req, res, next) => {
+  try {
+    console.log("[ConfirmPayment] Request received. BookingId:", req.params.id, "User:", req.user._id);
+    const creator = await getCreator(req.user._id);
+    const booking = await Booking.findOne({ _id: req.params.id, creator: creator._id });
+    if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
+
+    // ═══ VERIFICATION CHECKS (all must pass) ═══
+
+    // 1. Already confirmed?
+    if (booking.paymentConfirmed) {
+      return res.status(400).json({
+        success: false,
+        message: "Payment already confirmed.",
+        alreadyConfirmed: true,
+        cashbackReleased: booking.cashbackReleased,
+        commissionReleased: booking.commissionReleased,
+      });
+    }
+
+    // 2. Booking must be in acceptable state
+    if (!['Creator Accepted', 'Payment Submitted', 'Payment Approved', 'Event Scheduled', 'Completed'].includes(booking.status)) {
+      return res.status(400).json({ success: false, message: `Cannot confirm payment in status: ${booking.status}` });
+    }
+
+    // 3. Creator must be the one who accepted this booking
+    if (String(booking.creator) !== String(creator._id)) {
+      return res.status(403).json({ success: false, message: "You are not the creator for this booking" });
+    }
+
+    // 4. Booking must have a valid customer
+    if (!booking.user) {
+      return res.status(400).json({ success: false, message: "Booking has no associated customer" });
+    }
+
+    // 5. Commission must not have been released already
+    if (booking.commissionReleased) {
+      return res.status(400).json({ success: false, message: "Commission already processed", alreadyConfirmed: true });
+    }
+
+    // 6. Cashback must not have been released already
+    if (booking.cashbackReleased) {
+      return res.status(400).json({ success: false, message: "Cashback already released", alreadyConfirmed: true });
+    }
+
+    // ═══ ATOMIC UPDATE: Set all flags at once to prevent race conditions ═══
+    const updatedBooking = await Booking.findOneAndUpdate(
+      { _id: booking._id, paymentConfirmed: { $ne: true } },
+      {
+        $set: {
+          paymentConfirmed: true,
+          paymentConfirmedAt: new Date(),
+          paymentConfirmedBy: req.user._id,
+          paymentCompletedDate: new Date(),
+          paymentStatus: "paid",
+          status: "Completed",
+          bookingStatus: "completed",
+          completedAt: booking.completedAt || new Date(),
+        },
+      },
+      { new: true }
+    );
+
+    if (!updatedBooking) {
+      return res.status(409).json({ success: false, message: "Payment already confirmed (concurrent request).", alreadyConfirmed: true });
+    }
+
+    // ═══ CASHBACK RELEASE (one-time, with full verification) ═══
+    let cashbackResult = null;
+    try {
+      const CashbackTransaction = require("../models/CashbackTransaction");
+      const CashbackSettings = require("../models/CashbackSettings");
+
+      // Prevent duplicate: check if any transaction exists for this booking
+      const existingCashback = await CashbackTransaction.findOne({ booking: booking._id });
+      if (existingCashback) {
+        cashbackResult = { status: existingCashback.status, amount: existingCashback.amount, duplicate: true };
+      } else {
+        // Eligibility checks
+        const isCustomerInitiated = !booking.createdByCreator && booking.source !== 'creator_manual' && booking.source !== 'walk_in';
+        const bookingFeePaid = booking.bookingFeePaid && booking.bookingFeeAmount > 0;
+
+        // 30-day deadline from booking creation date
+        const bookingCreatedAt = booking.createdAt || new Date();
+        const cashbackDeadline = new Date(bookingCreatedAt);
+        cashbackDeadline.setDate(cashbackDeadline.getDate() + 30);
+        const withinDeadline = new Date() <= cashbackDeadline;
+
+        const settings = await CashbackSettings.getSettings();
+        const now = new Date();
+        const cashbackActive = settings.enabled && (!settings.startDate || new Date(settings.startDate) <= now) && (!settings.endDate || new Date(settings.endDate) >= now);
+
+        if (isCustomerInitiated && bookingFeePaid && cashbackActive && withinDeadline) {
+          const feeAmount = booking.bookingFeeAmount || 0;
+          let cashbackAmount = Math.round((feeAmount * settings.percentage) / 100);
+          if (cashbackAmount > settings.maxAmount) cashbackAmount = settings.maxAmount;
+          if (feeAmount < settings.minBookingAmount) cashbackAmount = 0;
+
+          if (cashbackAmount > 0) {
+            // Verify customer is the same who paid the booking fee
+            const customerUserId = booking.user;
+            if (!customerUserId) {
+              cashbackResult = { status: "error", reason: "No customer found" };
+            } else {
+              const transaction = await CashbackTransaction.create({
+                user: customerUserId,
+                booking: booking._id,
+                amount: cashbackAmount,
+                percentage: settings.percentage,
+                bookingAmount: feeAmount,
+                status: "credited",
+                creditedAt: new Date(),
+                notes: `Cashback: ${settings.percentage}% of ₹${feeAmount} booking fee. Creator confirmed payment.`,
+              });
+
+              await Booking.findByIdAndUpdate(booking._id, {
+                $set: { cashbackReleased: true, cashbackReleasedAt: new Date(), cashbackTransactionId: transaction._id },
+              });
+
+              cashbackResult = { status: "credited", amount: cashbackAmount, transactionId: transaction._id };
+
+              const Notification = require("../models/Notification");
+              await Notification.create({
+                user: customerUserId,
+                title: "🎉 Cashback Credited!",
+                message: `₹${cashbackAmount.toLocaleString('en-IN')} cashback credited to your wallet!`,
+                type: "cashback", targetScreen: "Wallet",
+              });
+            }
+          }
+        } else if (isCustomerInitiated && bookingFeePaid && !withinDeadline) {
+          await CashbackTransaction.create({
+            user: booking.user, booking: booking._id,
+            amount: 0, percentage: 0, bookingAmount: booking.bookingFeeAmount || 0,
+            status: "expired", notes: "Creator confirmed payment after 30-day deadline.",
+          });
+          await Booking.findByIdAndUpdate(booking._id, { $set: { cashbackReleased: false } });
+          cashbackResult = { status: "expired", reason: "Cashback eligibility has expired." };
+
+          const Notification = require("../models/Notification");
+          await Notification.create({
+            user: booking.user,
+            title: "⏰ Cashback Expired",
+            message: `Cashback eligibility has expired for your ${booking.eventType} booking.`,
+            type: "cashback", targetScreen: "Wallet",
+          });
+        }
+      }
+    } catch (cashbackErr) {
+      console.log("[ConfirmPayment] Cashback error:", cashbackErr.message);
+    }
+
+    // Set commission flag
+    if (!booking.commissionReleased) {
+      await Booking.findByIdAndUpdate(booking._id, { $set: { commissionReleased: true, commissionReleasedAt: new Date() } });
+    }
+
+    // Notify customer
+    try {
+      const Notification = require("../models/Notification");
+      await Notification.create({
+        user: booking.user,
+        title: "✅ Payment Confirmed",
+        message: `Creator confirmed full payment received for your ${booking.eventType} booking.`,
+        type: "booking", targetScreen: "Bookings", targetId: booking._id.toString(),
+      });
+    } catch {}
+
+    // Socket.IO
+    try {
+      const socketService = require("../services/socketService");
+      socketService.notifyBookingUpdate(booking.user.toString(), req.user._id.toString(), { bookingId: booking._id, status: "Completed", paymentConfirmed: true });
+      socketService.notifyPaymentUpdate(booking.user.toString(), req.user._id.toString(), { bookingId: booking._id, paymentStatus: "paid" });
+      socketService.emitToRole("admin", "dashboard:refresh", { type: "payment_confirmed" });
+    } catch {}
+
+    res.json({ success: true, message: "Payment confirmed.", booking: updatedBooking, cashback: cashbackResult });
+  } catch (e) {
+    console.error("[ConfirmPayment] ERROR:", e.message, e.stack?.slice(0, 300));
+    res.status(500).json({ success: false, message: e.message || "Internal server error" });
+  }
+});
+
 // Mark booking as completed
 router.patch("/bookings/:id/complete", async (req, res, next) => {
   try {
     const creator = await getCreator(req.user._id);
     const booking = await Booking.findOne({ _id: req.params.id, creator: creator._id });
     if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
+
+    // Prevent duplicate completion
+    if (booking.status === "Completed" && booking.bookingStatus === "completed") {
+      return res.status(400).json({ success: false, message: "Booking already marked as completed" });
+    }
 
     // Get payment data for invoice
     const bookingAmount = booking.amount || booking.budget || 0;
@@ -1039,6 +1229,7 @@ router.patch("/bookings/:id/complete", async (req, res, next) => {
     booking.bookingStatus = "completed";
     booking.paymentStatus = "paid";
     booking.completedAt = new Date();
+    booking.paymentCompletedDate = new Date(); // Track when creator confirmed payment
     await booking.save();
 
     // Lock payment records (mark as finalized)
@@ -1046,6 +1237,97 @@ router.patch("/bookings/:id/complete", async (req, res, next) => {
       { booking: booking._id },
       { $set: { locked: true } }
     );
+
+    // ═══ AUTOMATIC CASHBACK CREDIT LOGIC ═══
+    let cashbackResult = null;
+    try {
+      const CashbackTransaction = require("../models/CashbackTransaction");
+      const CashbackSettings = require("../models/CashbackSettings");
+
+      // Check if cashback already exists for this booking
+      const existingCashback = await CashbackTransaction.findOne({ booking: booking._id });
+      
+      if (!existingCashback) {
+        // Eligibility checks:
+        // 1. Must NOT be creator-created (must be customer-initiated)
+        const isCustomerInitiated = !booking.createdByCreator && booking.source !== 'creator_manual' && booking.source !== 'walk_in';
+        
+        // 2. Booking fee must have been paid via Razorpay
+        const bookingFeePaid = booking.bookingFeePaid && booking.bookingFeeAmount > 0;
+
+        // 3. 30-day deadline check
+        const bookingCreatedAt = booking.createdAt || booking.bookingFeePaidAt || new Date();
+        const cashbackDeadline = new Date(bookingCreatedAt);
+        cashbackDeadline.setDate(cashbackDeadline.getDate() + 30);
+        const withinDeadline = new Date() <= cashbackDeadline;
+
+        // 4. Get cashback settings
+        const settings = await CashbackSettings.getSettings();
+        const now = new Date();
+        const cashbackActive = settings.enabled &&
+          (!settings.startDate || new Date(settings.startDate) <= now) &&
+          (!settings.endDate || new Date(settings.endDate) >= now);
+
+        if (isCustomerInitiated && bookingFeePaid && cashbackActive) {
+          if (withinDeadline) {
+            // ✅ All conditions met — Calculate and credit cashback
+            const feeAmount = booking.bookingFeeAmount || 0;
+            let cashbackAmount = Math.round((feeAmount * settings.percentage) / 100);
+            if (cashbackAmount > settings.maxAmount) cashbackAmount = settings.maxAmount;
+            if (feeAmount < settings.minBookingAmount) cashbackAmount = 0;
+
+            if (cashbackAmount > 0) {
+              const transaction = await CashbackTransaction.create({
+                user: booking.user,
+                booking: booking._id,
+                amount: cashbackAmount,
+                percentage: settings.percentage,
+                bookingAmount: feeAmount,
+                status: "credited",
+                creditedAt: new Date(),
+                notes: `Cashback credited: ${settings.percentage}% of ₹${feeAmount} booking fee. Creator confirmed within 30 days.`,
+              });
+              cashbackResult = { status: "credited", amount: cashbackAmount, transaction };
+
+              // Notify customer about cashback
+              const Notification2 = require("../models/Notification");
+              await Notification2.create({
+                user: booking.user,
+                title: "🎉 Cashback Credited!",
+                message: `₹${cashbackAmount.toLocaleString('en-IN')} cashback has been credited to your wallet for your ${booking.eventType} booking.`,
+                type: "cashback",
+                targetScreen: "Wallet",
+              });
+            }
+          } else {
+            // ❌ Past 30-day deadline — no cashback
+            await CashbackTransaction.create({
+              user: booking.user,
+              booking: booking._id,
+              amount: 0,
+              percentage: 0,
+              bookingAmount: booking.bookingFeeAmount || 0,
+              status: "expired",
+              notes: "Creator confirmed payment after 30-day deadline. Cashback not eligible.",
+            });
+            cashbackResult = { status: "expired", reason: "30-day deadline exceeded" };
+
+            // Notify customer
+            const Notification3 = require("../models/Notification");
+            await Notification3.create({
+              user: booking.user,
+              title: "⏰ Cashback Not Eligible",
+              message: `Cashback for your ${booking.eventType} booking is not eligible because payment was confirmed after the 30-day deadline.`,
+              type: "cashback",
+              targetScreen: "Wallet",
+            });
+          }
+        }
+      }
+    } catch (cashbackErr) {
+      // Cashback is best-effort — don't block the completion
+      console.log("[Cashback] Error during auto-credit:", cashbackErr.message);
+    }
 
     // ═══ GENERATE INVOICE DATA ═══
     const User = require("../models/User");
@@ -1114,7 +1396,7 @@ router.patch("/bookings/:id/complete", async (req, res, next) => {
       socketService.notifyBookingUpdate(booking.user.toString(), req.user._id.toString(), { bookingId: booking._id, status: "Completed" });
     } catch (e) {}
 
-    res.json({ success: true, booking, invoice: invoiceData });
+    res.json({ success: true, booking, invoice: invoiceData, cashback: cashbackResult });
   } catch (e) {
     next(e);
   }

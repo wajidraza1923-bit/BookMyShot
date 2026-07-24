@@ -65,6 +65,17 @@ const bookingSchema = new mongoose.Schema(
     bookingFeePaidAt: { type: Date, default: null },
     // Completion confirmation
     customerConfirmedCompletion: { type: Boolean, default: false },
+    // Payment completion tracking (set when creator marks Payment Completed)
+    paymentCompletedDate: { type: Date, default: null },
+    // ═══ FRAUD PROTECTION FLAGS — Once true, NEVER process again ═══
+    paymentConfirmed: { type: Boolean, default: false },
+    paymentConfirmedAt: { type: Date, default: null },
+    paymentConfirmedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+    commissionReleased: { type: Boolean, default: false },
+    commissionReleasedAt: { type: Date, default: null },
+    cashbackReleased: { type: Boolean, default: false },
+    cashbackReleasedAt: { type: Date, default: null },
+    cashbackTransactionId: { type: mongoose.Schema.Types.ObjectId, ref: "CashbackTransaction", default: null },
     // Source tracking for cashback eligibility
     createdByCreator: { type: Boolean, default: false },
     source: { type: String, enum: ['customer_app', 'customer_web', 'creator_manual', 'walk_in', 'admin'], default: 'customer_app' },

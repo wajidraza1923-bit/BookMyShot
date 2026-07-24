@@ -54,6 +54,15 @@ router.post("/", protect, async (req, res, next) => {
       type: "payment",
     });
 
+    // Real-time: notify creator about payment proof
+    try {
+      const socketService = require("../services/socketService");
+      const creatorDoc = await Creator.findById(booking.creator).select("user");
+      if (creatorDoc) {
+        socketService.notifyPaymentUpdate(req.user._id.toString(), creatorDoc.user.toString(), { bookingId, status: 'proof-submitted', amount });
+      }
+    } catch (e) {}
+
     res.status(201).json({ success: true, proof });
   } catch (e) {
     next(e);
@@ -122,6 +131,12 @@ router.patch("/:id/creator-verify", protect, async (req, res, next) => {
       ? `Your payment of ₹${(proof.amount || 0).toLocaleString('en-IN')} has been approved.`
       : `Your payment proof was rejected. ${adminNote || ''}`;
     await Notification.create({ user: proof.user, type: "payment", title: notifTitle, message: notifMsg, targetScreen: "Bookings" });
+
+    // Real-time: notify customer about payment verification
+    try {
+      const socketService = require("../services/socketService");
+      socketService.notifyPaymentUpdate(proof.user.toString(), req.user._id.toString(), { bookingId: proof.booking?.toString(), status, amount: proof.amount });
+    } catch (e) {}
 
     res.json({ success: true, message: `Payment ${status}` });
   } catch (e) { next(e); }

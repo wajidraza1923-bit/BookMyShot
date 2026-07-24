@@ -175,4 +175,18 @@ router.get("/all", protect, async (req, res, next) => {
   }
 });
 
+// Check if user has an accepted inquiry with a specific creator (for contact unlock)
+router.get("/check/:creatorId", protect, async (req, res, next) => {
+  try {
+    const creator = await Creator.findById(req.params.creatorId).select("_id");
+    if (!creator) return res.json({ success: true, hasAccepted: false });
+    const accepted = await Inquiry.findOne({
+      user: req.user._id,
+      creator: creator._id,
+      status: "accepted",
+    });
+    res.json({ success: true, hasAccepted: !!accepted });
+  } catch (e) { next(e); }
+});
+
 module.exports = router;
