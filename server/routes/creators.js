@@ -20,15 +20,27 @@ router.get("/", async (req, res, next) => {
     const conditions = [{ $or: [{ subscriptionStatus: { $in: ["free", "active", "trial"] } }, { subscriptionStatus: { $exists: false } }, { subscriptionStatus: "" }, { subscriptionStatus: null }] }];
 
     if (city) filter.city = new RegExp(city, "i");
-    if (category) {
+    if (category && subcategory) {
+      // When both category and subcategory are provided, match creators who have EITHER:
+      // - categorySlug = parent category AND subcategorySlug = subcategory
+      // - OR categorySlug = subcategory (creators who saved subcategory as their categorySlug)
+      // - OR specialty matches the subcategory name
+      conditions.push({ $or: [
+        { categorySlug: category, subcategorySlug: subcategory },
+        { categorySlug: subcategory },
+        { subcategorySlug: subcategory },
+        { specialty: new RegExp(subcategory.replace(/[-\s]+/g, '.*'), "i") },
+        { category: new RegExp(subcategory.replace(/[-\s]+/g, '.*'), "i") },
+      ]});
+    } else if (category) {
       conditions.push({ $or: [
         { categorySlug: category },
         { category: new RegExp(category.replace(/[-\s]+/g, '.*'), "i") },
       ]});
-    }
-    if (subcategory) {
+    } else if (subcategory) {
       conditions.push({ $or: [
         { subcategorySlug: subcategory },
+        { categorySlug: subcategory },
         { specialty: new RegExp(subcategory.replace(/[-\s]+/g, '.*'), "i") },
       ]});
     }

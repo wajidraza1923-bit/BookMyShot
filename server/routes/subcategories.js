@@ -109,39 +109,23 @@ router.get("/:categorySlug", async (req, res, next) => {
       subcategories.map(async (sub) => {
         let count = 0;
         try {
-          // Match by subcategorySlug OR specialty text match
-          const subSlug = sub.slug;
-          const subName = sub.name || '';
+          // Match creators who have this subcategory via any of these fields
           count = await Creator.countDocuments({
             status: "approved",
-            $or: [
-              { subcategorySlug: subSlug },
-              { specialty: new RegExp(subName.replace(/[-\s]+/g, '.*'), 'i') },
-              { category: new RegExp(subName.replace(/[-\s]+/g, '.*'), 'i') },
-            ],
-            $or: [
-              { subscriptionStatus: { $in: ["free", "active", "trial"] } },
-              { subscriptionStatus: { $exists: false } },
-              { subscriptionStatus: null },
+            $and: [
+              { $or: [
+                { subcategorySlug: sub.slug },
+                { categorySlug: sub.slug },
+                { specialty: new RegExp(sub.name.replace(/[-\s]+/g, '.*'), 'i') },
+                { category: new RegExp(sub.name.replace(/[-\s]+/g, '.*'), 'i') },
+              ]},
+              { $or: [
+                { subscriptionStatus: { $in: ["free", "active", "trial"] } },
+                { subscriptionStatus: { $exists: false } },
+                { subscriptionStatus: null },
+              ]},
             ],
           });
-          // Use $and to combine both $or conditions
-          if (count === 0) {
-            count = await Creator.countDocuments({
-              status: "approved",
-              $and: [
-                { $or: [
-                  { subcategorySlug: subSlug },
-                  { specialty: new RegExp(subName.replace(/[-\s]+/g, '.*'), 'i') },
-                ]},
-                { $or: [
-                  { subscriptionStatus: { $in: ["free", "active", "trial"] } },
-                  { subscriptionStatus: { $exists: false } },
-                  { subscriptionStatus: null },
-                ]},
-              ],
-            });
-          }
         } catch {}
         return { ...sub, creatorCount: count };
       })
