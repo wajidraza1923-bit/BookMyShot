@@ -100,12 +100,12 @@ export default function SubCategoriesScreen({ navigation, route }: any) {
   };
 
   const handleSubcategoryPress = (item: any) => {
-    // Go back to home first, then switch to Discover tab with filters
-    // This works because 'Discover' is a tab name accessible from anywhere in the tree
-    navigation.navigate('Discover', {
-      category: slug,
-      subcategory: item.slug,
+    // Navigate to AllCreators with category + subcategory filter
+    navigation.navigate('AllCreators', {
+      categorySlug: slug,
+      subcategorySlug: item.slug,
       subcategoryName: item.name,
+      categoryName: name,
     });
   };
 

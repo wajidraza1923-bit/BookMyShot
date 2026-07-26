@@ -14,71 +14,126 @@ const { width } = Dimensions.get('window');
 // Helper: safely extract image URI from portfolio item (can be string or object)
 function _img(item: any): string { if (!item) return ''; if (typeof item === 'string') return item; return item?.url || item?.secure_url || item?.uri || ''; }
 
-export default function AllCreatorsScreen({ navigation }: any) {
+export default function AllCreatorsScreen({ navigation, route }: any) {
+  // Accept category/subcategory from SubCategories screen
+  const initialCategory = route?.params?.categorySlug || '';
+  const initialSubcategory = route?.params?.subcategorySlug || '';
+  const screenTitle = route?.params?.subcategoryName || route?.params?.categoryName || 'All Creators';
+
   const [creators, setCreators] = useState<any[]>([]);
   const [districts, setDistricts] = useState<any[]>([]);
   const [selectedDistrict, setSelectedDistrict] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory ? '' : '');
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
+
+  const CATEGORIES = [
+    { id: '', label: 'All', icon: 'grid-outline' },
+    { id: 'photography', label: 'Photography', icon: 'camera-outline' },
+    { id: 'videography', label: 'Videography', icon: 'videocam-outline' },
+    { id: 'makeup', label: 'Makeup', icon: 'color-palette-outline' },
+    { id: 'mehndi', label: 'Mehndi', icon: 'hand-left-outline' },
+    { id: 'decoration', label: 'Decoration', icon: 'flower-outline' },
+    { id: 'catering', label: 'Catering', icon: 'restaurant-outline' },
+    { id: 'dj', label: 'DJ', icon: 'musical-notes-outline' },
+    { id: 'venues', label: 'Venues', icon: 'business-outline' },
+    { id: 'wedding', label: 'Planners', icon: 'clipboard-outline' },
+  ];
 
   useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
     try {
+      // Pass category/subcategory filters to backend
+      const params: any = {};
+      if (initialCategory) params.category = initialCategory;
+      if (initialSubcategory) params.subcategory = initialSubcategory;
+
       const [crRes, distRes] = await Promise.all([
-        creatorsAPI.getAll(),
+        creatorsAPI.getAll(params),
         api.get('/discover/districts').catch(() => ({ data: { data: [] } })),
       ]);
-      setCreators(crRes.data?.creators || crRes.data?.data || []);
+      const creatorsData = crRes.data?.creators || crRes.data?.data || crRes.data || [];
+      const finalCreators = Array.isArray(creatorsData) ? creatorsData : [];
+      console.log('[AllCreators] Loaded', finalCreators.length, 'creators', initialCategory || '', initialSubcategory || '');
+      setCreators(finalCreators);
       setDistricts(distRes.data?.data || []);
-    } catch {} finally { setLoading(false); }
+    } catch (err: any) {
+      console.log('[AllCreators] API error:', err.message, err.response?.status);
+    } finally { setLoading(false); }
   };
 
-  // Filter creators by district and search
+  // Filter creators by district, category, and search
   const filtered = creators.filter(c => {
-    const matchDistrict = !selectedDistrict || (c.city || '').toLowerCase().includes(selectedDistrict.toLowerCase()) || (c.location || '').toLowerCase().includes(selectedDistrict.toLowerCase());
-    const matchQuery = !query || (c.user?.name || '').toLowerCase().includes(query.toLowerCase()) || (c.specialty || '').toLowerCase().includes(query.toLowerCase()) || (c.city || '').toLowerCase().includes(query.toLowerCase());
-    return matchDistrict && matchQuery;
+    const creatorCity = (c.city || c.location || '').toLowerCase();
+    const creatorCategory = (c.category || c.categorySlug || c.specialty || '').toLowerCase();
+    const creatorName = (c.user?.name || '').toLowerCase();
+
+    const matchDistrict = !selectedDistrict || creatorCity.includes(selectedDistrict.toLowerCase());
+    const matchCategory = !selectedCategory || creatorCategory.includes(selectedCategory.toLowerCase());
+    const matchQuery = !query || creatorName.includes(query.toLowerCase()) || creatorCategory.includes(query.toLowerCase()) || creatorCity.includes(query.toLowerCase());
+    return matchDistrict && matchCategory && matchQuery;
   });
+
+  // Debug log
+  if (__DEV__) {
+    console.log('[AllCreators] Total:', creators.length, '| Filtered:', filtered.length, '| District:', selectedDistrict || 'ALL', '| Category:', selectedCategory || 'ALL');
+  }
 
   return (
     <View style={st.container}>
       {/* Header */}
       <View style={st.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={st.backBtn}><Ionicons name="arrow-back" size={20} color="#fff" /></TouchableOpacity>
-        <View style={{ flex: 1 }}><Text style={st.title}>All Creators</Text><Text style={st.subtitle}>{filtered.length} creators available</Text></View>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={st.backBtn}><Ionicons name="arrow-back" size={20} color="#1F2937" /></TouchableOpacity>
+        <View style={{ flex: 1 }}><Text style={st.title}>{screenTitle}</Text><Text style={st.subtitle}>{loading ? 'Loading...' : `${filtered.length} creators available`}</Text></View>
       </View>
 
-      {/* Search */}
-      <View style={st.searchRow}>
-        <Ionicons name="search" size={14} color="rgba(255,255,255,0.3)" />
-        <TextInput style={st.searchInput} value={query} onChangeText={setQuery} placeholder="Search by name, city, category..." placeholderTextColor="rgba(255,255,255,0.25)" selectionColor="#FF8C2B" />
-        {query.length > 0 && <TouchableOpacity onPress={() => setQuery('')}><Ionicons name="close-circle" size={16} color="rgba(255,255,255,0.3)" /></TouchableOpacity>}
-      </View>
+      {/* Show only spinner while loading */}
+      {loading ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color="#6C3BFF" />
+        </View>
+      ) : (
+        <>
+        {/* Search */}
+        <View style={st.searchRow}>
+          <Ionicons name="search" size={14} color="#9CA3AF" />
+          <TextInput style={st.searchInput} value={query} onChangeText={setQuery} placeholder="Search by name, city, category..." placeholderTextColor="#9CA3AF" selectionColor="#6C3BFF" />
+          {query.length > 0 && <TouchableOpacity onPress={() => setQuery('')}><Ionicons name="close-circle" size={16} color="#9CA3AF" /></TouchableOpacity>}
+        </View>
 
-      {/* District Filter — Horizontal scroll with images */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.distScroll} contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}>
-        <TouchableOpacity style={[st.distCard, !selectedDistrict && st.distCardActive]} onPress={() => setSelectedDistrict('')}>
-          <View style={st.distImgPlaceholder}><Ionicons name="grid-outline" size={16} color="#FF8C2B" /></View>
-          <Text style={[st.distName, !selectedDistrict && st.distNameActive]}>All</Text>
-        </TouchableOpacity>
-        {districts.map((d: any) => (
-          <TouchableOpacity key={d.name} style={[st.distCard, selectedDistrict === d.name && st.distCardActive]} onPress={() => setSelectedDistrict(selectedDistrict === d.name ? '' : d.name)}>
-            {d.imageUrl ? <Image source={{ uri: d.imageUrl }} style={[st.distImg, selectedDistrict === d.name && st.distImgActive]} /> : <View style={st.distImgPlaceholder}><Ionicons name="location" size={16} color="#FF8C2B" /></View>}
-            <Text style={[st.distName, selectedDistrict === d.name && st.distNameActive]}>{d.name}</Text>
-            <Text style={st.distCount}>{d.creatorCount || 0} Creators</Text>
+        {/* Category Chips */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8, paddingVertical: 10 }}>
+          {CATEGORIES.map(cat => (
+            <TouchableOpacity key={cat.id} style={[st.catChip, selectedCategory === cat.id && st.catChipActive]} onPress={() => setSelectedCategory(cat.id)}>
+              <Ionicons name={cat.icon as any} size={14} color={selectedCategory === cat.id ? '#FFFFFF' : '#6B7280'} />
+              <Text style={[st.catChipText, selectedCategory === cat.id && st.catChipTextActive]}>{cat.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        {/* District Filter */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.distScroll} contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}>
+          <TouchableOpacity style={[st.distCard, !selectedDistrict && st.distCardActive]} onPress={() => setSelectedDistrict('')}>
+            <View style={st.distImgPlaceholder}><Ionicons name="grid-outline" size={16} color="#FF8C2B" /></View>
+            <Text style={[st.distName, !selectedDistrict && st.distNameActive]}>All</Text>
           </TouchableOpacity>
-        ))}
-      </ScrollView>
+          {districts.map((d: any) => (
+            <TouchableOpacity key={d.name} style={[st.distCard, selectedDistrict === d.name && st.distCardActive]} onPress={() => setSelectedDistrict(selectedDistrict === d.name ? '' : d.name)}>
+              {d.imageUrl ? <Image source={{ uri: d.imageUrl }} style={[st.distImg, selectedDistrict === d.name && st.distImgActive]} /> : <View style={st.distImgPlaceholder}><Ionicons name="location" size={16} color="#FF8C2B" /></View>}
+              <Text style={[st.distName, selectedDistrict === d.name && st.distNameActive]}>{d.name}</Text>
+              <Text style={st.distCount}>{d.creatorCount || 0} Creators</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
 
-      {/* Creator List */}
-      {loading ? <ActivityIndicator size="large" color="#FF8C2B" style={{ marginTop: 40 }} /> : (
+        {/* Creator List */}
         <FlatList
           data={filtered}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ padding: 16, paddingBottom: 80 }}
           keyExtractor={(item: any) => item._id}
-          ListEmptyComponent={<View style={st.empty}><Ionicons name="people-outline" size={32} color="rgba(255,255,255,0.08)" /><Text style={st.emptyTitle}>No creators found{selectedDistrict ? ` in ${selectedDistrict}` : ''}</Text><Text style={st.emptySub}>Try a different district or search term</Text></View>}
+          ListEmptyComponent={<View style={st.empty}><Ionicons name="people-outline" size={32} color="#D1D5DB" /><Text style={st.emptyTitle}>No creators found{selectedDistrict ? ` in ${selectedDistrict}` : ''}{selectedCategory ? ` for ${selectedCategory}` : ''}</Text><Text style={st.emptySub}>Try a different location or category</Text></View>}
           renderItem={({ item }: any) => (
             <TouchableOpacity style={st.card} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })} activeOpacity={0.85}>
               <Image source={{ uri: _img(item.portfolio?.[0]) || item.user?.avatar || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=300' }} style={st.cardImg} />
@@ -102,6 +157,7 @@ export default function AllCreatorsScreen({ navigation }: any) {
             </TouchableOpacity>
           )}
         />
+        </>
       )}
     </View>
   );
@@ -114,8 +170,13 @@ const st = StyleSheet.create({
   title: { fontSize: 18, fontWeight: '700', color: '#1F2937' },
   subtitle: { fontSize: 10, color: '#9CA3AF', marginTop: 1 },
   // Search
-  searchRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginTop: 8, backgroundColor: '#F8F6FF', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 12, height: 40, gap: 8 },
+  searchRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginTop: 8, backgroundColor: '#F9FAFB', borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB', paddingHorizontal: 12, height: 40, gap: 8 },
   searchInput: { flex: 1, fontSize: 13, color: '#1F2937' },
+  // Category Chips
+  catChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB' },
+  catChipActive: { backgroundColor: '#6C3BFF', borderColor: '#6C3BFF' },
+  catChipText: { fontSize: 11, fontWeight: '600', color: '#6B7280' },
+  catChipTextActive: { color: '#FFFFFF' },
   // Districts
   distScroll: { marginTop: 12, maxHeight: 90 },
   distCard: { alignItems: 'center', width: 65 },
@@ -141,6 +202,6 @@ const st = StyleSheet.create({
   viewBtnText: { fontSize: 11, fontWeight: '600', color: '#6C3BFF' },
   // Empty
   empty: { alignItems: 'center', paddingTop: 50 },
-  emptyTitle: { fontSize: 13, color: '#9CA3AF', marginTop: 10 },
-  emptySub: { fontSize: 10, color: 'rgba(255,255,255,0.2)', marginTop: 4 },
+  emptyTitle: { fontSize: 13, color: '#6B7280', marginTop: 10 },
+  emptySub: { fontSize: 10, color: '#9CA3AF', marginTop: 4 },
 });
