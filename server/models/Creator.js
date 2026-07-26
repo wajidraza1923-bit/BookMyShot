@@ -21,6 +21,7 @@ const creatorSchema = new mongoose.Schema(
     longitude: { type: Number, default: null },
     category: { type: String, default: "wedding" },
     categorySlug: { type: String, default: "wedding-photographer" }, // matches Category.slug
+    subcategorySlug: { type: String, default: "" }, // matches Subcategory.slug
     categoryGroup: { type: String, default: "Photography & Video" },
     categoryData: { type: mongoose.Schema.Types.Mixed, default: {} }, // dynamic fields per category
     budgetMin: { type: Number, default: 0 },

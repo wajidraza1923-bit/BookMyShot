@@ -109,14 +109,39 @@ router.get("/:categorySlug", async (req, res, next) => {
       subcategories.map(async (sub) => {
         let count = 0;
         try {
-          // Match by subcategory slug or by category text match
+          // Match by subcategorySlug OR specialty text match
+          const subSlug = sub.slug;
+          const subName = sub.name || '';
           count = await Creator.countDocuments({
+            status: "approved",
             $or: [
-              { subcategorySlug: sub.slug, status: "approved" },
-              { categorySlug: categorySlug, status: "approved" },
+              { subcategorySlug: subSlug },
+              { specialty: new RegExp(subName.replace(/[-\s]+/g, '.*'), 'i') },
+              { category: new RegExp(subName.replace(/[-\s]+/g, '.*'), 'i') },
             ],
-            subscriptionStatus: { $in: ["free", "active", "trial"] },
+            $or: [
+              { subscriptionStatus: { $in: ["free", "active", "trial"] } },
+              { subscriptionStatus: { $exists: false } },
+              { subscriptionStatus: null },
+            ],
           });
+          // Use $and to combine both $or conditions
+          if (count === 0) {
+            count = await Creator.countDocuments({
+              status: "approved",
+              $and: [
+                { $or: [
+                  { subcategorySlug: subSlug },
+                  { specialty: new RegExp(subName.replace(/[-\s]+/g, '.*'), 'i') },
+                ]},
+                { $or: [
+                  { subscriptionStatus: { $in: ["free", "active", "trial"] } },
+                  { subscriptionStatus: { $exists: false } },
+                  { subscriptionStatus: null },
+                ]},
+              ],
+            });
+          }
         } catch {}
         return { ...sub, creatorCount: count };
       })

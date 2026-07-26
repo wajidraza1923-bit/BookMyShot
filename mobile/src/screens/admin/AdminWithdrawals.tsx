@@ -4,6 +4,25 @@ import {
   Platform, Alert, TextInput, Modal, RefreshControl, FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+
+// Clipboard write using React Native's native module (works in Expo Go SDK 56)
+const writeToClipboard = (text: string) => {
+  const { NativeModules } = require('react-native');
+  try {
+    // Android: use Clipboard native module directly
+    if (Platform.OS === 'android' && NativeModules.Clipboard) {
+      NativeModules.Clipboard.setString(text);
+    } else {
+      // iOS or fallback
+      const RN = require('react-native');
+      if (RN.Clipboard && RN.Clipboard.setString) {
+        RN.Clipboard.setString(text);
+      }
+    }
+  } catch {
+    Alert.alert('Copy', text);
+  }
+};
 import api from '../../services/api';
 
 export default function AdminWithdrawals({ navigation }: any) {
@@ -263,6 +282,14 @@ export default function AdminWithdrawals({ navigation }: any) {
               </ScrollView>
             )}
             <View style={s.modalBtns}>
+              <TouchableOpacity style={[s.submitBtn, { backgroundColor: '#6C3BFF' }]} onPress={async () => {
+                if (!selectedReq) return;
+                const text = `Customer: ${selectedReq.user?.name || 'N/A'}\nPhone: ${selectedReq.user?.phone || 'N/A'}\nAmount: ₹${selectedReq.amount?.toLocaleString('en-IN')}\nAccount Holder: ${selectedReq.accountHolderName}\nBank Account: ${selectedReq.bankAccountNumber}\nIFSC: ${selectedReq.ifscCode}\nUPI: ${selectedReq.upiId || 'N/A'}\nStatus: ${selectedReq.status}\nRequested: ${new Date(selectedReq.createdAt).toLocaleString('en-IN')}`;
+                writeToClipboard(text);
+                Alert.alert('✅ Copied', 'All withdrawal details copied to clipboard.');
+              }}><Ionicons name="copy" size={14} color="#fff" /><Text style={s.submitText}> Copy All</Text></TouchableOpacity>
+            </View>
+            <View style={[s.modalBtns, { marginTop: 8 }]}>
               <TouchableOpacity style={s.cancelBtn} onPress={() => { setDetailModal(false); setCustomerHistory(null); }}><Text style={s.cancelText}>Close</Text></TouchableOpacity>
             </View>
           </View>
@@ -272,11 +299,23 @@ export default function AdminWithdrawals({ navigation }: any) {
   );
 }
 
-function DetailRow({ label, value }: { label: string; value: string }) {
+function DetailRow({ label, value, copyable = true }: { label: string; value: string; copyable?: boolean }) {
+  const [copied, setCopied] = React.useState(false);
+  const handleCopy = async () => {
+    if (!value || value === 'N/A') return;
+    writeToClipboard(value);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
   return (
-    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-      <Text style={{ fontSize: 12, color: '#6B7280', flex: 0.4 }}>{label}</Text>
-      <Text style={{ fontSize: 12, fontWeight: '600', color: '#1F2937', flex: 0.6, textAlign: 'right' }}>{value}</Text>
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 2 }}>
+      <Text style={{ fontSize: 12, color: '#6B7280', flex: 0.35 }}>{label}</Text>
+      <Text style={{ fontSize: 12, fontWeight: '600', color: '#1F2937', flex: 0.5, textAlign: 'right' }} numberOfLines={1}>{value}</Text>
+      {copyable && value && value !== 'N/A' && (
+        <TouchableOpacity onPress={handleCopy} style={{ marginLeft: 6, padding: 4 }}>
+          <Ionicons name={copied ? 'checkmark-circle' : 'copy-outline'} size={14} color={copied ? '#10B981' : '#9CA3AF'} />
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
