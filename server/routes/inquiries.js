@@ -36,8 +36,11 @@ router.post("/", optionalAuth, async (req, res, next) => {
     const creator = await Creator.findById(creatorId);
     if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
 
-    // Block inquiries to expired/suspended creators
-    if (!["active", "trial"].includes(creator.subscriptionStatus)) {
+    // Block inquiries only for suspended/expired creators — free and active creators can receive inquiries
+    if (creator.status !== "approved") {
+      return res.status(403).json({ success: false, message: "This creator is not currently accepting inquiries" });
+    }
+    if (creator.subscriptionStatus === "suspended" || creator.subscriptionStatus === "expired") {
       return res.status(403).json({ success: false, message: "This creator is currently unavailable" });
     }
 
