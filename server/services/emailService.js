@@ -501,6 +501,104 @@ function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+// ═══════════════════════════════════════════════════════════════
+// 11. BOOKING ADVANCE PAYMENT RECEIPT / INVOICE
+// Sent to customer after successful advance payment via Razorpay
+// ═══════════════════════════════════════════════════════════════
+async function sendBookingAdvanceReceipt({ email, customerName, creatorName, bookingId, invoiceNumber, eventDate, eventType, eventLocation, totalAmount, advanceAmount, remainingAmount, advancePercent, paymentId, paymentMethod, paidAt, userId }) {
+  const receiptNo = invoiceNumber || `BMS-ADV-${Date.now()}`;
+  const paidDate = paidAt ? formatDateTime(paidAt) : formatDateTime(new Date());
+
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f8f9fa;font-family:'Segoe UI',Roboto,Arial,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f9fa;padding:24px 16px">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08)">
+
+<!-- HEADER -->
+<tr><td style="background:linear-gradient(135deg,#6C3BFF 0%,#8B5CF6 100%);padding:28px 32px">
+  <table width="100%" cellpadding="0" cellspacing="0">
+  <tr>
+    <td style="vertical-align:middle"><img src="${LOGO_URL}" width="36" height="36" alt="BookMyShot" style="border-radius:8px;display:block"></td>
+    <td style="vertical-align:middle;padding-left:12px"><span style="font-size:22px;font-weight:700;color:#FFFFFF;letter-spacing:0.5px">BookMyShot</span></td>
+    <td style="vertical-align:middle;text-align:right"><span style="font-size:11px;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:1px">INVOICE / RECEIPT</span></td>
+  </tr>
+  </table>
+</td></tr>
+
+<!-- SUCCESS BANNER -->
+<tr><td style="padding:24px 32px 16px">
+  <div style="background:#ECFDF5;border:1px solid #D1FAE5;border-radius:12px;padding:16px;text-align:center">
+    <span style="font-size:24px">✅</span>
+    <p style="margin:8px 0 0;font-size:16px;font-weight:700;color:#065F46">Booking Confirmed!</p>
+    <p style="margin:4px 0 0;font-size:12px;color:#6B7280">Advance payment received successfully</p>
+  </div>
+</td></tr>
+
+<!-- GREETING -->
+<tr><td style="padding:8px 32px 16px">
+  <p style="margin:0;font-size:15px;color:#374151">Hi <strong>${customerName || 'Customer'}</strong>,</p>
+  <p style="margin:8px 0 0;font-size:13px;color:#6B7280;line-height:1.5">Thank you for your advance payment. Your booking with <strong style="color:#6C3BFF">${creatorName || 'the creator'}</strong> is now confirmed. Below are the details:</p>
+</td></tr>
+
+<!-- INVOICE DETAILS -->
+<tr><td style="padding:0 32px 16px">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:12px;overflow:hidden">
+    <tr><td colspan="2" style="padding:12px 16px;background:#F3F4F6;border-bottom:1px solid #E5E7EB"><span style="font-size:12px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.5px">Invoice Details</span></td></tr>
+    <tr><td style="padding:10px 16px;font-size:12px;color:#6B7280;border-bottom:1px solid #F3F4F6">Invoice No.</td><td style="padding:10px 16px;font-size:12px;font-weight:600;color:#1F2937;text-align:right;border-bottom:1px solid #F3F4F6">${receiptNo}</td></tr>
+    <tr><td style="padding:10px 16px;font-size:12px;color:#6B7280;border-bottom:1px solid #F3F4F6">Customer</td><td style="padding:10px 16px;font-size:12px;font-weight:600;color:#1F2937;text-align:right;border-bottom:1px solid #F3F4F6">${customerName || '—'}</td></tr>
+    <tr><td style="padding:10px 16px;font-size:12px;color:#6B7280;border-bottom:1px solid #F3F4F6">Creator</td><td style="padding:10px 16px;font-size:12px;font-weight:600;color:#6C3BFF;text-align:right;border-bottom:1px solid #F3F4F6">${creatorName || '—'}</td></tr>
+    <tr><td style="padding:10px 16px;font-size:12px;color:#6B7280;border-bottom:1px solid #F3F4F6">Booking ID</td><td style="padding:10px 16px;font-size:12px;font-weight:500;color:#1F2937;text-align:right;border-bottom:1px solid #F3F4F6">${bookingId || '—'}</td></tr>
+    <tr><td style="padding:10px 16px;font-size:12px;color:#6B7280;border-bottom:1px solid #F3F4F6">Event</td><td style="padding:10px 16px;font-size:12px;font-weight:500;color:#1F2937;text-align:right;border-bottom:1px solid #F3F4F6">${eventType || 'Wedding'}</td></tr>
+    <tr><td style="padding:10px 16px;font-size:12px;color:#6B7280;border-bottom:1px solid #F3F4F6">Event Date</td><td style="padding:10px 16px;font-size:12px;font-weight:500;color:#1F2937;text-align:right;border-bottom:1px solid #F3F4F6">${formatDate(eventDate)}</td></tr>
+    ${eventLocation ? `<tr><td style="padding:10px 16px;font-size:12px;color:#6B7280;border-bottom:1px solid #F3F4F6">Location</td><td style="padding:10px 16px;font-size:12px;font-weight:500;color:#1F2937;text-align:right;border-bottom:1px solid #F3F4F6">${eventLocation}</td></tr>` : ''}
+    <tr><td style="padding:10px 16px;font-size:12px;color:#6B7280;border-bottom:1px solid #F3F4F6">Payment Date</td><td style="padding:10px 16px;font-size:12px;font-weight:500;color:#1F2937;text-align:right;border-bottom:1px solid #F3F4F6">${paidDate}</td></tr>
+    <tr><td style="padding:10px 16px;font-size:12px;color:#6B7280;border-bottom:1px solid #F3F4F6">Payment Method</td><td style="padding:10px 16px;font-size:12px;font-weight:500;color:#1F2937;text-align:right;border-bottom:1px solid #F3F4F6">${paymentMethod || 'Razorpay (Online)'}</td></tr>
+    <tr><td style="padding:10px 16px;font-size:12px;color:#6B7280;border-bottom:1px solid #F3F4F6">Transaction ID</td><td style="padding:10px 16px;font-size:12px;font-weight:500;color:#1F2937;text-align:right;border-bottom:1px solid #F3F4F6">${paymentId || '—'}</td></tr>
+  </table>
+</td></tr>
+
+<!-- PAYMENT BREAKDOWN -->
+<tr><td style="padding:0 32px 16px">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F8F6FF;border:1px solid #EDE9FE;border-radius:12px;overflow:hidden">
+    <tr><td colspan="2" style="padding:12px 16px;background:#EDE9FE;border-bottom:1px solid #DDD6FE"><span style="font-size:12px;font-weight:700;color:#5B21B6;text-transform:uppercase;letter-spacing:0.5px">Payment Breakdown</span></td></tr>
+    <tr><td style="padding:10px 16px;font-size:12px;color:#6B7280;border-bottom:1px solid #F3E8FF">Total Booking Amount</td><td style="padding:10px 16px;font-size:13px;font-weight:700;color:#1F2937;text-align:right;border-bottom:1px solid #F3E8FF">₹${Number(totalAmount || 0).toLocaleString('en-IN')}</td></tr>
+    <tr><td style="padding:10px 16px;font-size:12px;color:#065F46;font-weight:600;border-bottom:1px solid #F3E8FF">Advance Paid (${advancePercent || 5}%)</td><td style="padding:10px 16px;font-size:13px;font-weight:700;color:#065F46;text-align:right;border-bottom:1px solid #F3E8FF">₹${Number(advanceAmount || 0).toLocaleString('en-IN')}</td></tr>
+    <tr><td style="padding:10px 16px;font-size:12px;color:#92400E;font-weight:600">Remaining Balance (${100 - (advancePercent || 5)}%)</td><td style="padding:10px 16px;font-size:13px;font-weight:700;color:#92400E;text-align:right">₹${Number(remainingAmount || 0).toLocaleString('en-IN')}</td></tr>
+  </table>
+</td></tr>
+
+<!-- IMPORTANT NOTE -->
+<tr><td style="padding:0 32px 24px">
+  <div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;padding:14px">
+    <p style="margin:0 0 6px;font-size:12px;font-weight:700;color:#92400E">📌 Important Note</p>
+    <p style="margin:0;font-size:11px;color:#78350F;line-height:1.5">This is the advance booking confirmation. The remaining balance of <strong>₹${Number(remainingAmount || 0).toLocaleString('en-IN')}</strong> is to be paid directly to the creator as per your agreed booking terms. BookMyShot does not collect the remaining payment.</p>
+  </div>
+</td></tr>
+
+<!-- CTA -->
+<tr><td style="padding:0 32px 24px;text-align:center">
+  <a href="${SITE_URL}" style="display:inline-block;background:linear-gradient(135deg,#6C3BFF,#8B5CF6);color:#fff;font-size:13px;font-weight:700;text-decoration:none;padding:12px 28px;border-radius:10px">View Booking Details →</a>
+</td></tr>
+
+<!-- FOOTER -->
+<tr><td style="padding:20px 32px;background:#F9FAFB;border-top:1px solid #E5E7EB">
+  <p style="margin:0 0 8px;font-size:11px;color:#6B7280;text-align:center">This invoice was generated automatically after successful payment.</p>
+  <p style="margin:0 0 4px;font-size:10px;color:#9CA3AF;text-align:center">BookMyShot | Wedding Creator Marketplace</p>
+  <p style="margin:0;font-size:10px;color:#9CA3AF;text-align:center">© 2026 BookMyShot. All rights reserved. | <a href="${SITE_URL}/privacy" style="color:#6C3BFF;text-decoration:none">Privacy</a> · <a href="${SITE_URL}/terms" style="color:#6C3BFF;text-decoration:none">Terms</a> · <a href="${SITE_URL}/refund-policy" style="color:#6C3BFF;text-decoration:none">Refund Policy</a></p>
+</td></tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
+
+  return sendEmail({ to: email, subject: `✅ Booking Confirmed — Invoice #${receiptNo} | ₹${Number(advanceAmount || 0).toLocaleString('en-IN')} Paid`, html, type: 'booking_advance_receipt', userId, meta: { bookingId, advanceAmount, totalAmount, paymentId, creatorName } });
+}
+
 module.exports = {
   sendEmail,
   generateOTP,
@@ -515,6 +613,8 @@ module.exports = {
   // Payment
   sendPaymentReceipt,
   sendPaymentFailed,
+  // Booking
+  sendBookingAdvanceReceipt,
   // Promotion
   sendPromotionActivated,
   sendPromotionExpired,

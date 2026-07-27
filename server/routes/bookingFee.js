@@ -183,6 +183,38 @@ router.post("/verify/:bookingId", protect, async (req, res, next) => {
       });
     }
 
+    // ═══ SEND INVOICE EMAIL TO CUSTOMER ═══
+    try {
+      const emailService = require("../services/emailService");
+      const User = require("../models/User");
+      const customerUser = await User.findById(booking.user).select("name email");
+      const creatorDoc = await Creator.findById(booking.creator).populate("user", "name");
+      const creatorName = creatorDoc?.user?.name || booking.creatorName || "Creator";
+
+      if (customerUser && customerUser.email) {
+        await emailService.sendBookingAdvanceReceipt({
+          email: customerUser.email,
+          customerName: customerUser.name,
+          creatorName,
+          bookingId: booking._id.toString(),
+          invoiceNumber: booking.invoiceNumber || `BMS-ADV-${Date.now()}`,
+          eventDate: booking.eventDate,
+          eventType: booking.eventType,
+          eventLocation: booking.eventLocation || booking.city || "",
+          totalAmount,
+          advanceAmount: bookingFeeAmount,
+          remainingAmount: totalAmount - bookingFeeAmount,
+          advancePercent: BOOKING_FEE_PERCENT,
+          paymentId: razorpay_payment_id,
+          paymentMethod: "Razorpay (Online)",
+          paidAt: new Date(),
+          userId: booking.user.toString(),
+        });
+      }
+    } catch (emailErr) {
+      console.log("[BookingFee] Invoice email error (non-fatal):", emailErr.message);
+    }
+
     // ═══ REAL-TIME SOCKET.IO ═══
     try {
       const socketService = require("../services/socketService");
