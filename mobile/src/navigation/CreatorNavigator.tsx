@@ -37,9 +37,9 @@ function CreatorTabs() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarStyle: { backgroundColor: '#0F0F0F', borderTopColor: 'rgba(255,255,255,0.06)', borderTopWidth: 1, height: 64, paddingBottom: 10, paddingTop: 8, elevation: 0 },
+        tabBarStyle: { backgroundColor: '#FFFFFF', borderTopColor: '#E5E7EB', borderTopWidth: 1, height: 64, paddingBottom: 10, paddingTop: 8, elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.05, shadowRadius: 8 },
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
+        tabBarInactiveTintColor: '#9CA3AF',
         tabBarLabelStyle: { fontSize: 10, fontWeight: '500', letterSpacing: 0.2 },
         tabBarIcon: ({ focused, color }) => {
           const icons: Record<string, string> = { Dashboard: focused ? 'grid' : 'grid-outline', Bookings: focused ? 'calendar' : 'calendar-outline', Calendar: focused ? 'today' : 'today-outline', Messages: focused ? 'chatbubble' : 'chatbubble-outline', Profile: focused ? 'person' : 'person-outline' };

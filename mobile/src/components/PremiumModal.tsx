@@ -148,7 +148,7 @@ const st = StyleSheet.create({
   btnDestructive: { backgroundColor: '#EF4444' },
   btnSecondary: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.border },
   btnText: { fontSize: 14, fontWeight: '700' },
-  btnTextPrimary: { color: '#000' },
+  btnTextPrimary: { color: '#FFFFFF' },
   btnTextDestructive: { color: '#fff' },
   btnTextSecondary: { color: colors.textSecondary },
 });

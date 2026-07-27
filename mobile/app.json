@@ -3,10 +3,11 @@
     "name": "BookMyShot",
     "slug": "bookmyshot",
     "version": "2.3.0",
+    "sdkVersion": "56.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
-    "backgroundColor": "#0A0A0A",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#FFFFFF",
     "updates": {
       "enabled": false,
       "checkAutomatically": "NEVER",
@@ -23,7 +24,7 @@
       "icon": "./assets/icon.png",
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
-        "backgroundColor": "#0a2a1a"
+        "backgroundColor": "#FFFFFF"
       },
       "permissions": [
         "INTERNET",
@@ -33,13 +34,13 @@
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE"
       ],
-      "backgroundColor": "#0A0A0A"
+      "backgroundColor": "#FFFFFF"
     },
     "plugins": [
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#0A0A0A",
+          "backgroundColor": "#FFFFFF",
           "image": "./assets/splash-icon.png",
           "imageResizeMode": "contain"
         }

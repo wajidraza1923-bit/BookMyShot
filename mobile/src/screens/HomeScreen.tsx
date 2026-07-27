@@ -2,15 +2,15 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, RefreshControl, Image,
   TouchableOpacity, Dimensions, Animated, Platform, ActivityIndicator,
-  StatusBar, TextInput, FlatList,
+  StatusBar, TextInput, FlatList, Modal, Linking, Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as Location from 'expo-location';
 import { useAuth } from '../context/AuthContext';
 import { creatorsAPI } from '../services/api';
 import api from '../services/api';
 import AppFooter from '../components/AppFooter';
+import { getCachedLocation, getFreshLocation, UserLocation } from '../services/location';
 
 const { width } = Dimensions.get('window');
 
@@ -99,12 +99,32 @@ export default function HomeScreen({ navigation }: any) {
   const [featuredMoments, setFeaturedMoments] = useState<any[]>([]);
   const [locationCity, setLocationCity] = useState('');
   const [locationArea, setLocationArea] = useState('');
+  const [locationLoading, setLocationLoading] = useState(true);
+  const [showLocationDenied, setShowLocationDenied] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [heroConfig, setHeroConfig] = useState({ cashbackPercentage: 10, heroTitle: 'Your Dream Wedding,', heroTitleAccent: 'More Rewards!', heroSubtitle: 'Book verified wedding creators and get exciting cashback on every successful booking.', heroEyebrow: 'CELEBRATE BEAUTIFULLY. SAVE MORE.', heroCta1Text: 'Find Creator', heroCta2Text: 'Get Free Quote' });
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const shineAnim = useRef(new Animated.Value(-1)).current;
   // Customer Quick Actions data
   const [qaData, setQaData] = useState({ walletBalance: 0, bookingsCount: 0, inquiriesCount: 0, paymentDue: 0, paymentDueCount: 0 });
+  // Support contact info (fetched from platform settings)
+  const [supportInfo, setSupportInfo] = useState({ email: 'support@bookmyshot.in', phone: '8492922173' });
+  const [supportSheetVisible, setSupportSheetVisible] = useState(false);
+  const supportSlideAnim = useRef(new Animated.Value(0)).current;
+  // Notifications
+  const [unreadNotifs, setUnreadNotifs] = useState(0);
+
+  // ═══ FILTER MODAL STATE ═══
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [filterLocation, setFilterLocation] = useState('');
+  const [filterCategory, setFilterCategory] = useState('');
+  const [filterBudgetMin, setFilterBudgetMin] = useState('');
+  const [filterBudgetMax, setFilterBudgetMax] = useState('');
+  const [filterRating, setFilterRating] = useState(0);
+  const [filterVerified, setFilterVerified] = useState(false);
+  const [filterAvailable, setFilterAvailable] = useState(false);
+  const [filtersApplied, setFiltersApplied] = useState(false);
+  const filterSlideAnim = useRef(new Animated.Value(0)).current;
 
   // Shine animation loop for cashback card
   useEffect(() => {
@@ -119,18 +139,32 @@ export default function HomeScreen({ navigation }: any) {
 
   const loadData = useCallback(async () => {
     try {
-      // Get user location
+      // ═══ LOCATION: Get real GPS location ═══
+      setLocationLoading(true);
       try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status === 'granted') {
-          const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-          const [addr] = await Location.reverseGeocodeAsync(loc.coords);
-          if (addr) {
-            setLocationArea(addr.name || addr.street || addr.subregion || '');
-            setLocationCity(addr.city || addr.subregion || addr.region || '');
-          }
+        const cached = await getCachedLocation();
+        if (cached && cached.city) {
+          setLocationArea(cached.area || cached.district || '');
+          setLocationCity(cached.city || cached.district || '');
+          setLocationLoading(false);
         }
-      } catch {}
+        // Always fetch fresh GPS
+        const fresh = await getFreshLocation();
+        if (fresh && (fresh.city || fresh.district)) {
+          setLocationArea(fresh.area || fresh.district || '');
+          setLocationCity(fresh.city || fresh.district || '');
+          setShowLocationDenied(false);
+        } else if (!cached || !cached.city) {
+          // No GPS and no cache — permission likely denied
+          setShowLocationDenied(true);
+          setLocationCity('');
+          setLocationArea('');
+        }
+      } catch {
+        setShowLocationDenied(true);
+      } finally {
+        setLocationLoading(false);
+      }
 
       const [catsRes, statsRes, creatorsRes, homeConfigRes] = await Promise.all([
         api.get('/discover/categories?homepage=true').catch(() => ({ data: { data: [] } })),
@@ -138,6 +172,23 @@ export default function HomeScreen({ navigation }: any) {
         creatorsAPI.getAll().catch(() => ({ data: { data: [] } })),
         api.get('/homepage-config').catch(() => ({ data: { data: null } })),
       ]);
+
+      // Fetch support info from platform settings (best-effort)
+      try {
+        const platformRes = await api.get('/admin/platform-settings');
+        if (platformRes.data?.data) {
+          const ps = platformRes.data.data;
+          setSupportInfo({ email: ps.supportEmail || 'support@bookmyshot.in', phone: ps.supportPhone || '8492922173' });
+        }
+      } catch {}
+
+      // Fetch unread notification count
+      if (isAuthenticated) {
+        try {
+          const notifRes = await api.get('/notifications/unread-count');
+          setUnreadNotifs(notifRes.data?.count || 0);
+        } catch {}
+      }
 
       // Hero config from admin panel
       if (homeConfigRes.data?.data) setHeroConfig(homeConfigRes.data.data);
@@ -222,9 +273,102 @@ export default function HomeScreen({ navigation }: any) {
   const onRefresh = async () => { setRefreshing(true); await loadData(); setRefreshing(false); };
 
   const getCreatorImg = (item: any) => {
+    // Priority: coverImage > portfolio[0] > avatar > placeholder
+    if (item.coverImage) return item.coverImage;
     const p = item.portfolio?.[0];
     if (p) return typeof p === 'string' ? p : (p.url || p.secure_url || '');
     return item.user?.avatar || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=300';
+  };
+
+  // ═══ FILTER FUNCTIONS ═══
+  const openFilterModal = () => {
+    setFilterModalVisible(true);
+    Animated.spring(filterSlideAnim, { toValue: 1, useNativeDriver: true, speed: 14, bounciness: 4 }).start();
+  };
+
+  const closeFilterModal = () => {
+    Animated.timing(filterSlideAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
+      setFilterModalVisible(false);
+    });
+  };
+
+  const resetFilters = () => {
+    setFilterLocation('');
+    setFilterCategory('');
+    setFilterBudgetMin('');
+    setFilterBudgetMax('');
+    setFilterRating(0);
+    setFilterVerified(false);
+    setFilterAvailable(false);
+    setFiltersApplied(false);
+  };
+
+  const applyFilters = () => {
+    setFiltersApplied(true);
+    closeFilterModal();
+  };
+
+  // Filter creators based on selected filters
+  const getFilteredCreators = () => {
+    if (!filtersApplied) return topCreators;
+    return topCreators.filter((c: any) => {
+      if (filterLocation && !(c.city || c.location || '').toLowerCase().includes(filterLocation.toLowerCase())) return false;
+      if (filterCategory && !(c.category || c.categorySlug || c.specialty || '').toLowerCase().includes(filterCategory.toLowerCase())) return false;
+      if (filterBudgetMin && (c.startingPrice || c.budgetMin || 0) < parseInt(filterBudgetMin)) return false;
+      if (filterBudgetMax && (c.startingPrice || c.budgetMin || 0) > parseInt(filterBudgetMax)) return false;
+      if (filterRating > 0 && (c.rating || 0) < filterRating) return false;
+      if (filterVerified && !c.verified) return false;
+      if (filterAvailable && c.available === false) return false;
+      return true;
+    });
+  };
+
+  const filteredTopCreators = getFilteredCreators();
+
+  const FILTER_CATEGORIES = [
+    { id: '', label: 'All' },
+    { id: 'photography', label: 'Photography' },
+    { id: 'videography', label: 'Videography' },
+    { id: 'makeup', label: 'Makeup' },
+    { id: 'decoration', label: 'Decoration' },
+    { id: 'catering', label: 'Catering' },
+    { id: 'venues', label: 'Venue' },
+    { id: 'dj', label: 'DJ' },
+    { id: 'wedding', label: 'Wedding Planner' },
+    { id: 'mehndi', label: 'Mehndi' },
+  ];
+
+  // ═══ SUPPORT HANDLER ═══
+  const handleSupportPress = () => {
+    setSupportSheetVisible(true);
+    Animated.spring(supportSlideAnim, { toValue: 1, useNativeDriver: true, speed: 14, bounciness: 4 }).start();
+  };
+
+  const closeSupportSheet = () => {
+    Animated.timing(supportSlideAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
+      setSupportSheetVisible(false);
+    });
+  };
+
+  const openWhatsApp = () => {
+    closeSupportSheet();
+    setTimeout(() => {
+      const phone = supportInfo.phone.replace(/\D/g, '');
+      const waUrl = `https://wa.me/91${phone.slice(-10)}`;
+      Linking.openURL(waUrl).catch(() => {
+        Alert.alert('Error', 'Could not open WhatsApp. Please try again.');
+      });
+    }, 250);
+  };
+
+  const openEmail = () => {
+    closeSupportSheet();
+    setTimeout(() => {
+      const emailUrl = `mailto:${supportInfo.email}?subject=BookMyShot Support`;
+      Linking.openURL(emailUrl).catch(() => {
+        Alert.alert('No Email App', 'Please install an email app or email us at ' + supportInfo.email);
+      });
+    }, 250);
   };
 
   if (loading) return <View style={[st.container, { alignItems: 'center', justifyContent: 'center' }]}><ActivityIndicator size="large" color="#6C3BFF" /></View>;
@@ -241,7 +385,7 @@ export default function HomeScreen({ navigation }: any) {
             <Text style={st.logoTxt}>BOOK<Text style={{ color: '#FF4FA3' }}>MYSHOT</Text></Text>
           </View>
           <View style={st.hRight}>
-            <TouchableOpacity style={st.hIconBtn}><Ionicons name="notifications-outline" size={18} color="#1F2937" /><View style={st.notifDot} /></TouchableOpacity>
+            {isAuthenticated && <TouchableOpacity style={st.hIconBtn} onPress={() => navigation.navigate('CreatorNotifications')}><Ionicons name="notifications-outline" size={18} color="#1F2937" />{unreadNotifs > 0 && <View style={st.notifDot} />}</TouchableOpacity>}
             <TouchableOpacity onPress={() => navigation.navigate(isAuthenticated ? 'Profile' : 'Account')}><Ionicons name="person-circle-outline" size={28} color="#6B7280" /></TouchableOpacity>
           </View>
         </View>
@@ -249,9 +393,33 @@ export default function HomeScreen({ navigation }: any) {
         {/* LOCATION */}
         <View style={st.locRow}>
           <Ionicons name="location" size={16} color="#6C3BFF" />
-          <Text style={st.locText}>{locationArea ? `${locationArea}, ` : ''}{locationCity || 'Detecting...'}</Text>
-          <Text style={st.locDrop}>▾</Text>
-          <TouchableOpacity style={st.changeLoc}><Ionicons name="navigate-outline" size={11} color="#6C3BFF" /><Text style={st.changeLocT}>Change Location</Text></TouchableOpacity>
+          {locationLoading ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <ActivityIndicator size="small" color="#6C3BFF" />
+              <Text style={[st.locText, { color: '#9CA3AF' }]}>Getting location...</Text>
+            </View>
+          ) : locationCity ? (
+            <Text style={st.locText}>{locationArea ? `${locationArea}, ` : ''}{locationCity}</Text>
+          ) : (
+            <TouchableOpacity onPress={() => setShowLocationDenied(true)}>
+              <Text style={[st.locText, { color: '#EF4444' }]}>Location not enabled</Text>
+            </TouchableOpacity>
+          )}
+          {!locationLoading && <Text style={st.locDrop}>▾</Text>}
+          <TouchableOpacity style={st.changeLoc} onPress={async () => {
+            setLocationLoading(true);
+            try {
+              const fresh = await getFreshLocation();
+              if (fresh && (fresh.city || fresh.district)) {
+                setLocationArea(fresh.area || fresh.district || '');
+                setLocationCity(fresh.city || fresh.district || '');
+                setShowLocationDenied(false);
+              } else {
+                setShowLocationDenied(true);
+              }
+            } catch { setShowLocationDenied(true); }
+            finally { setLocationLoading(false); }
+          }}><Ionicons name="navigate-outline" size={11} color="#6C3BFF" /><Text style={st.changeLocT}>Refresh</Text></TouchableOpacity>
         </View>
 
         {/* SEARCH */}
@@ -260,8 +428,8 @@ export default function HomeScreen({ navigation }: any) {
             <Ionicons name="search" size={15} color="#9CA3AF" />
             <TextInput style={st.searchInput} placeholder="Search creators, services or anything..." placeholderTextColor="#9CA3AF" value={searchQuery} onChangeText={setSearchQuery} onSubmitEditing={() => { if (searchQuery.length > 1) navigation.navigate('Discover', { search: searchQuery }); }} />
           </View>
-          <TouchableOpacity style={st.filtersBtn} onPress={() => navigation.navigate('Discover')}>
-            <Ionicons name="options" size={14} color="#fff" /><Text style={st.filtersBtnT}>Filters</Text>
+          <TouchableOpacity style={[st.filtersBtn, filtersApplied && { backgroundColor: '#FF4FA3' }]} onPress={openFilterModal}>
+            <Ionicons name="options" size={14} color="#fff" /><Text style={st.filtersBtnT}>{filtersApplied ? 'Filtered' : 'Filters'}</Text>
           </TouchableOpacity>
         </View>
 
@@ -318,12 +486,12 @@ export default function HomeScreen({ navigation }: any) {
             </View>
 
             <View style={st.heroButtonRow}>
-              <TouchableOpacity style={st.heroFindBtn} onPress={() => navigation.navigate('Discover')} activeOpacity={0.85}>
+              <TouchableOpacity style={st.heroFindBtn} onPress={() => navigation.navigate('AllCreators')} activeOpacity={0.85}>
                 <Ionicons name="search" size={14} color="#fff" />
                 <Text style={st.heroFindBtnText}>{heroConfig.heroCta1Text}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={st.heroQuoteBtn} onPress={() => navigation.navigate('Inquiry')} activeOpacity={0.85}>
-                <Ionicons name="chatbubble-ellipses-outline" size={14} color="#374151" />
+                <Ionicons name="chatbubble-ellipses-outline" size={14} color="#fff" />
                 <Text style={st.heroQuoteBtnText}>{heroConfig.heroCta2Text}</Text>
               </TouchableOpacity>
             </View>
@@ -349,7 +517,7 @@ export default function HomeScreen({ navigation }: any) {
                 <Text style={[st.qaLabel, { color: '#9D174D' }]}>Pay Due</Text>
                 <Text style={[st.qaBadge, { color: '#BE185D' }]}>{qaData.paymentDueCount > 0 ? `${qaData.paymentDueCount} Pending` : '—'}</Text>
               </QAButton>
-              <QAButton onPress={() => navigation.navigate('Info', { type: 'support' })} gradient={['#FDF2F8', '#FCE7F3']}>
+              <QAButton onPress={handleSupportPress} gradient={['#FDF2F8', '#FCE7F3']}>
                 <Ionicons name="headset" size={22} color="#BE185D" />
                 <Text style={[st.qaLabel, { color: '#9D174D' }]}>Support</Text>
                 <Text style={[st.qaBadge, { color: '#BE185D' }]}>Help?</Text>
@@ -371,7 +539,7 @@ export default function HomeScreen({ navigation }: any) {
         </View>
 
         {/* ═══ CATEGORIES ═══ */}
-        <View style={st.secHead}><Text style={st.secTitle}>Browse Categories</Text><TouchableOpacity onPress={() => navigation.navigate('Discover')}><Text style={st.viewAll}>View All →</Text></TouchableOpacity></View>
+        <View style={st.secHead}><Text style={st.secTitle}>Browse Categories</Text><TouchableOpacity onPress={() => navigation.navigate('AllCategories')}><Text style={st.viewAll}>View All →</Text></TouchableOpacity></View>
         <View style={st.catGrid}>
           {categories.slice(0, 10).map((cat, idx) => (
             <CatCard key={cat.id} cat={cat} index={idx} onPress={() => cat.id === 'more' ? navigation.navigate('Discover') : navigation.navigate('SubCategories', { slug: cat.id, name: cat.label, icon: 'grid' })} />
@@ -379,10 +547,11 @@ export default function HomeScreen({ navigation }: any) {
         </View>
 
         {/* ═══ TOP CREATORS ═══ */}
-        {topCreators.length > 0 && (
+        {filteredTopCreators.length > 0 && (
           <View>
             <View style={st.secHead}><Text style={st.secTitle}>🔥 Top Creators Near You</Text><TouchableOpacity onPress={() => navigation.navigate('Near Me')}><Text style={st.viewAll}>View All →</Text></TouchableOpacity></View>
-            <FlatList horizontal showsHorizontalScrollIndicator={false} data={topCreators.slice(0, 6)} contentContainerStyle={{ paddingHorizontal: 16 }} keyExtractor={i => i._id}
+            {filtersApplied && <Text style={{ paddingHorizontal: 20, fontSize: 11, color: '#6B7280', marginBottom: 8 }}>{filteredTopCreators.length} creators match your filters</Text>}
+            <FlatList horizontal showsHorizontalScrollIndicator={false} data={filteredTopCreators.slice(0, 6)} contentContainerStyle={{ paddingHorizontal: 16 }} keyExtractor={i => i._id}
               renderItem={({ item }) => (
                 <TouchableOpacity style={st.tcCard} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })} activeOpacity={0.8}>
                   <Image source={{ uri: getCreatorImg(item) }} style={st.tcImg} />
@@ -471,6 +640,200 @@ export default function HomeScreen({ navigation }: any) {
         {/* ═══ FOOTER ═══ */}
         <AppFooter navigation={navigation} />
       </Animated.ScrollView>
+
+      {/* ═══ SUPPORT BOTTOM SHEET ═══ */}
+      <Modal visible={supportSheetVisible} transparent animationType="none" onRequestClose={closeSupportSheet} statusBarTranslucent>
+        <View style={st.supportOverlay}>
+          <TouchableOpacity style={st.supportOverlayBg} activeOpacity={1} onPress={closeSupportSheet} />
+          <Animated.View style={[st.supportSheet, { transform: [{ translateY: supportSlideAnim.interpolate({ inputRange: [0, 1], outputRange: [400, 0] }) }] }]}>
+            {/* Drag Handle */}
+            <View style={st.supportHandle}><View style={st.supportHandleBar} /></View>
+
+            {/* Header */}
+            <View style={st.supportHeader}>
+              <View style={st.supportIconWrap}><Ionicons name="headset" size={22} color="#6C3BFF" /></View>
+              <View style={{ flex: 1 }}>
+                <Text style={st.supportTitle}>Contact Support</Text>
+                <Text style={st.supportSubtitle}>Choose how you'd like to reach our support team.</Text>
+              </View>
+            </View>
+
+            {/* WhatsApp Option */}
+            <TouchableOpacity style={st.supportOption} onPress={openWhatsApp} activeOpacity={0.7}>
+              <View style={[st.supportOptIcon, { backgroundColor: '#ECFDF5' }]}><Ionicons name="logo-whatsapp" size={22} color="#10B981" /></View>
+              <View style={{ flex: 1 }}>
+                <Text style={st.supportOptTitle}>WhatsApp Support</Text>
+                <Text style={st.supportOptSub}>Chat with our support team for quick help.</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
+            </TouchableOpacity>
+
+            {/* Email Option */}
+            <TouchableOpacity style={st.supportOption} onPress={openEmail} activeOpacity={0.7}>
+              <View style={[st.supportOptIcon, { backgroundColor: '#EFF6FF' }]}><Ionicons name="mail" size={20} color="#3B82F6" /></View>
+              <View style={{ flex: 1 }}>
+                <Text style={st.supportOptTitle}>Email Support</Text>
+                <Text style={st.supportOptSub}>Send us your query and we'll reply soon.</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
+            </TouchableOpacity>
+
+            {/* Cancel Button */}
+            <TouchableOpacity style={st.supportCancelBtn} onPress={closeSupportSheet}>
+              <Text style={st.supportCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      </Modal>
+
+      {/* ═══ LOCATION PERMISSION DENIED MODAL ═══ */}
+      <Modal visible={showLocationDenied} transparent animationType="fade" onRequestClose={() => setShowLocationDenied(false)}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)', padding: 24 }}>
+          <View style={{ backgroundColor: '#FFFFFF', borderRadius: 20, padding: 24, width: '100%', maxWidth: 320, alignItems: 'center' }}>
+            <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: '#F3E8FF', justifyContent: 'center', alignItems: 'center', marginBottom: 16 }}>
+              <Ionicons name="location" size={28} color="#6C3BFF" />
+            </View>
+            <Text style={{ fontSize: 17, fontWeight: '700', color: '#1F2937', marginBottom: 8, textAlign: 'center' }}>Enable Location</Text>
+            <Text style={{ fontSize: 13, color: '#6B7280', textAlign: 'center', lineHeight: 19, marginBottom: 20 }}>BookMyShot needs your location to show nearby creators and calculate distances. Please enable location access in your device settings.</Text>
+            <TouchableOpacity
+              style={{ width: '100%', backgroundColor: '#6C3BFF', borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginBottom: 10 }}
+              onPress={() => { setShowLocationDenied(false); Linking.openSettings(); }}
+            >
+              <Text style={{ fontSize: 14, fontWeight: '700', color: '#FFFFFF' }}>Open Settings</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={{ paddingVertical: 10 }} onPress={() => setShowLocationDenied(false)}>
+              <Text style={{ fontSize: 13, color: '#9CA3AF' }}>Maybe Later</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ═══ FILTER BOTTOM SHEET MODAL ═══ */}
+      <Modal
+        visible={filterModalVisible}
+        transparent
+        animationType="none"
+        onRequestClose={closeFilterModal}
+        statusBarTranslucent
+      >
+        <View style={st.filterOverlay}>
+          <TouchableOpacity style={st.filterOverlayBg} activeOpacity={1} onPress={closeFilterModal} />
+          <Animated.View style={[st.filterSheet, { transform: [{ translateY: filterSlideAnim.interpolate({ inputRange: [0, 1], outputRange: [600, 0] }) }] }]}>
+            {/* Handle */}
+            <View style={st.filterHandle}><View style={st.filterHandleBar} /></View>
+
+            {/* Title */}
+            <View style={st.filterHeader}>
+              <Text style={st.filterTitle}>Filters</Text>
+              <TouchableOpacity onPress={closeFilterModal}><Ionicons name="close" size={22} color="#6B7280" /></TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
+              {/* 📍 Location */}
+              <View style={st.filterSection}>
+                <Text style={st.filterLabel}>📍 Location</Text>
+                <TextInput
+                  style={st.filterInput}
+                  placeholder="Enter city or area..."
+                  placeholderTextColor="#9CA3AF"
+                  value={filterLocation}
+                  onChangeText={setFilterLocation}
+                />
+              </View>
+
+              {/* 📸 Category */}
+              <View style={st.filterSection}>
+                <Text style={st.filterLabel}>📸 Category</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                  {FILTER_CATEGORIES.map((cat) => (
+                    <TouchableOpacity
+                      key={cat.id}
+                      style={[st.filterChip, filterCategory === cat.id && st.filterChipActive]}
+                      onPress={() => setFilterCategory(cat.id)}
+                    >
+                      <Text style={[st.filterChipText, filterCategory === cat.id && st.filterChipTextActive]}>{cat.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+
+              {/* 💰 Budget Range */}
+              <View style={st.filterSection}>
+                <Text style={st.filterLabel}>💰 Budget Range</Text>
+                <View style={st.filterRow}>
+                  <TextInput
+                    style={[st.filterInput, { flex: 1 }]}
+                    placeholder="Min ₹"
+                    placeholderTextColor="#9CA3AF"
+                    keyboardType="numeric"
+                    value={filterBudgetMin}
+                    onChangeText={setFilterBudgetMin}
+                  />
+                  <Text style={st.filterDash}>—</Text>
+                  <TextInput
+                    style={[st.filterInput, { flex: 1 }]}
+                    placeholder="Max ₹"
+                    placeholderTextColor="#9CA3AF"
+                    keyboardType="numeric"
+                    value={filterBudgetMax}
+                    onChangeText={setFilterBudgetMax}
+                  />
+                </View>
+              </View>
+
+              {/* ⭐ Rating */}
+              <View style={st.filterSection}>
+                <Text style={st.filterLabel}>⭐ Minimum Rating</Text>
+                <View style={st.filterRatingRow}>
+                  {[0, 3, 3.5, 4, 4.5].map((r) => (
+                    <TouchableOpacity
+                      key={r}
+                      style={[st.filterChip, filterRating === r && st.filterChipActive]}
+                      onPress={() => setFilterRating(r)}
+                    >
+                      <Text style={[st.filterChipText, filterRating === r && st.filterChipTextActive]}>
+                        {r === 0 ? 'Any' : `${r}+`}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* ✅ Verified */}
+              <View style={st.filterSection}>
+                <TouchableOpacity style={st.filterToggleRow} onPress={() => setFilterVerified(!filterVerified)}>
+                  <Text style={st.filterLabel}>✅ Verified Creators Only</Text>
+                  <View style={[st.filterToggle, filterVerified && st.filterToggleActive]}>
+                    <View style={[st.filterToggleDot, filterVerified && st.filterToggleDotActive]} />
+                  </View>
+                </TouchableOpacity>
+              </View>
+
+              {/* 📅 Availability */}
+              <View style={st.filterSection}>
+                <TouchableOpacity style={st.filterToggleRow} onPress={() => setFilterAvailable(!filterAvailable)}>
+                  <Text style={st.filterLabel}>📅 Available Now Only</Text>
+                  <View style={[st.filterToggle, filterAvailable && st.filterToggleActive]}>
+                    <View style={[st.filterToggleDot, filterAvailable && st.filterToggleDotActive]} />
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+
+            {/* Action Buttons */}
+            <View style={st.filterActions}>
+              <TouchableOpacity style={st.filterResetBtn} onPress={resetFilters}>
+                <Text style={st.filterResetText}>Reset Filters</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={st.filterApplyBtn} onPress={applyFilters}>
+                <LinearGradient colors={['#6C3BFF', '#8B5CF6']} style={st.filterApplyGradient}>
+                  <Text style={st.filterApplyText}>Apply Filters</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -546,9 +909,9 @@ const st = StyleSheet.create({
   catFallback: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', borderRadius: 26 },
   catName: { fontSize: 9, fontWeight: '700', color: '#1F2937', textAlign: 'center', lineHeight: 12 },
   catCount: { fontSize: 7.5, color: '#6C3BFF', marginTop: 1, fontWeight: '700' },
-  // Featured Moments — compact 250×130px landscape cards, 2+ visible on screen
-  fmCard: { width: 250, height: 130, borderRadius: 12, overflow: 'hidden', marginRight: 10, elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 6 },
-  fmImage: { width: 250, height: 130, resizeMode: 'cover' },
+  // Featured Moments — compact cards matching Top Creators width
+  fmCard: { width: 170, height: 120, borderRadius: 12, overflow: 'hidden', marginRight: 10, elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 6 },
+  fmImage: { width: 170, height: 120, resizeMode: 'cover' },
   fmTopOverlay: { position: 'absolute', top: 6, left: 6, right: 6 },
   fmBadge: { backgroundColor: 'rgba(108,59,255,0.85)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5, alignSelf: 'flex-start' },
   fmBadgeText: { fontSize: 7, fontWeight: '700', color: '#fff', textTransform: 'uppercase' },
@@ -592,5 +955,50 @@ const st = StyleSheet.create({
   walletQuick: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginTop: 14, backgroundColor: '#FFFFFF', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#EDE9FE' },
   walletQuickTitle: { fontSize: 13, fontWeight: '600', color: '#1F2937' },
   walletQuickSub: { fontSize: 10, color: '#6B7280', marginTop: 1 },
+  // ═══ SUPPORT SHEET STYLES ═══
+  supportOverlay: { flex: 1, justifyContent: 'flex-end' },
+  supportOverlayBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.45)' },
+  supportSheet: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingBottom: Platform.OS === 'ios' ? 34 : 20, elevation: 20, shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.12, shadowRadius: 16 },
+  supportHandle: { alignItems: 'center', paddingVertical: 12 },
+  supportHandleBar: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#E5E7EB' },
+  supportHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 },
+  supportIconWrap: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F3E8FF', alignItems: 'center', justifyContent: 'center' },
+  supportTitle: { fontSize: 17, fontWeight: '700', color: '#1F2937' },
+  supportSubtitle: { fontSize: 12, color: '#6B7280', marginTop: 2 },
+  supportOption: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#FAFBFC', borderWidth: 1, borderColor: '#F1F5F9', borderRadius: 16, padding: 16, marginBottom: 10 },
+  supportOptIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  supportOptTitle: { fontSize: 14, fontWeight: '600', color: '#1F2937' },
+  supportOptSub: { fontSize: 11, color: '#6B7280', marginTop: 2 },
+  supportCancelBtn: { marginTop: 6, paddingVertical: 14, borderRadius: 12, borderWidth: 1.5, borderColor: '#E5E7EB', alignItems: 'center' },
+  supportCancelText: { fontSize: 14, fontWeight: '600', color: '#6B7280' },
+  // ═══ FILTER MODAL STYLES ═══
+  filterOverlay: { flex: 1, justifyContent: 'flex-end' },
+  filterOverlayBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)' },
+  filterSheet: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '85%', paddingHorizontal: 20, paddingBottom: Platform.OS === 'ios' ? 34 : 20, elevation: 20, shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.15, shadowRadius: 12 },
+  filterHandle: { alignItems: 'center', paddingVertical: 12 },
+  filterHandleBar: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#E5E7EB' },
+  filterHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  filterTitle: { fontSize: 18, fontWeight: '700', color: '#1F2937' },
+  filterSection: { marginBottom: 20 },
+  filterLabel: { fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 10 },
+  filterInput: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: '#1F2937' },
+  filterRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  filterDash: { fontSize: 16, color: '#9CA3AF' },
+  filterChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB' },
+  filterChipActive: { backgroundColor: '#6C3BFF', borderColor: '#6C3BFF' },
+  filterChipText: { fontSize: 12, fontWeight: '600', color: '#6B7280' },
+  filterChipTextActive: { color: '#FFFFFF' },
+  filterRatingRow: { flexDirection: 'row', gap: 8 },
+  filterToggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  filterToggle: { width: 44, height: 24, borderRadius: 12, backgroundColor: '#E5E7EB', justifyContent: 'center', paddingHorizontal: 2 },
+  filterToggleActive: { backgroundColor: '#6C3BFF' },
+  filterToggleDot: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#FFFFFF', elevation: 2 },
+  filterToggleDotActive: { alignSelf: 'flex-end' },
+  filterActions: { flexDirection: 'row', gap: 12, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+  filterResetBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, borderWidth: 1.5, borderColor: '#E5E7EB', alignItems: 'center' },
+  filterResetText: { fontSize: 14, fontWeight: '600', color: '#6B7280' },
+  filterApplyBtn: { flex: 1, borderRadius: 12, overflow: 'hidden' },
+  filterApplyGradient: { paddingVertical: 14, alignItems: 'center', borderRadius: 12 },
+  filterApplyText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
 });
 

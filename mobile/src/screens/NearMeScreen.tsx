@@ -6,9 +6,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
-import * as Location from 'expo-location';
 import { creatorsAPI } from '../services/api';
 import api from '../services/api';
+import { getCachedLocation, getFreshLocation, getDistanceKm } from '../services/location';
 
 const { width } = Dimensions.get('window');
 
@@ -61,37 +61,58 @@ export default function NearMeScreen({ navigation }: any) {
   const init = async () => {
     setLoading(true); setError('');
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') { setError('location_denied'); setLoading(false); return; }
-      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-      const { latitude, longitude } = loc.coords;
-      setCoords({ lat: latitude, lng: longitude });
+      // Load cached location instantly
+      const cached = await getCachedLocation();
+      if (cached) {
+        setCoords({ lat: cached.latitude, lng: cached.longitude });
+        setLocationArea(cached.area || cached.district || '');
+        setLocationCity(cached.city || cached.district || '');
+      }
 
-      try {
-        const [addr] = await Location.reverseGeocodeAsync({ latitude, longitude });
-        if (addr) {
-          setLocationArea(addr.name || addr.street || addr.subregion || addr.district || '');
-          setLocationCity(addr.city || addr.subregion || addr.region || '');
-        }
-      } catch { setLocationCity('Your City'); }
+      // Get fresh location
+      const fresh = await getFreshLocation();
+      if (fresh) {
+        setCoords({ lat: fresh.latitude, lng: fresh.longitude });
+        setLocationArea(fresh.area || fresh.district || '');
+        setLocationCity(fresh.city || fresh.district || '');
+        await fetchCreators(fresh.latitude, fresh.longitude);
+      } else if (cached) {
+        await fetchCreators(cached.latitude, cached.longitude);
+      } else {
+        setError('location_denied');
+        await fetchCreators();
+      }
 
-      await fetchCreators(latitude, longitude);
       Animated.parallel([
         Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
         Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 40, friction: 8 }),
       ]).start();
-    } catch { setError('location_failed'); } finally { setLoading(false); }
+    } catch { setError('location_failed'); await fetchCreators(); } finally { setLoading(false); }
   };
 
   const fetchCreators = async (lat?: number, lng?: number) => {
     try {
-      const r = await api.get(`/categories/photography-videography/near-me?lat=${lat || coords?.lat}&lng=${lng || coords?.lng}&radius=${radius}`).catch(() => null);
-      if (r?.data?.data?.creators?.length) { setCreators(r.data.data.creators); return; }
       const all = await creatorsAPI.getAll();
-      setCreators((all.data?.creators || all.data?.data || []).slice(0, 30));
+      let list = all.data?.creators || all.data?.data || [];
+      // Calculate distance for each creator if we have user coords
+      if (lat && lng) {
+        list = list.map((c: any) => {
+          const cLat = c.latitude || c.lat;
+          const cLng = c.longitude || c.lng;
+          const distance = (cLat && cLng) ? getDistanceKm(lat, lng, cLat, cLng) : null;
+          return { ...c, distance };
+        });
+        // Sort by distance (nearest first), creators without coords go to end
+        list.sort((a: any, b: any) => {
+          if (a.distance === null && b.distance === null) return 0;
+          if (a.distance === null) return 1;
+          if (b.distance === null) return -1;
+          return a.distance - b.distance;
+        });
+      }
+      setCreators(list);
     } catch {
-      const all = await creatorsAPI.getAll().catch(() => ({ data: { data: [] } }));
-      setCreators((all.data?.creators || all.data?.data || []).slice(0, 30));
+      setCreators([]);
     }
   };
 
@@ -116,6 +137,8 @@ export default function NearMeScreen({ navigation }: any) {
   });
 
   const getImg = (item: any) => {
+    // Priority: coverImage > portfolio[0] > avatar > placeholder
+    if (item.coverImage) return item.coverImage;
     const p = item.portfolio?.[0];
     if (p) return typeof p === 'string' ? p : (p.url || p.secure_url || '');
     return item.user?.avatar || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=300';

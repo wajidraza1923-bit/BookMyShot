@@ -109,7 +109,7 @@ export default function App() {
   if (!appReady) {
     return (
       <View style={styles.root}>
-        <StatusBar barStyle="light-content" backgroundColor={colors.background} />
+        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
         <View style={styles.brandSplash}>
           <View style={styles.splashContent}>
             <Text style={styles.splashBrand}>BOOKMYSHOT</Text>
@@ -124,7 +124,7 @@ export default function App() {
   if (showOnboarding) {
     return (
       <View style={styles.root}>
-        <StatusBar barStyle="light-content" backgroundColor={colors.background} />
+        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
         <OnboardingScreen onComplete={completeOnboarding} />
       </View>
     );
@@ -132,7 +132,7 @@ export default function App() {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.background} />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <AuthProvider>
         <UpdateChecker>
           <RootNavigator />

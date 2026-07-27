@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, radius } from '../../theme';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { useAutoRefresh } from '../../hooks/useRealTimeUpdates';
 import PremiumModal from '../../components/PremiumModal';
 import Toast from '../../components/Toast';
 
@@ -39,6 +40,9 @@ export default function CreatorBookings({ navigation }: any) {
 
   useEffect(() => { load(); }, []);
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
+
+  // Real-time: auto-refresh bookings on any booking/payment event
+  useAutoRefresh(['booking:updated', 'payment:updated', 'dashboard:refresh'], load);
 
   const filtered = bookings.filter(b => {
     let tabMatch = true;
@@ -103,6 +107,41 @@ export default function CreatorBookings({ navigation }: any) {
 
   const rejectBooking = (id: string) => setConfirmModal({ visible: true, title: 'Reject Booking', message: 'Are you sure you want to reject this booking?', confirmText: 'Reject', destructive: true, onConfirm: async () => { setConfirmModal({ ...confirmModal, visible: false }); try { await api.patch(`/creator/booking-requests/${id}`, { status: 'rejected' }); await load(); setToast({ visible: true, type: 'info', title: 'Booking Rejected' }); } catch {} } });
   const completeBooking = (id: string) => setConfirmModal({ visible: true, title: 'Complete Booking', message: 'Mark this booking as completed?', confirmText: 'Complete', onConfirm: async () => { setConfirmModal({ ...confirmModal, visible: false }); try { await api.patch(`/creator/bookings/${id}/complete`); await load(); setToast({ visible: true, type: 'success', title: 'Booking Completed' }); } catch {} } });
+
+  // ═══ CONFIRM FULL PAYMENT RECEIVED — Triggers cashback ═══
+  const confirmPaymentReceived = (id: string) => setConfirmModal({
+    visible: true,
+    title: '✅ Payment Received',
+    message: 'Have you received the remaining payment from the customer?',
+    confirmText: 'Receive Payment',
+    destructive: false,
+    onConfirm: async () => {
+      setConfirmModal({ ...confirmModal, visible: false });
+      try {
+        console.log('[ConfirmPayment] Calling PATCH /creator/bookings/' + id + '/confirm-payment');
+        const res = await api.patch(`/creator/bookings/${id}/confirm-payment`);
+        console.log('[ConfirmPayment] Response:', JSON.stringify(res.data));
+        await load();
+        const cb = res.data?.cashback;
+        if (cb?.status === 'credited') {
+          setToast({ visible: true, type: 'success', title: '✅ Cashback Released', message: `₹${cb.amount} credited to customer's wallet` });
+        } else if (cb?.status === 'expired') {
+          setToast({ visible: true, type: 'info', title: '✅ Payment Confirmed', message: 'Cashback expired (30-day deadline)' });
+        } else {
+          setToast({ visible: true, type: 'success', title: '✅ Payment Confirmed' });
+        }
+      } catch (e: any) {
+        console.log('[ConfirmPayment] Error:', e.response?.status, e.response?.data, e.message);
+        if (e.response?.data?.alreadyConfirmed) {
+          setToast({ visible: true, type: 'info', title: 'Already Confirmed', message: 'Payment was already confirmed' });
+        } else if (e.response?.status === 404) {
+          setToast({ visible: true, type: 'error', title: 'Not Available', message: 'This feature requires server update. Please redeploy the backend.' });
+        } else {
+          setToast({ visible: true, type: 'error', title: 'Failed', message: e.response?.data?.message || e.message || 'Server error. Please try again.' });
+        }
+      }
+    },
+  });
 
   const getStatusColor = (s: string) => {
     if (s === 'Completed' || s === 'completed') return colors.success;
@@ -235,6 +274,25 @@ export default function CreatorBookings({ navigation }: any) {
               </View>
             )}
 
+            {/* ═══ CONFIRM PAYMENT RECEIVED — Only for completed bookings without payment confirmation ═══ */}
+            {(item.status === 'Completed' || item.status === 'completed' || ['Creator Accepted', 'Payment Approved', 'Event Scheduled'].includes(item.status)) && !item.paymentConfirmed && (
+              <TouchableOpacity style={styles.confirmPayBtn} onPress={() => confirmPaymentReceived(item._id)} activeOpacity={0.85}>
+                <Ionicons name="checkmark-circle" size={16} color="#FFFFFF" />
+                <Text style={styles.confirmPayText}>Confirm Full Payment Received</Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Payment Already Confirmed Badge */}
+            {item.paymentConfirmed && (
+              <View style={styles.confirmedBadge}>
+                <Ionicons name="shield-checkmark" size={14} color="#10B981" />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.confirmedTitle}>✅ Payment Confirmed</Text>
+                  <Text style={styles.confirmedSub}>{item.cashbackReleased ? '🎉 Cashback released to customer' : 'Booking completed'}</Text>
+                </View>
+              </View>
+            )}
+
             {/* View Full Details */}
             <TouchableOpacity style={styles.detailsBtn} onPress={() => navigation.navigate('BookingDetail', { bookingId: item._id })}>
               <Text style={styles.detailsBtnText}>View Full Details</Text><Ionicons name="arrow-forward" size={14} color={colors.primary} />
@@ -300,7 +358,7 @@ export default function CreatorBookings({ navigation }: any) {
           <View style={styles.modalBtns}>
             <TouchableOpacity style={styles.modalCancel} onPress={() => setShowPaymentModal(false)} disabled={savingPayment}><Text style={styles.modalCancelText}>Cancel</Text></TouchableOpacity>
             <TouchableOpacity style={[styles.modalConfirm, savingPayment && { opacity: 0.6 }]} onPress={recordPayment} disabled={savingPayment}>
-              {savingPayment ? <ActivityIndicator size="small" color="#000" /> : <Text style={styles.modalConfirmText}>Record</Text>}
+              {savingPayment ? <ActivityIndicator size="small" color="#FFFFFF" /> : <Text style={styles.modalConfirmText}>Record</Text>}
             </TouchableOpacity>
           </View>
         </View></View>
@@ -393,6 +451,11 @@ const styles = StyleSheet.create({
   acceptText: { ...typography.labelMd, color: colors.textInverse, fontWeight: '600' },
   completeBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, paddingVertical: spacing.sm + 2, borderRadius: radius.sm, backgroundColor: 'rgba(16,185,129,0.08)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.2)', marginBottom: spacing.md },
   completeText: { ...typography.labelMd, color: colors.success, fontWeight: '600' },
+  confirmPayBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingVertical: spacing.md, borderRadius: radius.md, backgroundColor: '#10B981', marginBottom: spacing.md, elevation: 2, shadowColor: '#10B981', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 6 },
+  confirmPayText: { ...typography.labelLg, color: '#FFFFFF', fontWeight: '700' },
+  confirmedBadge: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, backgroundColor: '#ECFDF5', borderRadius: radius.md, borderWidth: 1, borderColor: '#D1FAE5', marginBottom: spacing.md },
+  confirmedTitle: { ...typography.labelMd, color: '#065F46', fontWeight: '700' },
+  confirmedSub: { ...typography.caption, color: '#6B7280', marginTop: 1 },
   detailsBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingVertical: spacing.sm + 2, borderRadius: radius.sm, backgroundColor: colors.primaryMuted, borderWidth: 1, borderColor: colors.borderGold },
   detailsBtnText: { ...typography.labelMd, color: colors.primary, fontWeight: '600' },
   empty: { alignItems: 'center', paddingTop: spacing['4xl'] },

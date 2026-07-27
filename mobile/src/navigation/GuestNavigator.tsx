@@ -17,7 +17,9 @@ import InquiryScreen from '../screens/InquiryScreen';
 import WriteReviewScreen from '../screens/WriteReviewScreen';
 import PlatformReviewScreen from '../screens/PlatformReviewScreen';
 import AllCreatorsScreen from '../screens/AllCreatorsScreen';
+import AllCategoriesScreen from '../screens/AllCategoriesScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
+import PricingScreen from '../screens/PricingScreen';
 import SubCategoriesScreen from '../screens/SubCategoriesScreen';
 import NearMeScreen from '../screens/NearMeScreen';
 
@@ -29,10 +31,11 @@ function GuestTabs() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarStyle: { backgroundColor: '#FFFFFF', borderTopColor: '#F1F5F9', borderTopWidth: 1, height: 68, paddingBottom: 12, paddingTop: 8, elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.05, shadowRadius: 8 },
+        tabBarStyle: { backgroundColor: '#FFFFFF', borderTopColor: '#E5E7EB', borderTopWidth: 1, height: 72, paddingBottom: 16, paddingTop: 10, paddingHorizontal: 8, elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.05, shadowRadius: 8 },
         tabBarActiveTintColor: '#6C3BFF',
         tabBarInactiveTintColor: '#9CA3AF',
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '600', letterSpacing: 0.2, marginTop: 2 },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '600', letterSpacing: 0.2, marginTop: 3 },
+        tabBarItemStyle: { flex: 1, alignItems: 'center', justifyContent: 'center' },
         tabBarIcon: ({ focused, color }) => {
           const icons: Record<string, string> = { Home: focused ? 'home' : 'home-outline', 'Near Me': focused ? 'location' : 'location-outline', Account: focused ? 'person' : 'person-outline' };
           return <Ionicons name={(icons[route.name] || 'home') as any} size={22} color={color} />;
@@ -60,9 +63,11 @@ export default function GuestNavigator() {
       <Stack.Screen name="WriteReview" component={WriteReviewScreen} />
       <Stack.Screen name="PlatformReview" component={PlatformReviewScreen} />
       <Stack.Screen name="AllCreators" component={AllCreatorsScreen} />
+      <Stack.Screen name="AllCategories" component={AllCategoriesScreen} />
       <Stack.Screen name="SubCategories" component={SubCategoriesScreen} />
       <Stack.Screen name="NearMe" component={NearMeScreen} />
       <Stack.Screen name="Discover" component={SearchScreen} />
+      <Stack.Screen name="Pricing" component={PricingScreen} />
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
     </Stack.Navigator>
   );

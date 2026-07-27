@@ -102,7 +102,8 @@ export default function AllCreatorsScreen({ navigation, route }: any) {
           {query.length > 0 && <TouchableOpacity onPress={() => setQuery('')}><Ionicons name="close-circle" size={16} color="#9CA3AF" /></TouchableOpacity>}
         </View>
 
-        {/* Category Chips */}
+        {/* Category Chips — hide when already inside a specific category */}
+        {!initialSubcategory && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8, paddingVertical: 10 }}>
           {CATEGORIES.map(cat => (
             <TouchableOpacity key={cat.id} style={[st.catChip, selectedCategory === cat.id && st.catChipActive]} onPress={() => setSelectedCategory(cat.id)}>
@@ -111,6 +112,7 @@ export default function AllCreatorsScreen({ navigation, route }: any) {
             </TouchableOpacity>
           ))}
         </ScrollView>
+        )}
 
         {/* District Filter */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.distScroll} contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}>
@@ -136,7 +138,7 @@ export default function AllCreatorsScreen({ navigation, route }: any) {
           ListEmptyComponent={<View style={st.empty}><Ionicons name="people-outline" size={32} color="#D1D5DB" /><Text style={st.emptyTitle}>No creators found{selectedDistrict ? ` in ${selectedDistrict}` : ''}{selectedCategory ? ` for ${selectedCategory}` : ''}</Text><Text style={st.emptySub}>Try a different location or category</Text></View>}
           renderItem={({ item }: any) => (
             <TouchableOpacity style={st.card} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })} activeOpacity={0.85}>
-              <Image source={{ uri: _img(item.portfolio?.[0]) || item.user?.avatar || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=300' }} style={st.cardImg} />
+              <Image source={{ uri: item.coverImage || _img(item.portfolio?.[0]) || item.user?.avatar || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=300' }} style={st.cardImg} />
               <View style={st.cardBody}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <Text style={st.cardName} numberOfLines={1}>{item.user?.name || 'Creator'}</Text>

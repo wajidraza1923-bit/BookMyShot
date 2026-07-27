@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Linking, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 const { width } = Dimensions.get('window');
 
@@ -9,34 +10,36 @@ interface FooterLink {
   label: string;
   url?: string;
   screen?: string;
+  page?: string;
   enabled?: boolean;
 }
 
 export default function AppFooter({ navigation }: { navigation: any }) {
+  const { isAuthenticated } = useAuth();
   const [footer, setFooter] = useState<any>({
     tagline: "India's Premium Wedding Creator Marketplace",
     description: "Book verified photographers, videographers, makeup artists and more. Earn cashback on every booking.",
     quickLinks: [
-      { label: "About Us", screen: "Info", enabled: true },
-      { label: "How It Works", screen: "Info", enabled: true },
-      { label: "Blog", screen: "Info", enabled: true },
-      { label: "Careers", screen: "Info", enabled: true },
-      { label: "Contact Us", screen: "Info", enabled: true },
-      { label: "FAQ", screen: "Info", enabled: true },
+      { label: "About Us", screen: "Info", page: "About", enabled: true },
+      { label: "How It Works", screen: "Info", page: "HowItWorks", enabled: true },
+      { label: "Blog", screen: "Info", page: "Blog", enabled: true },
+      { label: "Careers", screen: "Info", page: "Careers", enabled: true },
+      { label: "Contact Us", screen: "Info", page: "Contact", enabled: true },
+      { label: "FAQ", screen: "Info", page: "FAQ", enabled: true },
     ],
     creatorLinks: [
-      { label: "List Your Business", screen: "Account", enabled: true },
-      { label: "Creator Login", screen: "Account", enabled: true },
-      { label: "Pricing", screen: "Info", enabled: true },
-      { label: "Creator Resources", screen: "Info", enabled: true },
-      { label: "Success Stories", screen: "Info", enabled: true },
+      { label: "List Your Business", screen: "Register", enabled: true },
+      { label: "Creator Login", screen: "Login", enabled: true },
+      { label: "Pricing", screen: "Pricing", enabled: true },
+      { label: "Creator Resources", screen: "Info", page: "Resources", enabled: true },
+      { label: "Success Stories", screen: "Info", page: "SuccessStories", enabled: true },
     ],
     supportLinks: [
-      { label: "Help Center", screen: "Info", enabled: true },
-      { label: "Safety Center", screen: "Info", enabled: true },
-      { label: "Cancellation Policy", screen: "Info", enabled: true },
-      { label: "Privacy Policy", screen: "Info", enabled: true },
-      { label: "Terms & Conditions", screen: "Info", enabled: true },
+      { label: "Help Center", screen: "Info", page: "Help", enabled: true },
+      { label: "Safety Center", screen: "Info", page: "Safety", enabled: true },
+      { label: "Cancellation Policy", screen: "Info", page: "Cancellation", enabled: true },
+      { label: "Privacy Policy", screen: "Info", page: "Privacy", enabled: true },
+      { label: "Terms & Conditions", screen: "Info", page: "Terms", enabled: true },
     ],
     instagram: "",
     facebook: "",
@@ -58,11 +61,53 @@ export default function AppFooter({ navigation }: { navigation: any }) {
 
   if (!footer || !footer.enabled) return null;
 
+  // Map footer link labels to correct navigation targets
+  // This ensures correct navigation regardless of API data format
+  const LINK_ROUTES: Record<string, { screen: string; page?: string }> = {
+    'About Us': { screen: 'Info', page: 'About' },
+    'How It Works': { screen: 'Info', page: 'HowItWorks' },
+    'Blog': { screen: 'Info', page: 'Blog' },
+    'Careers': { screen: 'Info', page: 'Careers' },
+    'Contact Us': { screen: 'Info', page: 'Contact' },
+    'FAQ': { screen: 'Info', page: 'FAQ' },
+    'List Your Business': { screen: 'Register' },
+    'Creator Login': { screen: 'Login' },
+    'Pricing': { screen: 'Pricing' },
+    'Creator Resources': { screen: 'Info', page: 'Resources' },
+    'Success Stories': { screen: 'Info', page: 'SuccessStories' },
+    'Help Center': { screen: 'Info', page: 'Help' },
+    'Safety Center': { screen: 'Info', page: 'Safety' },
+    'Cancellation Policy': { screen: 'Info', page: 'Cancellation' },
+    'Privacy Policy': { screen: 'Info', page: 'Privacy' },
+    'Terms & Conditions': { screen: 'Info', page: 'Terms' },
+    'Terms of Service': { screen: 'Info', page: 'Terms' },
+    'Refund Policy': { screen: 'Info', page: 'Refund' },
+  };
+
   const handleLink = (link: FooterLink) => {
     if (link.url) {
       Linking.openURL(link.url);
+      return;
+    }
+
+    // Use our local routing map based on label (overrides API screen field)
+    const route = LINK_ROUTES[link.label];
+    if (route) {
+      if (route.screen === 'Login' || route.screen === 'Register') {
+        if (isAuthenticated) {
+          // Already logged in — show relevant info instead
+          navigation.navigate('Info', { page: route.screen === 'Register' ? 'Resources' : 'About' });
+        } else {
+          navigation.navigate(route.screen);
+        }
+      } else if (route.screen === 'Info') {
+        navigation.navigate('Info', { page: route.page || 'About' });
+      } else {
+        navigation.navigate(route.screen);
+      }
     } else if (link.screen) {
-      navigation.navigate(link.screen, { page: link.label });
+      // Fallback for unknown links from API
+      navigation.navigate(link.screen === 'Info' ? 'Info' : link.screen, link.screen === 'Info' ? { page: 'About' } : undefined);
     }
   };
 

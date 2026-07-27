@@ -8,6 +8,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Act
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, radius } from '../../theme';
 import api from '../../services/api';
+import { useAutoRefresh } from '../../hooks/useRealTimeUpdates';
 import PremiumModal from '../../components/PremiumModal';
 import Toast from '../../components/Toast';
 
@@ -34,6 +35,9 @@ export default function CreatorLeads({ navigation }: any) {
 
   useEffect(() => { load(); }, []);
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
+
+  // Real-time: auto-refresh when new inquiry arrives or inquiry status changes
+  useAutoRefresh(['inquiry:new', 'inquiry:updated', 'booking:updated'], load);
 
   const filtered = leads.filter(l => {
     if (tab === 'all') return true;
@@ -218,7 +222,7 @@ export default function CreatorLeads({ navigation }: any) {
                     <Text style={st.rejectText}>Reject</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={st.acceptBtn} onPress={() => promptAccept(item)}>
-                    <Ionicons name="checkmark" size={15} color="#000" />
+                    <Ionicons name="checkmark" size={15} color="#FFFFFF" />
                     <Text style={st.acceptText}>Accept</Text>
                   </TouchableOpacity>
                 </View>
@@ -357,7 +361,7 @@ const st = StyleSheet.create({
   rejectBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 12, borderRadius: radius.md, backgroundColor: 'rgba(239,68,68,0.06)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.18)' },
   rejectText: { ...typography.labelMd, color: colors.error, fontWeight: '700' },
   acceptBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 12, borderRadius: radius.md, backgroundColor: colors.primary },
-  acceptText: { ...typography.labelMd, color: '#000', fontWeight: '700' },
+  acceptText: { ...typography.labelMd, color: '#FFFFFF', fontWeight: '700' },
   // Processing
   processingOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', gap: 12 },
   processingText: { ...typography.bodyMd, color: 'rgba(255,255,255,0.6)' },

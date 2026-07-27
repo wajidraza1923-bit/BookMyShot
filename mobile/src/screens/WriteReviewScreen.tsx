@@ -13,7 +13,7 @@ import { useAuth } from '../context/AuthContext';
 const API_BASE = 'https://site--bookmyshot--ykz2mr8mzlrv.code.run/api';
 
 export default function WriteReviewScreen({ route, navigation }: any) {
-  const { creatorId, creatorName } = route.params;
+  const { creatorId, creatorName, bookingId } = route.params;
   const { isAuthenticated, user } = useAuth();
   const [rating, setRating] = useState(5);
   const [title, setTitle] = useState('');
@@ -35,6 +35,7 @@ export default function WriteReviewScreen({ route, navigation }: any) {
     setLoading(true);
     try {
       const payload: any = { creatorId, rating, title: title.trim(), text: text.trim() };
+      if (bookingId) payload.bookingId = bookingId;
 
       if (!isAuthenticated) {
         // Guest mode: include phone + name
@@ -148,8 +149,8 @@ export default function WriteReviewScreen({ route, navigation }: any) {
 
         {/* Submit */}
         <TouchableOpacity style={[s.submitBtn, loading && { opacity: 0.6 }]} onPress={handleSubmit} disabled={loading} activeOpacity={0.85}>
-          {loading ? <ActivityIndicator size="small" color="#000" /> : (
-            <><Ionicons name="send" size={15} color="#000" /><Text style={s.submitText}>Submit Review</Text></>
+          {loading ? <ActivityIndicator size="small" color="#FFFFFF" /> : (
+            <><Ionicons name="send" size={15} color="#FFFFFF" /><Text style={s.submitText}>Submit Review</Text></>
           )}
         </TouchableOpacity>
       </ScrollView>
@@ -190,7 +191,7 @@ const s = StyleSheet.create({
   rulesTitle: { fontSize: 10, fontWeight: '700', color: '#9CA3AF', marginBottom: 6 },
   ruleItem: { fontSize: 10, color: '#9CA3AF', lineHeight: 16 },
   // Submit
-  submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#6C3BFF', borderRadius: 12, paddingVertical: 14, marginTop: 20 },
-  submitText: { fontSize: 14, fontWeight: '700', color: '#000' },
+  submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#6C3BFF', borderRadius: 12, paddingVertical: 14, marginTop: 20, elevation: 3, shadowColor: '#6C3BFF', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 8 },
+  submitText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
 });
 

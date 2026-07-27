@@ -1,13 +1,55 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, FlatList, StyleSheet, TouchableOpacity, Image,
-  ActivityIndicator, Dimensions, Platform, StatusBar,
+  ActivityIndicator, Dimensions, Platform, StatusBar, Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import api from '../services/api';
 
 const { width } = Dimensions.get('window');
-const CARD_W = (width - 20 * 2 - 10) / 2; // 2 columns with 20px padding and 10px gap
+const CARD_W = (width - 20 * 2 - 12) / 2; // 2 columns
+
+// Premium images for each subcategory
+const SUB_IMAGES: Record<string, string> = {
+  'wedding-photography': 'https://images.pexels.com/photos/1444442/pexels-photo-1444442.jpeg?auto=compress&w=400',
+  'pre-wedding-shoot': 'https://images.pexels.com/photos/1024993/pexels-photo-1024993.jpeg?auto=compress&w=400',
+  'maternity-shoot': 'https://images.pexels.com/photos/3662770/pexels-photo-3662770.jpeg?auto=compress&w=400',
+  'baby-shoot': 'https://images.pexels.com/photos/3661272/pexels-photo-3661272.jpeg?auto=compress&w=400',
+  'candid-photography': 'https://images.pexels.com/photos/3379934/pexels-photo-3379934.jpeg?auto=compress&w=400',
+  'wedding-films': 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&w=400',
+  'cinematic-video': 'https://images.pexels.com/photos/2608517/pexels-photo-2608517.jpeg?auto=compress&w=400',
+  'drone-videography': 'https://images.pexels.com/photos/1034662/pexels-photo-1034662.jpeg?auto=compress&w=400',
+  'bridal-makeup': 'https://images.pexels.com/photos/3065171/pexels-photo-3065171.jpeg?auto=compress&w=400',
+  'party-makeup': 'https://images.pexels.com/photos/2681751/pexels-photo-2681751.jpeg?auto=compress&w=400',
+  'engagement-makeup': 'https://images.pexels.com/photos/1024960/pexels-photo-1024960.jpeg?auto=compress&w=400',
+  'hair-styling': 'https://images.pexels.com/photos/3993449/pexels-photo-3993449.jpeg?auto=compress&w=400',
+  'mehndi-artist': 'https://images.pexels.com/photos/3014856/pexels-photo-3014856.jpeg?auto=compress&w=400',
+  'mandap-decoration': 'https://images.pexels.com/photos/1616113/pexels-photo-1616113.jpeg?auto=compress&w=400',
+  'stage-decoration': 'https://images.pexels.com/photos/1045541/pexels-photo-1045541.jpeg?auto=compress&w=400',
+  'floral-arrangement': 'https://images.pexels.com/photos/931177/pexels-photo-931177.jpeg?auto=compress&w=400',
+  'lighting-led': 'https://images.pexels.com/photos/1540406/pexels-photo-1540406.jpeg?auto=compress&w=400',
+  'car-decoration': 'https://images.pexels.com/photos/1260727/pexels-photo-1260727.jpeg?auto=compress&w=400',
+  'full-wedding-planning': 'https://images.pexels.com/photos/1024993/pexels-photo-1024993.jpeg?auto=compress&w=400',
+  'day-of-coordination': 'https://images.pexels.com/photos/2253870/pexels-photo-2253870.jpeg?auto=compress&w=400',
+  'destination-wedding-planning': 'https://images.pexels.com/photos/169198/pexels-photo-169198.jpeg?auto=compress&w=400',
+  'budget-planning': 'https://images.pexels.com/photos/1024993/pexels-photo-1024993.jpeg?auto=compress&w=400',
+  'veg-catering': 'https://images.pexels.com/photos/587741/pexels-photo-587741.jpeg?auto=compress&w=400',
+  'non-veg-catering': 'https://images.pexels.com/photos/2983101/pexels-photo-2983101.jpeg?auto=compress&w=400',
+  'multi-cuisine': 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&w=400',
+  'live-food-counter': 'https://images.pexels.com/photos/2544829/pexels-photo-2544829.jpeg?auto=compress&w=400',
+  'bakery-cakes': 'https://images.pexels.com/photos/1702373/pexels-photo-1702373.jpeg?auto=compress&w=400',
+  'banquet-halls': 'https://images.pexels.com/photos/169198/pexels-photo-169198.jpeg?auto=compress&w=400',
+  'hotels-resorts': 'https://images.pexels.com/photos/258154/pexels-photo-258154.jpeg?auto=compress&w=400',
+  'farm-houses': 'https://images.pexels.com/photos/462024/pexels-photo-462024.jpeg?auto=compress&w=400',
+  'open-lawns': 'https://images.pexels.com/photos/931018/pexels-photo-931018.jpeg?auto=compress&w=400',
+  'heritage-properties': 'https://images.pexels.com/photos/1134176/pexels-photo-1134176.jpeg?auto=compress&w=400',
+  'wedding-dj': 'https://images.pexels.com/photos/1540406/pexels-photo-1540406.jpeg?auto=compress&w=400',
+  'live-band': 'https://images.pexels.com/photos/167636/pexels-photo-167636.jpeg?auto=compress&w=400',
+  'singer-performer': 'https://images.pexels.com/photos/2263436/pexels-photo-2263436.jpeg?auto=compress&w=400',
+  'anchor-emcee': 'https://images.pexels.com/photos/3171837/pexels-photo-3171837.jpeg?auto=compress&w=400',
+  'dhol-brass-band': 'https://images.pexels.com/photos/2747446/pexels-photo-2747446.jpeg?auto=compress&w=400',
+};
 
 // Local fallback subcategories when API is unavailable
 const FALLBACK_SUBCATEGORIES: Record<string, any[]> = {
@@ -109,29 +151,22 @@ export default function SubCategoriesScreen({ navigation, route }: any) {
     });
   };
 
-  const renderSubcategoryCard = ({ item }: any) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() => handleSubcategoryPress(item)}
-      activeOpacity={0.8}
-    >
-      {item.imageUrl ? (
-        <Image source={{ uri: item.imageUrl }} style={styles.cardImg} />
-      ) : (
-        <View style={styles.cardImgPlaceholder}>
-          <Ionicons name={(item.icon || 'ellipse-outline') as any} size={28} color="#6C3BFF" />
+  const renderSubcategoryCard = ({ item }: any) => {
+    const imgUrl = item.imageUrl || SUB_IMAGES[item.slug] || 'https://images.pexels.com/photos/1024993/pexels-photo-1024993.jpeg?auto=compress&w=400';
+    return (
+      <TouchableOpacity style={styles.card} onPress={() => handleSubcategoryPress(item)} activeOpacity={0.85}>
+        <Image source={{ uri: imgUrl }} style={styles.cardImg} />
+        <LinearGradient colors={['transparent', 'rgba(0,0,0,0.7)']} style={styles.cardGradient} />
+        <View style={styles.cardContent}>
+          <Text style={styles.cardName} numberOfLines={2}>{item.name}</Text>
+          <View style={styles.cardBottom}>
+            <Text style={styles.cardCount}>{item.creatorCount || 0} Creators</Text>
+            <Ionicons name="arrow-forward" size={14} color="rgba(255,255,255,0.7)" />
+          </View>
         </View>
-      )}
-      <View style={styles.cardOverlay} />
-      <View style={styles.cardIconBadge}>
-        <Ionicons name={(item.icon || 'ellipse-outline') as any} size={14} color="#6C3BFF" />
-      </View>
-      <View style={styles.cardContent}>
-        <Text style={styles.cardName} numberOfLines={2}>{item.name}</Text>
-        <Text style={styles.cardCount}>{item.creatorCount || 0}+ Creators</Text>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -278,44 +313,28 @@ const styles = StyleSheet.create({
   },
   card: {
     width: CARD_W,
-    height: 120,
-    borderRadius: 20,
+    height: 140,
+    borderRadius: 18,
     overflow: 'hidden',
-    backgroundColor: '#F8F6FF',
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
-    elevation: 2,
-    shadowColor: '#6C3BFF',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
+    backgroundColor: '#1F2937',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
     shadowRadius: 8,
   },
   cardImg: {
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
-  },
-  cardImgPlaceholder: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#F3E8FF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-  },
-  cardIconBadge: {
     position: 'absolute',
-    top: 10,
-    left: 10,
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: 'rgba(108,59,255,0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
+  },
+  cardGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '70%',
   },
   cardContent: {
     position: 'absolute',
@@ -325,16 +344,20 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   cardName: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '700',
     color: '#FFFFFF',
-    lineHeight: 16,
+    lineHeight: 18,
+    marginBottom: 4,
+  },
+  cardBottom: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   cardCount: {
     fontSize: 10,
-    color: '#E5E7EB',
-    marginTop: 3,
-    fontWeight: '600',
+    color: 'rgba(255,255,255,0.8)',
+    fontWeight: '500',
   },
 });
-

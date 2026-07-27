@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { ActivityIndicator, View, Text, TouchableOpacity, StyleSheet, Alert, Linking } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
@@ -13,7 +13,7 @@ import GuestNavigator from './GuestNavigator';
 import SuspendedScreen from '../screens/SuspendedScreen';
 
 const navTheme = {
-  dark: true,
+  dark: false,
   colors: {
     primary: colors.primary,
     background: colors.background,
@@ -66,7 +66,17 @@ export default function RootNavigator() {
   };
 
   return (
-    <NavigationContainer theme={navTheme} ref={(ref) => { if (ref) setNavigationRef(ref); }}>
+    <NavigationContainer
+      theme={navTheme}
+      ref={(ref) => { if (ref) setNavigationRef(ref); }}
+      onUnhandledAction={(action) => {
+        // Suppress GO_BACK warnings when there's no screen to go back to
+        // This prevents the yellow warning box in development
+        if (__DEV__) {
+          console.log('[Nav] Unhandled action:', action.type, '— suppressed');
+        }
+      }}
+    >
       {getNavigator()}
     </NavigationContainer>
   );
@@ -139,15 +149,30 @@ function PaymentRequiredScreen() {
   );
 }
 
-// Simple pending approval screen for creators waiting for admin
+// Professional pending/rejected/suspended screen for creators
 function PendingApprovalScreen({ status }: { status: string }) {
   const { logout } = useAuth();
+  const config = {
+    pending: { icon: 'hourglass-outline', iconColor: '#F59E0B', title: 'Account Under Review', subtitle: 'Your creator account is being reviewed by our team. This usually takes 24-48 hours. You will be notified once approved.', bgColor: '#FFFBEB' },
+    rejected: { icon: 'close-circle-outline', iconColor: '#EF4444', title: 'Account Rejected', subtitle: 'Your creator account application has been rejected. This may be due to incomplete information or policy violations. Please contact support for details.', bgColor: '#FEF2F2' },
+    suspended: { icon: 'ban-outline', iconColor: '#EF4444', title: 'Account Suspended', subtitle: 'Your account has been suspended by the BookMyShot team. Please contact support to resolve this issue.', bgColor: '#FEF2F2' },
+    deleted: { icon: 'trash-outline', iconColor: '#6B7280', title: 'Account Not Found', subtitle: 'This account may have been deleted or does not exist. You can create a new account to get started.', bgColor: '#F3F4F6' },
+  }[status] || { icon: 'alert-circle-outline', iconColor: '#F59E0B', title: 'Account Status Unknown', subtitle: 'Please try logging out and back in. If the issue persists, contact support.', bgColor: '#FFFBEB' };
+
   return (
     <View style={styles.pending}>
-      <View style={styles.pendingIcon}><Ionicons name="hourglass-outline" size={40} color="#F97316" /></View>
-      <Text style={styles.pendingTitle}>Account {status === 'pending' ? 'Pending Approval' : status === 'rejected' ? 'Rejected' : 'Suspended'}</Text>
-      <Text style={styles.pendingSub}>{status === 'pending' ? 'Your creator account is being reviewed by our team. You will be notified once approved.' : status === 'rejected' ? 'Your creator account has been rejected. Please contact support.' : 'Your account has been suspended. Please contact support.'}</Text>
-      <TouchableOpacity style={styles.pendingBtn} onPress={logout}><Text style={styles.pendingBtnText}>Logout</Text></TouchableOpacity>
+      <View style={[styles.pendingIcon, { backgroundColor: config.bgColor }]}>
+        <Ionicons name={config.icon as any} size={40} color={config.iconColor} />
+      </View>
+      <Text style={styles.pendingTitle}>{config.title}</Text>
+      <Text style={styles.pendingSub}>{config.subtitle}</Text>
+
+      <TouchableOpacity style={[styles.pendingBtn, { backgroundColor: '#6C3BFF' }]} onPress={() => Linking.openURL('mailto:support@bookmyshot.in?subject=Account Help')}>
+        <Text style={styles.pendingBtnText}>Contact Support</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={[styles.pendingBtn, { backgroundColor: '#FFFFFF', borderColor: '#E5E7EB', marginTop: 12 }]} onPress={logout}>
+        <Text style={[styles.pendingBtnText, { color: '#6B7280' }]}>Logout</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -155,9 +180,9 @@ function PendingApprovalScreen({ status }: { status: string }) {
 const styles = StyleSheet.create({
   loading: { flex: 1, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
   pending: { flex: 1, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30 },
-  pendingIcon: { width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(249,115,22,0.08)', alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
-  pendingTitle: { fontSize: 20, fontWeight: '700', color: '#fff', textAlign: 'center' },
-  pendingSub: { fontSize: 13, color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginTop: 10, lineHeight: 20 },
-  pendingBtn: { marginTop: 30, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 },
-  pendingBtnText: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '600' },
+  pendingIcon: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#F3E8FF', alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
+  pendingTitle: { fontSize: 20, fontWeight: '700', color: '#1F2937', textAlign: 'center' },
+  pendingSub: { fontSize: 13, color: '#6B7280', textAlign: 'center', marginTop: 10, lineHeight: 20 },
+  pendingBtn: { marginTop: 30, backgroundColor: '#6C3BFF', borderWidth: 1, borderColor: '#6C3BFF', borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 },
+  pendingBtnText: { fontSize: 13, color: '#FFFFFF', fontWeight: '600' },
 });

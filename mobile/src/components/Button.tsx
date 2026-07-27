@@ -62,7 +62,7 @@ export default function Button({
       {loading ? (
         <ActivityIndicator
           size="small"
-          color={variant === 'primary' ? colors.textInverse : colors.primary}
+          color={variant === 'primary' ? '#FFFFFF' : colors.primary}
         />
       ) : (
         <>
@@ -84,6 +84,11 @@ const styles = StyleSheet.create({
   container_primary: {
     backgroundColor: colors.primary,
     borderRadius: radius.md,
+    elevation: 3,
+    shadowColor: '#6C3BFF',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
   },
   container_secondary: {
     backgroundColor: colors.surface,
@@ -104,7 +109,7 @@ const styles = StyleSheet.create({
   size_sm: { paddingVertical: spacing.sm, paddingHorizontal: spacing.lg },
   size_md: { paddingVertical: spacing.md, paddingHorizontal: spacing.xl },
   size_lg: { paddingVertical: spacing.lg, paddingHorizontal: spacing['2xl'] },
-  text_primary: { color: colors.textInverse, ...typography.labelLg, fontWeight: '600' },
+  text_primary: { ...typography.labelLg, color: '#FFFFFF', fontWeight: '700' },
   text_secondary: { color: colors.text, ...typography.labelLg },
   text_outline: { color: colors.primary, ...typography.labelLg },
   text_ghost: { color: colors.primary, ...typography.labelLg },

@@ -8,6 +8,7 @@ import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Activi
 import { Ionicons } from '@expo/vector-icons';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { getCachedLocation } from '../services/location';
 
 
 // Helper: safely extract image URI from portfolio item (can be string or object)
@@ -31,6 +32,15 @@ export default function InquiryScreen({ route, navigation }: any) {
   });
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  // Auto-fill city from cached GPS location
+  React.useEffect(() => {
+    getCachedLocation().then(loc => {
+      if (loc && !form.city) {
+        setForm(f => ({ ...f, city: loc.city || loc.district || '' }));
+      }
+    }).catch(() => {});
+  }, []);
   const [step, setStep] = useState<'form' | 'selectCreator'>('form');
   const [allCreators, setAllCreators] = useState<any[]>([]);
   const [selectedCreatorId, setSelectedCreatorId] = useState<string | null>(creatorId || null);
@@ -174,7 +184,7 @@ export default function InquiryScreen({ route, navigation }: any) {
   return (
     <View style={s.container}>
       <View style={s.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}><Ionicons name="arrow-back" size={20} color="#fff" /></TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}><Ionicons name="arrow-back" size={20} color="#1F2937" /></TouchableOpacity>
         <Text style={s.headerTitle}>{isDirect ? `Inquiry to ${creatorName}` : 'Submit Inquiry'}</Text>
         <View style={{ width: 36 }} />
       </View>
@@ -194,11 +204,11 @@ export default function InquiryScreen({ route, navigation }: any) {
           <View style={s.field}>
             <Text style={s.fieldLabel}>Event Date *</Text>
             <TouchableOpacity style={s.dateField} onPress={() => setShowDatePicker(true)} activeOpacity={0.7}>
-              <Ionicons name="today-outline" size={18} color={selectedDate ? '#F97316' : 'rgba(255,255,255,0.3)'} />
+              <Ionicons name="today-outline" size={18} color={selectedDate ? '#6C3BFF' : '#9CA3AF'} />
               <Text style={[s.dateText, selectedDate && { color: '#1F2937' }]}>
                 {selectedDate ? selectedDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : 'Select Event Date'}
               </Text>
-              <Ionicons name="chevron-down" size={14} color="rgba(255,255,255,0.3)" />
+              <Ionicons name="chevron-down" size={14} color="#9CA3AF" />
             </TouchableOpacity>
           </View>
 
@@ -220,7 +230,7 @@ export default function InquiryScreen({ route, navigation }: any) {
 
           {/* Submit directly (goes to admin) */}
           <TouchableOpacity style={[s.submitBtn, loading && { opacity: 0.6 }]} onPress={handleSubmit} disabled={loading} activeOpacity={0.85}>
-            {loading ? <ActivityIndicator color="#000" /> : <><Ionicons name="send" size={15} color="#000" /><Text style={s.submitText}>Submit Inquiry</Text></>}
+            {loading ? <ActivityIndicator color="#FFFFFF" /> : <><Ionicons name="send" size={15} color="#FFFFFF" /><Text style={s.submitText}>Submit Inquiry</Text></>}
           </TouchableOpacity>
 
           {/* Choose creator option (only for general inquiries) */}
@@ -248,7 +258,7 @@ export default function InquiryScreen({ route, navigation }: any) {
               ))
             }
             <TouchableOpacity style={[s.submitBtn, !selectedCreatorId && { opacity: 0.4 }, loading && { opacity: 0.6 }]} onPress={handleSubmit} disabled={!selectedCreatorId || loading} activeOpacity={0.85}>
-              {loading ? <ActivityIndicator color="#000" /> : <><Ionicons name="send" size={15} color="#000" /><Text style={s.submitText}>Send to Creator</Text></>}
+              {loading ? <ActivityIndicator color="#FFFFFF" /> : <><Ionicons name="send" size={15} color="#FFFFFF" /><Text style={s.submitText}>Send to Creator</Text></>}
             </TouchableOpacity>
             <TouchableOpacity style={s.backLink} onPress={() => setStep('form')}><Text style={s.backLinkText}>← Back to form</Text></TouchableOpacity>
           </>
@@ -263,8 +273,8 @@ function Field({ label, icon, value, onChange, keyboard, placeholder, multiline 
     <View style={s.field}>
       <Text style={s.fieldLabel}>{label}</Text>
       <View style={[s.fieldInput, multiline && { height: 90, alignItems: 'flex-start' }]}>
-        <Ionicons name={icon} size={16} color="rgba(255,140,43,0.5)" style={{ marginTop: multiline ? 12 : 0 }} />
-        <TextInput style={[s.fieldText, multiline && { height: 80, textAlignVertical: 'top' }]} value={value} onChangeText={onChange} keyboardType={keyboard || 'default'} placeholder={placeholder || ''} placeholderTextColor="rgba(255,255,255,0.2)" selectionColor="#FF8C2B" multiline={multiline} />
+        <Ionicons name={icon} size={16} color="#6C3BFF" style={{ marginTop: multiline ? 12 : 0 }} />
+        <TextInput style={[s.fieldText, multiline && { height: 80, textAlignVertical: 'top' }]} value={value} onChangeText={onChange} keyboardType={keyboard || 'default'} placeholder={placeholder || ''} placeholderTextColor="#9CA3AF" selectionColor="#6C3BFF" multiline={multiline} />
       </View>
     </View>
   );
@@ -282,8 +292,8 @@ const s = StyleSheet.create({
   fieldLabel: { fontSize: 11, fontWeight: '600', color: '#6B7280', marginBottom: 6, letterSpacing: 0.3 },
   fieldInput: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#F8F6FF', borderWidth: 1, borderColor: '#F1F5F9', borderRadius: 12, paddingHorizontal: 12, height: 46 },
   fieldText: { flex: 1, fontSize: 14, color: '#1F2937' },
-  submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#6C3BFF', borderRadius: 14, paddingVertical: 14, marginTop: 20 },
-  submitText: { fontSize: 15, fontWeight: '700', color: '#000' },
+  submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#6C3BFF', borderRadius: 16, paddingVertical: 18, marginTop: 20, elevation: 4, shadowColor: '#6C3BFF', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10 },
+  submitText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
   dateField: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#F8F6FF', borderWidth: 1, borderColor: '#F1F5F9', borderRadius: 12, paddingHorizontal: 12, height: 46, marginBottom: 14 },
   dateText: { flex: 1, fontSize: 14, color: '#9CA3AF' },
   chooseBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: 'rgba(255,140,43,0.3)', borderRadius: 14, paddingVertical: 13, marginTop: 12 },
@@ -303,11 +313,11 @@ const s = StyleSheet.create({
   successIcon: { marginBottom: 16 },
   successTitle: { fontSize: 22, fontWeight: '700', color: '#1F2937' },
   successSub: { fontSize: 13, color: '#6B7280', textAlign: 'center', marginTop: 8, lineHeight: 20 },
-  successBtn: { marginTop: 24, backgroundColor: '#6C3BFF', paddingHorizontal: 28, paddingVertical: 12, borderRadius: 12 },
-  successBtnText: { fontSize: 14, fontWeight: '700', color: '#000' },
+  successBtn: { marginTop: 24, backgroundColor: '#6C3BFF', paddingHorizontal: 28, paddingVertical: 14, borderRadius: 14, elevation: 3, shadowColor: '#6C3BFF', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 8 },
+  successBtnText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
   // Modal
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'flex-end' },
-  modalCard: { backgroundColor: '#1a1a1a', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 40 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalCard: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 40 },
   modalTitle: { fontSize: 16, fontWeight: '700', color: '#1F2937', textAlign: 'center', marginBottom: 16 },
   modalClose: { alignItems: 'center', marginTop: 16, paddingVertical: 12 },
   modalCloseText: { fontSize: 14, color: '#9CA3AF' },
@@ -350,7 +360,7 @@ function DateGrid({ selectedDate, onSelect }: { selectedDate: Date | null; onSel
           return (
             <TouchableOpacity key={i} style={{ width: '14.28%', height: 38, alignItems: 'center', justifyContent: 'center' }} onPress={() => !isPast && onSelect(date)} disabled={isPast}>
               <View style={[{ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' }, isSelected && { backgroundColor: '#F97316' }, isToday && !isSelected && { borderWidth: 1, borderColor: '#F97316' }]}>
-                <Text style={[{ fontSize: 13, color: isPast ? 'rgba(255,255,255,0.15)' : '#fff' }, isSelected && { color: '#000', fontWeight: '700' }]}>{day}</Text>
+                <Text style={[{ fontSize: 13, color: isPast ? '#D1D5DB' : '#1F2937' }, isSelected && { color: '#FFFFFF', fontWeight: '700' }]}>{day}</Text>
               </View>
             </TouchableOpacity>
           );

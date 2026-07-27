@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, FlatList, ActivityIndicator, Platform, TouchableOpacity, StatusBar, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../services/api';
+import { useAutoRefresh } from '../hooks/useRealTimeUpdates';
 
 export default function WalletScreen({ navigation }: any) {
   const [wallet, setWallet] = useState<any>(null);
@@ -13,6 +14,9 @@ export default function WalletScreen({ navigation }: any) {
   const [myRequests, setMyRequests] = useState<any[]>([]);
 
   useEffect(() => { loadData(); }, []);
+
+  // Real-time: refresh wallet when payment or booking events occur
+  useAutoRefresh(['payment:updated', 'booking:updated', 'dashboard:refresh'], loadData);
 
   const loadData = async () => {
     try {
@@ -167,12 +171,12 @@ export default function WalletScreen({ navigation }: any) {
           <Text style={s.sectionTitle}>How Cashback Works</Text>
           <View style={s.stepsCard}>
             {[
-              { icon: 'person-add', text: 'Create your own BookMyShot account', done: true },
-              { icon: 'search', text: 'Book a verified creator', done: true },
+              { icon: 'person-add', text: 'Create your BookMyShot account', done: true },
+              { icon: 'search', text: 'Book a verified creator through BookMyShot', done: true },
               { icon: 'card', text: 'Pay 5% Booking Fee via Razorpay', done: false },
-              { icon: 'calendar', text: 'Complete your event', done: false },
-              { icon: 'checkmark-circle', text: 'Confirm booking completion', done: false },
-              { icon: 'gift', text: 'Cashback credited to Wallet!', done: false },
+              { icon: 'cash', text: 'Complete remaining payment to creator within 30 days', done: false },
+              { icon: 'checkmark-done', text: 'Creator marks "Payment Completed" in their dashboard', done: false },
+              { icon: 'gift', text: 'Cashback automatically credited to your Wallet!', done: false },
             ].map((step, i) => (
               <View key={i} style={s.stepRow}>
                 <View style={[s.stepIcon, step.done && s.stepIconDone]}>
@@ -190,15 +194,27 @@ export default function WalletScreen({ navigation }: any) {
           <Text style={s.noteText}>Cashback is available only for customers who register and book directly through their own BookMyShot account. Manually created inquiries by creators are not eligible.</Text>
         </View>
 
+        {/* 30-Day Cashback Rule Notice */}
+        <View style={[s.noteCard, { backgroundColor: '#FEF3C7', borderColor: '#FDE68A', marginHorizontal: 20, marginTop: 10 }]}>
+          <Ionicons name="warning" size={16} color="#D97706" />
+          <View style={{ flex: 1 }}>
+            <Text style={[s.noteText, { color: '#92400E', fontWeight: '700', fontSize: 11, marginBottom: 4 }]}>⚠️ Important Cashback Rule</Text>
+            <Text style={[s.noteText, { color: '#92400E' }]}>Complete your booking payment within 30 days and ensure the creator marks the booking as "Payment Completed" to receive cashback.</Text>
+            <Text style={[s.noteText, { color: '#B45309', marginTop: 4, fontWeight: '600' }]}>❌ Payments completed after 30 days are NOT eligible for cashback. The cashback amount will be retained by BookMyShot.</Text>
+          </View>
+        </View>
+
         {/* Wallet Rules */}
         <View style={s.section}>
           <Text style={s.sectionTitle}>Wallet Rules</Text>
           <View style={s.rulesCard}>
             {[
-              'Cashback cannot be converted to cash',
+              'Once credited, cashback NEVER expires',
+              'Withdraw anytime — even after 1, 2, or 3 years',
+              'Subject only to minimum withdrawal amount (₹100)',
               'Cannot be transferred to another account',
-              'Can only be used on future BookMyShot bookings',
-              'Automatically deducted when you choose to use it',
+              'Cashback is calculated on the Razorpay booking fee amount',
+              'Cashback percentage is set by BookMyShot Admin',
             ].map((rule, i) => (
               <View key={i} style={s.ruleRow}>
                 <Ionicons name="shield-checkmark" size={13} color="#10B981" />
