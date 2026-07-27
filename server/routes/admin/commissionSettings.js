@@ -26,6 +26,7 @@ router.put("/", validateCommissionSettings, async (req, res, next) => {
       inquiryCommissionPercent: previous.inquiryCommissionPercent,
       latePaymentFeePercent: previous.latePaymentFeePercent,
       manualAdjustmentPercent: previous.manualAdjustmentPercent,
+      advanceBookingPercent: previous.advanceBookingPercent,
     };
 
     // Sync inquiryCommissionPercent with creatorLeadCommissionPercent if provided
@@ -55,6 +56,7 @@ router.put("/", validateCommissionSettings, async (req, res, next) => {
         inquiryCommissionPercent: settings.inquiryCommissionPercent,
         latePaymentFeePercent: settings.latePaymentFeePercent,
         manualAdjustmentPercent: settings.manualAdjustmentPercent,
+        advanceBookingPercent: settings.advanceBookingPercent,
       },
       ip: req.ip,
     });

@@ -12,13 +12,18 @@ export default function AdminBusinessModel({ navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState<any>({});
+  const [commissionSettings, setCommissionSettings] = useState<any>({});
 
   useEffect(() => { load(); }, []);
 
   const load = async () => {
     try {
-      const res = await api.get('/leads/admin/settings');
-      if (res.data?.data) setSettings(res.data.data);
+      const [leadRes, commRes] = await Promise.all([
+        api.get('/leads/admin/settings'),
+        api.get('/admin/commission-settings'),
+      ]);
+      if (leadRes.data?.data) setSettings(leadRes.data.data);
+      if (commRes.data?.data) setCommissionSettings(commRes.data.data);
     } catch (e: any) { Alert.alert('Error', 'Failed to load settings'); }
     finally { setLoading(false); }
   };
@@ -26,24 +31,31 @@ export default function AdminBusinessModel({ navigation }: any) {
   const save = async () => {
     setSaving(true);
     try {
-      await api.put('/leads/admin/settings', {
-        leadCountMode: settings.leadCountMode || 'booking',
-        freeLeadLimit: Number(settings.freeLeadLimit) || 3,
-        leadUnlockPrice: Number(settings.leadUnlockPrice) || 70,
-        monthlyPrice: Number(settings.monthlyPrice) || 199,
-        yearlyPrice: Number(settings.yearlyPrice) || 1999,
-        subscriptionDurationDays: Number(settings.subscriptionDurationDays) || 30,
-        enableLeadLimit: settings.enableLeadLimit !== false,
-        enablePerLeadPurchase: settings.enablePerLeadPurchase !== false,
-        enableSubscription: settings.enableSubscription !== false,
-        showLeadDashboardCard: settings.showLeadDashboardCard !== false,
-      });
+      await Promise.all([
+        api.put('/leads/admin/settings', {
+          leadCountMode: settings.leadCountMode || 'booking',
+          freeLeadLimit: Number(settings.freeLeadLimit) || 3,
+          leadUnlockPrice: Number(settings.leadUnlockPrice) || 70,
+          monthlyPrice: Number(settings.monthlyPrice) || 199,
+          yearlyPrice: Number(settings.yearlyPrice) || 1999,
+          subscriptionDurationDays: Number(settings.subscriptionDurationDays) || 30,
+          enableLeadLimit: settings.enableLeadLimit !== false,
+          enablePerLeadPurchase: settings.enablePerLeadPurchase !== false,
+          enableSubscription: settings.enableSubscription !== false,
+          showLeadDashboardCard: settings.showLeadDashboardCard !== false,
+        }),
+        api.put('/admin/commission-settings', {
+          advanceBookingPercent: Number(commissionSettings.advanceBookingPercent) || 5,
+          bmsLeadCommissionPercent: Number(commissionSettings.bmsLeadCommissionPercent) || 5,
+        }),
+      ]);
       Alert.alert('✅ Saved', 'Business model settings updated!');
     } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Save failed'); }
     finally { setSaving(false); }
   };
 
   const update = (key: string, val: any) => setSettings((s: any) => ({ ...s, [key]: val }));
+  const updateComm = (key: string, val: any) => setCommissionSettings((s: any) => ({ ...s, [key]: val }));
 
   if (loading) return <View style={s.center}><ActivityIndicator size="large" color={colors.primary} /></View>;
 
@@ -81,6 +93,16 @@ export default function AdminBusinessModel({ navigation }: any) {
           <Field label="Monthly Subscription (₹)" value={String(settings.monthlyPrice || 199)} onChange={(v: string) => update('monthlyPrice', v)} icon="card-outline" />
           <Field label="Yearly Subscription (₹)" value={String(settings.yearlyPrice || 1999)} onChange={(v: string) => update('yearlyPrice', v)} icon="calendar-outline" />
           <Field label="Subscription Duration (Days)" value={String(settings.subscriptionDurationDays || 30)} onChange={(v: string) => update('subscriptionDurationDays', v)} icon="time-outline" />
+        </View>
+
+        {/* Advance Booking Payment */}
+        <Text style={s.secTitle}>Advance Booking Payment</Text>
+        <View style={s.card}>
+          <View style={s.advanceInfo}>
+            <Ionicons name="information-circle-outline" size={14} color="#6C3BFF" />
+            <Text style={s.advanceInfoText}>Customer pays this % as advance via Razorpay to confirm booking. Remaining goes directly to creator.</Text>
+          </View>
+          <Field label="Advance Booking (%)" value={String(commissionSettings.advanceBookingPercent || 5)} onChange={(v: string) => updateComm('advanceBookingPercent', v)} icon="card-outline" />
         </View>
 
         {/* Toggles */}
@@ -146,6 +168,9 @@ const s = StyleSheet.create({
   // Toggle
   toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
   toggleLabel: { fontSize: 13, color: '#374151', flex: 1 },
+  // Advance info
+  advanceInfo: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, backgroundColor: '#F8F6FF', borderRadius: 10, padding: 10, marginBottom: 14 },
+  advanceInfoText: { fontSize: 11, color: '#6B7280', flex: 1, lineHeight: 16 },
   // Save
   saveBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#6C3BFF', borderRadius: 14, paddingVertical: 16, marginTop: 24, elevation: 3, shadowColor: '#6C3BFF', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 8 },
   saveBtnText: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },

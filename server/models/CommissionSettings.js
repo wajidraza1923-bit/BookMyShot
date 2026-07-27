@@ -7,6 +7,8 @@ const commissionSettingsSchema = new mongoose.Schema(
     inquiryCommissionPercent: { type: Number, default: 3 },       // Inquiry commission (creator-generated inquiries)
     latePaymentFeePercent: { type: Number, default: 2 },
     manualAdjustmentPercent: { type: Number, default: 0 },
+    // Advance Booking Fee — customer pays X% to BookMyShot to confirm booking
+    advanceBookingPercent: { type: Number, default: 5, min: 1, max: 50 },
   },
   { timestamps: true }
 );

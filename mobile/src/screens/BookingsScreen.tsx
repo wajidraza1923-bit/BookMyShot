@@ -5,6 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { colors, spacing, typography, radius } from '../theme';
 import { useAuth } from '../context/AuthContext';
 import { bookingsAPI } from '../services/api';
+import { useAutoRefresh } from '../hooks/useRealTimeUpdates';
 import api from '../services/api';
 
 const tabs = ['Upcoming', 'Completed', 'Cancelled'];
@@ -29,6 +30,9 @@ export default function BookingsScreen({ navigation }: any) {
 
   useEffect(() => { loadBookings(); }, [loadBookings]);
   const onRefresh = async () => { setRefreshing(true); await loadBookings(); setRefreshing(false); };
+
+  // Real-time: auto-refresh when booking status or payment changes
+  useAutoRefresh(['booking:updated', 'payment:updated', 'inquiry:updated'], loadBookings);
 
   const getStatusColor = (status: string) => {
     const s = (status || '').toLowerCase();
@@ -139,10 +143,12 @@ export default function BookingsScreen({ navigation }: any) {
                 <View style={s.details}>
                   <DetailRow icon="calendar" label="Event Date" value={validDate ? eventDate!.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'} />
                   {b.eventLocation ? <DetailRow icon="location" label="Location" value={b.eventLocation} /> : null}
-                  <DetailRow icon="wallet" label="Amount" value={`₹${amount.toLocaleString('en-IN')}`} highlight />
+                  <DetailRow icon="wallet" label="Total Amount" value={`₹${amount.toLocaleString('en-IN')}`} highlight />
+                  {b.bookingFeeAmount > 0 && <DetailRow icon="card" label="Booking Fee" value={`₹${b.bookingFeeAmount.toLocaleString('en-IN')}`} color="#6C3BFF" />}
                   {paid > 0 && <DetailRow icon="checkmark-circle" label="Paid" value={`₹${paid.toLocaleString('en-IN')}`} color="#10B981" />}
                   {remaining > 0 && <DetailRow icon="alert-circle" label="Remaining" value={`₹${remaining.toLocaleString('en-IN')}`} color="#F59E0B" />}
                   <DetailRow icon="card" label="Payment" value={b.paymentStatus || 'unpaid'} />
+                  <DetailRow icon="gift" label="Cashback" value={b.bookingFeePaid ? 'Eligible' : 'Pay booking fee first'} color={b.bookingFeePaid ? '#10B981' : '#9CA3AF'} />
                 </View>
 
                 {/* Payment Progress */}
@@ -150,6 +156,32 @@ export default function BookingsScreen({ navigation }: any) {
                   <View style={s.progressWrap}>
                     <View style={s.progressBar}><View style={[s.progressFill, { width: `${paymentPct}%` }]} /></View>
                     <Text style={s.progressText}>{paymentPct}% paid</Text>
+                  </View>
+                )}
+
+                {/* ═══ PAY BOOKING FEE — Primary CTA for new bookings ═══ */}
+                {!b.bookingFeePaid && (b.status === 'Creator Accepted' || b.status === 'Booking Created') && amount > 0 && (
+                  <View style={s.feeCard}>
+                    <View style={s.feeInfo}>
+                      <Ionicons name="card" size={16} color="#6C3BFF" />
+                      <View style={{ flex: 1, marginLeft: 8 }}>
+                        <Text style={s.feeTitle}>Pay Advance to Confirm Booking</Text>
+                        <Text style={s.feeSub}>Pay advance booking amount to BookMyShot. Remaining goes directly to the creator.</Text>
+                      </View>
+                    </View>
+                    <TouchableOpacity style={s.feeBtn} onPress={() => navigation.navigate('BookingPayment', { bookingId: b._id })} activeOpacity={0.85}>
+                      <Ionicons name="lock-closed" size={14} color="#FFFFFF" />
+                      <Text style={s.feeBtnText}>Pay Advance Now</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                {/* Booking Fee Paid Badge */}
+                {b.bookingFeePaid && (
+                  <View style={s.feePaidBadge}>
+                    <Ionicons name="checkmark-circle" size={14} color="#10B981" />
+                    <Text style={s.feePaidText}>Advance Paid • ₹{(b.bookingFeeAmount || 0).toLocaleString('en-IN')}</Text>
+                    <Text style={[s.feePaidText, { color: '#F59E0B', marginLeft: 4 }]}>Remaining to Creator</Text>
                   </View>
                 )}
 
@@ -164,7 +196,7 @@ export default function BookingsScreen({ navigation }: any) {
                 {/* Upload Proof Button */}
                 {b.paymentStatus !== 'paid' && b.paymentStatus !== 'verified' && b.status !== 'rejected' && b.status !== 'cancelled' && (
                   <TouchableOpacity style={s.uploadBtn} onPress={() => navigation.navigate('PaymentProof', { bookingId: b._id, totalAmount: amount, paidAmount: paid, creatorName })}>
-                    <Ionicons name="card-outline" size={16} color="#000" />
+                    <Ionicons name="card-outline" size={16} color="#FFFFFF" />
                     <Text style={s.uploadText}>Pay Now / Upload Proof</Text>
                   </TouchableOpacity>
                 )}
@@ -277,7 +309,16 @@ const s = StyleSheet.create({
   progressText: { fontSize: 10, color: colors.textMuted },
   // Upload
   uploadBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#F97316', borderRadius: 10, paddingVertical: 10, marginBottom: 8 },
-  uploadText: { fontSize: 12, fontWeight: '700', color: '#000' },
+  uploadText: { fontSize: 12, fontWeight: '700', color: '#FFFFFF' },
+  // Booking Fee
+  feeCard: { backgroundColor: '#F8F6FF', borderRadius: 12, padding: 12, marginBottom: 10, borderWidth: 1, borderColor: '#EDE9FE' },
+  feeInfo: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 },
+  feeTitle: { fontSize: 12, fontWeight: '700', color: '#1F2937' },
+  feeSub: { fontSize: 10, color: '#6B7280', lineHeight: 15, marginTop: 2 },
+  feeBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#6C3BFF', borderRadius: 10, paddingVertical: 12 },
+  feeBtnText: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
+  feePaidBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#ECFDF5', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, marginBottom: 8 },
+  feePaidText: { fontSize: 11, fontWeight: '600', color: '#065F46' },
   // Chat
   chatBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: colors.primaryMuted, borderRadius: 10, paddingVertical: 10, marginBottom: 8, borderWidth: 1, borderColor: colors.borderGold },
   chatBtnText: { fontSize: 12, fontWeight: '600', color: colors.primary },
@@ -290,5 +331,5 @@ const s = StyleSheet.create({
   emptySub: { fontSize: 12, color: '#9CA3AF' },
   emptyAuth: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   signInBtn: { backgroundColor: colors.primary, paddingHorizontal: 24, paddingVertical: 10, borderRadius: 10, marginTop: 8 },
-  signInText: { fontSize: 13, fontWeight: '700', color: '#000' },
+  signInText: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
 });

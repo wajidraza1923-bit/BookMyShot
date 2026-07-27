@@ -89,6 +89,7 @@ const COMMISSION_PERCENT_FIELDS = [
   "creatorLeadCommissionPercent",
   "latePaymentFeePercent",
   "manualAdjustmentPercent",
+  "advanceBookingPercent",
 ];
 
 const validateCommissionSettings = (req, res, next) => {

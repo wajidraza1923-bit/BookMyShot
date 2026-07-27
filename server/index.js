@@ -456,6 +456,7 @@ app.get("/api/config/public", async (req, res) => {
       commission: {
         bmsLeadPercent: commSettings.bmsLeadCommissionPercent,
         creatorLeadPercent: commSettings.creatorLeadCommissionPercent,
+        advanceBookingPercent: commSettings.advanceBookingPercent || 5,
       },
       platform: {
         currency: platformSettings.currency,
