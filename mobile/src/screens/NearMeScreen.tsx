@@ -2,13 +2,12 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   View, Text, FlatList, StyleSheet, TouchableOpacity, Image,
   ActivityIndicator, Dimensions, Platform, StatusBar, TextInput,
-  ScrollView, Modal, Animated, RefreshControl, Linking,
+  ScrollView, Modal, Animated, RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { creatorsAPI } from '../services/api';
 import api from '../services/api';
-import * as Location from 'expo-location';
-import { getCachedLocation, getFreshLocation, getDistanceKm } from '../services/location';
+import { useLocation } from '../hooks/useLocation';
 
 // Safe MapView — only render if available, catch crashes
 let MapView: any = null;
@@ -49,9 +48,6 @@ export default function NearMeScreen({ navigation }: any) {
   const [creators, setCreators] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [locationArea, setLocationArea] = useState('');
-  const [locationCity, setLocationCity] = useState('');
-  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [error, setError] = useState('');
   const [selectedCat, setSelectedCat] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -67,81 +63,49 @@ export default function NearMeScreen({ navigation }: any) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
 
-  useEffect(() => { init(); }, []);
+  // Real location via hook
+  const { location: userLocation, displayCity: locationCity, displayArea: locationArea, state: locState, refresh: refreshLoc, openSettings: openLocSettings, askPermission: askLocPermission } = useLocation();
 
-  const init = async () => {
-    setLoading(true); setError('');
-    try {
-      // Step 1: Show cached location instantly in header
-      const cached = await getCachedLocation();
-      if (cached && cached.latitude) {
-        setCoords({ lat: cached.latitude, lng: cached.longitude });
-        setLocationArea(cached.area || cached.district || '');
-        setLocationCity(cached.city || cached.district || 'Your Location');
-        // Fetch creators with cached coords immediately (don't wait for fresh GPS)
-        await fetchCreators(cached.latitude, cached.longitude);
-        setLoading(false);
-      }
+  // Fetch creators when location becomes ready
+  useEffect(() => {
+    if (locState === 'ready' && userLocation) {
+      fetchCreators(userLocation.latitudeitude, userLocation.longitude);
+    } else if (locState === 'denied' || locState === 'gps_off') {
+      setError(locState);
+      fetchCreators(); // show all without distance
+    } else if (locState === 'error') {
+      fetchCreators();
+    }
+  }, [locState, userLocation?.latitude, userLocation?.longitude]);
 
-      // Step 2: Check GPS enabled
-      const gpsOn = await Location.hasServicesEnabledAsync().catch(() => true);
-      if (!gpsOn) {
-        console.log('[NearMe] GPS services disabled');
-        if (!cached) { setError('gps_disabled'); await fetchCreators(); }
-        return;
-      }
-
-      // Step 3: Get fresh GPS in background (already showing results from cache)
-      console.log('[NearMe] Getting fresh GPS...');
-      const fresh = await getFreshLocation();
-
-      if (fresh) {
-        console.log(`[NearMe] ✅ GPS: ${fresh.latitude.toFixed(5)}, ${fresh.longitude.toFixed(5)} | ${fresh.city || fresh.district || 'No city'}`);
-        setCoords({ lat: fresh.latitude, lng: fresh.longitude });
-        setLocationArea(fresh.area || fresh.district || '');
-        setLocationCity(fresh.city || fresh.district || 'Your Location');
-        setError('');
-        // Re-fetch with fresh coords (may reorder results)
-        await fetchCreators(fresh.latitude, fresh.longitude);
-      } else if (!cached) {
-        // No location at all
-        setError('location_denied');
-        await fetchCreators();
-      }
-
+  useEffect(() => {
+    if (creators.length > 0 || locState === 'denied' || locState === 'gps_off') {
+      setLoading(false);
       Animated.parallel([
         Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
         Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 40, friction: 8 }),
       ]).start();
-    } catch (e: any) {
-      console.log('[NearMe] Init error:', e.message);
-      if (!coords) await fetchCreators();
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [creators, locState]);
+
+  const init = () => { refreshLoc(); };
+  useEffect(() => { setLoading(true); }, []);
 
   const fetchCreators = async (lat?: number, lng?: number) => {
     try {
       let list: any[] = [];
-      
       if (lat && lng) {
-        // Use dedicated nearby endpoint with server-side distance calculation
-        console.log(`[NearMe] Fetching creators near: ${lat.toFixed(5)}, ${lng.toFixed(5)}, radius: ${radius}km`);
-        const res = await api.get('/creators/nearby', { params: { lat, lng, radius, category: selectedCat !== 'all' ? selectedCat : undefined } });
+        console.log(`[NearMe] Fetching creators near: ${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+        const res = await api.get('/creators/nearby', { params: { lat, lng, radius } });
         list = res.data?.creators || [];
-        console.log(`[NearMe] Server returned ${list.length} creators with distances`);
-        // Log first 3 for debugging
+        console.log(`[NearMe] Got ${list.length} creators with distances`);
         list.slice(0, 3).forEach((c: any) => {
-          console.log(`[NearMe]   ${c.user?.name}: ${c.distance}km (source: ${c.distanceSource}) at ${c.creatorLat?.toFixed(4)},${c.creatorLng?.toFixed(4)}`);
+          console.log(`  → ${c.user?.name}: ${c.distance}km (${c.distanceSource}) city=${c.city}`);
         });
       } else {
-        // No location — fetch all creators without distance
-        console.log('[NearMe] No user coords, fetching all creators');
         const all = await creatorsAPI.getAll();
         list = all.data?.creators || all.data?.data || [];
       }
-      
       setCreators(list);
     } catch (e: any) {
       console.log('[NearMe] Fetch error:', e.message);
@@ -151,24 +115,14 @@ export default function NearMeScreen({ navigation }: any) {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    try {
-      const fresh = await getFreshLocation();
-      if (fresh) {
-        setCoords({ lat: fresh.latitude, lng: fresh.longitude });
-        setLocationArea(fresh.area || fresh.district || '');
-        setLocationCity(fresh.city || fresh.district || '');
-        await fetchCreators(fresh.latitude, fresh.longitude);
-      } else if (coords) {
-        await fetchCreators(coords.lat, coords.lng);
-      }
-    } catch {}
+    refreshLoc();
+    if (userLocation) await fetchCreators(userLocation.latitudeitude, userLocation.longitude);
     setRefreshing(false);
   };
 
   // ═══ FILTERING & SORTING ═══
   const filtered = creators.filter(c => {
-    // Category filter (already done server-side for /nearby, but needed for fallback)
-    if (selectedCat !== 'all' && !coords) {
+    if (selectedCat !== 'all' && !userLocation) {
       const cat = (c.category || c.categorySlug || c.specialty || '').toLowerCase();
       if (!cat.includes(selectedCat)) return false;
     }
@@ -176,8 +130,7 @@ export default function NearMeScreen({ navigation }: any) {
       const q = searchQuery.toLowerCase();
       if (!(c.user?.name || '').toLowerCase().includes(q) && !(c.specialty || '').toLowerCase().includes(q) && !(c.city || '').toLowerCase().includes(q)) return false;
     }
-    // Distance filter
-    if (coords && c.distance !== null && c.distance !== undefined && c.distance > radius) return false;
+    if (userLocation && c.distance !== null && c.distance !== undefined && c.distance > radius) return false;
     return true;
   }).sort((a, b) => {
     if (sortBy === 'nearest') return (a.distance || 9999) - (b.distance || 9999);
@@ -254,7 +207,7 @@ export default function NearMeScreen({ navigation }: any) {
       <Text style={{ fontSize: 48 }}>📷</Text>
       <Text style={s.emptyTitle}>No creators found nearby</Text>
       <Text style={s.emptySub}>Try increasing the distance radius or change your location</Text>
-      <TouchableOpacity style={s.emptyBtn} onPress={() => { setRadius(25); if (coords) fetchCreators(coords.lat, coords.lng); }}>
+      <TouchableOpacity style={s.emptyBtn} onPress={() => { setRadius(25); if (userLocation) fetchCreators(userLocation.latitude, userLocation.longitude); }}>
         <Ionicons name="expand-outline" size={14} color="#fff" /><Text style={s.emptyBtnT}>Increase Radius to 25 km</Text>
       </TouchableOpacity>
     </View>
@@ -311,13 +264,13 @@ export default function NearMeScreen({ navigation }: any) {
       ) : error ? (
         <View style={s.center}>
           <Ionicons name="location-outline" size={52} color="#E5E7EB" />
-          <Text style={s.errTitle}>{error === 'gps_disabled' ? 'GPS is Turned Off' : error === 'location_denied' ? 'Location Permission Required' : 'Could Not Detect Location'}</Text>
-          <Text style={s.errSub}>{error === 'gps_disabled' ? 'Please enable GPS/Location in your phone settings to discover nearby creators' : 'Enable location to discover nearby wedding creators'}</Text>
-          <TouchableOpacity style={s.retryBtn} onPress={error === 'gps_disabled' ? () => Linking.openSettings() : init}>
-            <Ionicons name={error === 'gps_disabled' ? 'settings-outline' : 'navigate'} size={14} color="#fff" />
-            <Text style={s.retryT}>{error === 'gps_disabled' ? 'Open Settings' : 'Enable Location'}</Text>
+          <Text style={s.errTitle}>{error === 'gps_off' ? 'GPS is Turned Off' : error === 'denied' ? 'Location Permission Required' : 'Could Not Detect Location'}</Text>
+          <Text style={s.errSub}>{error === 'gps_off' ? 'Please enable GPS/Location in your phone settings to discover nearby creators' : 'Enable location to discover nearby wedding creators'}</Text>
+          <TouchableOpacity style={s.retryBtn} onPress={error === 'gps_off' ? openLocSettings : askLocPermission}>
+            <Ionicons name={error === 'gps_off' ? 'settings-outline' : 'navigate'} size={14} color="#fff" />
+            <Text style={s.retryT}>{error === 'gps_off' ? 'Open Settings' : 'Enable Location'}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[s.retryBtn, { backgroundColor: '#F3F4F6', marginTop: 10 }]} onPress={init}>
+          <TouchableOpacity style={[s.retryBtn, { backgroundColor: '#F3F4F6', marginTop: 10 }]} onPress={refreshLoc}>
             <Ionicons name="refresh" size={14} color="#6C3BFF" />
             <Text style={[s.retryT, { color: '#6C3BFF' }]}>Try Again</Text>
           </TouchableOpacity>
@@ -333,7 +286,7 @@ export default function NearMeScreen({ navigation }: any) {
           ListHeaderComponent={
             <View>
               {/* MAP */}
-              {coords && MapView && (
+              {userLocation && MapView && (
                 <View style={s.mapContainer}>
                   <View style={s.mapHeader}>
                     <View style={s.mapHeaderLeft}><Ionicons name="location" size={14} color="#6C3BFF" /><Text style={s.mapTitle}>Creators Near You</Text></View>
@@ -343,7 +296,7 @@ export default function NearMeScreen({ navigation }: any) {
                     <MapView
                       ref={mapRef}
                       style={s.map}
-                      initialRegion={{ latitude: coords.lat, longitude: coords.lng, latitudeDelta: 0.05, longitudeDelta: 0.05 }}
+                      initialRegion={{ latitude: userLocation.latitude, longitude: userLocation.longitude, latitudeDelta: 0.05, longitudeDelta: 0.05 }}
                       showsUserLocation showsMyLocationButton={false}
                     >
                       {filtered.filter((c: any) => c.creatorLat && c.creatorLng).slice(0, 10).map((c: any, i: number) => (
@@ -355,7 +308,7 @@ export default function NearMeScreen({ navigation }: any) {
                     <TouchableOpacity style={s.searchAreaBtn}>
                       <Ionicons name="search" size={11} color="#6C3BFF" /><Text style={s.searchAreaT}>Search This Area</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={s.locFab} onPress={() => mapRef.current?.animateToRegion({ latitude: coords.lat, longitude: coords.lng, latitudeDelta: 0.05, longitudeDelta: 0.05 }, 400)}>
+                    <TouchableOpacity style={s.locFab} onPress={() => mapRef.current?.animateToRegion({ latitude: userLocation.latitude, longitude: userLocation.longitude, latitudeDelta: 0.05, longitudeDelta: 0.05 }, 400)}>
                       <Ionicons name="navigate" size={16} color="#6C3BFF" />
                     </TouchableOpacity>
                   </View>
@@ -406,7 +359,7 @@ export default function NearMeScreen({ navigation }: any) {
 
             <View style={s.sheetBtns}>
               <TouchableOpacity style={s.resetBtn} onPress={() => { setRadius(10); setFilterVerified(false); setFilterAvailToday(false); setFilterInstant(false); setFilterCashback(false); }}><Text style={s.resetT}>Reset</Text></TouchableOpacity>
-              <TouchableOpacity style={s.applyBtn} onPress={() => { setShowFilters(false); if (coords) fetchCreators(coords.lat, coords.lng); }}><Text style={s.applyT}>Apply Filters</Text></TouchableOpacity>
+              <TouchableOpacity style={s.applyBtn} onPress={() => { setShowFilters(false); if (userLocation) fetchCreators(userLocation.latitude, userLocation.longitude); }}><Text style={s.applyT}>Apply Filters</Text></TouchableOpacity>
             </View>
           </View>
         </TouchableOpacity>
@@ -539,4 +492,5 @@ const s = StyleSheet.create({
   sortOptionT: { fontSize: 13, color: '#4B5563' },
   sortOptionTActive: { color: '#6C3BFF', fontWeight: '700' },
 });
+
 

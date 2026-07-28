@@ -10,7 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import { creatorsAPI } from '../services/api';
 import api from '../services/api';
 import AppFooter from '../components/AppFooter';
-import { getCachedLocation, getFreshLocation, UserLocation } from '../services/location';
+import { useLocation } from '../hooks/useLocation';
 
 const { width } = Dimensions.get('window');
 
@@ -99,8 +99,22 @@ export default function HomeScreen({ navigation }: any) {
   const [featuredMoments, setFeaturedMoments] = useState<any[]>([]);
   const [locationCity, setLocationCity] = useState('');
   const [locationArea, setLocationArea] = useState('');
-  const [locationLoading, setLocationLoading] = useState(true);
+  const [locationLoading, setLocationLoading] = useState(false);
   const [showLocationDenied, setShowLocationDenied] = useState(false);
+  // Location via hook (real GPS, one-time permission)
+  const { location: userLocation, displayCity: locCity, displayFull: locFull, displayArea: locArea, state: locState, refresh: refreshLocation, askPermission: askLocPermission, openSettings: openLocSettings } = useLocation();
+
+  // Sync hook state to legacy state variables used in render
+  useEffect(() => {
+    if (locState === 'loading' || locState === 'detecting') {
+      setLocationLoading(true);
+    } else {
+      setLocationLoading(false);
+    }
+    if (locState === 'denied') setShowLocationDenied(true);
+    else setShowLocationDenied(false);
+    if (locCity) { setLocationCity(locCity); setLocationArea(locArea || ''); }
+  }, [locState, locCity, locArea]);
   const [searchQuery, setSearchQuery] = useState('');
   const [heroConfig, setHeroConfig] = useState({ cashbackPercentage: 10, heroTitle: 'Your Dream Wedding,', heroTitleAccent: 'More Rewards!', heroSubtitle: 'Book verified wedding creators and get exciting cashback on every successful booking.', heroEyebrow: 'CELEBRATE BEAUTIFULLY. SAVE MORE.', heroCta1Text: 'Find Creator', heroCta2Text: 'Get Free Quote' });
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -139,38 +153,7 @@ export default function HomeScreen({ navigation }: any) {
 
   const loadData = useCallback(async () => {
     try {
-      // ═══ LOCATION: Non-blocking, runs in background ═══
-      // Show cached location instantly — NEVER wait for GPS
-      getCachedLocation().then(cached => {
-        if (cached && (cached.city || cached.district || cached.latitude)) {
-          setLocationArea(cached.area || cached.district || '');
-          setLocationCity(cached.city || cached.district || 'Your Location');
-          setLocationLoading(false);
-        }
-      }).catch(() => {});
-
-      // Refresh GPS silently in background (don't block UI)
-      setTimeout(() => {
-        getFreshLocation().then(fresh => {
-          if (fresh) {
-            setLocationArea(fresh.area || fresh.district || '');
-            setLocationCity(fresh.city || fresh.district || 'Your Location');
-            setLocationLoading(false);
-            setShowLocationDenied(false);
-          } else {
-            // Permission denied — check if we still have cache showing
-            getCachedLocation().then(cached => {
-              if (!cached) {
-                setLocationLoading(false);
-                // Only show denied if nothing is shown yet
-                setLocationCity(prev => prev || '');
-              }
-            });
-          }
-        }).catch(() => {
-          setLocationLoading(false);
-        });
-      }, 100); // Small delay so UI renders first
+      // ═══ LOCATION: Handled by useLocation hook — no blocking code here ═══
 
       const [catsRes, statsRes, creatorsRes, homeConfigRes] = await Promise.all([
         api.get('/discover/categories?homepage=true').catch(() => ({ data: { data: [] } })),
@@ -407,36 +390,14 @@ export default function HomeScreen({ navigation }: any) {
           ) : locationCity ? (
             <Text style={st.locText}>{locationArea ? `${locationArea}, ` : ''}{locationCity}</Text>
           ) : (
-            <TouchableOpacity onPress={async () => {
-              setLocationLoading(true);
-              const fresh = await getFreshLocation();
-              if (fresh) {
-                setLocationArea(fresh.area || fresh.district || '');
-                setLocationCity(fresh.city || fresh.district || 'Your Location');
-                setShowLocationDenied(false);
-              } else {
-                setShowLocationDenied(true);
-              }
-              setLocationLoading(false);
-            }}>
+            <TouchableOpacity onPress={askLocPermission}>
               <Text style={[st.locText, { color: '#6C3BFF' }]}>Tap to detect location</Text>
             </TouchableOpacity>
           )}
           {!locationLoading && <Text style={st.locDrop}>▾</Text>}
-          <TouchableOpacity style={st.changeLoc} onPress={async () => {
-            setLocationLoading(true);
-            try {
-              const fresh = await getFreshLocation();
-              if (fresh && (fresh.city || fresh.district)) {
-                setLocationArea(fresh.area || fresh.district || '');
-                setLocationCity(fresh.city || fresh.district || '');
-                setShowLocationDenied(false);
-              } else {
-                setShowLocationDenied(true);
-              }
-            } catch { setShowLocationDenied(true); }
-            finally { setLocationLoading(false); }
-          }}><Ionicons name="navigate-outline" size={11} color="#6C3BFF" /><Text style={st.changeLocT}>Refresh</Text></TouchableOpacity>
+          <TouchableOpacity style={st.changeLoc} onPress={refreshLocation}>
+            <Ionicons name="navigate-outline" size={11} color="#6C3BFF" /><Text style={st.changeLocT}>Refresh</Text>
+          </TouchableOpacity>
         </View>
 
         {/* SEARCH */}
@@ -714,7 +675,7 @@ export default function HomeScreen({ navigation }: any) {
             <Text style={{ fontSize: 13, color: '#6B7280', textAlign: 'center', lineHeight: 19, marginBottom: 20 }}>BookMyShot needs your location to show nearby creators and calculate distances. Please enable location access in your device settings.</Text>
             <TouchableOpacity
               style={{ width: '100%', backgroundColor: '#6C3BFF', borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginBottom: 10 }}
-              onPress={() => { setShowLocationDenied(false); Linking.openSettings(); }}
+              onPress={() => { setShowLocationDenied(false); openLocSettings(); }}
             >
               <Text style={{ fontSize: 14, fontWeight: '700', color: '#FFFFFF' }}>Open Settings</Text>
             </TouchableOpacity>

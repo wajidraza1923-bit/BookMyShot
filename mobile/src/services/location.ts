@@ -1,15 +1,20 @@
 /**
- * LocationService — GPS + Cache + Reverse Geocode
- * - Always checks permission status FIRST (no re-asking if already granted)
- * - Uses cache for instant display
- * - Gets high-accuracy GPS with timeout fallback
- * - Never returns null if permission is granted (uses last known position)
+ * BookMyShot Location Service — Production Grade
+ *
+ * Strategy:
+ * 1. Check permission status WITHOUT showing popup (getForegroundPermissionsAsync)
+ * 2. Only ask ONCE if status is 'undetermined'
+ * 3. Never ask again if already granted or denied
+ * 4. Get position: try Balanced accuracy first (fast), then lastKnown fallback
+ * 5. Reverse geocode for full address (city, district, state, area)
+ * 6. Cache everything in AsyncStorage for instant reload
+ * 7. Never block UI — always return something within 10 seconds
  */
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const LOCATION_KEY = 'bms_user_location';
-const PERMISSION_KEY = 'bms_location_permission';
+const LOCATION_CACHE_KEY = 'bms_location_v2';
+const PERMISSION_STATUS_KEY = 'bms_location_permission_v2';
 
 export interface UserLocation {
   latitude: number;
@@ -18,174 +23,221 @@ export interface UserLocation {
   district: string;
   state: string;
   area: string;
+  fullAddress: string;
+  postalCode: string;
+  country: string;
   timestamp: number;
+  accuracy: 'gps' | 'network' | 'cached' | 'unknown';
+}
+
+// ─── PERMISSION STATUS ──────────────────────────────────────────────────────
+
+export type PermissionResult = 'granted' | 'denied' | 'undetermined';
+
+/**
+ * Check current permission status (NO popup)
+ */
+export async function getLocationPermissionStatus(): Promise<PermissionResult> {
+  try {
+    const { status } = await Location.getForegroundPermissionsAsync();
+    console.log('[Location] Current permission status:', status);
+    return status as PermissionResult;
+  } catch (e: any) {
+    console.log('[Location] Permission check error:', e.message);
+    return 'undetermined';
+  }
 }
 
 /**
- * Check if location permission is already granted (no popup)
+ * Request permission ONCE. Returns false if denied.
+ * Call this only when the user explicitly agrees to share location.
  */
-export async function isLocationPermissionGranted(): Promise<boolean> {
+export async function requestLocationPermission(): Promise<boolean> {
   try {
-    const { status } = await Location.getForegroundPermissionsAsync();
-    return status === 'granted';
-  } catch {
+    console.log('[Location] Requesting permission from user...');
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    const granted = status === 'granted';
+    await AsyncStorage.setItem(PERMISSION_STATUS_KEY, status);
+    console.log('[Location] Permission result:', status);
+    return granted;
+  } catch (e: any) {
+    console.log('[Location] Permission request error:', e.message);
     return false;
   }
 }
 
 /**
- * Check if GPS/Location services are enabled on the device
+ * Check if GPS hardware is enabled on device
  */
 export async function isGPSEnabled(): Promise<boolean> {
   try {
-    return await Location.hasServicesEnabledAsync();
+    const enabled = await Location.hasServicesEnabledAsync();
+    console.log('[Location] GPS services enabled:', enabled);
+    return enabled;
   } catch {
-    return false;
+    return true; // assume enabled to avoid false negatives
   }
 }
 
-/**
- * Get cached location (instant, no GPS call)
- */
+// ─── CACHE ──────────────────────────────────────────────────────────────────
+
 export async function getCachedLocation(): Promise<UserLocation | null> {
   try {
-    const raw = await AsyncStorage.getItem(LOCATION_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed.latitude && parsed.longitude) {
-        console.log('[Location] Cache hit:', parsed.city || parsed.district, `(${parsed.latitude.toFixed(4)}, ${parsed.longitude.toFixed(4)})`);
-        return parsed;
-      }
-    }
-  } catch (e: any) {
-    console.log('[Location] Cache read error:', e.message);
+    const raw = await AsyncStorage.getItem(LOCATION_CACHE_KEY);
+    if (!raw) return null;
+    const loc: UserLocation = JSON.parse(raw);
+    if (!loc.latitude || !loc.longitude) return null;
+    const age = Date.now() - loc.timestamp;
+    console.log(`[Location] Cache: ${loc.city || loc.district || 'coords'} (${Math.floor(age / 60000)}m old)`);
+    return loc;
+  } catch {
+    return null;
   }
-  return null;
 }
 
-/**
- * Save location to cache
- */
-export async function cacheLocation(loc: UserLocation): Promise<void> {
+async function saveToCache(loc: UserLocation): Promise<void> {
   try {
-    await AsyncStorage.setItem(LOCATION_KEY, JSON.stringify(loc));
-    await AsyncStorage.setItem(PERMISSION_KEY, 'granted');
+    await AsyncStorage.setItem(LOCATION_CACHE_KEY, JSON.stringify(loc));
+    await AsyncStorage.setItem(PERMISSION_STATUS_KEY, 'granted');
   } catch {}
 }
 
+// ─── REVERSE GEOCODE ─────────────────────────────────────────────────────────
+
+async function reverseGeocode(lat: number, lng: number) {
+  const result = { city: '', district: '', state: '', area: '', fullAddress: '', postalCode: '', country: '' };
+  try {
+    const [addr] = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
+    if (!addr) return result;
+
+    console.log('[Location] Geocode raw:', JSON.stringify({
+      name: addr.name,
+      street: addr.street,
+      district: addr.district,
+      subregion: addr.subregion,
+      city: addr.city,
+      region: addr.region,
+      country: addr.country,
+      postalCode: addr.postalCode,
+    }));
+
+    result.area = addr.name || addr.street || '';
+    result.district = addr.subregion || addr.district || '';
+    result.city = addr.city || addr.subregion || addr.district || '';
+    result.state = addr.region || '';
+    result.country = addr.country || '';
+    result.postalCode = addr.postalCode || '';
+
+    // Build full address string
+    const parts = [result.area, result.district, result.city, result.state, result.country].filter(Boolean);
+    result.fullAddress = [...new Set(parts)].join(', ');
+
+    console.log(`[Location] Geocode: ${result.city}, ${result.state}, ${result.country}`);
+  } catch (e: any) {
+    console.log('[Location] Reverse geocode failed:', e.message);
+  }
+  return result;
+}
+
+// ─── MAIN: GET FRESH LOCATION ─────────────────────────────────────────────
+
 /**
- * Request permission (only if not already granted) and get fresh GPS location
- * Returns null ONLY if permission is denied. Never returns null for GPS timeout (uses last known).
+ * Get fresh location. Does NOT ask for permission — call requestLocationPermission() first.
+ * Returns null if permission denied or GPS unavailable.
  */
 export async function getFreshLocation(): Promise<UserLocation | null> {
   try {
-    // Step 1: Check existing permission (no popup if already granted)
-    let { status } = await Location.getForegroundPermissionsAsync();
-    
-    // Step 2: Request only if not yet determined
-    if (status !== 'granted') {
-      const result = await Location.requestForegroundPermissionsAsync();
-      status = result.status;
+    // 1. Check permission (no popup)
+    const permStatus = await getLocationPermissionStatus();
+    if (permStatus !== 'granted') {
+      console.log('[Location] Permission not granted, status:', permStatus);
+      return null;
     }
 
-    if (status !== 'granted') {
-      console.log('[Location] Permission DENIED by user');
-      await AsyncStorage.setItem(PERMISSION_KEY, 'denied');
-      return null; // null = permission denied
-    }
-
-    // Permission granted — save this fact
-    await AsyncStorage.setItem(PERMISSION_KEY, 'granted');
-
-    // Step 3: Try to get current position with 8-second timeout
+    // 2. Get position — try getCurrentPositionAsync with timeout
     let position: Location.LocationObject | null = null;
+
+    console.log('[Location] Requesting GPS position...');
     try {
-      // Race between GPS and a timeout
-      const gpsPromise = Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced, // Balanced is much faster than High
-        timeInterval: 3000,
-        maximumAge: 120000, // Accept position up to 2 min old (fast!)
+      // Use Balanced accuracy (fast enough, works on most devices)
+      const positionPromise = Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+        maximumAge: 90000, // Accept cached position up to 1.5 min old for speed
       });
-      const timeoutPromise = new Promise<null>((_, reject) =>
-        setTimeout(() => reject(new Error('GPS timeout after 8s')), 8000)
+      // Hard 10-second timeout
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('GPS 10s timeout')), 10000)
       );
-      position = await Promise.race([gpsPromise, timeoutPromise as any]) as Location.LocationObject;
-    } catch (e: any) {
-      console.log('[Location] getCurrentPosition failed, trying lastKnown:', e.message);
-      // Fallback: get last known position (instant, no GPS needed)
+      position = await Promise.race([positionPromise, timeout]) as Location.LocationObject;
+      console.log(`[Location] Got position: lat=${position.coords.latitude.toFixed(5)}, lng=${position.coords.longitude.toFixed(5)}, accuracy=${Math.round(position.coords.accuracy || 0)}m`);
+    } catch (gpserr: any) {
+      console.log('[Location] getCurrentPosition failed:', gpserr.message, '— trying lastKnown...');
       try {
-        position = await Location.getLastKnownPositionAsync({
-          maxAge: 600000, // Accept up to 10 min old
-        });
-      } catch {}
+        position = await Location.getLastKnownPositionAsync({ maxAge: 600000 }); // up to 10 min
+        if (position) {
+          console.log(`[Location] lastKnown: lat=${position.coords.latitude.toFixed(5)}, lng=${position.coords.longitude.toFixed(5)}`);
+        }
+      } catch (lkerr: any) {
+        console.log('[Location] lastKnown also failed:', lkerr.message);
+      }
     }
 
     if (!position) {
-      console.log('[Location] No position available, using cache');
+      console.log('[Location] No position from GPS or lastKnown — returning cache');
       return await getCachedLocation();
     }
 
-    // Step 4: Reverse geocode
-    let city = '', district = '', state = '', area = '';
-    try {
-      const [address] = await Location.reverseGeocodeAsync({
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-      });
-      if (address) {
-        city = address.city || address.subregion || '';
-        district = address.subregion || address.district || address.region || '';
-        state = address.region || '';
-        area = address.name || address.street || address.district || '';
-      }
-    } catch (geoErr: any) {
-      console.log('[Location] Reverse geocode failed:', geoErr.message);
-      // Still return coords without city name
-    }
+    // 3. Reverse geocode
+    const geo = await reverseGeocode(position.coords.latitude, position.coords.longitude);
 
     const loc: UserLocation = {
       latitude: position.coords.latitude,
       longitude: position.coords.longitude,
-      city,
-      district,
-      state,
-      area,
+      city: geo.city,
+      district: geo.district,
+      state: geo.state,
+      area: geo.area,
+      fullAddress: geo.fullAddress,
+      postalCode: geo.postalCode,
+      country: geo.country,
       timestamp: Date.now(),
+      accuracy: position.coords.accuracy && position.coords.accuracy < 100 ? 'gps' : 'network',
     };
 
-    await cacheLocation(loc);
-    console.log('[Location] ✅ Fresh GPS:', loc.latitude.toFixed(5), loc.longitude.toFixed(5), '|', loc.city || loc.district || 'No city name');
+    // 4. Save to cache
+    await saveToCache(loc);
+    console.log(`[Location] ✅ Location ready: "${loc.city || loc.district || loc.fullAddress || 'coords only'}" (${loc.accuracy})`);
     return loc;
-  } catch (err: any) {
-    console.log('[Location] getFreshLocation error:', err.message);
-    // Return cache as fallback (don't return null — permission might be granted)
+  } catch (e: any) {
+    console.log('[Location] getFreshLocation crash:', e.message);
     return await getCachedLocation();
   }
 }
 
 /**
- * Calculate distance between two coordinates (Haversine formula)
- * Returns distance in kilometers
+ * Haversine distance in km
  */
 export function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
     Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 /**
- * Quick check: was permission previously granted? (instant, no async permission check)
+ * Display string for the location (city, state or fallback)
  */
-export async function wasPermissionPreviouslyGranted(): Promise<boolean> {
-  try {
-    const val = await AsyncStorage.getItem(PERMISSION_KEY);
-    return val === 'granted';
-  } catch {
-    return false;
-  }
+export function getLocationDisplayString(loc: UserLocation | null): string {
+  if (!loc) return '';
+  if (loc.city && loc.state) return `${loc.city}, ${loc.state}`;
+  if (loc.city) return loc.city;
+  if (loc.district) return loc.district;
+  if (loc.state) return loc.state;
+  if (loc.fullAddress) return loc.fullAddress;
+  if (loc.latitude) return `${loc.latitude.toFixed(3)}, ${loc.longitude.toFixed(3)}`;
+  return '';
 }

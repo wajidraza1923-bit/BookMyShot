@@ -32,11 +32,26 @@
         "RECEIVE_BOOT_COMPLETED",
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "WRITE_EXTERNAL_STORAGE",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "FOREGROUND_SERVICE"
       ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyCxNuhP5gJW-wxUFbm7VvZBjDiIbPCDLrY"
+        }
+      },
       "backgroundColor": "#FFFFFF"
     },
     "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "BookMyShot uses your location to show nearby creators.",
+          "locationWhenInUsePermission": "BookMyShot uses your location to show nearby wedding creators and calculate distances."
+        }
+      ],
       [
         "expo-splash-screen",
         {
