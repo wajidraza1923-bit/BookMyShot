@@ -159,37 +159,82 @@ export default function NearMeScreen({ navigation }: any) {
     return item.user?.avatar || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=300';
   };
 
-  // ═══ CREATOR CARD ═══
-  const CreatorCard = ({ item }: any) => (
-    <TouchableOpacity style={s.card} activeOpacity={0.85} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })}>
-      <Image source={{ uri: getImg(item) }} style={s.cardImg} />
-      <View style={s.cardBody}>
-        <View style={s.nameRow}>
-          <Text style={s.cardName} numberOfLines={1}>{item.user?.name || 'Creator'}</Text>
-          {item.verified && <Ionicons name="checkmark-circle" size={13} color="#6C3BFF" />}
-          {item.featured && <Ionicons name="star" size={11} color="#F59E0B" />}
-        </View>
-        <Text style={s.cardSpec}>{item.specialty || 'Photographer'}</Text>
-        <View style={s.locationRow}>
-          <Ionicons name="location" size={10} color="#6C3BFF" />
-          <Text style={s.locationText}>{item.baseCity || item.city || '—'}</Text>
-        </View>
-        {item.serviceAreas && item.serviceAreas.length > 0 && (
-          <View style={s.serviceRow}>
-            <Text style={s.servingLabel}>Serving: </Text>
-            <Text style={s.servingAreas} numberOfLines={1}>{item.serviceAreas.slice(0, 3).join(', ')}{item.serviceAreas.length > 3 ? ` +${item.serviceAreas.length - 3}` : ''}</Text>
+  // Wishlist toggle
+  const [wishlist, setWishlist] = useState<Set<string>>(new Set());
+  const toggleWishlist = (id: string) => {
+    setWishlist(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+    // TODO: sync with backend
+  };
+
+  // ═══ PREMIUM CREATOR CARD ═══
+  const CreatorCard = ({ item }: any) => {
+    const portfolioCount = (item.portfolio || []).length;
+    const isSaved = wishlist.has(item._id);
+    return (
+      <View style={s.card}>
+        {/* Image Section */}
+        <View style={s.cardImgWrap}>
+          <Image source={{ uri: getImg(item) }} style={s.cardImg} />
+          {/* Badges overlay */}
+          <View style={s.badgeRow}>
+            {item.verified && <View style={s.badge}><Ionicons name="shield-checkmark" size={9} color="#fff" /><Text style={s.badgeText}>Verified</Text></View>}
+            {item.featured && <View style={[s.badge, { backgroundColor: '#F59E0B' }]}><Ionicons name="star" size={9} color="#fff" /><Text style={s.badgeText}>Featured</Text></View>}
           </View>
-        )}
-        <View style={s.cardBottom}>
-          <Text style={s.ratingText}>⭐ {item.rating || '5.0'}</Text>
-          <Text style={s.priceText}>₹{(item.budgetMin || 10000).toLocaleString('en-IN')}+</Text>
+          {/* Wishlist heart */}
+          <TouchableOpacity style={s.heartBtn} onPress={() => toggleWishlist(item._id)}>
+            <Ionicons name={isSaved ? 'heart' : 'heart-outline'} size={18} color={isSaved ? '#EF4444' : '#fff'} />
+          </TouchableOpacity>
+          {/* Portfolio count */}
+          {portfolioCount > 0 && <View style={s.portfolioCount}><Ionicons name="images" size={9} color="#fff" /><Text style={s.portfolioCountText}>{portfolioCount}</Text></View>}
         </View>
-        <TouchableOpacity style={s.bookBtn} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })}>
-          <Text style={s.bookBtnText}>View Profile</Text>
+
+        {/* Body */}
+        <TouchableOpacity style={s.cardBody} activeOpacity={0.85} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })}>
+          {/* Name + Verified */}
+          <View style={s.nameRow}>
+            <Text style={s.cardName} numberOfLines={1}>{item.user?.name || 'Creator'}</Text>
+            {item.verified && <Ionicons name="checkmark-circle" size={14} color="#7C3AED" />}
+          </View>
+
+          {/* Specialty + Experience */}
+          <Text style={s.cardSpec}>{item.specialty || 'Photographer'}{item.experience ? ` • ${item.experience} Yrs` : ''}</Text>
+
+          {/* Location + Service Areas */}
+          <View style={s.locationRow}>
+            <Ionicons name="location" size={10} color="#7C3AED" />
+            <Text style={s.locationText}>{item.baseCity || item.city || '—'}</Text>
+            {item.serviceAreas && item.serviceAreas.length > 1 && <Text style={s.moreAreas}>+{item.serviceAreas.length - 1} areas</Text>}
+          </View>
+
+          {/* Stats Row: Rating, Reviews, Bookings */}
+          <View style={s.statsRow}>
+            <View style={s.statItem}><Text style={s.statValue}>⭐ {item.rating || '5.0'}</Text><Text style={s.statLabel}>{item.reviewCount || 0} reviews</Text></View>
+            <View style={s.statDivider} />
+            <View style={s.statItem}><Text style={s.statValue}>{item.weddingsCount || 0}</Text><Text style={s.statLabel}>Bookings</Text></View>
+            <View style={s.statDivider} />
+            <View style={s.statItem}><Text style={s.statValue}>₹{((item.budgetMin || 10000) / 1000).toFixed(0)}k</Text><Text style={s.statLabel}>Starts at</Text></View>
+          </View>
+
+          {/* Tags: Cashback, Available */}
+          <View style={s.tagRow}>
+            {item.cashbackPercent > 0 && <View style={s.tag}><Text style={s.tagText}>🎁 {item.cashbackPercent}% Cashback</Text></View>}
+            <View style={[s.tag, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}><Text style={[s.tagText, { color: '#166534' }]}>✓ Available</Text></View>
+          </View>
+
+          {/* CTA Row */}
+          <View style={s.ctaRow}>
+            <TouchableOpacity style={s.ctaBtn} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })}>
+              <Text style={s.ctaBtnText}>View Profile</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={s.ctaSecondary} onPress={() => navigation.navigate('Inquiry', { creatorId: item._id, creatorName: item.user?.name })}>
+              <Ionicons name="chatbubble-outline" size={12} color="#7C3AED" />
+              <Text style={s.ctaSecondaryText}>Get Quote</Text>
+            </TouchableOpacity>
+          </View>
         </TouchableOpacity>
       </View>
-    </TouchableOpacity>
-  );
+    );
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
@@ -384,28 +429,44 @@ const s = StyleSheet.create({
   chipLabelActive: { fontSize: 13, fontWeight: '600', color: '#FFFFFF' },
   // Results
   resTitle: { fontSize: 13, fontWeight: '700', color: '#1F2937', marginBottom: 8 },
-  // Card
-  card: { flexDirection: 'row', backgroundColor: '#FFFFFF', borderRadius: 14, marginBottom: 12, borderWidth: 1, borderColor: '#F1F5F9', overflow: 'hidden', elevation: 2, shadowColor: '#6C3BFF', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6 },
-  cardImg: { width: 100, height: 150, resizeMode: 'cover' },
-  cardBody: { flex: 1, padding: 10, justifyContent: 'space-between' },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  cardName: { fontSize: 13, fontWeight: '700', color: '#1F2937', flex: 1 },
-  cardSpec: { fontSize: 10, color: '#6B7280', marginTop: 2 },
-  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 },
-  locationText: { fontSize: 10, color: '#6C3BFF', fontWeight: '500' },
-  serviceRow: { flexDirection: 'row', alignItems: 'center', marginTop: 3 },
-  servingLabel: { fontSize: 9, color: '#9CA3AF' },
-  servingAreas: { fontSize: 9, color: '#6B7280', fontWeight: '500', flex: 1 },
-  cardBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 },
-  ratingText: { fontSize: 10, color: '#1F2937', fontWeight: '600' },
-  priceText: { fontSize: 11, fontWeight: '700', color: '#1F2937' },
-  bookBtn: { marginTop: 6, backgroundColor: '#6C3BFF', borderRadius: 8, paddingVertical: 7, alignItems: 'center' },
-  bookBtnText: { fontSize: 10, fontWeight: '700', color: '#FFFFFF' },
+  // Premium Card
+  card: { backgroundColor: '#FFFFFF', borderRadius: 16, marginBottom: 14, borderWidth: 1, borderColor: '#F1F5F9', overflow: 'hidden', elevation: 3, shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.06, shadowRadius: 10 },
+  cardImgWrap: { position: 'relative', width: '100%', height: 160 },
+  cardImg: { width: '100%', height: '100%', resizeMode: 'cover' },
+  badgeRow: { position: 'absolute', top: 10, left: 10, flexDirection: 'row', gap: 6 },
+  badge: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#7C3AED', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
+  badgeText: { fontSize: 9, fontWeight: '700', color: '#FFFFFF' },
+  heartBtn: { position: 'absolute', top: 10, right: 10, width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.3)', alignItems: 'center', justifyContent: 'center' },
+  portfolioCount: { position: 'absolute', bottom: 10, right: 10, flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
+  portfolioCountText: { fontSize: 9, fontWeight: '700', color: '#FFFFFF' },
+  cardBody: { padding: 14 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  cardName: { fontSize: 15, fontWeight: '700', color: '#1F2937', flex: 1 },
+  cardSpec: { fontSize: 11, color: '#6B7280', marginTop: 2 },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 5 },
+  locationText: { fontSize: 11, color: '#7C3AED', fontWeight: '500' },
+  moreAreas: { fontSize: 9, color: '#9CA3AF', marginLeft: 4 },
+  // Stats
+  statsRow: { flexDirection: 'row', alignItems: 'center', marginTop: 10, paddingVertical: 8, borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#F3F4F6' },
+  statItem: { flex: 1, alignItems: 'center' },
+  statValue: { fontSize: 12, fontWeight: '700', color: '#1F2937' },
+  statLabel: { fontSize: 9, color: '#9CA3AF', marginTop: 1 },
+  statDivider: { width: 1, height: 24, backgroundColor: '#F3F4F6' },
+  // Tags
+  tagRow: { flexDirection: 'row', gap: 6, marginTop: 8, flexWrap: 'wrap' },
+  tag: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, backgroundColor: '#FEF3C7', borderWidth: 1, borderColor: '#FDE68A' },
+  tagText: { fontSize: 9, fontWeight: '600', color: '#92400E' },
+  // CTA
+  ctaRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
+  ctaBtn: { flex: 1, backgroundColor: '#7C3AED', borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
+  ctaBtnText: { fontSize: 12, fontWeight: '700', color: '#FFFFFF' },
+  ctaSecondary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, flex: 1, borderWidth: 1.5, borderColor: '#7C3AED', borderRadius: 10, paddingVertical: 10 },
+  ctaSecondaryText: { fontSize: 12, fontWeight: '600', color: '#7C3AED' },
   // Empty
-  empty: { alignItems: 'center', paddingTop: 16, paddingHorizontal: 30 },
-  emptyTitle: { fontSize: 15, fontWeight: '700', color: '#1F2937', marginTop: 12 },
-  emptySub: { fontSize: 12, color: '#6B7280', textAlign: 'center', marginTop: 6 },
-  emptyBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 18, backgroundColor: '#6C3BFF', borderRadius: 12, paddingHorizontal: 20, paddingVertical: 12 },
+  empty: { alignItems: 'center', paddingTop: 30, paddingHorizontal: 24 },
+  emptyTitle: { fontSize: 16, fontWeight: '700', color: '#1F2937', marginTop: 14 },
+  emptySub: { fontSize: 12, color: '#6B7280', textAlign: 'center', marginTop: 6, lineHeight: 18 },
+  emptyBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 20, backgroundColor: '#7C3AED', borderRadius: 12, paddingHorizontal: 20, paddingVertical: 12 },
   emptyBtnT: { fontSize: 12, fontWeight: '700', color: '#FFFFFF' },
   // Loading
   loadT: { fontSize: 12, color: '#6B7280', marginTop: 12 },
