@@ -61,7 +61,7 @@ export default function NearMeScreen({ navigation }: any) {
   const [pickerCity, setPickerCity] = useState('');
   const [pickerStep, setPickerStep] = useState<'state' | 'district' | 'city'>('state');
 
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
 
   // Load saved location on mount (from shared context)
   useEffect(() => {
@@ -380,7 +380,7 @@ const s = StyleSheet.create({
   resRow: { paddingHorizontal: 4, paddingTop: 4, paddingBottom: 6 },
   resTitle: { fontSize: 13, fontWeight: '700', color: '#1F2937' },
   // Card
-  list: { paddingHorizontal: 16, paddingBottom: 90 },
+  list: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 90 },
   card: { flexDirection: 'row', backgroundColor: '#FFFFFF', borderRadius: 14, marginBottom: 12, borderWidth: 1, borderColor: '#F1F5F9', overflow: 'hidden', elevation: 2, shadowColor: '#6C3BFF', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6 },
   cardImg: { width: 100, height: 150, resizeMode: 'cover' },
   cardBody: { flex: 1, padding: 10, justifyContent: 'space-between' },
@@ -404,7 +404,7 @@ const s = StyleSheet.create({
   emptyBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 18, backgroundColor: '#6C3BFF', borderRadius: 12, paddingHorizontal: 20, paddingVertical: 12 },
   emptyBtnT: { fontSize: 12, fontWeight: '700', color: '#FFFFFF' },
   // Loading
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 80 },
+  center: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40 },
   loadT: { fontSize: 12, color: '#6B7280', marginTop: 12 },
   // Modals
   modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
