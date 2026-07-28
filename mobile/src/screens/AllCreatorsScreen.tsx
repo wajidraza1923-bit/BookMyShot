@@ -95,42 +95,46 @@ export default function AllCreatorsScreen({ navigation, route }: any) {
         </View>
       ) : (
         <>
-        {/* Search */}
-        <View style={st.searchRow}>
-          <Ionicons name="search" size={14} color="#9CA3AF" />
-          <TextInput style={st.searchInput} value={query} onChangeText={setQuery} placeholder="Search by name, city, category..." placeholderTextColor="#9CA3AF" selectionColor="#6C3BFF" />
-          {query.length > 0 && <TouchableOpacity onPress={() => setQuery('')}><Ionicons name="close-circle" size={16} color="#9CA3AF" /></TouchableOpacity>}
+        {/* Fixed header sections (don't scroll with list) */}
+        <View>
+          {/* Search */}
+          <View style={st.searchRow}>
+            <Ionicons name="search" size={14} color="#9CA3AF" />
+            <TextInput style={st.searchInput} value={query} onChangeText={setQuery} placeholder="Search by name, city, category..." placeholderTextColor="#9CA3AF" selectionColor="#6C3BFF" />
+            {query.length > 0 && <TouchableOpacity onPress={() => setQuery('')}><Ionicons name="close-circle" size={16} color="#9CA3AF" /></TouchableOpacity>}
+          </View>
+
+          {/* Category Chips — hide when already inside a specific category */}
+          {!initialSubcategory && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8, paddingVertical: 8 }}>
+            {CATEGORIES.map(cat => (
+              <TouchableOpacity key={cat.id} style={[st.catChip, selectedCategory === cat.id && st.catChipActive]} onPress={() => setSelectedCategory(cat.id)}>
+                <Ionicons name={cat.icon as any} size={14} color={selectedCategory === cat.id ? '#FFFFFF' : '#6B7280'} />
+                <Text style={[st.catChipText, selectedCategory === cat.id && st.catChipTextActive]}>{cat.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+          )}
+
+          {/* District Filter */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.distScroll} contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}>
+            <TouchableOpacity style={[st.distCard, !selectedDistrict && st.distCardActive]} onPress={() => setSelectedDistrict('')}>
+              <View style={st.distImgPlaceholder}><Ionicons name="grid-outline" size={16} color="#FF8C2B" /></View>
+              <Text style={[st.distName, !selectedDistrict && st.distNameActive]} numberOfLines={2}>All</Text>
+            </TouchableOpacity>
+            {districts.map((d: any) => (
+              <TouchableOpacity key={d.name} style={[st.distCard, selectedDistrict === d.name && st.distCardActive]} onPress={() => setSelectedDistrict(selectedDistrict === d.name ? '' : d.name)}>
+                {d.imageUrl ? <Image source={{ uri: d.imageUrl }} style={[st.distImg, selectedDistrict === d.name && st.distImgActive]} /> : <View style={st.distImgPlaceholder}><Ionicons name="location" size={16} color="#FF8C2B" /></View>}
+                <Text style={[st.distName, selectedDistrict === d.name && st.distNameActive]} numberOfLines={2}>{d.name}</Text>
+                <Text style={st.distCount}>{d.creatorCount || 0} Creators</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
 
-        {/* Category Chips — hide when already inside a specific category */}
-        {!initialSubcategory && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8, paddingVertical: 6 }}>
-          {CATEGORIES.map(cat => (
-            <TouchableOpacity key={cat.id} style={[st.catChip, selectedCategory === cat.id && st.catChipActive]} onPress={() => setSelectedCategory(cat.id)}>
-              <Ionicons name={cat.icon as any} size={14} color={selectedCategory === cat.id ? '#FFFFFF' : '#6B7280'} />
-              <Text style={[st.catChipText, selectedCategory === cat.id && st.catChipTextActive]}>{cat.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-        )}
-
-        {/* District Filter */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.distScroll} contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}>
-          <TouchableOpacity style={[st.distCard, !selectedDistrict && st.distCardActive]} onPress={() => setSelectedDistrict('')}>
-            <View style={st.distImgPlaceholder}><Ionicons name="grid-outline" size={16} color="#FF8C2B" /></View>
-            <Text style={[st.distName, !selectedDistrict && st.distNameActive]} numberOfLines={2}>All</Text>
-          </TouchableOpacity>
-          {districts.map((d: any) => (
-            <TouchableOpacity key={d.name} style={[st.distCard, selectedDistrict === d.name && st.distCardActive]} onPress={() => setSelectedDistrict(selectedDistrict === d.name ? '' : d.name)}>
-              {d.imageUrl ? <Image source={{ uri: d.imageUrl }} style={[st.distImg, selectedDistrict === d.name && st.distImgActive]} /> : <View style={st.distImgPlaceholder}><Ionicons name="location" size={16} color="#FF8C2B" /></View>}
-              <Text style={[st.distName, selectedDistrict === d.name && st.distNameActive]} numberOfLines={2}>{d.name}</Text>
-              <Text style={st.distCount}>{d.creatorCount || 0} Creators</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {/* Creator List */}
+        {/* Creator List — scrollable area below fixed sections */}
         <FlatList
+          style={{ flex: 1 }}
           data={filtered}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ padding: 16, paddingBottom: 80 }}
@@ -181,8 +185,8 @@ const st = StyleSheet.create({
   catChipTextActive: { color: '#FFFFFF' },
   // Districts
   // Districts — proper sizing
-  distScroll: { marginTop: 12, maxHeight: 100, marginBottom: 4 },
-  distCard: { alignItems: 'center', width: 80, marginRight: 4 },
+  distScroll: { marginTop: 16, marginBottom: 12, paddingBottom: 8 },
+  distCard: { alignItems: 'center', width: 80 },
   distCardActive: {},
   distImg: { width: 52, height: 52, borderRadius: 26, borderWidth: 2, borderColor: '#F1F5F9' },
   distImgPlaceholder: { width: 52, height: 52, borderRadius: 26, backgroundColor: 'rgba(255,140,43,0.06)', borderWidth: 1, borderColor: 'rgba(255,140,43,0.12)', alignItems: 'center', justifyContent: 'center' },
