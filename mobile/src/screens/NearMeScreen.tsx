@@ -278,14 +278,14 @@ export default function NearMeScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
 
-        {/* CATEGORY CHIPS */}
+        {/* CATEGORY CHIPS — Premium Segmented Selector */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipRow}>
           {CATEGORIES.map(c => {
             const isActive = selectedCat === c.id;
             return (
-              <TouchableOpacity key={c.id} activeOpacity={0.8} onPress={() => { setSelectedCat(c.id); fetchCreators(selectedCity, selectedDistrict, selectedState); }}>
+              <TouchableOpacity key={c.id} activeOpacity={0.75} onPress={() => { setSelectedCat(c.id); fetchCreators(selectedCity, selectedDistrict, selectedState); }}>
                 {isActive ? (
-                  <LinearGradient colors={['#7C3AED', '#A855F7']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.chipGradient}>
+                  <LinearGradient colors={['#7C3AED', '#D946EF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.chipSelected}>
                     <Text style={s.chipEmojiActive}>{c.emoji}</Text>
                     <Text style={s.chipLabelActive}>{c.label}</Text>
                   </LinearGradient>
@@ -419,49 +419,49 @@ const s = StyleSheet.create({
   searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFB', borderRadius: 12, paddingHorizontal: 12, height: 42, borderWidth: 1, borderColor: '#E5E7EB', gap: 6 },
   searchInput: { flex: 1, fontSize: 12, color: '#1F2937' },
   sortBtn: { width: 42, height: 42, borderRadius: 12, backgroundColor: '#6C3BFF', alignItems: 'center', justifyContent: 'center' },
-  // Chips
-  chipRow: { paddingHorizontal: 16, paddingVertical: 6, gap: 10 },
-  chip: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 46, minWidth: 90, paddingHorizontal: 18, borderRadius: 23, backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: '#E5E7EB' },
-  chipGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 46, minWidth: 90, paddingHorizontal: 20, borderRadius: 23, elevation: 5, shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 8 },
-  chipEmoji: { fontSize: 14 },
-  chipEmojiActive: { fontSize: 14 },
-  chipLabel: { fontSize: 13, fontWeight: '600', color: '#4B5563' },
-  chipLabelActive: { fontSize: 13, fontWeight: '600', color: '#FFFFFF' },
+  // Chips — Premium Segmented
+  chipRow: { paddingHorizontal: 16, paddingVertical: 8, gap: 10 },
+  chip: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 48, paddingHorizontal: 22, borderRadius: 24, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E9E9EF', elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 3 },
+  chipSelected: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 48, paddingHorizontal: 22, borderRadius: 24, elevation: 6, shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10 },
+  chipEmoji: { fontSize: 15 },
+  chipEmojiActive: { fontSize: 15 },
+  chipLabel: { fontSize: 14, fontWeight: '600', color: '#374151' },
+  chipLabelActive: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
   // Results
   resTitle: { fontSize: 13, fontWeight: '700', color: '#1F2937', marginBottom: 8 },
-  // Premium Card — compact
-  card: { backgroundColor: '#FFFFFF', borderRadius: 14, marginBottom: 12, borderWidth: 1, borderColor: '#F1F5F9', overflow: 'hidden', elevation: 2, shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6 },
-  cardImgWrap: { position: 'relative', width: '100%', height: 120 },
+  // Premium Card — full width, large image
+  card: { backgroundColor: '#FFFFFF', borderRadius: 20, marginBottom: 16, borderWidth: 0, overflow: 'hidden', elevation: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 12 },
+  cardImgWrap: { position: 'relative', width: '100%', height: 220 },
   cardImg: { width: '100%', height: '100%', resizeMode: 'cover' },
-  badgeRow: { position: 'absolute', top: 10, left: 10, flexDirection: 'row', gap: 6 },
-  badge: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#7C3AED', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
-  badgeText: { fontSize: 9, fontWeight: '700', color: '#FFFFFF' },
-  heartBtn: { position: 'absolute', top: 10, right: 10, width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.3)', alignItems: 'center', justifyContent: 'center' },
-  portfolioCount: { position: 'absolute', bottom: 10, right: 10, flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
-  portfolioCountText: { fontSize: 9, fontWeight: '700', color: '#FFFFFF' },
-  cardBody: { padding: 10 },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  cardName: { fontSize: 13, fontWeight: '700', color: '#1F2937', flex: 1 },
-  cardSpec: { fontSize: 10, color: '#6B7280', marginTop: 1 },
-  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 3 },
-  locationText: { fontSize: 10, color: '#7C3AED', fontWeight: '500' },
-  moreAreas: { fontSize: 8, color: '#9CA3AF', marginLeft: 3 },
+  badgeRow: { position: 'absolute', top: 12, left: 12, flexDirection: 'row', gap: 6 },
+  badge: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#7C3AED', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
+  badgeText: { fontSize: 10, fontWeight: '700', color: '#FFFFFF' },
+  heartBtn: { position: 'absolute', top: 12, right: 12, width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.2)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', alignItems: 'center', justifyContent: 'center' },
+  portfolioCount: { position: 'absolute', bottom: 12, right: 12, flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 4 },
+  portfolioCountText: { fontSize: 10, fontWeight: '700', color: '#FFFFFF' },
+  cardBody: { padding: 18 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  cardName: { fontSize: 16, fontWeight: '800', color: '#1F2937', flex: 1 },
+  cardSpec: { fontSize: 12, color: '#6B7280', marginTop: 2 },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
+  locationText: { fontSize: 12, color: '#7C3AED', fontWeight: '600' },
+  moreAreas: { fontSize: 10, color: '#9CA3AF', marginLeft: 4 },
   // Stats
-  statsRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6, paddingVertical: 5, borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#F3F4F6' },
+  statsRow: { flexDirection: 'row', alignItems: 'center', marginTop: 12, paddingVertical: 10, backgroundColor: '#FAFAFA', borderRadius: 12, paddingHorizontal: 8 },
   statItem: { flex: 1, alignItems: 'center' },
-  statValue: { fontSize: 11, fontWeight: '700', color: '#1F2937' },
-  statLabel: { fontSize: 8, color: '#9CA3AF', marginTop: 1 },
-  statDivider: { width: 1, height: 18, backgroundColor: '#F3F4F6' },
+  statValue: { fontSize: 13, fontWeight: '800', color: '#1F2937' },
+  statLabel: { fontSize: 9, color: '#9CA3AF', marginTop: 2 },
+  statDivider: { width: 1, height: 28, backgroundColor: '#E5E7EB' },
   // Tags
-  tagRow: { flexDirection: 'row', gap: 5, marginTop: 6, flexWrap: 'wrap' },
-  tag: { paddingHorizontal: 6, paddingVertical: 3, borderRadius: 5, backgroundColor: '#FEF3C7', borderWidth: 1, borderColor: '#FDE68A' },
-  tagText: { fontSize: 8, fontWeight: '600', color: '#92400E' },
+  tagRow: { flexDirection: 'row', gap: 6, marginTop: 10, flexWrap: 'wrap' },
+  tag: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, backgroundColor: '#FEF3C7', borderWidth: 1, borderColor: '#FDE68A' },
+  tagText: { fontSize: 10, fontWeight: '600', color: '#92400E' },
   // CTA
-  ctaRow: { flexDirection: 'row', gap: 6, marginTop: 8 },
-  ctaBtn: { flex: 1, backgroundColor: '#7C3AED', borderRadius: 8, paddingVertical: 8, alignItems: 'center' },
-  ctaBtnText: { fontSize: 11, fontWeight: '700', color: '#FFFFFF' },
-  ctaSecondary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3, flex: 1, borderWidth: 1.5, borderColor: '#7C3AED', borderRadius: 8, paddingVertical: 8 },
-  ctaSecondaryText: { fontSize: 11, fontWeight: '600', color: '#7C3AED' },
+  ctaRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
+  ctaBtn: { flex: 1, backgroundColor: '#7C3AED', borderRadius: 14, paddingVertical: 14, alignItems: 'center', elevation: 3, shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 6 },
+  ctaBtnText: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
+  ctaSecondary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, flex: 1, borderWidth: 1.5, borderColor: '#7C3AED', borderRadius: 14, paddingVertical: 14, backgroundColor: '#FFFFFF' },
+  ctaSecondaryText: { fontSize: 13, fontWeight: '600', color: '#7C3AED' },
   // Empty
   empty: { alignItems: 'center', paddingTop: 30, paddingHorizontal: 24 },
   emptyTitle: { fontSize: 16, fontWeight: '700', color: '#1F2937', marginTop: 14 },
