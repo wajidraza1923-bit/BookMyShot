@@ -5,7 +5,7 @@
  */
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  View, Text, FlatList, StyleSheet, TouchableOpacity, Image,
+  View, Text, StyleSheet, TouchableOpacity, Image,
   ActivityIndicator, Dimensions, Platform, StatusBar, TextInput,
   ScrollView, Modal, RefreshControl,
 } from 'react-native';
@@ -191,69 +191,67 @@ export default function NearMeScreen({ navigation }: any) {
   );
 
   return (
-    <View style={s.container}>
+    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
-      {/* HEADER */}
-      <View style={s.header}>
-        <View style={s.hLeft}>
-          <Ionicons name="location" size={20} color="#6C3BFF" />
-          <View>
-            <Text style={s.hTitle}>Near Me</Text>
-            <Text style={s.hSub}>{selectedCity || selectedDistrict || 'Select Location'}</Text>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6C3BFF" />}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
+        {/* HEADER */}
+        <View style={s.header}>
+          <View style={s.hLeft}>
+            <Ionicons name="location" size={20} color="#6C3BFF" />
+            <View>
+              <Text style={s.hTitle}>Near Me</Text>
+              <Text style={s.hSub}>{selectedCity || selectedDistrict || 'Select Location'}</Text>
+            </View>
+          </View>
+          <View style={s.hRight}>
+            <TouchableOpacity style={s.hIcon} onPress={onRefresh}><Ionicons name="refresh" size={16} color="#6C3BFF" /></TouchableOpacity>
           </View>
         </View>
-        <View style={s.hRight}>
-          <TouchableOpacity style={s.hIcon} onPress={onRefresh}><Ionicons name="refresh" size={16} color="#6C3BFF" /></TouchableOpacity>
-        </View>
-      </View>
 
-      {/* SERVICE LOCATION SELECTOR */}
-      <TouchableOpacity style={s.locSelector} onPress={() => { loadStates(); setPickerStep('state'); setShowLocationPicker(true); }}>
-        <Ionicons name="navigate-circle" size={18} color="#6C3BFF" />
-        <Text style={s.locText}>{selectedCity ? `${selectedCity}, ${selectedDistrict}` : 'Select your service location'}</Text>
-        <Ionicons name="chevron-down" size={16} color="#9CA3AF" />
-      </TouchableOpacity>
-
-      {/* SEARCH */}
-      <View style={s.searchRow}>
-        <View style={s.searchBar}>
-          <Ionicons name="search" size={14} color="#9CA3AF" />
-          <TextInput style={s.searchInput} placeholder="Search city, district or creator..." placeholderTextColor="#9CA3AF" value={searchQuery} onChangeText={setSearchQuery} returnKeyType="search" onSubmitEditing={() => { if (searchQuery.length >= 2) fetchCreators(searchQuery, searchQuery, ''); }} />
-          {searchQuery.length > 0 && <TouchableOpacity onPress={() => { setSearchQuery(''); fetchCreators(selectedCity, selectedDistrict, selectedState); }}><Ionicons name="close-circle" size={16} color="#D1D5DB" /></TouchableOpacity>}
-        </View>
-        <TouchableOpacity style={s.sortBtn} onPress={() => setShowSort(true)}>
-          <Ionicons name="swap-vertical" size={14} color="#fff" />
+        {/* SERVICE LOCATION SELECTOR */}
+        <TouchableOpacity style={s.locSelector} onPress={() => { loadStates(); setPickerStep('state'); setShowLocationPicker(true); }}>
+          <Ionicons name="navigate-circle" size={18} color="#6C3BFF" />
+          <Text style={s.locText}>{selectedCity ? `${selectedCity}, ${selectedDistrict}` : 'Select your service location'}</Text>
+          <Ionicons name="chevron-down" size={16} color="#9CA3AF" />
         </TouchableOpacity>
-      </View>
 
-      {/* CATEGORY CHIPS */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipRow}>
-        {CATEGORIES.map(c => (
-          <TouchableOpacity key={c.id} style={[s.chip, selectedCat === c.id && s.chipActive]} onPress={() => { setSelectedCat(c.id); fetchCreators(selectedCity, selectedDistrict, selectedState); }}>
-            <Text style={s.chipEmoji}>{c.emoji}</Text>
-            <Text style={[s.chipLabel, selectedCat === c.id && s.chipLabelActive]}>{c.label}</Text>
+        {/* SEARCH */}
+        <View style={s.searchRow}>
+          <View style={s.searchBar}>
+            <Ionicons name="search" size={14} color="#9CA3AF" />
+            <TextInput style={s.searchInput} placeholder="Search city, district or creator..." placeholderTextColor="#9CA3AF" value={searchQuery} onChangeText={setSearchQuery} returnKeyType="search" onSubmitEditing={() => { if (searchQuery.length >= 2) fetchCreators(searchQuery, searchQuery, ''); }} />
+            {searchQuery.length > 0 && <TouchableOpacity onPress={() => { setSearchQuery(''); fetchCreators(selectedCity, selectedDistrict, selectedState); }}><Ionicons name="close-circle" size={16} color="#D1D5DB" /></TouchableOpacity>}
+          </View>
+          <TouchableOpacity style={s.sortBtn} onPress={() => setShowSort(true)}>
+            <Ionicons name="swap-vertical" size={14} color="#fff" />
           </TouchableOpacity>
-        ))}
-      </ScrollView>
+        </View>
 
-      {/* CONTENT */}
-      {loading ? (
-        <View style={s.center}><ActivityIndicator size="large" color="#6C3BFF" /><Text style={s.loadT}>Finding creators...</Text></View>
-      ) : (
-        <FlatList
-          style={{ flex: 1 }}
-          data={filtered}
-          keyExtractor={(item, i) => item._id || String(i)}
-          renderItem={({ item }) => <CreatorCard item={item} />}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 90 }}
-          showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6C3BFF" />}
-          ListHeaderComponent={filtered.length > 0 ?
-            <Text style={s.resTitle}>{filtered.length} Creator{filtered.length !== 1 ? 's' : ''} in {selectedCity || selectedDistrict || 'your area'}</Text>
-            : null
-          }
-          ListEmptyComponent={
+        {/* CATEGORY CHIPS */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipRow}>
+          {CATEGORIES.map(c => (
+            <TouchableOpacity key={c.id} style={[s.chip, selectedCat === c.id && s.chipActive]} onPress={() => { setSelectedCat(c.id); fetchCreators(selectedCity, selectedDistrict, selectedState); }}>
+              <Text style={s.chipEmoji}>{c.emoji}</Text>
+              <Text style={[s.chipLabel, selectedCat === c.id && s.chipLabelActive]}>{c.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        {/* CREATOR LIST — directly below chips, no flex container */}
+        <View style={{ paddingHorizontal: 16, marginTop: 12 }}>
+          {loading ? (
+            <View style={{ alignItems: 'center', paddingTop: 20 }}><ActivityIndicator size="large" color="#6C3BFF" /><Text style={s.loadT}>Finding creators...</Text></View>
+          ) : filtered.length > 0 ? (
+            <>
+              <Text style={s.resTitle}>{filtered.length} Creator{filtered.length !== 1 ? 's' : ''} in {selectedCity || selectedDistrict || 'your area'}</Text>
+              {filtered.map(item => <CreatorCard key={item._id} item={item} />)}
+            </>
+          ) : (
             <View style={s.empty}>
               <Ionicons name="search-outline" size={44} color="#E5E7EB" />
               <Text style={s.emptyTitle}>No creators found</Text>
@@ -262,9 +260,9 @@ export default function NearMeScreen({ navigation }: any) {
                 <Ionicons name="location-outline" size={14} color="#fff" /><Text style={s.emptyBtnT}>Change Location</Text>
               </TouchableOpacity>
             </View>
-          }
-        />
-      )}
+          )}
+        </View>
+      </ScrollView>
 
       {/* ═══ LOCATION PICKER MODAL ═══ */}
       <Modal visible={showLocationPicker} transparent animationType="slide" onRequestClose={() => setShowLocationPicker(false)}>
@@ -348,7 +346,6 @@ export default function NearMeScreen({ navigation }: any) {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
   // Header
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 54 : 36, paddingBottom: 8 },
   hLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -397,7 +394,6 @@ const s = StyleSheet.create({
   emptyBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 18, backgroundColor: '#6C3BFF', borderRadius: 12, paddingHorizontal: 20, paddingVertical: 12 },
   emptyBtnT: { fontSize: 12, fontWeight: '700', color: '#FFFFFF' },
   // Loading
-  center: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40 },
   loadT: { fontSize: 12, color: '#6B7280', marginTop: 12 },
   // Modals
   modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
