@@ -104,7 +104,7 @@ export default function AllCreatorsScreen({ navigation, route }: any) {
 
         {/* Category Chips — hide when already inside a specific category */}
         {!initialSubcategory && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8, paddingVertical: 10 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8, paddingVertical: 6 }}>
           {CATEGORIES.map(cat => (
             <TouchableOpacity key={cat.id} style={[st.catChip, selectedCategory === cat.id && st.catChipActive]} onPress={() => setSelectedCategory(cat.id)}>
               <Ionicons name={cat.icon as any} size={14} color={selectedCategory === cat.id ? '#FFFFFF' : '#6B7280'} />
@@ -118,12 +118,12 @@ export default function AllCreatorsScreen({ navigation, route }: any) {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.distScroll} contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}>
           <TouchableOpacity style={[st.distCard, !selectedDistrict && st.distCardActive]} onPress={() => setSelectedDistrict('')}>
             <View style={st.distImgPlaceholder}><Ionicons name="grid-outline" size={16} color="#FF8C2B" /></View>
-            <Text style={[st.distName, !selectedDistrict && st.distNameActive]}>All</Text>
+            <Text style={[st.distName, !selectedDistrict && st.distNameActive]} numberOfLines={2}>All</Text>
           </TouchableOpacity>
           {districts.map((d: any) => (
             <TouchableOpacity key={d.name} style={[st.distCard, selectedDistrict === d.name && st.distCardActive]} onPress={() => setSelectedDistrict(selectedDistrict === d.name ? '' : d.name)}>
               {d.imageUrl ? <Image source={{ uri: d.imageUrl }} style={[st.distImg, selectedDistrict === d.name && st.distImgActive]} /> : <View style={st.distImgPlaceholder}><Ionicons name="location" size={16} color="#FF8C2B" /></View>}
-              <Text style={[st.distName, selectedDistrict === d.name && st.distNameActive]}>{d.name}</Text>
+              <Text style={[st.distName, selectedDistrict === d.name && st.distNameActive]} numberOfLines={2}>{d.name}</Text>
               <Text style={st.distCount}>{d.creatorCount || 0} Creators</Text>
             </TouchableOpacity>
           ))}
@@ -180,15 +180,16 @@ const st = StyleSheet.create({
   catChipText: { fontSize: 12, fontWeight: '600', color: '#6B7280' },
   catChipTextActive: { color: '#FFFFFF' },
   // Districts
-  distScroll: { marginTop: 12, maxHeight: 90 },
-  distCard: { alignItems: 'center', width: 65 },
+  // Districts — proper sizing
+  distScroll: { marginTop: 12, maxHeight: 100, marginBottom: 4 },
+  distCard: { alignItems: 'center', width: 80, marginRight: 4 },
   distCardActive: {},
-  distImg: { width: 50, height: 50, borderRadius: 25, borderWidth: 2, borderColor: '#F1F5F9' },
-  distImgPlaceholder: { width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,140,43,0.06)', borderWidth: 1, borderColor: 'rgba(255,140,43,0.12)', alignItems: 'center', justifyContent: 'center' },
-  distName: { fontSize: 9, color: '#6B7280', marginTop: 4, textAlign: 'center' },
+  distImg: { width: 52, height: 52, borderRadius: 26, borderWidth: 2, borderColor: '#F1F5F9' },
+  distImgPlaceholder: { width: 52, height: 52, borderRadius: 26, backgroundColor: 'rgba(255,140,43,0.06)', borderWidth: 1, borderColor: 'rgba(255,140,43,0.12)', alignItems: 'center', justifyContent: 'center' },
+  distName: { fontSize: 10, color: '#6B7280', marginTop: 4, textAlign: 'center', lineHeight: 13 },
   distNameActive: { color: '#6C3BFF', fontWeight: '700' },
-  distCount: { fontSize: 7, color: '#9CA3AF', textAlign: 'center', marginTop: 1 },
-  distImgActive: { bordercolor: '#6C3BFF' },
+  distCount: { fontSize: 8, color: '#9CA3AF', textAlign: 'center', marginTop: 1 },
+  distImgActive: { borderColor: '#6C3BFF' },
   // Cards
   card: { backgroundColor: '#FAFAFA', borderRadius: 16, overflow: 'hidden', marginBottom: 12, borderWidth: 1, borderColor: '#F1F5F9' },
   cardImg: { width: '100%', height: 140, resizeMode: 'cover' },
