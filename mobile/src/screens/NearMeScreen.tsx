@@ -242,11 +242,10 @@ export default function NearMeScreen({ navigation }: any) {
         <View style={s.center}><ActivityIndicator size="large" color="#6C3BFF" /><Text style={s.loadT}>Finding creators...</Text></View>
       ) : (
         <FlatList
-          style={{ flex: 1 }}
           data={filtered}
           keyExtractor={(item, i) => item._id || String(i)}
           renderItem={({ item }) => <CreatorCard item={item} />}
-          contentContainerStyle={s.list}
+          contentContainerStyle={filtered.length === 0 ? { paddingHorizontal: 16, paddingTop: 4 } : s.list}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6C3BFF" />}
           ListHeaderComponent={
