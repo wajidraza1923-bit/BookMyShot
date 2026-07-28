@@ -8,6 +8,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { AuthProvider } from './src/context/AuthContext';
+import { LocationProvider } from './src/context/LocationContext';
 import RootNavigator from './src/navigation/RootNavigator';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 import UpdateChecker from './src/components/UpdateChecker';
@@ -134,9 +135,11 @@ export default function App() {
     <View style={styles.root}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <AuthProvider>
+        <LocationProvider>
         <UpdateChecker>
           <RootNavigator />
         </UpdateChecker>
+        </LocationProvider>
       </AuthProvider>
 
       {showBrandSplash && (

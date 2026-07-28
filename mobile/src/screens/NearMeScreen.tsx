@@ -13,10 +13,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { creatorsAPI } from '../services/api';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useServiceLocation } from '../context/LocationContext';
 
 const { width } = Dimensions.get('window');
-const LOC_KEY = 'bms_service_location';
 
 const CATEGORIES = [
   { id: 'all', label: 'All', emoji: '🔍' },
@@ -41,12 +40,13 @@ const SORT_OPTIONS = [
 
 export default function NearMeScreen({ navigation }: any) {
   const { user } = useAuth();
+  const { location: savedLocation, setLocation: saveLocation } = useServiceLocation();
   const [creators, setCreators] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedCity, setSelectedCity] = useState('');
-  const [selectedDistrict, setSelectedDistrict] = useState('');
-  const [selectedState, setSelectedState] = useState('');
+  const [selectedCity, setSelectedCity] = useState(savedLocation.city || '');
+  const [selectedDistrict, setSelectedDistrict] = useState(savedLocation.district || '');
+  const [selectedState, setSelectedState] = useState(savedLocation.state || '');
   const [selectedCat, setSelectedCat] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showLocationPicker, setShowLocationPicker] = useState(false);
@@ -63,34 +63,19 @@ export default function NearMeScreen({ navigation }: any) {
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  // Load saved location on mount
-  useEffect(() => { loadSavedLocation(); }, []);
-
-  const loadSavedLocation = async () => {
-    try {
-      const saved = await AsyncStorage.getItem(LOC_KEY);
-      if (saved) {
-        const { city, district, state } = JSON.parse(saved);
-        setSelectedCity(city || '');
-        setSelectedDistrict(district || '');
-        setSelectedState(state || '');
-        fetchCreators(city, district, state);
-      } else if (user?.city || user?.district) {
-        // Use from user profile
-        setSelectedCity(user.city || '');
-        setSelectedDistrict(user.district || '');
-        setSelectedState(user.state || '');
-        fetchCreators(user.city, user.district, user.state);
-      } else {
-        // No location set — show picker
-        setLoading(false);
-        setShowLocationPicker(true);
-        loadStates();
-      }
-    } catch {
+  // Load saved location on mount (from shared context)
+  useEffect(() => {
+    if (savedLocation.district || savedLocation.city) {
+      setSelectedCity(savedLocation.city || '');
+      setSelectedDistrict(savedLocation.district || '');
+      setSelectedState(savedLocation.state || '');
+      fetchCreators(savedLocation.city, savedLocation.district, savedLocation.state);
+    } else {
       setLoading(false);
+      setShowLocationPicker(true);
+      loadStates();
     }
-  };
+  }, []);
 
   const fetchCreators = async (city?: string, district?: string, state?: string) => {
     setLoading(true);
@@ -152,8 +137,8 @@ export default function NearMeScreen({ navigation }: any) {
     setSelectedDistrict(pickerDistrict);
     setSelectedState(pickerState);
     setShowLocationPicker(false);
-    // Save
-    await AsyncStorage.setItem(LOC_KEY, JSON.stringify({ city: c, district: pickerDistrict, state: pickerState }));
+    // Save to shared context (syncs with Home)
+    await saveLocation({ city: c, district: pickerDistrict, state: pickerState });
     fetchCreators(c, pickerDistrict, pickerState);
   };
 
@@ -237,8 +222,8 @@ export default function NearMeScreen({ navigation }: any) {
       <View style={s.searchRow}>
         <View style={s.searchBar}>
           <Ionicons name="search" size={14} color="#9CA3AF" />
-          <TextInput style={s.searchInput} placeholder="Search city, district or creator..." placeholderTextColor="#9CA3AF" value={searchQuery} onChangeText={setSearchQuery} />
-          {searchQuery.length > 0 && <TouchableOpacity onPress={() => setSearchQuery('')}><Ionicons name="close-circle" size={16} color="#D1D5DB" /></TouchableOpacity>}
+          <TextInput style={s.searchInput} placeholder="Search city, district or creator..." placeholderTextColor="#9CA3AF" value={searchQuery} onChangeText={setSearchQuery} returnKeyType="search" onSubmitEditing={() => { if (searchQuery.length >= 2) fetchCreators(searchQuery, searchQuery, ''); }} />
+          {searchQuery.length > 0 && <TouchableOpacity onPress={() => { setSearchQuery(''); fetchCreators(selectedCity, selectedDistrict, selectedState); }}><Ionicons name="close-circle" size={16} color="#D1D5DB" /></TouchableOpacity>}
         </View>
         <TouchableOpacity style={s.sortBtn} onPress={() => setShowSort(true)}>
           <Ionicons name="swap-vertical" size={14} color="#fff" />

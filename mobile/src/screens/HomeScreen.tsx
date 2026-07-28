@@ -10,7 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import { creatorsAPI } from '../services/api';
 import api from '../services/api';
 import AppFooter from '../components/AppFooter';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useServiceLocation } from '../context/LocationContext';
 
 const { width } = Dimensions.get('window');
 
@@ -101,14 +101,21 @@ export default function HomeScreen({ navigation }: any) {
   const [locationArea, setLocationArea] = useState('');
   const [locationLoading, setLocationLoading] = useState(false);
   const [showLocationDenied, setShowLocationDenied] = useState(false);
-  // State/District selector (replaces GPS)
-  const [selectedState, setSelectedState] = useState('');
-  const [selectedDistrict, setSelectedDistrict] = useState('');
+  // Shared location from context (synced with NearMe)
+  const { location: savedLocation, setLocation: saveLocation, isLocationSet } = useServiceLocation();
+  const [selectedState, setSelectedState] = useState(savedLocation.state || '');
+  const [selectedDistrict, setSelectedDistrict] = useState(savedLocation.district || '');
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [pickerStates, setPickerStates] = useState<string[]>([]);
   const [pickerDistricts, setPickerDistricts] = useState<string[]>([]);
   const [pickerStep, setPickerStep] = useState<'state' | 'district'>('state');
   const [pickerState, setPickerState] = useState('');
+
+  // Keep local state in sync with context
+  useEffect(() => {
+    if (savedLocation.state) setSelectedState(savedLocation.state);
+    if (savedLocation.district) setSelectedDistrict(savedLocation.district);
+  }, [savedLocation.state, savedLocation.district]);
   const [searchQuery, setSearchQuery] = useState('');
   const [heroConfig, setHeroConfig] = useState({ cashbackPercentage: 10, heroTitle: 'Your Dream Wedding,', heroTitleAccent: 'More Rewards!', heroSubtitle: 'Book verified wedding creators and get exciting cashback on every successful booking.', heroEyebrow: 'CELEBRATE BEAUTIFULLY. SAVE MORE.', heroCta1Text: 'Find Creator', heroCta2Text: 'Get Free Quote' });
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -147,15 +154,7 @@ export default function HomeScreen({ navigation }: any) {
 
   const loadData = useCallback(async () => {
     try {
-      // ═══ LOCATION: Load saved location from AsyncStorage ═══
-      try {
-        const savedLoc = await AsyncStorage.getItem('bms_service_location');
-        if (savedLoc) {
-          const { city, district, state } = JSON.parse(savedLoc);
-          setSelectedState(state || '');
-          setSelectedDistrict(district || city || '');
-        }
-      } catch {}
+      // ═══ LOCATION: From shared context (no AsyncStorage read needed) ═══
 
       const [catsRes, statsRes, creatorsRes, homeConfigRes] = await Promise.all([
         api.get('/discover/categories?homepage=true').catch(() => ({ data: { data: [] } })),
@@ -222,13 +221,12 @@ export default function HomeScreen({ navigation }: any) {
         setCategories(mapped.length > 0 ? mapped : CATEGORIES_DEFAULT);
       }
 
-      // Top Creators — use saved district for discovery
+      // Top Creators — use saved district from shared context
       const all = creatorsRes.data?.creators || creatorsRes.data?.data || [];
       let top = [...all].sort((a: any, b: any) => (b.rating || 0) - (a.rating || 0)).slice(0, 10);
-      // If user has selected a location, fetch from discovery API
-      if (selectedDistrict) {
+      if (savedLocation.district) {
         try {
-          const nearRes = await api.get('/discovery/creators-by-area', { params: { district: selectedDistrict, state: selectedState } });
+          const nearRes = await api.get('/discovery/creators-by-area', { params: { district: savedLocation.district, state: savedLocation.state } });
           const nearby = nearRes.data?.creators || [];
           if (nearby.length > 0) top = nearby.slice(0, 10);
         } catch {}
@@ -687,7 +685,7 @@ export default function HomeScreen({ navigation }: any) {
                         setSelectedState(pickerState);
                         setSelectedDistrict(d);
                         setShowLocationPicker(false);
-                        await AsyncStorage.setItem('bms_service_location', JSON.stringify({ state: pickerState, district: d, city: d }));
+                        await saveLocation({ state: pickerState, district: d, city: d });
                         loadData();
                       }}>
                         <Ionicons name="location" size={14} color="#6C3BFF" />
