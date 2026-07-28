@@ -97,20 +97,25 @@ export async function getFreshLocation(): Promise<UserLocation | null> {
     // Permission granted — save this fact
     await AsyncStorage.setItem(PERMISSION_KEY, 'granted');
 
-    // Step 3: Try to get current position with timeout
+    // Step 3: Try to get current position with 8-second timeout
     let position: Location.LocationObject | null = null;
     try {
-      position = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-        timeInterval: 5000,
-        maximumAge: 60000, // Accept position up to 1 min old
+      // Race between GPS and a timeout
+      const gpsPromise = Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced, // Balanced is much faster than High
+        timeInterval: 3000,
+        maximumAge: 120000, // Accept position up to 2 min old (fast!)
       });
+      const timeoutPromise = new Promise<null>((_, reject) =>
+        setTimeout(() => reject(new Error('GPS timeout after 8s')), 8000)
+      );
+      position = await Promise.race([gpsPromise, timeoutPromise as any]) as Location.LocationObject;
     } catch (e: any) {
       console.log('[Location] getCurrentPosition failed, trying lastKnown:', e.message);
       // Fallback: get last known position (instant, no GPS needed)
       try {
         position = await Location.getLastKnownPositionAsync({
-          maxAge: 300000, // Accept up to 5 min old
+          maxAge: 600000, // Accept up to 10 min old
         });
       } catch {}
     }

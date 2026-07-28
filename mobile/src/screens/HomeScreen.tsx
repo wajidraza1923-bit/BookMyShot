@@ -139,36 +139,38 @@ export default function HomeScreen({ navigation }: any) {
 
   const loadData = useCallback(async () => {
     try {
-      // ═══ LOCATION: Get real GPS location ═══
-      setLocationLoading(true);
-      try {
-        // Show cached location instantly
-        const cached = await getCachedLocation();
-        if (cached && (cached.city || cached.latitude)) {
+      // ═══ LOCATION: Non-blocking, runs in background ═══
+      // Show cached location instantly — NEVER wait for GPS
+      getCachedLocation().then(cached => {
+        if (cached && (cached.city || cached.district || cached.latitude)) {
           setLocationArea(cached.area || cached.district || '');
           setLocationCity(cached.city || cached.district || 'Your Location');
           setLocationLoading(false);
         }
-        // Get fresh GPS (won't re-ask if already granted)
-        const fresh = await getFreshLocation();
-        if (fresh) {
-          // Location obtained (even without city name, coords are valid)
-          setLocationArea(fresh.area || fresh.district || '');
-          setLocationCity(fresh.city || fresh.district || 'Your Location');
-          setShowLocationDenied(false);
-        } else if (!cached) {
-          // getFreshLocation returns null ONLY when permission denied
-          setShowLocationDenied(true);
-          setLocationCity('');
-          setLocationArea('');
-        }
-        // If fresh is null but we have cache, just keep showing cache (permission might just be slow)
-      } catch {
-        // Don't show denied on error — might be GPS timeout
-        if (!locationCity) setLocationCity('');
-      } finally {
-        setLocationLoading(false);
-      }
+      }).catch(() => {});
+
+      // Refresh GPS silently in background (don't block UI)
+      setTimeout(() => {
+        getFreshLocation().then(fresh => {
+          if (fresh) {
+            setLocationArea(fresh.area || fresh.district || '');
+            setLocationCity(fresh.city || fresh.district || 'Your Location');
+            setLocationLoading(false);
+            setShowLocationDenied(false);
+          } else {
+            // Permission denied — check if we still have cache showing
+            getCachedLocation().then(cached => {
+              if (!cached) {
+                setLocationLoading(false);
+                // Only show denied if nothing is shown yet
+                setLocationCity(prev => prev || '');
+              }
+            });
+          }
+        }).catch(() => {
+          setLocationLoading(false);
+        });
+      }, 100); // Small delay so UI renders first
 
       const [catsRes, statsRes, creatorsRes, homeConfigRes] = await Promise.all([
         api.get('/discover/categories?homepage=true').catch(() => ({ data: { data: [] } })),
