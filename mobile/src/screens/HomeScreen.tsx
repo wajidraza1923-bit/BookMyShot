@@ -10,7 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import { creatorsAPI } from '../services/api';
 import api from '../services/api';
 import AppFooter from '../components/AppFooter';
-import { useLocation } from '../hooks/useLocation';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
@@ -101,20 +101,14 @@ export default function HomeScreen({ navigation }: any) {
   const [locationArea, setLocationArea] = useState('');
   const [locationLoading, setLocationLoading] = useState(false);
   const [showLocationDenied, setShowLocationDenied] = useState(false);
-  // Location via hook (real GPS, one-time permission)
-  const { location: userLocation, displayCity: locCity, displayFull: locFull, displayArea: locArea, state: locState, refresh: refreshLocation, askPermission: askLocPermission, openSettings: openLocSettings } = useLocation();
-
-  // Sync hook state to legacy state variables used in render
-  useEffect(() => {
-    if (locState === 'loading' || locState === 'detecting') {
-      setLocationLoading(true);
-    } else {
-      setLocationLoading(false);
-    }
-    if (locState === 'denied') setShowLocationDenied(true);
-    else setShowLocationDenied(false);
-    if (locCity) { setLocationCity(locCity); setLocationArea(locArea || ''); }
-  }, [locState, locCity, locArea]);
+  // State/District selector (replaces GPS)
+  const [selectedState, setSelectedState] = useState('');
+  const [selectedDistrict, setSelectedDistrict] = useState('');
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [pickerStates, setPickerStates] = useState<string[]>([]);
+  const [pickerDistricts, setPickerDistricts] = useState<string[]>([]);
+  const [pickerStep, setPickerStep] = useState<'state' | 'district'>('state');
+  const [pickerState, setPickerState] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [heroConfig, setHeroConfig] = useState({ cashbackPercentage: 10, heroTitle: 'Your Dream Wedding,', heroTitleAccent: 'More Rewards!', heroSubtitle: 'Book verified wedding creators and get exciting cashback on every successful booking.', heroEyebrow: 'CELEBRATE BEAUTIFULLY. SAVE MORE.', heroCta1Text: 'Find Creator', heroCta2Text: 'Get Free Quote' });
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -153,7 +147,15 @@ export default function HomeScreen({ navigation }: any) {
 
   const loadData = useCallback(async () => {
     try {
-      // ═══ LOCATION: Handled by useLocation hook — no blocking code here ═══
+      // ═══ LOCATION: Load saved location from AsyncStorage ═══
+      try {
+        const savedLoc = await AsyncStorage.getItem('bms_service_location');
+        if (savedLoc) {
+          const { city, district, state } = JSON.parse(savedLoc);
+          setSelectedState(state || '');
+          setSelectedDistrict(district || city || '');
+        }
+      } catch {}
 
       const [catsRes, statsRes, creatorsRes, homeConfigRes] = await Promise.all([
         api.get('/discover/categories?homepage=true').catch(() => ({ data: { data: [] } })),
@@ -220,13 +222,13 @@ export default function HomeScreen({ navigation }: any) {
         setCategories(mapped.length > 0 ? mapped : CATEGORIES_DEFAULT);
       }
 
-      // Top Creators — use location if available for "Near You"
+      // Top Creators — use saved district for discovery
       const all = creatorsRes.data?.creators || creatorsRes.data?.data || [];
       let top = [...all].sort((a: any, b: any) => (b.rating || 0) - (a.rating || 0)).slice(0, 10);
-      // If we have location, try fetching nearby creators
-      if (userLocation && userLocation.latitude) {
+      // If user has selected a location, fetch from discovery API
+      if (selectedDistrict) {
         try {
-          const nearRes = await api.get('/creators/nearby', { params: { lat: userLocation.latitude, lng: userLocation.longitude, radius: 100 } });
+          const nearRes = await api.get('/discovery/creators-by-area', { params: { district: selectedDistrict, state: selectedState } });
           const nearby = nearRes.data?.creators || [];
           if (nearby.length > 0) top = nearby.slice(0, 10);
         } catch {}
@@ -387,26 +389,12 @@ export default function HomeScreen({ navigation }: any) {
           </View>
         </View>
 
-        {/* LOCATION */}
-        <View style={st.locRow}>
+        {/* LOCATION SELECTOR (State/District) */}
+        <TouchableOpacity style={st.locRow} onPress={() => { setShowLocationPicker(true); setPickerStep('state'); api.get('/discovery/states').then(r => setPickerStates(r.data?.states || [])).catch(() => {}); }}>
           <Ionicons name="location" size={16} color="#6C3BFF" />
-          {locationLoading ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <ActivityIndicator size="small" color="#6C3BFF" />
-              <Text style={[st.locText, { color: '#9CA3AF' }]}>Getting location...</Text>
-            </View>
-          ) : locationCity ? (
-            <Text style={st.locText}>{locationArea ? `${locationArea}, ` : ''}{locationCity}</Text>
-          ) : (
-            <TouchableOpacity onPress={askLocPermission}>
-              <Text style={[st.locText, { color: '#6C3BFF' }]}>Tap to detect location</Text>
-            </TouchableOpacity>
-          )}
-          {!locationLoading && <Text style={st.locDrop}>▾</Text>}
-          <TouchableOpacity style={st.changeLoc} onPress={refreshLocation}>
-            <Ionicons name="navigate-outline" size={11} color="#6C3BFF" /><Text style={st.changeLocT}>Refresh</Text>
-          </TouchableOpacity>
-        </View>
+          <Text style={st.locText}>{selectedDistrict ? `${selectedDistrict}, ${selectedState}` : 'Select your location'}</Text>
+          <Ionicons name="chevron-down" size={14} color="#9CA3AF" />
+        </TouchableOpacity>
 
         {/* SEARCH */}
         <View style={st.searchRow}>
@@ -672,23 +660,46 @@ export default function HomeScreen({ navigation }: any) {
         </View>
       </Modal>
 
-      {/* ═══ LOCATION PERMISSION DENIED MODAL ═══ */}
-      <Modal visible={showLocationDenied} transparent animationType="fade" onRequestClose={() => setShowLocationDenied(false)}>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)', padding: 24 }}>
-          <View style={{ backgroundColor: '#FFFFFF', borderRadius: 20, padding: 24, width: '100%', maxWidth: 320, alignItems: 'center' }}>
-            <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: '#F3E8FF', justifyContent: 'center', alignItems: 'center', marginBottom: 16 }}>
-              <Ionicons name="location" size={28} color="#6C3BFF" />
+      {/* ═══ STATE/DISTRICT LOCATION PICKER ═══ */}
+      <Modal visible={showLocationPicker} transparent animationType="slide" onRequestClose={() => setShowLocationPicker(false)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 30, maxHeight: '70%' }}>
+            <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: '#E5E7EB', alignSelf: 'center', marginBottom: 16 }} />
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <Text style={{ fontSize: 16, fontWeight: '800', color: '#1F2937' }}>{pickerStep === 'state' ? 'Select State' : 'Select District'}</Text>
+              {pickerStep === 'district' && <TouchableOpacity onPress={() => setPickerStep('state')}><Text style={{ fontSize: 12, color: '#6C3BFF', fontWeight: '600' }}>← Back</Text></TouchableOpacity>}
             </View>
-            <Text style={{ fontSize: 17, fontWeight: '700', color: '#1F2937', marginBottom: 8, textAlign: 'center' }}>Enable Location</Text>
-            <Text style={{ fontSize: 13, color: '#6B7280', textAlign: 'center', lineHeight: 19, marginBottom: 20 }}>BookMyShot needs your location to show nearby creators and calculate distances. Please enable location access in your device settings.</Text>
-            <TouchableOpacity
-              style={{ width: '100%', backgroundColor: '#6C3BFF', borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginBottom: 10 }}
-              onPress={() => { setShowLocationDenied(false); openLocSettings(); }}
-            >
-              <Text style={{ fontSize: 14, fontWeight: '700', color: '#FFFFFF' }}>Open Settings</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={{ paddingVertical: 10 }} onPress={() => setShowLocationDenied(false)}>
-              <Text style={{ fontSize: 13, color: '#9CA3AF' }}>Maybe Later</Text>
+            <ScrollView style={{ maxHeight: 400 }}>
+              {pickerStep === 'state' ? (
+                pickerStates.length === 0 ? <ActivityIndicator color="#6C3BFF" style={{ marginTop: 20 }} /> :
+                pickerStates.map(st2 => (
+                  <TouchableOpacity key={st2} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' }} onPress={() => { setPickerState(st2); setPickerStep('district'); api.get('/discovery/districts', { params: { state: st2 } }).then(r => setPickerDistricts(r.data?.districts || [])).catch(() => {}); }}>
+                    <Text style={{ fontSize: 14, color: '#1F2937' }}>{st2}</Text>
+                    <Ionicons name="chevron-forward" size={14} color="#9CA3AF" />
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <>
+                  <Text style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 8 }}>{pickerState}</Text>
+                  {pickerDistricts.length === 0 ? <ActivityIndicator color="#6C3BFF" style={{ marginTop: 20 }} /> :
+                    pickerDistricts.map(d => (
+                      <TouchableOpacity key={d} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F3F4F6', gap: 8 }} onPress={async () => {
+                        setSelectedState(pickerState);
+                        setSelectedDistrict(d);
+                        setShowLocationPicker(false);
+                        await AsyncStorage.setItem('bms_service_location', JSON.stringify({ state: pickerState, district: d, city: d }));
+                        loadData();
+                      }}>
+                        <Ionicons name="location" size={14} color="#6C3BFF" />
+                        <Text style={{ fontSize: 14, color: '#1F2937' }}>{d}</Text>
+                      </TouchableOpacity>
+                    ))
+                  }
+                </>
+              )}
+            </ScrollView>
+            <TouchableOpacity style={{ alignItems: 'center', paddingVertical: 14, marginTop: 8 }} onPress={() => setShowLocationPicker(false)}>
+              <Text style={{ fontSize: 13, color: '#9CA3AF' }}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>

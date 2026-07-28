@@ -385,14 +385,14 @@ const s = StyleSheet.create({
   searchInput: { flex: 1, fontSize: 12, color: '#1F2937' },
   sortBtn: { width: 42, height: 42, borderRadius: 12, backgroundColor: '#6C3BFF', alignItems: 'center', justifyContent: 'center' },
   // Chips
-  chipRow: { paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
+  chipRow: { paddingHorizontal: 16, paddingVertical: 6, gap: 8 },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 36, paddingHorizontal: 14, borderRadius: 20, backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: '#E5E7EB' },
   chipActive: { backgroundColor: '#6C3BFF', borderColor: '#6C3BFF' },
   chipEmoji: { fontSize: 13 },
   chipLabel: { fontSize: 11, fontWeight: '600', color: '#4B5563' },
   chipLabelActive: { color: '#FFFFFF' },
   // Results
-  resRow: { paddingHorizontal: 4, paddingVertical: 10 },
+  resRow: { paddingHorizontal: 4, paddingTop: 4, paddingBottom: 6 },
   resTitle: { fontSize: 13, fontWeight: '700', color: '#1F2937' },
   // Card
   list: { paddingHorizontal: 16, paddingBottom: 90 },
