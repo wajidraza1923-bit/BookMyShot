@@ -9,17 +9,6 @@ import { creatorsAPI } from '../services/api';
 import api from '../services/api';
 import { useLocation } from '../hooks/useLocation';
 
-// Safe MapView — only render if available, catch crashes
-let MapView: any = null;
-let Marker: any = null;
-try {
-  const maps = require('react-native-maps');
-  MapView = maps.default;
-  Marker = maps.Marker;
-} catch {
-  // react-native-maps not available or crashes
-}
-
 const { width } = Dimensions.get('window');
 
 const CATEGORIES = [
@@ -59,7 +48,6 @@ export default function NearMeScreen({ navigation }: any) {
   const [filterAvailToday, setFilterAvailToday] = useState(false);
   const [filterInstant, setFilterInstant] = useState(false);
   const [filterCashback, setFilterCashback] = useState(false);
-  const mapRef = useRef<any>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
 
@@ -285,33 +273,15 @@ export default function NearMeScreen({ navigation }: any) {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6C3BFF" />}
           ListHeaderComponent={
             <View>
-              {/* MAP */}
-              {userLocation && MapView && (
-                <View style={s.mapContainer}>
-                  <View style={s.mapHeader}>
-                    <View style={s.mapHeaderLeft}><Ionicons name="location" size={14} color="#6C3BFF" /><Text style={s.mapTitle}>Creators Near You</Text></View>
-                    <Text style={s.mapRadius}>Within {radius} km radius</Text>
+              {/* LOCATION INFO */}
+              {userLocation && (
+                <View style={s.locationBanner}>
+                  <Ionicons name="navigate-circle" size={18} color="#6C3BFF" />
+                  <View style={{ flex: 1, marginLeft: 8 }}>
+                    <Text style={s.locationBannerTitle}>Showing creators near you</Text>
+                    <Text style={s.locationBannerSub}>{locationCity || 'Your Location'} • Within {radius} km</Text>
                   </View>
-                  <View style={s.mapWrap}>
-                    <MapView
-                      ref={mapRef}
-                      style={s.map}
-                      initialRegion={{ latitude: userLocation.latitude, longitude: userLocation.longitude, latitudeDelta: 0.05, longitudeDelta: 0.05 }}
-                      showsUserLocation showsMyLocationButton={false}
-                    >
-                      {filtered.filter((c: any) => c.creatorLat && c.creatorLng).slice(0, 10).map((c: any, i: number) => (
-                        <Marker key={i} coordinate={{ latitude: c.creatorLat, longitude: c.creatorLng }} onPress={() => navigation.navigate('CreatorProfile', { id: c._id })}>
-                          <View style={s.marker}><Image source={{ uri: getImg(c) }} style={s.markerImg} /></View>
-                        </Marker>
-                      ))}
-                    </MapView>
-                    <TouchableOpacity style={s.searchAreaBtn}>
-                      <Ionicons name="search" size={11} color="#6C3BFF" /><Text style={s.searchAreaT}>Search This Area</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={s.locFab} onPress={() => mapRef.current?.animateToRegion({ latitude: userLocation.latitude, longitude: userLocation.longitude, latitudeDelta: 0.05, longitudeDelta: 0.05 }, 400)}>
-                      <Ionicons name="navigate" size={16} color="#6C3BFF" />
-                    </TouchableOpacity>
-                  </View>
+                  <TouchableOpacity onPress={refreshLoc} style={s.refreshLocBtn}><Ionicons name="refresh" size={14} color="#6C3BFF" /></TouchableOpacity>
                 </View>
               )}
 
@@ -407,19 +377,11 @@ const s = StyleSheet.create({
   chipEmoji: { fontSize: 14 },
   chipLabel: { fontSize: 12, fontWeight: '600', color: '#4B5563' },
   chipLabelActive: { color: '#FFFFFF' },
-  // Map
-  mapContainer: { marginHorizontal: 16, marginBottom: 12, backgroundColor: '#F8F6FF', borderRadius: 20, padding: 12, borderWidth: 1, borderColor: '#EDE9FE' },
-  mapHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  mapHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  mapTitle: { fontSize: 13, fontWeight: '700', color: '#1F2937' },
-  mapRadius: { fontSize: 10, color: '#6B7280' },
-  mapWrap: { height: 180, borderRadius: 16, overflow: 'hidden', position: 'relative' },
-  map: { width: '100%', height: '100%' },
-  marker: { width: 34, height: 34, borderRadius: 17, borderWidth: 2.5, borderColor: '#6C3BFF', overflow: 'hidden', backgroundColor: '#FFFFFF' },
-  markerImg: { width: '100%', height: '100%' },
-  searchAreaBtn: { position: 'absolute', top: 10, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FFFFFF', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7, elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 3 },
-  searchAreaT: { fontSize: 10, fontWeight: '600', color: '#6C3BFF' },
-  locFab: { position: 'absolute', bottom: 10, right: 10, width: 34, height: 34, borderRadius: 17, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 3 },
+  // Location Banner
+  locationBanner: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 12, backgroundColor: '#F8F6FF', borderRadius: 14, padding: 12, borderWidth: 1, borderColor: '#EDE9FE' },
+  locationBannerTitle: { fontSize: 12, fontWeight: '700', color: '#1F2937' },
+  locationBannerSub: { fontSize: 10, color: '#6B7280', marginTop: 2 },
+  refreshLocBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#EDE9FE' },
   // Trust
   trustRow: { paddingHorizontal: 16, paddingVertical: 14, gap: 14, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
   trustBadge: { alignItems: 'center', width: 85, gap: 3 },

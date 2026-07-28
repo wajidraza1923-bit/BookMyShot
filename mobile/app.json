@@ -37,11 +37,7 @@
         "ACCESS_COARSE_LOCATION",
         "FOREGROUND_SERVICE"
       ],
-      "config": {
-        "googleMaps": {
-          "apiKey": "AIzaSyCxNuhP5gJW-wxUFbm7VvZBjDiIbPCDLrY"
-        }
-      },
+      "config": {},
       "backgroundColor": "#FFFFFF"
     },
     "plugins": [
