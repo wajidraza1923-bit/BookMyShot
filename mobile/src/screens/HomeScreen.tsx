@@ -220,9 +220,17 @@ export default function HomeScreen({ navigation }: any) {
         setCategories(mapped.length > 0 ? mapped : CATEGORIES_DEFAULT);
       }
 
-      // Top Creators
+      // Top Creators — use location if available for "Near You"
       const all = creatorsRes.data?.creators || creatorsRes.data?.data || [];
-      const top = [...all].sort((a: any, b: any) => (b.rating || 0) - (a.rating || 0)).slice(0, 10);
+      let top = [...all].sort((a: any, b: any) => (b.rating || 0) - (a.rating || 0)).slice(0, 10);
+      // If we have location, try fetching nearby creators
+      if (userLocation && userLocation.latitude) {
+        try {
+          const nearRes = await api.get('/creators/nearby', { params: { lat: userLocation.latitude, lng: userLocation.longitude, radius: 100 } });
+          const nearby = nearRes.data?.creators || [];
+          if (nearby.length > 0) top = nearby.slice(0, 10);
+        } catch {}
+      }
       setTopCreators(top);
 
       // Featured Wedding Moments
@@ -539,7 +547,7 @@ export default function HomeScreen({ navigation }: any) {
                   <View style={st.tcInfo}>
                     <Text style={st.tcName} numberOfLines={1}>{item.user?.name || 'Creator'}</Text>
                     <Text style={st.tcSpec}>{item.specialty || 'Photographer'} • {item.experience || '5+'} Years</Text>
-                    <View style={st.tcMeta}><Ionicons name="location" size={9} color="#6C3BFF" /><Text style={st.tcMetaT}>{(Math.random() * 3 + 0.5).toFixed(1)} km away</Text></View>
+                    <View style={st.tcMeta}><Ionicons name="location" size={9} color="#6C3BFF" /><Text style={st.tcMetaT}>{item.distance != null ? `${item.distance} km away` : (item.city || 'Near You')}</Text></View>
                     <Text style={st.tcPrice}>Starts from ₹{(item.startingPrice || item.budgetMin || 25000).toLocaleString('en-IN')}</Text>
                   </View>
                 </TouchableOpacity>

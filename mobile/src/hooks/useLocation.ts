@@ -43,6 +43,14 @@ export function useLocation(): UseLocationResult {
         setState('ready');
       }
 
+      // On first ever load: ask permission once (if not yet determined)
+      const { status } = await (await import('expo-location')).getForegroundPermissionsAsync();
+      if (status === 'undetermined') {
+        // First time — ask permission once
+        const gps = await requestAndGetGPS();
+        if (gps) { setLocation(gps); setState('ready'); return; }
+      }
+
       // Get fresh location in background (GPS if permitted, else IP)
       const fresh = await getFreshLocation();
       if (fresh) {
