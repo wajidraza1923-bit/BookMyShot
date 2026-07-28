@@ -97,7 +97,6 @@ export default function NearMeScreen({ navigation }: any) {
       } catch { setCreators([]); }
     } finally {
       setLoading(false);
-      Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
     }
   };
 
