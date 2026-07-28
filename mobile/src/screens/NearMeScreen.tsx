@@ -10,6 +10,7 @@ import {
   ScrollView, Modal, RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { creatorsAPI } from '../services/api';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -234,12 +235,24 @@ export default function NearMeScreen({ navigation }: any) {
 
         {/* CATEGORY CHIPS */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipRow}>
-          {CATEGORIES.map(c => (
-            <TouchableOpacity key={c.id} style={[s.chip, selectedCat === c.id && s.chipActive]} onPress={() => { setSelectedCat(c.id); fetchCreators(selectedCity, selectedDistrict, selectedState); }}>
-              <Text style={s.chipEmoji}>{c.emoji}</Text>
-              <Text style={[s.chipLabel, selectedCat === c.id && s.chipLabelActive]}>{c.label}</Text>
-            </TouchableOpacity>
-          ))}
+          {CATEGORIES.map(c => {
+            const isActive = selectedCat === c.id;
+            return (
+              <TouchableOpacity key={c.id} activeOpacity={0.8} onPress={() => { setSelectedCat(c.id); fetchCreators(selectedCity, selectedDistrict, selectedState); }}>
+                {isActive ? (
+                  <LinearGradient colors={['#7C3AED', '#A855F7']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.chipGradient}>
+                    <Text style={s.chipEmojiActive}>{c.emoji}</Text>
+                    <Text style={s.chipLabelActive}>{c.label}</Text>
+                  </LinearGradient>
+                ) : (
+                  <View style={s.chip}>
+                    <Text style={s.chipEmoji}>{c.emoji}</Text>
+                    <Text style={s.chipLabel}>{c.label}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
 
         {/* CREATOR LIST — directly below chips, no flex container */}
@@ -362,12 +375,13 @@ const s = StyleSheet.create({
   searchInput: { flex: 1, fontSize: 12, color: '#1F2937' },
   sortBtn: { width: 42, height: 42, borderRadius: 12, backgroundColor: '#6C3BFF', alignItems: 'center', justifyContent: 'center' },
   // Chips
-  chipRow: { paddingHorizontal: 16, paddingVertical: 6, gap: 8 },
-  chip: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, height: 40, minWidth: 90, paddingHorizontal: 16, borderRadius: 20, backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: '#E5E7EB' },
-  chipActive: { backgroundColor: '#6C3BFF', borderColor: '#6C3BFF' },
-  chipEmoji: { fontSize: 13 },
-  chipLabel: { fontSize: 12, fontWeight: '600', color: '#4B5563' },
-  chipLabelActive: { color: '#FFFFFF' },
+  chipRow: { paddingHorizontal: 16, paddingVertical: 6, gap: 10 },
+  chip: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 46, minWidth: 90, paddingHorizontal: 18, borderRadius: 23, backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: '#E5E7EB' },
+  chipGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 46, minWidth: 90, paddingHorizontal: 20, borderRadius: 23, elevation: 5, shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 8 },
+  chipEmoji: { fontSize: 14 },
+  chipEmojiActive: { fontSize: 14 },
+  chipLabel: { fontSize: 13, fontWeight: '600', color: '#4B5563' },
+  chipLabelActive: { fontSize: 13, fontWeight: '600', color: '#FFFFFF' },
   // Results
   resTitle: { fontSize: 13, fontWeight: '700', color: '#1F2937', marginBottom: 8 },
   // Card
