@@ -120,10 +120,11 @@ export default function BookingsScreen({ navigation }: any) {
             const eventDate = b.eventDate ? new Date(b.eventDate) : null;
             const validDate = eventDate && eventDate.getFullYear() > 2000;
             const amount = b.amount || b.budget || 0;
-            const paid = b.advancePaid || 0;
+            const paid = b.advancePaid || b.bookingFeeAmount || 0;
             const remaining = amount - paid;
             const paymentPct = amount > 0 ? Math.min(100, Math.round((paid / amount) * 100)) : 0;
             const statusColor = getStatusColor(b.status);
+            const isOnlinePaid = b.bookingFeePaid && b.bookingFeePaymentId;
 
             return (
               <View key={b._id} style={s.card}>
@@ -151,11 +152,33 @@ export default function BookingsScreen({ navigation }: any) {
                   <DetailRow icon="gift" label="Cashback" value={b.bookingFeePaid ? 'Eligible' : 'Pay booking fee first'} color={b.bookingFeePaid ? '#10B981' : '#9CA3AF'} />
                 </View>
 
-                {/* Payment Progress */}
-                {amount > 0 && (
-                  <View style={s.progressWrap}>
+                {/* Payment Progress Bar */}
+                {amount > 0 && paid > 0 && (
+                  <View style={s.progressSection}>
+                    <View style={s.progressHeader}>
+                      <Text style={s.progressTitle}>Payment Progress</Text>
+                      <Text style={s.progressPct}>{paymentPct}%</Text>
+                    </View>
                     <View style={s.progressBar}><View style={[s.progressFill, { width: `${paymentPct}%` }]} /></View>
-                    <Text style={s.progressText}>{paymentPct}% paid</Text>
+                    <View style={s.progressDetails}>
+                      <Text style={s.progressPaid}>Paid: ₹{paid.toLocaleString('en-IN')}</Text>
+                      <Text style={s.progressRemaining}>Remaining: ₹{remaining.toLocaleString('en-IN')}</Text>
+                    </View>
+                    {remaining > 0 && <Text style={s.progressNote}>Remaining goes directly to Creator</Text>}
+                  </View>
+                )}
+
+                {/* Cashback Countdown */}
+                {b.bookingFeePaid && remaining > 0 && validDate && eventDate && eventDate > new Date() && (
+                  <View style={s.cashbackCountdown}>
+                    <Ionicons name="gift-outline" size={12} color="#F59E0B" />
+                    <Text style={s.cashbackCountText}>Complete payment before {eventDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} to receive Cashback</Text>
+                  </View>
+                )}
+                {b.bookingFeePaid && validDate && eventDate && eventDate < new Date() && remaining > 0 && (
+                  <View style={[s.cashbackCountdown, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
+                    <Ionicons name="close-circle-outline" size={12} color="#EF4444" />
+                    <Text style={[s.cashbackCountText, { color: '#991B1B' }]}>Cashback Expired — payment not completed before event</Text>
                   </View>
                 )}
 
@@ -193,11 +216,11 @@ export default function BookingsScreen({ navigation }: any) {
                   </TouchableOpacity>
                 )}
 
-                {/* Upload Proof Button */}
-                {b.paymentStatus !== 'paid' && b.paymentStatus !== 'verified' && b.status !== 'rejected' && b.status !== 'cancelled' && (
+                {/* Upload Proof Button — Only for offline payments (not needed after Razorpay) */}
+                {!isOnlinePaid && b.paymentStatus !== 'paid' && b.paymentStatus !== 'verified' && b.status !== 'rejected' && b.status !== 'cancelled' && (
                   <TouchableOpacity style={s.uploadBtn} onPress={() => navigation.navigate('PaymentProof', { bookingId: b._id, totalAmount: amount, paidAmount: paid, creatorName })}>
                     <Ionicons name="card-outline" size={16} color="#FFFFFF" />
-                    <Text style={s.uploadText}>Pay Now / Upload Proof</Text>
+                    <Text style={s.uploadText}>Pay Offline / Upload Proof</Text>
                   </TouchableOpacity>
                 )}
 
@@ -302,11 +325,20 @@ const s = StyleSheet.create({
   detailRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 3 },
   detailLabel: { fontSize: 11, color: colors.textMuted, width: 70 },
   detailValue: { fontSize: 12, color: colors.text, flex: 1, textAlign: 'right' },
-  // Progress
-  progressWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
-  progressBar: { flex: 1, height: 4, backgroundColor: '#F3F4F6', borderRadius: 2, overflow: 'hidden' },
-  progressFill: { height: '100%', backgroundColor: '#10B981', borderRadius: 2 },
-  progressText: { fontSize: 10, color: colors.textMuted },
+  // Progress Section
+  progressSection: { backgroundColor: '#F8F6FF', borderRadius: 12, padding: 12, marginBottom: 10, borderWidth: 1, borderColor: '#EDE9FE' },
+  progressHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+  progressTitle: { fontSize: 11, fontWeight: '700', color: '#1F2937' },
+  progressPct: { fontSize: 12, fontWeight: '800', color: '#6C3BFF' },
+  progressBar: { height: 6, backgroundColor: '#E5E7EB', borderRadius: 3, overflow: 'hidden', marginBottom: 6 },
+  progressFill: { height: '100%', backgroundColor: '#10B981', borderRadius: 3 },
+  progressDetails: { flexDirection: 'row', justifyContent: 'space-between' },
+  progressPaid: { fontSize: 10, fontWeight: '600', color: '#10B981' },
+  progressRemaining: { fontSize: 10, fontWeight: '600', color: '#F59E0B' },
+  progressNote: { fontSize: 9, color: '#6B7280', marginTop: 4, fontStyle: 'italic' },
+  // Cashback Countdown
+  cashbackCountdown: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FFFBEB', borderRadius: 8, padding: 8, marginBottom: 8, borderWidth: 1, borderColor: '#FDE68A' },
+  cashbackCountText: { fontSize: 10, color: '#92400E', flex: 1 },
   // Upload
   uploadBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#F97316', borderRadius: 10, paddingVertical: 10, marginBottom: 8 },
   uploadText: { fontSize: 12, fontWeight: '700', color: '#FFFFFF' },

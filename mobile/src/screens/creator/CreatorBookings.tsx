@@ -154,7 +154,7 @@ export default function CreatorBookings({ navigation }: any) {
 
   const renderCard = ({ item }: { item: any }) => {
     const isExpanded = expandedId === item._id;
-    const totalPaid = item.advancePaid || 0;
+    const totalPaid = item.advancePaid || item.bookingFeeAmount || 0;
     const remaining = (item.amount || 0) - totalPaid;
     const progress = item.amount > 0 ? Math.min(100, Math.round((totalPaid / item.amount) * 100)) : 0;
     const sc = getStatusColor(item.status);
@@ -252,7 +252,7 @@ export default function CreatorBookings({ navigation }: any) {
                   <ActionBtn icon="checkmark-done" label="Mark Paid" onPress={() => markPaid(item._id)} />
                   <ActionBtn icon="chatbubble-outline" label="Chat" onPress={() => navigation.navigate('BookingChat', { bookingId: item._id })} />
                 </View>
-                {(item.amount || 0) > 0 && ((item.amount || 0) - (item.advancePaid || 0)) > 0 && (
+                {(item.amount || 0) > 0 && ((item.amount || 0) - (item.advancePaid || item.bookingFeeAmount || 0)) > 0 && (
                   <View style={[styles.quickActions, { marginTop: 6 }]}>
                     <ActionBtn icon="logo-whatsapp" label="Remind" onPress={() => {
                       const phone = (item.clientPhone || '').replace(/\D/g, '').slice(-10);

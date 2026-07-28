@@ -133,6 +133,9 @@ router.post("/verify/:bookingId", protect, async (req, res, next) => {
         bookingFeePaymentId: razorpay_payment_id,
         bookingFeeOrderId: razorpay_order_id,
         bookingFeePaidAt: new Date(),
+        advancePaid: bookingFeeAmount,
+        remaining: totalAmount - bookingFeeAmount,
+        paymentStatus: 'partial',
         status: "Payment Approved",
       },
     }, { new: true });
