@@ -242,10 +242,11 @@ export default function NearMeScreen({ navigation }: any) {
         <View style={s.center}><ActivityIndicator size="large" color="#6C3BFF" /><Text style={s.loadT}>Finding creators...</Text></View>
       ) : (
         <FlatList
+          style={{ flex: 1 }}
           data={filtered}
           keyExtractor={(item, i) => item._id || String(i)}
           renderItem={({ item }) => <CreatorCard item={item} />}
-          contentContainerStyle={filtered.length === 0 ? { paddingHorizontal: 16, paddingTop: 4 } : s.list}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 90 }}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6C3BFF" />}
           ListHeaderComponent={filtered.length > 0 ?
@@ -371,9 +372,8 @@ const s = StyleSheet.create({
   chipLabel: { fontSize: 12, fontWeight: '600', color: '#4B5563' },
   chipLabelActive: { color: '#FFFFFF' },
   // Results
-  resTitle: { fontSize: 13, fontWeight: '700', color: '#1F2937', paddingHorizontal: 4, paddingBottom: 4 },
+  resTitle: { fontSize: 13, fontWeight: '700', color: '#1F2937', marginBottom: 8 },
   // Card
-  list: { paddingHorizontal: 16, paddingTop: 0, paddingBottom: 90 },
   card: { flexDirection: 'row', backgroundColor: '#FFFFFF', borderRadius: 14, marginBottom: 12, borderWidth: 1, borderColor: '#F1F5F9', overflow: 'hidden', elevation: 2, shadowColor: '#6C3BFF', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6 },
   cardImg: { width: 100, height: 150, resizeMode: 'cover' },
   cardBody: { flex: 1, padding: 10, justifyContent: 'space-between' },
