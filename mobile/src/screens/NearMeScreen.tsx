@@ -3,11 +3,11 @@
  * No GPS dependency. Uses customer's saved city/district.
  * Location selector dropdown for manual change.
  */
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, FlatList, StyleSheet, TouchableOpacity, Image,
   ActivityIndicator, Dimensions, Platform, StatusBar, TextInput,
-  ScrollView, Modal, Animated, RefreshControl,
+  ScrollView, Modal, RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { creatorsAPI } from '../services/api';
@@ -60,8 +60,6 @@ export default function NearMeScreen({ navigation }: any) {
   const [pickerDistrict, setPickerDistrict] = useState('');
   const [pickerCity, setPickerCity] = useState('');
   const [pickerStep, setPickerStep] = useState<'state' | 'district' | 'city'>('state');
-
-  const fadeAnim = useRef(new Animated.Value(1)).current;
 
   // Load saved location on mount (from shared context)
   useEffect(() => {
@@ -244,31 +242,28 @@ export default function NearMeScreen({ navigation }: any) {
       {loading ? (
         <View style={s.center}><ActivityIndicator size="large" color="#6C3BFF" /><Text style={s.loadT}>Finding creators...</Text></View>
       ) : (
-        <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
-          <FlatList
-            data={filtered}
-            keyExtractor={(item, i) => item._id || String(i)}
-            renderItem={({ item }) => <CreatorCard item={item} />}
-            contentContainerStyle={s.list}
-            showsVerticalScrollIndicator={false}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6C3BFF" />}
-            ListHeaderComponent={
-              <View style={s.resRow}>
-                <Text style={s.resTitle}>{filtered.length} Creator{filtered.length !== 1 ? 's' : ''} in {selectedCity || selectedDistrict || 'your area'}</Text>
-              </View>
-            }
-            ListEmptyComponent={
-              <View style={s.empty}>
-                <Ionicons name="search-outline" size={44} color="#E5E7EB" />
-                <Text style={s.emptyTitle}>No creators found</Text>
-                <Text style={s.emptySub}>Try selecting a different location or expanding your search</Text>
-                <TouchableOpacity style={s.emptyBtn} onPress={() => { loadStates(); setPickerStep('state'); setShowLocationPicker(true); }}>
-                  <Ionicons name="location-outline" size={14} color="#fff" /><Text style={s.emptyBtnT}>Change Location</Text>
-                </TouchableOpacity>
-              </View>
-            }
-          />
-        </Animated.View>
+        <FlatList
+          style={{ flex: 1 }}
+          data={filtered}
+          keyExtractor={(item, i) => item._id || String(i)}
+          renderItem={({ item }) => <CreatorCard item={item} />}
+          contentContainerStyle={s.list}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6C3BFF" />}
+          ListHeaderComponent={
+            <Text style={s.resTitle}>{filtered.length} Creator{filtered.length !== 1 ? 's' : ''} in {selectedCity || selectedDistrict || 'your area'}</Text>
+          }
+          ListEmptyComponent={
+            <View style={s.empty}>
+              <Ionicons name="search-outline" size={44} color="#E5E7EB" />
+              <Text style={s.emptyTitle}>No creators found</Text>
+              <Text style={s.emptySub}>Try selecting a different location or expanding your search</Text>
+              <TouchableOpacity style={s.emptyBtn} onPress={() => { loadStates(); setPickerStep('state'); setShowLocationPicker(true); }}>
+                <Ionicons name="location-outline" size={14} color="#fff" /><Text style={s.emptyBtnT}>Change Location</Text>
+              </TouchableOpacity>
+            </View>
+          }
+        />
       )}
 
       {/* ═══ LOCATION PICKER MODAL ═══ */}
@@ -377,8 +372,7 @@ const s = StyleSheet.create({
   chipLabel: { fontSize: 12, fontWeight: '600', color: '#4B5563' },
   chipLabelActive: { color: '#FFFFFF' },
   // Results
-  resRow: { paddingHorizontal: 4, paddingTop: 4, paddingBottom: 6 },
-  resTitle: { fontSize: 13, fontWeight: '700', color: '#1F2937' },
+  resTitle: { fontSize: 13, fontWeight: '700', color: '#1F2937', paddingHorizontal: 4, paddingBottom: 8 },
   // Card
   list: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 90 },
   card: { flexDirection: 'row', backgroundColor: '#FFFFFF', borderRadius: 14, marginBottom: 12, borderWidth: 1, borderColor: '#F1F5F9', overflow: 'hidden', elevation: 2, shadowColor: '#6C3BFF', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6 },
@@ -398,7 +392,7 @@ const s = StyleSheet.create({
   bookBtn: { marginTop: 6, backgroundColor: '#6C3BFF', borderRadius: 8, paddingVertical: 7, alignItems: 'center' },
   bookBtnText: { fontSize: 10, fontWeight: '700', color: '#FFFFFF' },
   // Empty
-  empty: { alignItems: 'center', paddingVertical: 50, paddingHorizontal: 30 },
+  empty: { alignItems: 'center', paddingTop: 30, paddingHorizontal: 30 },
   emptyTitle: { fontSize: 15, fontWeight: '700', color: '#1F2937', marginTop: 12 },
   emptySub: { fontSize: 12, color: '#6B7280', textAlign: 'center', marginTop: 6 },
   emptyBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 18, backgroundColor: '#6C3BFF', borderRadius: 12, paddingHorizontal: 20, paddingVertical: 12 },
