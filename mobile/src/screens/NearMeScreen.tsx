@@ -1,3 +1,8 @@
+/**
+ * NearMe Screen — Service Area Based Discovery
+ * No GPS dependency. Uses customer's saved city/district.
+ * Location selector dropdown for manual change.
+ */
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   View, Text, FlatList, StyleSheet, TouchableOpacity, Image,
@@ -7,9 +12,11 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { creatorsAPI } from '../services/api';
 import api from '../services/api';
-import { useLocation } from '../hooks/useLocation';
+import { useAuth } from '../context/AuthContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
+const LOC_KEY = 'bms_service_location';
 
 const CATEGORIES = [
   { id: 'all', label: 'All', emoji: '🔍' },
@@ -23,185 +30,184 @@ const CATEGORIES = [
   { id: 'venues', label: 'Venue', emoji: '🏛' },
 ];
 
-const DISTANCE_OPTIONS = [1, 3, 5, 10, 25];
 const SORT_OPTIONS = [
-  { id: 'nearest', label: '📍 Nearest' },
+  { id: 'nearest', label: '📍 Service Area Match' },
   { id: 'rated', label: '⭐ Highest Rated' },
   { id: 'price', label: '💰 Lowest Price' },
-  { id: 'popular', label: '🔥 Most Popular' },
-  { id: 'new', label: '🆕 Recently Joined' },
-  { id: 'cashback', label: '🎁 Cashback Offers' },
+  { id: 'bookings', label: '🔥 Most Booked' },
+  { id: 'newest', label: '🆕 Recently Joined' },
+  { id: 'featured', label: '✨ Featured' },
 ];
 
 export default function NearMeScreen({ navigation }: any) {
+  const { user } = useAuth();
   const [creators, setCreators] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState('');
+  const [selectedCity, setSelectedCity] = useState('');
+  const [selectedDistrict, setSelectedDistrict] = useState('');
+  const [selectedState, setSelectedState] = useState('');
   const [selectedCat, setSelectedCat] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [showSort, setShowSort] = useState(false);
   const [sortBy, setSortBy] = useState('nearest');
-  const [radius, setRadius] = useState(10);
-  const [filterVerified, setFilterVerified] = useState(false);
-  const [filterAvailToday, setFilterAvailToday] = useState(false);
-  const [filterInstant, setFilterInstant] = useState(false);
-  const [filterCashback, setFilterCashback] = useState(false);
+  // Location picker data
+  const [states, setStates] = useState<string[]>([]);
+  const [districts, setDistricts] = useState<string[]>([]);
+  const [cities, setCities] = useState<string[]>([]);
+  const [pickerState, setPickerState] = useState('');
+  const [pickerDistrict, setPickerDistrict] = useState('');
+  const [pickerCity, setPickerCity] = useState('');
+  const [pickerStep, setPickerStep] = useState<'state' | 'district' | 'city'>('state');
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
 
-  // Real location via hook
-  const { location: userLocation, displayCity: locationCity, displayArea: locationArea, state: locState, refresh: refreshLoc, openSettings: openLocSettings, askPermission: askLocPermission } = useLocation();
+  // Load saved location on mount
+  useEffect(() => { loadSavedLocation(); }, []);
 
-  // Fetch creators when location becomes ready
-  useEffect(() => {
-    if (locState === 'ready' && userLocation) {
-      fetchCreators(userLocation.latitudeitude, userLocation.longitude);
-    } else if (locState === 'denied' || locState === 'gps_off') {
-      setError(locState);
-      fetchCreators(); // show all without distance
-    } else if (locState === 'error') {
-      fetchCreators();
-    }
-  }, [locState, userLocation?.latitude, userLocation?.longitude]);
-
-  useEffect(() => {
-    if (creators.length > 0 || locState === 'denied' || locState === 'gps_off') {
-      setLoading(false);
-      Animated.parallel([
-        Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
-        Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 40, friction: 8 }),
-      ]).start();
-    }
-  }, [creators, locState]);
-
-  const init = () => { refreshLoc(); };
-  useEffect(() => { setLoading(true); }, []);
-
-  const fetchCreators = async (lat?: number, lng?: number) => {
+  const loadSavedLocation = async () => {
     try {
-      let list: any[] = [];
-      if (lat && lng) {
-        console.log(`[NearMe] Fetching creators near: ${lat.toFixed(5)}, ${lng.toFixed(5)}`);
-        const res = await api.get('/creators/nearby', { params: { lat, lng, radius } });
-        list = res.data?.creators || [];
-        console.log(`[NearMe] Got ${list.length} creators with distances`);
-        list.slice(0, 3).forEach((c: any) => {
-          console.log(`  → ${c.user?.name}: ${c.distance}km (${c.distanceSource}) city=${c.city}`);
-        });
+      const saved = await AsyncStorage.getItem(LOC_KEY);
+      if (saved) {
+        const { city, district, state } = JSON.parse(saved);
+        setSelectedCity(city || '');
+        setSelectedDistrict(district || '');
+        setSelectedState(state || '');
+        fetchCreators(city, district, state);
+      } else if (user?.city || user?.district) {
+        // Use from user profile
+        setSelectedCity(user.city || '');
+        setSelectedDistrict(user.district || '');
+        setSelectedState(user.state || '');
+        fetchCreators(user.city, user.district, user.state);
       } else {
-        const all = await creatorsAPI.getAll();
-        list = all.data?.creators || all.data?.data || [];
+        // No location set — show picker
+        setLoading(false);
+        setShowLocationPicker(true);
+        loadStates();
       }
-      setCreators(list);
+    } catch {
+      setLoading(false);
+    }
+  };
+
+  const fetchCreators = async (city?: string, district?: string, state?: string) => {
+    setLoading(true);
+    try {
+      const params: any = {};
+      if (city) params.city = city;
+      if (district) params.district = district;
+      if (state) params.state = state;
+      if (selectedCat !== 'all') params.category = selectedCat;
+      if (sortBy !== 'nearest') params.sort = sortBy;
+
+      const res = await api.get('/discovery/creators-by-area', { params });
+      setCreators(res.data?.creators || []);
+      console.log(`[NearMe] Found ${res.data?.count || 0} creators in ${city || district || state}`);
     } catch (e: any) {
       console.log('[NearMe] Fetch error:', e.message);
-      setCreators([]);
+      // Fallback to all creators
+      try {
+        const all = await creatorsAPI.getAll();
+        setCreators(all.data?.creators || []);
+      } catch { setCreators([]); }
+    } finally {
+      setLoading(false);
+      Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
     }
   };
 
   const onRefresh = async () => {
     setRefreshing(true);
-    refreshLoc();
-    if (userLocation) await fetchCreators(userLocation.latitudeitude, userLocation.longitude);
+    await fetchCreators(selectedCity, selectedDistrict, selectedState);
     setRefreshing(false);
   };
 
-  // ═══ FILTERING & SORTING ═══
+  // Location picker
+  const loadStates = async () => {
+    try {
+      const res = await api.get('/discovery/states');
+      setStates(res.data?.states || []);
+    } catch {}
+  };
+  const loadDistricts = async (state: string) => {
+    try {
+      const res = await api.get('/discovery/districts', { params: { state } });
+      setDistricts(res.data?.districts || []);
+    } catch {}
+  };
+  const loadCities = async (district: string) => {
+    try {
+      const res = await api.get('/discovery/cities', { params: { district: district, state: pickerState } });
+      setCities(res.data?.cities || []);
+    } catch {}
+  };
+
+  const selectState = (s: string) => { setPickerState(s); setPickerStep('district'); loadDistricts(s); };
+  const selectDistrict = (d: string) => { setPickerDistrict(d); setPickerStep('city'); loadCities(d); };
+  const selectCity = async (c: string) => {
+    setPickerCity(c);
+    setSelectedCity(c);
+    setSelectedDistrict(pickerDistrict);
+    setSelectedState(pickerState);
+    setShowLocationPicker(false);
+    // Save
+    await AsyncStorage.setItem(LOC_KEY, JSON.stringify({ city: c, district: pickerDistrict, state: pickerState }));
+    fetchCreators(c, pickerDistrict, pickerState);
+  };
+
+  // Filter by search
   const filtered = creators.filter(c => {
-    if (selectedCat !== 'all' && !userLocation) {
-      const cat = (c.category || c.categorySlug || c.specialty || '').toLowerCase();
-      if (!cat.includes(selectedCat)) return false;
-    }
     if (searchQuery.length >= 2) {
       const q = searchQuery.toLowerCase();
-      if (!(c.user?.name || '').toLowerCase().includes(q) && !(c.specialty || '').toLowerCase().includes(q) && !(c.city || '').toLowerCase().includes(q)) return false;
+      return (c.user?.name || '').toLowerCase().includes(q) ||
+        (c.specialty || '').toLowerCase().includes(q) ||
+        (c.city || '').toLowerCase().includes(q) ||
+        (c.serviceAreas || []).some((a: string) => a.toLowerCase().includes(q));
     }
-    if (userLocation && c.distance !== null && c.distance !== undefined && c.distance > radius) return false;
     return true;
-  }).sort((a, b) => {
-    if (sortBy === 'nearest') return (a.distance || 9999) - (b.distance || 9999);
-    if (sortBy === 'rated') return (b.rating || 0) - (a.rating || 0);
-    if (sortBy === 'price') return (a.startingPrice || a.budgetMin || 99999) - (b.startingPrice || b.budgetMin || 99999);
-    if (sortBy === 'popular') return (b.bookingCount || b.weddingsCount || 0) - (a.bookingCount || a.weddingsCount || 0);
-    return 0;
   });
 
   const getImg = (item: any) => {
-    // Priority: coverImage > portfolio[0] > avatar > placeholder
     if (item.coverImage) return item.coverImage;
     const p = item.portfolio?.[0];
-    if (p) return typeof p === 'string' ? p : (p.url || p.secure_url || '');
+    if (p) return typeof p === 'string' ? p : (p.url || '');
     return item.user?.avatar || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=300';
   };
 
-  // Use server-calculated distance (from /creators/nearby endpoint)
-  const getDistance = (creator: any): string => {
-    if (creator.distance !== null && creator.distance !== undefined) {
-      return creator.distance.toFixed(1);
-    }
-    return '—';
-  };
-
   // ═══ CREATOR CARD ═══
-  const CreatorCard = ({ item, index }: any) => {
-    const cardFade = useRef(new Animated.Value(0)).current;
-    useEffect(() => { Animated.timing(cardFade, { toValue: 1, duration: 400, delay: index * 80, useNativeDriver: true }).start(); }, []);
-    const dist = getDistance(item);
-    return (
-      <Animated.View style={[s.card, { opacity: cardFade, transform: [{ translateY: cardFade.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
-        <View style={s.cardImgWrap}>
-          <Image source={{ uri: getImg(item) }} style={s.cardImg} />
-          <View style={s.onlineBadge}><View style={s.greenDot} /><Text style={s.onlineT}>Online</Text></View>
-          <View style={s.ratingBadge}><Text style={s.ratingT}>{item.rating || '4.9'} ⭐</Text></View>
+  const CreatorCard = ({ item }: any) => (
+    <TouchableOpacity style={s.card} activeOpacity={0.85} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })}>
+      <Image source={{ uri: getImg(item) }} style={s.cardImg} />
+      <View style={s.cardBody}>
+        <View style={s.nameRow}>
+          <Text style={s.cardName} numberOfLines={1}>{item.user?.name || 'Creator'}</Text>
+          {item.verified && <Ionicons name="checkmark-circle" size={13} color="#6C3BFF" />}
+          {item.featured && <Ionicons name="star" size={11} color="#F59E0B" />}
         </View>
-        <View style={s.cardBody}>
-          <View style={s.nameRow}>
-            <Text style={s.cardName} numberOfLines={1}>{item.user?.name || 'Creator'}</Text>
-            <Ionicons name="checkmark-circle" size={13} color="#6C3BFF" />
-            <TouchableOpacity style={s.heartBtn}><Ionicons name="heart-outline" size={18} color="#D1D5DB" /></TouchableOpacity>
-          </View>
-          <Text style={s.cardSpec}>{item.specialty || 'Photographer'}  •  {item.experience || '5+'} Yrs</Text>
-          <View style={s.metaRow}>
-            <Ionicons name="location" size={10} color="#6C3BFF" />
-            <Text style={s.metaT}>{dist !== '—' ? `${dist} km away` : (item.city || 'Location N/A')}</Text>
-            {item.city ? <Text style={s.metaT}>  •  {item.city}</Text> : null}
-          </View>
-          <View style={s.tagRow}>
-            {(item.tags || ['Wedding', 'Candid', 'Pre Wedding']).slice(0, 3).map((t: string, i: number) => (
-              <View key={i} style={s.tag}><Text style={s.tagT}>{t}</Text></View>
-            ))}
-          </View>
-          <View style={s.cardBottom}>
-            <Text style={s.priceL}>Starts from <Text style={s.priceV}>₹{(item.startingPrice || item.budgetMin || 25000).toLocaleString('en-IN')}</Text></Text>
-          </View>
-          <View style={s.cardActions}>
-            <TouchableOpacity style={s.actionBtn} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })}>
-              <Ionicons name="eye-outline" size={12} color="#6C3BFF" /><Text style={s.actionT}>View Profile</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={s.actionBtnFilled}>
-              <Ionicons name="chatbubble-outline" size={11} color="#fff" /><Text style={s.actionTFilled}>Get Quote</Text>
-            </TouchableOpacity>
-          </View>
+        <Text style={s.cardSpec}>{item.specialty || 'Photographer'}</Text>
+        <View style={s.locationRow}>
+          <Ionicons name="location" size={10} color="#6C3BFF" />
+          <Text style={s.locationText}>{item.baseCity || item.city || '—'}</Text>
         </View>
-      </Animated.View>
-    );
-  };
-
-  // ═══ EMPTY STATE ═══
-  const EmptyState = () => (
-    <View style={s.empty}>
-      <Text style={{ fontSize: 48 }}>📷</Text>
-      <Text style={s.emptyTitle}>No creators found nearby</Text>
-      <Text style={s.emptySub}>Try increasing the distance radius or change your location</Text>
-      <TouchableOpacity style={s.emptyBtn} onPress={() => { setRadius(25); if (userLocation) fetchCreators(userLocation.latitude, userLocation.longitude); }}>
-        <Ionicons name="expand-outline" size={14} color="#fff" /><Text style={s.emptyBtnT}>Increase Radius to 25 km</Text>
-      </TouchableOpacity>
-    </View>
+        {item.serviceAreas && item.serviceAreas.length > 0 && (
+          <View style={s.serviceRow}>
+            <Text style={s.servingLabel}>Serving: </Text>
+            <Text style={s.servingAreas} numberOfLines={1}>{item.serviceAreas.slice(0, 3).join(', ')}{item.serviceAreas.length > 3 ? ` +${item.serviceAreas.length - 3}` : ''}</Text>
+          </View>
+        )}
+        <View style={s.cardBottom}>
+          <Text style={s.ratingText}>⭐ {item.rating || '5.0'}</Text>
+          <Text style={s.priceText}>₹{(item.budgetMin || 10000).toLocaleString('en-IN')}+</Text>
+        </View>
+        <TouchableOpacity style={s.bookBtn} onPress={() => navigation.navigate('CreatorProfile', { id: item._id })}>
+          <Text style={s.bookBtnText}>View Profile</Text>
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
   );
 
-  // ═══ MAIN RENDER ═══
   return (
     <View style={s.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
@@ -212,31 +218,37 @@ export default function NearMeScreen({ navigation }: any) {
           <Ionicons name="location" size={20} color="#6C3BFF" />
           <View>
             <Text style={s.hTitle}>Near Me</Text>
-            <Text style={s.hSub}>{locationArea ? `${locationArea}, ` : ''}{locationCity || 'Detecting...'}</Text>
+            <Text style={s.hSub}>{selectedCity || selectedDistrict || 'Select Location'}</Text>
           </View>
         </View>
         <View style={s.hRight}>
-          <TouchableOpacity style={s.hIcon} onPress={init}><Ionicons name="refresh" size={16} color="#6C3BFF" /></TouchableOpacity>
-          <TouchableOpacity style={s.hIcon} onPress={() => setShowFilters(true)}><Ionicons name="options-outline" size={16} color="#1F2937" /></TouchableOpacity>
+          <TouchableOpacity style={s.hIcon} onPress={onRefresh}><Ionicons name="refresh" size={16} color="#6C3BFF" /></TouchableOpacity>
         </View>
       </View>
+
+      {/* SERVICE LOCATION SELECTOR */}
+      <TouchableOpacity style={s.locSelector} onPress={() => { loadStates(); setPickerStep('state'); setShowLocationPicker(true); }}>
+        <Ionicons name="navigate-circle" size={18} color="#6C3BFF" />
+        <Text style={s.locText}>{selectedCity ? `${selectedCity}, ${selectedDistrict}` : 'Select your service location'}</Text>
+        <Ionicons name="chevron-down" size={16} color="#9CA3AF" />
+      </TouchableOpacity>
 
       {/* SEARCH */}
       <View style={s.searchRow}>
         <View style={s.searchBar}>
           <Ionicons name="search" size={14} color="#9CA3AF" />
-          <TextInput style={s.searchInput} placeholder="Search creators near you..." placeholderTextColor="#9CA3AF" value={searchQuery} onChangeText={setSearchQuery} />
+          <TextInput style={s.searchInput} placeholder="Search city, district or creator..." placeholderTextColor="#9CA3AF" value={searchQuery} onChangeText={setSearchQuery} />
           {searchQuery.length > 0 && <TouchableOpacity onPress={() => setSearchQuery('')}><Ionicons name="close-circle" size={16} color="#D1D5DB" /></TouchableOpacity>}
         </View>
-        <TouchableOpacity style={s.filterBtn} onPress={() => setShowFilters(true)}>
-          <Ionicons name="funnel" size={12} color="#fff" /><Text style={s.filterBtnT}>Filters</Text>
+        <TouchableOpacity style={s.sortBtn} onPress={() => setShowSort(true)}>
+          <Ionicons name="swap-vertical" size={14} color="#fff" />
         </TouchableOpacity>
       </View>
 
       {/* CATEGORY CHIPS */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipRow}>
         {CATEGORIES.map(c => (
-          <TouchableOpacity key={c.id} style={[s.chip, selectedCat === c.id && s.chipActive]} onPress={() => setSelectedCat(c.id)}>
+          <TouchableOpacity key={c.id} style={[s.chip, selectedCat === c.id && s.chipActive]} onPress={() => { setSelectedCat(c.id); fetchCreators(selectedCity, selectedDistrict, selectedState); }}>
             <Text style={s.chipEmoji}>{c.emoji}</Text>
             <Text style={[s.chipLabel, selectedCat === c.id && s.chipLabelActive]}>{c.label}</Text>
           </TouchableOpacity>
@@ -245,105 +257,106 @@ export default function NearMeScreen({ navigation }: any) {
 
       {/* CONTENT */}
       {loading ? (
-        <View style={s.center}>
-          <ActivityIndicator size="large" color="#6C3BFF" />
-          <Text style={s.loadT}>Finding creators near you...</Text>
-        </View>
-      ) : error ? (
-        <View style={s.center}>
-          <Ionicons name="location-outline" size={52} color="#E5E7EB" />
-          <Text style={s.errTitle}>{error === 'gps_off' ? 'GPS is Turned Off' : error === 'denied' ? 'Location Permission Required' : 'Could Not Detect Location'}</Text>
-          <Text style={s.errSub}>{error === 'gps_off' ? 'Please enable GPS/Location in your phone settings to discover nearby creators' : 'Enable location to discover nearby wedding creators'}</Text>
-          <TouchableOpacity style={s.retryBtn} onPress={error === 'gps_off' ? openLocSettings : askLocPermission}>
-            <Ionicons name={error === 'gps_off' ? 'settings-outline' : 'navigate'} size={14} color="#fff" />
-            <Text style={s.retryT}>{error === 'gps_off' ? 'Open Settings' : 'Enable Location'}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[s.retryBtn, { backgroundColor: '#F3F4F6', marginTop: 10 }]} onPress={refreshLoc}>
-            <Ionicons name="refresh" size={14} color="#6C3BFF" />
-            <Text style={[s.retryT, { color: '#6C3BFF' }]}>Try Again</Text>
-          </TouchableOpacity>
-        </View>
+        <View style={s.center}><ActivityIndicator size="large" color="#6C3BFF" /><Text style={s.loadT}>Finding creators...</Text></View>
       ) : (
-        <FlatList
-          data={filtered}
-          keyExtractor={(item, i) => item._id || String(i)}
-          renderItem={({ item, index }) => <CreatorCard item={item} index={index} />}
-          contentContainerStyle={s.list}
-          showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6C3BFF" />}
-          ListHeaderComponent={
-            <View>
-              {/* LOCATION INFO */}
-              {userLocation && (
-                <View style={s.locationBanner}>
-                  <Ionicons name="navigate-circle" size={18} color="#6C3BFF" />
-                  <View style={{ flex: 1, marginLeft: 8 }}>
-                    <Text style={s.locationBannerTitle}>Showing creators near you</Text>
-                    <Text style={s.locationBannerSub}>{locationCity || 'Your Location'} • Within {radius} km</Text>
-                  </View>
-                  <TouchableOpacity onPress={refreshLoc} style={s.refreshLocBtn}><Ionicons name="refresh" size={14} color="#6C3BFF" /></TouchableOpacity>
-                </View>
-              )}
-
-              {/* TRUST BADGES */}
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.trustRow}>
-                {[{ i: 'shield-checkmark', l: 'Verified Creators', s: '100% Verified', c: '#10B981' }, { i: 'pricetag', l: 'Best Prices', s: 'Compare & Save', c: '#FF4FA3' }, { i: 'time', l: 'Real-time Availability', s: 'Book Instantly', c: '#6C3BFF' }, { i: 'headset', l: 'Quick Support', s: '24/7 Assistance', c: '#F4B400' }].map((b, i) => (
-                  <View key={i} style={s.trustBadge}><Ionicons name={b.i as any} size={16} color={b.c} /><Text style={s.trustL}>{b.l}</Text><Text style={s.trustS}>{b.s}</Text></View>
-                ))}
-              </ScrollView>
-
-              {/* RESULTS HEADER */}
+        <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+          <FlatList
+            data={filtered}
+            keyExtractor={(item, i) => item._id || String(i)}
+            renderItem={({ item }) => <CreatorCard item={item} />}
+            contentContainerStyle={s.list}
+            showsVerticalScrollIndicator={false}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6C3BFF" />}
+            ListHeaderComponent={
               <View style={s.resRow}>
-                <Text style={s.resTitle}>{filtered.length}+ Creators Around You</Text>
-                <TouchableOpacity onPress={() => setShowSort(true)}><Text style={s.sortBtn}>Sort by: {SORT_OPTIONS.find(o => o.id === sortBy)?.label.split(' ').slice(1).join(' ') || 'Recommended'} ▾</Text></TouchableOpacity>
+                <Text style={s.resTitle}>{filtered.length} Creator{filtered.length !== 1 ? 's' : ''} in {selectedCity || selectedDistrict || 'your area'}</Text>
               </View>
-            </View>
-          }
-          ListEmptyComponent={<EmptyState />}
-        />
+            }
+            ListEmptyComponent={
+              <View style={s.empty}>
+                <Ionicons name="search-outline" size={44} color="#E5E7EB" />
+                <Text style={s.emptyTitle}>No creators found</Text>
+                <Text style={s.emptySub}>Try selecting a different location or expanding your search</Text>
+                <TouchableOpacity style={s.emptyBtn} onPress={() => { loadStates(); setPickerStep('state'); setShowLocationPicker(true); }}>
+                  <Ionicons name="location-outline" size={14} color="#fff" /><Text style={s.emptyBtnT}>Change Location</Text>
+                </TouchableOpacity>
+              </View>
+            }
+          />
+        </Animated.View>
       )}
 
-      {/* ═══ FILTER BOTTOM SHEET ═══ */}
-      <Modal visible={showFilters} transparent animationType="slide" onRequestClose={() => setShowFilters(false)}>
-        <TouchableOpacity style={s.modalBg} activeOpacity={1} onPress={() => setShowFilters(false)}>
-          <View style={s.sheet} onStartShouldSetResponder={() => true}>
+      {/* ═══ LOCATION PICKER MODAL ═══ */}
+      <Modal visible={showLocationPicker} transparent animationType="slide" onRequestClose={() => setShowLocationPicker(false)}>
+        <View style={s.modalBg}>
+          <View style={s.sheet}>
             <View style={s.sheetBar} />
-            <Text style={s.sheetTitle}>Filters</Text>
-
-            <Text style={s.fLabel}>📍 Distance</Text>
-            <View style={s.fRow}>
-              {DISTANCE_OPTIONS.map(d => (
-                <TouchableOpacity key={d} style={[s.fChip, radius === d && s.fChipActive]} onPress={() => setRadius(d)}>
-                  <Text style={[s.fChipT, radius === d && s.fChipTActive]}>{d} km</Text>
+            <View style={s.sheetHeader}>
+              <Text style={s.sheetTitle}>
+                {pickerStep === 'state' ? 'Select State' : pickerStep === 'district' ? 'Select District' : 'Select City'}
+              </Text>
+              {pickerStep !== 'state' && (
+                <TouchableOpacity onPress={() => setPickerStep(pickerStep === 'city' ? 'district' : 'state')}>
+                  <Text style={s.backLink}>← Back</Text>
                 </TouchableOpacity>
-              ))}
+              )}
             </View>
 
-            <Text style={s.fLabel}>⚡ Quick Filters</Text>
-            <View style={s.fRow}>
-              <TouchableOpacity style={[s.fChip, filterVerified && s.fChipActive]} onPress={() => setFilterVerified(!filterVerified)}><Text style={[s.fChipT, filterVerified && s.fChipTActive]}>✓ Verified Only</Text></TouchableOpacity>
-              <TouchableOpacity style={[s.fChip, filterAvailToday && s.fChipActive]} onPress={() => setFilterAvailToday(!filterAvailToday)}><Text style={[s.fChipT, filterAvailToday && s.fChipTActive]}>🟢 Available Today</Text></TouchableOpacity>
-              <TouchableOpacity style={[s.fChip, filterInstant && s.fChipActive]} onPress={() => setFilterInstant(!filterInstant)}><Text style={[s.fChipT, filterInstant && s.fChipTActive]}>⚡ Instant Book</Text></TouchableOpacity>
-              <TouchableOpacity style={[s.fChip, filterCashback && s.fChipActive]} onPress={() => setFilterCashback(!filterCashback)}><Text style={[s.fChipT, filterCashback && s.fChipTActive]}>🎁 Cashback</Text></TouchableOpacity>
-            </View>
+            {pickerStep === 'state' && (
+              <ScrollView style={s.pickerList}>
+                {states.length === 0 ? <ActivityIndicator color="#6C3BFF" style={{ marginTop: 20 }} /> :
+                  states.map(st => (
+                    <TouchableOpacity key={st} style={s.pickerItem} onPress={() => selectState(st)}>
+                      <Text style={s.pickerItemText}>{st}</Text>
+                      <Ionicons name="chevron-forward" size={14} color="#9CA3AF" />
+                    </TouchableOpacity>
+                  ))
+                }
+              </ScrollView>
+            )}
+            {pickerStep === 'district' && (
+              <ScrollView style={s.pickerList}>
+                <Text style={s.pickerSub}>{pickerState}</Text>
+                {districts.length === 0 ? <ActivityIndicator color="#6C3BFF" style={{ marginTop: 20 }} /> :
+                  districts.map(d => (
+                    <TouchableOpacity key={d} style={s.pickerItem} onPress={() => selectDistrict(d)}>
+                      <Text style={s.pickerItemText}>{d}</Text>
+                      <Ionicons name="chevron-forward" size={14} color="#9CA3AF" />
+                    </TouchableOpacity>
+                  ))
+                }
+              </ScrollView>
+            )}
+            {pickerStep === 'city' && (
+              <ScrollView style={s.pickerList}>
+                <Text style={s.pickerSub}>{pickerState} → {pickerDistrict}</Text>
+                {cities.length === 0 ? <ActivityIndicator color="#6C3BFF" style={{ marginTop: 20 }} /> :
+                  cities.map(c => (
+                    <TouchableOpacity key={c} style={s.pickerItem} onPress={() => selectCity(c)}>
+                      <Ionicons name="location" size={14} color="#6C3BFF" />
+                      <Text style={[s.pickerItemText, { marginLeft: 8 }]}>{c}</Text>
+                    </TouchableOpacity>
+                  ))
+                }
+              </ScrollView>
+            )}
 
-            <View style={s.sheetBtns}>
-              <TouchableOpacity style={s.resetBtn} onPress={() => { setRadius(10); setFilterVerified(false); setFilterAvailToday(false); setFilterInstant(false); setFilterCashback(false); }}><Text style={s.resetT}>Reset</Text></TouchableOpacity>
-              <TouchableOpacity style={s.applyBtn} onPress={() => { setShowFilters(false); if (userLocation) fetchCreators(userLocation.latitude, userLocation.longitude); }}><Text style={s.applyT}>Apply Filters</Text></TouchableOpacity>
-            </View>
+            <TouchableOpacity style={s.sheetClose} onPress={() => setShowLocationPicker(false)}>
+              <Text style={s.sheetCloseT}>Cancel</Text>
+            </TouchableOpacity>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
 
-      {/* ═══ SORT BOTTOM SHEET ═══ */}
+      {/* ═══ SORT MODAL ═══ */}
       <Modal visible={showSort} transparent animationType="slide" onRequestClose={() => setShowSort(false)}>
         <TouchableOpacity style={s.modalBg} activeOpacity={1} onPress={() => setShowSort(false)}>
           <View style={s.sheet} onStartShouldSetResponder={() => true}>
             <View style={s.sheetBar} />
             <Text style={s.sheetTitle}>Sort By</Text>
             {SORT_OPTIONS.map(o => (
-              <TouchableOpacity key={o.id} style={[s.sortOption, sortBy === o.id && s.sortOptionActive]} onPress={() => { setSortBy(o.id); setShowSort(false); }}>
-                <Text style={[s.sortOptionT, sortBy === o.id && s.sortOptionTActive]}>{o.label}</Text>
+              <TouchableOpacity key={o.id} style={[s.sortOption, sortBy === o.id && s.sortOptionActive]} onPress={() => { setSortBy(o.id); setShowSort(false); fetchCreators(selectedCity, selectedDistrict, selectedState); }}>
+                <Text style={[s.sortOptionT, sortBy === o.id && { color: '#6C3BFF', fontWeight: '700' }]}>{o.label}</Text>
                 {sortBy === o.id && <Ionicons name="checkmark-circle" size={18} color="#6C3BFF" />}
               </TouchableOpacity>
             ))}
@@ -354,7 +367,6 @@ export default function NearMeScreen({ navigation }: any) {
   );
 }
 
-
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
   // Header
@@ -364,95 +376,67 @@ const s = StyleSheet.create({
   hSub: { fontSize: 11, color: '#6B7280', marginTop: 1 },
   hRight: { flexDirection: 'row', gap: 8 },
   hIcon: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' },
+  // Location Selector
+  locSelector: { flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 16, marginTop: 8, backgroundColor: '#F8F6FF', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#EDE9FE' },
+  locText: { flex: 1, fontSize: 13, fontWeight: '600', color: '#1F2937' },
   // Search
   searchRow: { flexDirection: 'row', paddingHorizontal: 16, marginTop: 10, gap: 8 },
   searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFB', borderRadius: 12, paddingHorizontal: 12, height: 42, borderWidth: 1, borderColor: '#E5E7EB', gap: 6 },
   searchInput: { flex: 1, fontSize: 12, color: '#1F2937' },
-  filterBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#6C3BFF', borderRadius: 12, paddingHorizontal: 14, height: 42 },
-  filterBtnT: { fontSize: 12, fontWeight: '800', color: '#FFFFFF', letterSpacing: 0.3 },
-  // Chips — small rounded, height 44px, horizontal scroll
+  sortBtn: { width: 42, height: 42, borderRadius: 12, backgroundColor: '#6C3BFF', alignItems: 'center', justifyContent: 'center' },
+  // Chips
   chipRow: { paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 44, paddingHorizontal: 16, borderRadius: 24, backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: '#E5E7EB' },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 36, paddingHorizontal: 14, borderRadius: 20, backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: '#E5E7EB' },
   chipActive: { backgroundColor: '#6C3BFF', borderColor: '#6C3BFF' },
-  chipEmoji: { fontSize: 14 },
-  chipLabel: { fontSize: 12, fontWeight: '600', color: '#4B5563' },
+  chipEmoji: { fontSize: 13 },
+  chipLabel: { fontSize: 11, fontWeight: '600', color: '#4B5563' },
   chipLabelActive: { color: '#FFFFFF' },
-  // Location Banner
-  locationBanner: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 12, backgroundColor: '#F8F6FF', borderRadius: 14, padding: 12, borderWidth: 1, borderColor: '#EDE9FE' },
-  locationBannerTitle: { fontSize: 12, fontWeight: '700', color: '#1F2937' },
-  locationBannerSub: { fontSize: 10, color: '#6B7280', marginTop: 2 },
-  refreshLocBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#EDE9FE' },
-  // Trust
-  trustRow: { paddingHorizontal: 16, paddingVertical: 14, gap: 14, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
-  trustBadge: { alignItems: 'center', width: 85, gap: 3 },
-  trustL: { fontSize: 8, fontWeight: '700', color: '#1F2937', textAlign: 'center' },
-  trustS: { fontSize: 7, color: '#6B7280', textAlign: 'center' },
   // Results
-  resRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 2 },
-  resTitle: { fontSize: 14, fontWeight: '700', color: '#1F2937' },
-  sortBtn: { fontSize: 10, color: '#6C3BFF', fontWeight: '600' },
-  // Cards
+  resRow: { paddingHorizontal: 4, paddingVertical: 10 },
+  resTitle: { fontSize: 13, fontWeight: '700', color: '#1F2937' },
+  // Card
   list: { paddingHorizontal: 16, paddingBottom: 90 },
-  card: { flexDirection: 'row', backgroundColor: '#FFFFFF', borderRadius: 16, marginBottom: 12, borderWidth: 1, borderColor: '#F1F5F9', overflow: 'hidden', elevation: 2, shadowColor: '#6C3BFF', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6 },
-  cardImgWrap: { width: 105, height: 155 },
-  cardImg: { width: '100%', height: '100%', resizeMode: 'cover' },
-  onlineBadge: { position: 'absolute', top: 6, left: 5, flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 8, paddingHorizontal: 5, paddingVertical: 2.5 },
-  greenDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#10B981' },
-  onlineT: { fontSize: 7, color: '#1F2937', fontWeight: '600' },
-  ratingBadge: { position: 'absolute', bottom: 6, left: 5, backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 6, paddingHorizontal: 5, paddingVertical: 2 },
-  ratingT: { fontSize: 8, color: '#1F2937', fontWeight: '700' },
-  cardBody: { flex: 1, padding: 10 },
+  card: { flexDirection: 'row', backgroundColor: '#FFFFFF', borderRadius: 14, marginBottom: 12, borderWidth: 1, borderColor: '#F1F5F9', overflow: 'hidden', elevation: 2, shadowColor: '#6C3BFF', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6 },
+  cardImg: { width: 100, height: 150, resizeMode: 'cover' },
+  cardBody: { flex: 1, padding: 10, justifyContent: 'space-between' },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   cardName: { fontSize: 13, fontWeight: '700', color: '#1F2937', flex: 1 },
-  heartBtn: { marginLeft: 'auto', padding: 2 },
   cardSpec: { fontSize: 10, color: '#6B7280', marginTop: 2 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 },
-  metaT: { fontSize: 9, color: '#6B7280' },
-  tagRow: { flexDirection: 'row', gap: 4, marginTop: 6 },
-  tag: { backgroundColor: '#F3F4F6', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
-  tagT: { fontSize: 8, color: '#4B5563', fontWeight: '500' },
-  cardBottom: { marginTop: 6 },
-  priceL: { fontSize: 9, color: '#6B7280' },
-  priceV: { fontSize: 12, fontWeight: '800', color: '#1F2937' },
-  cardActions: { flexDirection: 'row', gap: 8, marginTop: 8 },
-  actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1.5, borderColor: '#6C3BFF', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
-  actionT: { fontSize: 9, fontWeight: '700', color: '#6C3BFF' },
-  actionBtnFilled: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#6C3BFF', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
-  actionTFilled: { fontSize: 9, fontWeight: '700', color: '#FFFFFF' },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 },
+  locationText: { fontSize: 10, color: '#6C3BFF', fontWeight: '500' },
+  serviceRow: { flexDirection: 'row', alignItems: 'center', marginTop: 3 },
+  servingLabel: { fontSize: 9, color: '#9CA3AF' },
+  servingAreas: { fontSize: 9, color: '#6B7280', fontWeight: '500', flex: 1 },
+  cardBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 },
+  ratingText: { fontSize: 10, color: '#1F2937', fontWeight: '600' },
+  priceText: { fontSize: 11, fontWeight: '700', color: '#1F2937' },
+  bookBtn: { marginTop: 6, backgroundColor: '#6C3BFF', borderRadius: 8, paddingVertical: 7, alignItems: 'center' },
+  bookBtnText: { fontSize: 10, fontWeight: '700', color: '#FFFFFF' },
   // Empty
   empty: { alignItems: 'center', paddingVertical: 50, paddingHorizontal: 30 },
   emptyTitle: { fontSize: 15, fontWeight: '700', color: '#1F2937', marginTop: 12 },
   emptySub: { fontSize: 12, color: '#6B7280', textAlign: 'center', marginTop: 6 },
   emptyBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 18, backgroundColor: '#6C3BFF', borderRadius: 12, paddingHorizontal: 20, paddingVertical: 12 },
-  emptyBtnT: { fontSize: 12, fontWeight: '700', color: '#1F2937' },
-  // States
+  emptyBtnT: { fontSize: 12, fontWeight: '700', color: '#FFFFFF' },
+  // Loading
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 80 },
   loadT: { fontSize: 12, color: '#6B7280', marginTop: 12 },
-  errTitle: { fontSize: 15, fontWeight: '700', color: '#1F2937', marginTop: 14 },
-  errSub: { fontSize: 12, color: '#6B7280', marginTop: 4, textAlign: 'center', paddingHorizontal: 20 },
-  retryBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 18, backgroundColor: '#6C3BFF', borderRadius: 12, paddingHorizontal: 20, paddingVertical: 12 },
-  retryT: { fontSize: 12, fontWeight: '700', color: '#FFFFFF' },
   // Modals
   modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
-  sheet: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: Platform.OS === 'ios' ? 40 : 30, maxHeight: '75%' },
+  sheet: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: Platform.OS === 'ios' ? 40 : 24, maxHeight: '80%' },
   sheetBar: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#E5E7EB', alignSelf: 'center', marginBottom: 16 },
-  sheetTitle: { fontSize: 16, fontWeight: '800', color: '#1F2937', marginBottom: 16 },
-  fLabel: { fontSize: 12, fontWeight: '700', color: '#1F2937', marginTop: 14, marginBottom: 10 },
-  fRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  fChip: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB' },
-  fChipActive: { backgroundColor: '#6C3BFF', borderColor: '#6C3BFF' },
-  fChipT: { fontSize: 11, color: '#6B7280', fontWeight: '600' },
-  fChipTActive: { color: '#FFFFFF' },
-  sheetBtns: { flexDirection: 'row', gap: 12, marginTop: 24 },
-  resetBtn: { flex: 1, borderWidth: 1.5, borderColor: '#E5E7EB', borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
-  resetT: { fontSize: 13, fontWeight: '600', color: '#6B7280' },
-  applyBtn: { flex: 2, backgroundColor: '#6C3BFF', borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
-  applyT: { fontSize: 13, fontWeight: '700', color: '#1F2937' },
-  // Sort options
+  sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  sheetTitle: { fontSize: 16, fontWeight: '800', color: '#1F2937' },
+  backLink: { fontSize: 12, color: '#6C3BFF', fontWeight: '600' },
+  sheetClose: { alignItems: 'center', paddingVertical: 14, marginTop: 8 },
+  sheetCloseT: { fontSize: 13, color: '#9CA3AF' },
+  // Picker
+  pickerList: { maxHeight: 400 },
+  pickerSub: { fontSize: 11, color: '#9CA3AF', marginBottom: 8, fontWeight: '500' },
+  pickerItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, paddingHorizontal: 4, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+  pickerItemText: { fontSize: 14, color: '#1F2937' },
+  // Sort
   sortOption: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
   sortOptionActive: { backgroundColor: '#F8F6FF', marginHorizontal: -8, paddingHorizontal: 8, borderRadius: 10 },
-  sortOptionT: { fontSize: 13, color: '#4B5563' },
-  sortOptionTActive: { color: '#6C3BFF', fontWeight: '700' },
+  sortOptionT: { fontSize: 14, color: '#4B5563' },
 });
-
-
