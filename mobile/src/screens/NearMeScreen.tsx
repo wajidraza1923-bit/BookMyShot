@@ -5,7 +5,7 @@
  */
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, Image,
+  View, Text, StyleSheet, TouchableOpacity,
   ActivityIndicator, Dimensions, Platform, StatusBar, TextInput,
   ScrollView, Modal, RefreshControl,
 } from 'react-native';
@@ -15,6 +15,7 @@ import { creatorsAPI } from '../services/api';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useServiceLocation } from '../context/LocationContext';
+import PremiumCreatorCard from '../components/PremiumCreatorCard';
 
 const { width } = Dimensions.get('window');
 
@@ -307,7 +308,16 @@ export default function NearMeScreen({ navigation }: any) {
           ) : filtered.length > 0 ? (
             <>
               <Text style={s.resTitle}>{filtered.length} Creator{filtered.length !== 1 ? 's' : ''} in {selectedCity || selectedDistrict || 'your area'}</Text>
-              {filtered.map(item => <CreatorCard key={item._id} item={item} />)}
+              {filtered.map(item => (
+                <PremiumCreatorCard
+                  key={item._id}
+                  item={item}
+                  onPress={() => navigation.navigate('CreatorProfile', { id: item._id })}
+                  onGetQuote={() => navigation.navigate('Inquiry', { creatorId: item._id, creatorName: item.user?.name })}
+                  onWishlist={() => toggleWishlist(item._id)}
+                  isSaved={wishlist.has(item._id)}
+                />
+              ))}
             </>
           ) : (
             <View style={s.empty}>
@@ -428,40 +438,7 @@ const s = StyleSheet.create({
   chipLabel: { fontSize: 14, fontWeight: '600', color: '#374151' },
   chipLabelActive: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
   // Results
-  resTitle: { fontSize: 13, fontWeight: '700', color: '#1F2937', marginBottom: 8 },
-  // Premium Card — full width, large image
-  card: { backgroundColor: '#FFFFFF', borderRadius: 20, marginBottom: 16, borderWidth: 0, overflow: 'hidden', elevation: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 12 },
-  cardImgWrap: { position: 'relative', width: '100%', height: 220 },
-  cardImg: { width: '100%', height: '100%', resizeMode: 'cover' },
-  badgeRow: { position: 'absolute', top: 12, left: 12, flexDirection: 'row', gap: 6 },
-  badge: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#7C3AED', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
-  badgeText: { fontSize: 10, fontWeight: '700', color: '#FFFFFF' },
-  heartBtn: { position: 'absolute', top: 12, right: 12, width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.2)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', alignItems: 'center', justifyContent: 'center' },
-  portfolioCount: { position: 'absolute', bottom: 12, right: 12, flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 4 },
-  portfolioCountText: { fontSize: 10, fontWeight: '700', color: '#FFFFFF' },
-  cardBody: { padding: 18 },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  cardName: { fontSize: 16, fontWeight: '800', color: '#1F2937', flex: 1 },
-  cardSpec: { fontSize: 12, color: '#6B7280', marginTop: 2 },
-  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
-  locationText: { fontSize: 12, color: '#7C3AED', fontWeight: '600' },
-  moreAreas: { fontSize: 10, color: '#9CA3AF', marginLeft: 4 },
-  // Stats
-  statsRow: { flexDirection: 'row', alignItems: 'center', marginTop: 12, paddingVertical: 10, backgroundColor: '#FAFAFA', borderRadius: 12, paddingHorizontal: 8 },
-  statItem: { flex: 1, alignItems: 'center' },
-  statValue: { fontSize: 13, fontWeight: '800', color: '#1F2937' },
-  statLabel: { fontSize: 9, color: '#9CA3AF', marginTop: 2 },
-  statDivider: { width: 1, height: 28, backgroundColor: '#E5E7EB' },
-  // Tags
-  tagRow: { flexDirection: 'row', gap: 6, marginTop: 10, flexWrap: 'wrap' },
-  tag: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, backgroundColor: '#FEF3C7', borderWidth: 1, borderColor: '#FDE68A' },
-  tagText: { fontSize: 10, fontWeight: '600', color: '#92400E' },
-  // CTA
-  ctaRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
-  ctaBtn: { flex: 1, backgroundColor: '#7C3AED', borderRadius: 14, paddingVertical: 14, alignItems: 'center', elevation: 3, shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 6 },
-  ctaBtnText: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
-  ctaSecondary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, flex: 1, borderWidth: 1.5, borderColor: '#7C3AED', borderRadius: 14, paddingVertical: 14, backgroundColor: '#FFFFFF' },
-  ctaSecondaryText: { fontSize: 13, fontWeight: '600', color: '#7C3AED' },
+  resTitle: { fontSize: 14, fontWeight: '700', color: '#1F2937', marginBottom: 12 },
   // Empty
   empty: { alignItems: 'center', paddingTop: 30, paddingHorizontal: 24 },
   emptyTitle: { fontSize: 16, fontWeight: '700', color: '#1F2937', marginTop: 14 },
