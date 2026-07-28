@@ -5,11 +5,21 @@ import {
   ScrollView, Modal, Animated, RefreshControl, Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { creatorsAPI } from '../services/api';
 import api from '../services/api';
 import * as Location from 'expo-location';
 import { getCachedLocation, getFreshLocation, getDistanceKm } from '../services/location';
+
+// Safe MapView — only render if available, catch crashes
+let MapView: any = null;
+let Marker: any = null;
+try {
+  const maps = require('react-native-maps');
+  MapView = maps.default;
+  Marker = maps.Marker;
+} catch {
+  // react-native-maps not available or crashes
+}
 
 const { width } = Dimensions.get('window');
 
@@ -53,7 +63,7 @@ export default function NearMeScreen({ navigation }: any) {
   const [filterAvailToday, setFilterAvailToday] = useState(false);
   const [filterInstant, setFilterInstant] = useState(false);
   const [filterCashback, setFilterCashback] = useState(false);
-  const mapRef = useRef<MapView>(null);
+  const mapRef = useRef<any>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
 
@@ -329,7 +339,7 @@ export default function NearMeScreen({ navigation }: any) {
           ListHeaderComponent={
             <View>
               {/* MAP */}
-              {coords && (
+              {coords && MapView && (
                 <View style={s.mapContainer}>
                   <View style={s.mapHeader}>
                     <View style={s.mapHeaderLeft}><Ionicons name="location" size={14} color="#6C3BFF" /><Text style={s.mapTitle}>Creators Near You</Text></View>
@@ -339,7 +349,6 @@ export default function NearMeScreen({ navigation }: any) {
                     <MapView
                       ref={mapRef}
                       style={s.map}
-                      provider={PROVIDER_GOOGLE}
                       initialRegion={{ latitude: coords.lat, longitude: coords.lng, latitudeDelta: 0.05, longitudeDelta: 0.05 }}
                       showsUserLocation showsMyLocationButton={false}
                     >
