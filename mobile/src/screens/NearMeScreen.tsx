@@ -248,8 +248,9 @@ export default function NearMeScreen({ navigation }: any) {
           contentContainerStyle={filtered.length === 0 ? { paddingHorizontal: 16, paddingTop: 4 } : s.list}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6C3BFF" />}
-          ListHeaderComponent={
+          ListHeaderComponent={filtered.length > 0 ?
             <Text style={s.resTitle}>{filtered.length} Creator{filtered.length !== 1 ? 's' : ''} in {selectedCity || selectedDistrict || 'your area'}</Text>
+            : null
           }
           ListEmptyComponent={
             <View style={s.empty}>
@@ -370,9 +371,9 @@ const s = StyleSheet.create({
   chipLabel: { fontSize: 12, fontWeight: '600', color: '#4B5563' },
   chipLabelActive: { color: '#FFFFFF' },
   // Results
-  resTitle: { fontSize: 13, fontWeight: '700', color: '#1F2937', paddingHorizontal: 4, paddingBottom: 8 },
+  resTitle: { fontSize: 13, fontWeight: '700', color: '#1F2937', paddingHorizontal: 4, paddingBottom: 4 },
   // Card
-  list: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 90 },
+  list: { paddingHorizontal: 16, paddingTop: 0, paddingBottom: 90 },
   card: { flexDirection: 'row', backgroundColor: '#FFFFFF', borderRadius: 14, marginBottom: 12, borderWidth: 1, borderColor: '#F1F5F9', overflow: 'hidden', elevation: 2, shadowColor: '#6C3BFF', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6 },
   cardImg: { width: 100, height: 150, resizeMode: 'cover' },
   cardBody: { flex: 1, padding: 10, justifyContent: 'space-between' },
@@ -390,7 +391,7 @@ const s = StyleSheet.create({
   bookBtn: { marginTop: 6, backgroundColor: '#6C3BFF', borderRadius: 8, paddingVertical: 7, alignItems: 'center' },
   bookBtnText: { fontSize: 10, fontWeight: '700', color: '#FFFFFF' },
   // Empty
-  empty: { alignItems: 'center', paddingTop: 30, paddingHorizontal: 30 },
+  empty: { alignItems: 'center', paddingTop: 16, paddingHorizontal: 30 },
   emptyTitle: { fontSize: 15, fontWeight: '700', color: '#1F2937', marginTop: 12 },
   emptySub: { fontSize: 12, color: '#6B7280', textAlign: 'center', marginTop: 6 },
   emptyBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 18, backgroundColor: '#6C3BFF', borderRadius: 12, paddingHorizontal: 20, paddingVertical: 12 },
