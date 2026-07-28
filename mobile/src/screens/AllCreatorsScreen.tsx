@@ -174,10 +174,10 @@ const st = StyleSheet.create({
   // Search
   searchRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginTop: 8, backgroundColor: '#F9FAFB', borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB', paddingHorizontal: 12, height: 40, gap: 8 },
   searchInput: { flex: 1, fontSize: 13, color: '#1F2937' },
-  // Category Chips
-  catChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB' },
+  // Category Chips — fixed dimensions
+  catChip: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, height: 40, minWidth: 100, paddingHorizontal: 16, borderRadius: 20, backgroundColor: '#F3F4F6', borderWidth: 1.5, borderColor: '#E5E7EB' },
   catChipActive: { backgroundColor: '#6C3BFF', borderColor: '#6C3BFF' },
-  catChipText: { fontSize: 11, fontWeight: '600', color: '#6B7280' },
+  catChipText: { fontSize: 12, fontWeight: '600', color: '#6B7280' },
   catChipTextActive: { color: '#FFFFFF' },
   // Districts
   distScroll: { marginTop: 12, maxHeight: 90 },

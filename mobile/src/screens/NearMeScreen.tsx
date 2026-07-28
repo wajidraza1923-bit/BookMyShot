@@ -371,10 +371,10 @@ const s = StyleSheet.create({
   sortBtn: { width: 42, height: 42, borderRadius: 12, backgroundColor: '#6C3BFF', alignItems: 'center', justifyContent: 'center' },
   // Chips
   chipRow: { paddingHorizontal: 16, paddingVertical: 6, gap: 8 },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 36, paddingHorizontal: 14, borderRadius: 20, backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: '#E5E7EB' },
+  chip: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, height: 40, minWidth: 90, paddingHorizontal: 16, borderRadius: 20, backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: '#E5E7EB' },
   chipActive: { backgroundColor: '#6C3BFF', borderColor: '#6C3BFF' },
   chipEmoji: { fontSize: 13 },
-  chipLabel: { fontSize: 11, fontWeight: '600', color: '#4B5563' },
+  chipLabel: { fontSize: 12, fontWeight: '600', color: '#4B5563' },
   chipLabelActive: { color: '#FFFFFF' },
   // Results
   resRow: { paddingHorizontal: 4, paddingTop: 4, paddingBottom: 6 },
