@@ -19,6 +19,16 @@ const creatorSchema = new mongoose.Schema(
     city: { type: String, default: "" },
     latitude: { type: Number, default: null },
     longitude: { type: Number, default: null },
+    // Service Area Discovery (replaces GPS-based Near Me)
+    state: { type: String, default: "" },
+    district: { type: String, default: "" },
+    baseCity: { type: String, default: "" },
+    studioName: { type: String, default: "" },
+    studioAddress: { type: String, default: "" },
+    pincode: { type: String, default: "" },
+    serviceAreas: [{ type: String }], // Array of city/town names creator serves
+    travelPreference: { type: String, enum: ["only_my_city", "my_district", "multiple_districts", "entire_state", "pan_india", ""], default: "" },
+    maxTravelDistance: { type: Number, default: 0 },
     category: { type: String, default: "wedding" },
     categorySlug: { type: String, default: "wedding-photographer" }, // matches Category.slug
     subcategorySlug: { type: String, default: "" }, // matches Subcategory.slug

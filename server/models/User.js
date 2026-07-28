@@ -25,6 +25,11 @@ const userSchema = new mongoose.Schema(
     accountDeletedAt: { type: Date },
     pushToken: { type: String, default: "" },
     pushPlatform: { type: String, enum: ["android", "ios", "web", ""], default: "" },
+    // Customer location fields (for discovery)
+    state: { type: String, default: "" },
+    district: { type: String, default: "" },
+    city: { type: String, default: "" },
+    pincode: { type: String, default: "" },
   },
   { timestamps: true }
 );

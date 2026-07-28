@@ -56,6 +56,10 @@ router.post("/register", async (req, res, next) => {
         role: role === "creator" ? "creator" : "user",
         verificationToken,
         emailVerified: false,
+        state: req.body.state || "",
+        district: req.body.district || "",
+        city: req.body.city || "",
+        pincode: req.body.pincode || "",
       });
     } else if (phone) {
       const existingPhone = await User.findOne({ phone });
@@ -88,6 +92,14 @@ router.post("/register", async (req, res, next) => {
         subscriptionStatus: "free",
         freeLeadsUsed: 0,
         autoRenew: false,
+        // Service area fields from signup
+        state: req.body.state || "",
+        district: req.body.district || "",
+        baseCity: req.body.city || req.body.baseCity || "",
+        city: req.body.city || req.body.baseCity || "",
+        studioName: req.body.studioName || "",
+        serviceAreas: req.body.serviceAreas || (req.body.city ? [req.body.city] : []),
+        travelPreference: req.body.travelPreference || "my_district",
       });
       await Planning.create({ creator: (await Creator.findOne({ user: user._id }))._id });
     }
