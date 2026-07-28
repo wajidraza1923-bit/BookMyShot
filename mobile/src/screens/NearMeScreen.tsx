@@ -62,37 +62,43 @@ export default function NearMeScreen({ navigation }: any) {
   const init = async () => {
     setLoading(true); setError('');
     try {
-      // Check if location services are enabled
-      const enabled = await Location.hasServicesEnabledAsync();
-      if (!enabled) {
+      // Step 1: Check if GPS services are enabled on device
+      const gpsOn = await Location.hasServicesEnabledAsync();
+      if (!gpsOn) {
+        console.log('[NearMe] GPS services disabled');
         setError('gps_disabled');
-        // Still fetch all creators without distance
         await fetchCreators();
         setLoading(false);
         return;
       }
 
-      // Load cached location instantly for UI
+      // Step 2: Load cached location instantly for UI
       const cached = await getCachedLocation();
-      if (cached) {
+      if (cached && cached.latitude) {
         setCoords({ lat: cached.latitude, lng: cached.longitude });
         setLocationArea(cached.area || cached.district || '');
-        setLocationCity(cached.city || cached.district || '');
+        setLocationCity(cached.city || cached.district || 'Your Location');
       }
 
-      // Get fresh GPS location (high accuracy)
+      // Step 3: Get fresh GPS location (won't re-ask permission if already granted)
       console.log('[NearMe] Getting fresh GPS location...');
       const fresh = await getFreshLocation();
+      
       if (fresh) {
-        console.log(`[NearMe] GPS: ${fresh.latitude.toFixed(5)}, ${fresh.longitude.toFixed(5)} | ${fresh.city || fresh.district}`);
+        console.log(`[NearMe] ✅ GPS: ${fresh.latitude.toFixed(5)}, ${fresh.longitude.toFixed(5)} | ${fresh.city || fresh.district || 'coords only'}`);
         setCoords({ lat: fresh.latitude, lng: fresh.longitude });
         setLocationArea(fresh.area || fresh.district || '');
-        setLocationCity(fresh.city || fresh.district || '');
+        setLocationCity(fresh.city || fresh.district || 'Your Location');
+        setError(''); // Clear any previous error
         await fetchCreators(fresh.latitude, fresh.longitude);
-      } else if (cached) {
-        console.log('[NearMe] Using cached location');
+      } else if (cached && cached.latitude) {
+        // Permission was denied but we have cache — use it silently
+        console.log('[NearMe] Using cached location (permission not granted for fresh)');
+        setError(''); // Don't show error if we have usable cache
         await fetchCreators(cached.latitude, cached.longitude);
       } else {
+        // No location at all — permission denied AND no cache
+        console.log('[NearMe] No location available — permission denied, no cache');
         setError('location_denied');
         await fetchCreators();
       }
@@ -103,8 +109,11 @@ export default function NearMeScreen({ navigation }: any) {
       ]).start();
     } catch (e: any) {
       console.log('[NearMe] Init error:', e.message);
-      setError('location_failed');
-      await fetchCreators();
+      // Don't show error if we already have coords from cache
+      if (!coords) {
+        setError('location_failed');
+      }
+      await fetchCreators(coords?.lat, coords?.lng);
     } finally { setLoading(false); }
   };
 

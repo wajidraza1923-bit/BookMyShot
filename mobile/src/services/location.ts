@@ -1,12 +1,15 @@
 /**
  * LocationService — GPS + Cache + Reverse Geocode
- * Provides cached location that loads instantly on app open.
- * Falls back to last saved location if GPS fails.
+ * - Always checks permission status FIRST (no re-asking if already granted)
+ * - Uses cache for instant display
+ * - Gets high-accuracy GPS with timeout fallback
+ * - Never returns null if permission is granted (uses last known position)
  */
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LOCATION_KEY = 'bms_user_location';
+const PERMISSION_KEY = 'bms_location_permission';
 
 export interface UserLocation {
   latitude: number;
@@ -19,17 +22,41 @@ export interface UserLocation {
 }
 
 /**
- * Get cached location (instant, no GPS)
+ * Check if location permission is already granted (no popup)
+ */
+export async function isLocationPermissionGranted(): Promise<boolean> {
+  try {
+    const { status } = await Location.getForegroundPermissionsAsync();
+    return status === 'granted';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Check if GPS/Location services are enabled on the device
+ */
+export async function isGPSEnabled(): Promise<boolean> {
+  try {
+    return await Location.hasServicesEnabledAsync();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Get cached location (instant, no GPS call)
  */
 export async function getCachedLocation(): Promise<UserLocation | null> {
   try {
     const raw = await AsyncStorage.getItem(LOCATION_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      console.log('[Location] Cache hit:', parsed.city || parsed.district);
-      return parsed;
+      if (parsed.latitude && parsed.longitude) {
+        console.log('[Location] Cache hit:', parsed.city || parsed.district, `(${parsed.latitude.toFixed(4)}, ${parsed.longitude.toFixed(4)})`);
+        return parsed;
+      }
     }
-    console.log('[Location] No cached location');
   } catch (e: any) {
     console.log('[Location] Cache read error:', e.message);
   }
@@ -42,26 +69,58 @@ export async function getCachedLocation(): Promise<UserLocation | null> {
 export async function cacheLocation(loc: UserLocation): Promise<void> {
   try {
     await AsyncStorage.setItem(LOCATION_KEY, JSON.stringify(loc));
+    await AsyncStorage.setItem(PERMISSION_KEY, 'granted');
   } catch {}
 }
 
 /**
- * Request permission and get fresh GPS location
- * Returns cached location if GPS fails
+ * Request permission (only if not already granted) and get fresh GPS location
+ * Returns null ONLY if permission is denied. Never returns null for GPS timeout (uses last known).
  */
 export async function getFreshLocation(): Promise<UserLocation | null> {
   try {
-    const { status } = await Location.requestForegroundPermissionsAsync();
+    // Step 1: Check existing permission (no popup if already granted)
+    let { status } = await Location.getForegroundPermissionsAsync();
+    
+    // Step 2: Request only if not yet determined
     if (status !== 'granted') {
-      console.log('[Location] Permission denied');
+      const result = await Location.requestForegroundPermissionsAsync();
+      status = result.status;
+    }
+
+    if (status !== 'granted') {
+      console.log('[Location] Permission DENIED by user');
+      await AsyncStorage.setItem(PERMISSION_KEY, 'denied');
+      return null; // null = permission denied
+    }
+
+    // Permission granted — save this fact
+    await AsyncStorage.setItem(PERMISSION_KEY, 'granted');
+
+    // Step 3: Try to get current position with timeout
+    let position: Location.LocationObject | null = null;
+    try {
+      position = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+        timeInterval: 5000,
+        maximumAge: 60000, // Accept position up to 1 min old
+      });
+    } catch (e: any) {
+      console.log('[Location] getCurrentPosition failed, trying lastKnown:', e.message);
+      // Fallback: get last known position (instant, no GPS needed)
+      try {
+        position = await Location.getLastKnownPositionAsync({
+          maxAge: 300000, // Accept up to 5 min old
+        });
+      } catch {}
+    }
+
+    if (!position) {
+      console.log('[Location] No position available, using cache');
       return await getCachedLocation();
     }
 
-    const position = await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.High,
-      timeInterval: 5000,
-    });
-
+    // Step 4: Reverse geocode
     let city = '', district = '', state = '', area = '';
     try {
       const [address] = await Location.reverseGeocodeAsync({
@@ -74,8 +133,9 @@ export async function getFreshLocation(): Promise<UserLocation | null> {
         state = address.region || '';
         area = address.name || address.street || address.district || '';
       }
-    } catch (geoErr) {
-      console.log('[Location] Reverse geocode failed, using coords only');
+    } catch (geoErr: any) {
+      console.log('[Location] Reverse geocode failed:', geoErr.message);
+      // Still return coords without city name
     }
 
     const loc: UserLocation = {
@@ -89,10 +149,11 @@ export async function getFreshLocation(): Promise<UserLocation | null> {
     };
 
     await cacheLocation(loc);
-    console.log('[Location] Fresh location:', loc.city || loc.district, loc.latitude.toFixed(4), loc.longitude.toFixed(4));
+    console.log('[Location] ✅ Fresh GPS:', loc.latitude.toFixed(5), loc.longitude.toFixed(5), '|', loc.city || loc.district || 'No city name');
     return loc;
   } catch (err: any) {
-    console.log('[Location] GPS failed:', err.message);
+    console.log('[Location] getFreshLocation error:', err.message);
+    // Return cache as fallback (don't return null — permission might be granted)
     return await getCachedLocation();
   }
 }
@@ -113,12 +174,13 @@ export function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: nu
 }
 
 /**
- * Get location — tries cache first for instant display, then refreshes in background
+ * Quick check: was permission previously granted? (instant, no async permission check)
  */
-export async function getLocationWithFallback(): Promise<UserLocation | null> {
-  // Try cache first (instant)
-  const cached = await getCachedLocation();
-  if (cached) return cached;
-  // No cache — get fresh
-  return await getFreshLocation();
+export async function wasPermissionPreviouslyGranted(): Promise<boolean> {
+  try {
+    const val = await AsyncStorage.getItem(PERMISSION_KEY);
+    return val === 'granted';
+  } catch {
+    return false;
+  }
 }

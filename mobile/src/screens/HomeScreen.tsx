@@ -142,26 +142,30 @@ export default function HomeScreen({ navigation }: any) {
       // ═══ LOCATION: Get real GPS location ═══
       setLocationLoading(true);
       try {
+        // Show cached location instantly
         const cached = await getCachedLocation();
-        if (cached && cached.city) {
+        if (cached && (cached.city || cached.latitude)) {
           setLocationArea(cached.area || cached.district || '');
-          setLocationCity(cached.city || cached.district || '');
+          setLocationCity(cached.city || cached.district || 'Your Location');
           setLocationLoading(false);
         }
-        // Always fetch fresh GPS
+        // Get fresh GPS (won't re-ask if already granted)
         const fresh = await getFreshLocation();
-        if (fresh && (fresh.city || fresh.district)) {
+        if (fresh) {
+          // Location obtained (even without city name, coords are valid)
           setLocationArea(fresh.area || fresh.district || '');
-          setLocationCity(fresh.city || fresh.district || '');
+          setLocationCity(fresh.city || fresh.district || 'Your Location');
           setShowLocationDenied(false);
-        } else if (!cached || !cached.city) {
-          // No GPS and no cache — permission likely denied
+        } else if (!cached) {
+          // getFreshLocation returns null ONLY when permission denied
           setShowLocationDenied(true);
           setLocationCity('');
           setLocationArea('');
         }
+        // If fresh is null but we have cache, just keep showing cache (permission might just be slow)
       } catch {
-        setShowLocationDenied(true);
+        // Don't show denied on error — might be GPS timeout
+        if (!locationCity) setLocationCity('');
       } finally {
         setLocationLoading(false);
       }
@@ -401,8 +405,19 @@ export default function HomeScreen({ navigation }: any) {
           ) : locationCity ? (
             <Text style={st.locText}>{locationArea ? `${locationArea}, ` : ''}{locationCity}</Text>
           ) : (
-            <TouchableOpacity onPress={() => setShowLocationDenied(true)}>
-              <Text style={[st.locText, { color: '#EF4444' }]}>Location not enabled</Text>
+            <TouchableOpacity onPress={async () => {
+              setLocationLoading(true);
+              const fresh = await getFreshLocation();
+              if (fresh) {
+                setLocationArea(fresh.area || fresh.district || '');
+                setLocationCity(fresh.city || fresh.district || 'Your Location');
+                setShowLocationDenied(false);
+              } else {
+                setShowLocationDenied(true);
+              }
+              setLocationLoading(false);
+            }}>
+              <Text style={[st.locText, { color: '#6C3BFF' }]}>Tap to detect location</Text>
             </TouchableOpacity>
           )}
           {!locationLoading && <Text style={st.locDrop}>▾</Text>}
