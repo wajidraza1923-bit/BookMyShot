@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { creatorsAPI } from '../services/api';
 import api from '../services/api';
+import * as Location from 'expo-location';
 import { getCachedLocation, getFreshLocation, getDistanceKm } from '../services/location';
 
 const { width } = Dimensions.get('window');
@@ -61,7 +62,17 @@ export default function NearMeScreen({ navigation }: any) {
   const init = async () => {
     setLoading(true); setError('');
     try {
-      // Load cached location instantly
+      // Check if location services are enabled
+      const enabled = await Location.hasServicesEnabledAsync();
+      if (!enabled) {
+        setError('gps_disabled');
+        // Still fetch all creators without distance
+        await fetchCreators();
+        setLoading(false);
+        return;
+      }
+
+      // Load cached location instantly for UI
       const cached = await getCachedLocation();
       if (cached) {
         setCoords({ lat: cached.latitude, lng: cached.longitude });
@@ -69,14 +80,17 @@ export default function NearMeScreen({ navigation }: any) {
         setLocationCity(cached.city || cached.district || '');
       }
 
-      // Get fresh location
+      // Get fresh GPS location (high accuracy)
+      console.log('[NearMe] Getting fresh GPS location...');
       const fresh = await getFreshLocation();
       if (fresh) {
+        console.log(`[NearMe] GPS: ${fresh.latitude.toFixed(5)}, ${fresh.longitude.toFixed(5)} | ${fresh.city || fresh.district}`);
         setCoords({ lat: fresh.latitude, lng: fresh.longitude });
         setLocationArea(fresh.area || fresh.district || '');
         setLocationCity(fresh.city || fresh.district || '');
         await fetchCreators(fresh.latitude, fresh.longitude);
       } else if (cached) {
+        console.log('[NearMe] Using cached location');
         await fetchCreators(cached.latitude, cached.longitude);
       } else {
         setError('location_denied');
@@ -87,40 +101,61 @@ export default function NearMeScreen({ navigation }: any) {
         Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
         Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 40, friction: 8 }),
       ]).start();
-    } catch { setError('location_failed'); await fetchCreators(); } finally { setLoading(false); }
+    } catch (e: any) {
+      console.log('[NearMe] Init error:', e.message);
+      setError('location_failed');
+      await fetchCreators();
+    } finally { setLoading(false); }
   };
 
   const fetchCreators = async (lat?: number, lng?: number) => {
     try {
-      const all = await creatorsAPI.getAll();
-      let list = all.data?.creators || all.data?.data || [];
-      // Calculate distance for each creator if we have user coords
+      let list: any[] = [];
+      
       if (lat && lng) {
-        list = list.map((c: any) => {
-          const cLat = c.latitude || c.lat;
-          const cLng = c.longitude || c.lng;
-          const distance = (cLat && cLng) ? getDistanceKm(lat, lng, cLat, cLng) : null;
-          return { ...c, distance };
+        // Use dedicated nearby endpoint with server-side distance calculation
+        console.log(`[NearMe] Fetching creators near: ${lat.toFixed(5)}, ${lng.toFixed(5)}, radius: ${radius}km`);
+        const res = await api.get('/creators/nearby', { params: { lat, lng, radius, category: selectedCat !== 'all' ? selectedCat : undefined } });
+        list = res.data?.creators || [];
+        console.log(`[NearMe] Server returned ${list.length} creators with distances`);
+        // Log first 3 for debugging
+        list.slice(0, 3).forEach((c: any) => {
+          console.log(`[NearMe]   ${c.user?.name}: ${c.distance}km (source: ${c.distanceSource}) at ${c.creatorLat?.toFixed(4)},${c.creatorLng?.toFixed(4)}`);
         });
-        // Sort by distance (nearest first), creators without coords go to end
-        list.sort((a: any, b: any) => {
-          if (a.distance === null && b.distance === null) return 0;
-          if (a.distance === null) return 1;
-          if (b.distance === null) return -1;
-          return a.distance - b.distance;
-        });
+      } else {
+        // No location — fetch all creators without distance
+        console.log('[NearMe] No user coords, fetching all creators');
+        const all = await creatorsAPI.getAll();
+        list = all.data?.creators || all.data?.data || [];
       }
+      
       setCreators(list);
-    } catch {
+    } catch (e: any) {
+      console.log('[NearMe] Fetch error:', e.message);
       setCreators([]);
     }
   };
 
-  const onRefresh = async () => { setRefreshing(true); if (coords) await fetchCreators(coords.lat, coords.lng); setRefreshing(false); };
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      const fresh = await getFreshLocation();
+      if (fresh) {
+        setCoords({ lat: fresh.latitude, lng: fresh.longitude });
+        setLocationArea(fresh.area || fresh.district || '');
+        setLocationCity(fresh.city || fresh.district || '');
+        await fetchCreators(fresh.latitude, fresh.longitude);
+      } else if (coords) {
+        await fetchCreators(coords.lat, coords.lng);
+      }
+    } catch {}
+    setRefreshing(false);
+  };
 
   // ═══ FILTERING & SORTING ═══
   const filtered = creators.filter(c => {
-    if (selectedCat !== 'all') {
+    // Category filter (already done server-side for /nearby, but needed for fallback)
+    if (selectedCat !== 'all' && !coords) {
       const cat = (c.category || c.categorySlug || c.specialty || '').toLowerCase();
       if (!cat.includes(selectedCat)) return false;
     }
@@ -128,12 +163,15 @@ export default function NearMeScreen({ navigation }: any) {
       const q = searchQuery.toLowerCase();
       if (!(c.user?.name || '').toLowerCase().includes(q) && !(c.specialty || '').toLowerCase().includes(q) && !(c.city || '').toLowerCase().includes(q)) return false;
     }
+    // Distance filter
+    if (coords && c.distance !== null && c.distance !== undefined && c.distance > radius) return false;
     return true;
   }).sort((a, b) => {
+    if (sortBy === 'nearest') return (a.distance || 9999) - (b.distance || 9999);
     if (sortBy === 'rated') return (b.rating || 0) - (a.rating || 0);
     if (sortBy === 'price') return (a.startingPrice || a.budgetMin || 99999) - (b.startingPrice || b.budgetMin || 99999);
-    if (sortBy === 'popular') return (b.bookingCount || 0) - (a.bookingCount || 0);
-    return 0; // nearest is default
+    if (sortBy === 'popular') return (b.bookingCount || b.weddingsCount || 0) - (a.bookingCount || a.weddingsCount || 0);
+    return 0;
   });
 
   const getImg = (item: any) => {
@@ -144,49 +182,19 @@ export default function NearMeScreen({ navigation }: any) {
     return item.user?.avatar || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=300';
   };
 
-  // Haversine formula for real distance calculation
-  const getDistance = (creatorCity: string, creatorCoords?: any): string => {
-    if (!coords) return '—';
-    
-    // If creator has real coordinates stored
-    if (creatorCoords?.coordinates && creatorCoords.coordinates[0] !== 0 && creatorCoords.coordinates[1] !== 0) {
-      const [lng2, lat2] = creatorCoords.coordinates;
-      return haversine(coords.lat, coords.lng, lat2, lng2).toFixed(1);
+  // Use server-calculated distance (from /creators/nearby endpoint)
+  const getDistance = (creator: any): string => {
+    if (creator.distance !== null && creator.distance !== undefined) {
+      return creator.distance.toFixed(1);
     }
-    
-    // Fallback: use known city coordinates
-    const cityCoords: Record<string, [number, number]> = {
-      'poonch': [33.77, 74.09], 'surankote': [33.64, 74.03], 'rajouri': [33.38, 74.31],
-      'jammu': [32.73, 74.87], 'srinagar': [34.08, 74.79], 'kathua': [32.39, 75.52],
-      'udhampur': [32.92, 75.14], 'delhi': [28.61, 77.21], 'mumbai': [19.07, 72.87],
-      'bangalore': [12.97, 77.59], 'jaipur': [26.91, 75.79], 'chandigarh': [30.73, 76.77],
-      'lucknow': [26.85, 80.95], 'pune': [18.52, 73.85], 'hyderabad': [17.38, 78.49],
-      'kolkata': [22.57, 88.36], 'ahmedabad': [23.02, 72.57], 'goa': [15.49, 73.83],
-    };
-    
-    const city = (creatorCity || '').toLowerCase().trim();
-    const match = cityCoords[city];
-    if (match) {
-      return haversine(coords.lat, coords.lng, match[0], match[1]).toFixed(1);
-    }
-    
-    return '—'; // Unknown location
-  };
-
-  // Haversine formula
-  const haversine = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-    const R = 6371; // Earth radius in km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return '—';
   };
 
   // ═══ CREATOR CARD ═══
   const CreatorCard = ({ item, index }: any) => {
     const cardFade = useRef(new Animated.Value(0)).current;
     useEffect(() => { Animated.timing(cardFade, { toValue: 1, duration: 400, delay: index * 80, useNativeDriver: true }).start(); }, []);
-    const dist = getDistance(item.city, item.coordinates);
+    const dist = getDistance(item);
     return (
       <Animated.View style={[s.card, { opacity: cardFade, transform: [{ translateY: cardFade.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
         <View style={s.cardImgWrap}>
@@ -203,8 +211,8 @@ export default function NearMeScreen({ navigation }: any) {
           <Text style={s.cardSpec}>{item.specialty || 'Photographer'}  •  {item.experience || '5+'} Yrs</Text>
           <View style={s.metaRow}>
             <Ionicons name="location" size={10} color="#6C3BFF" />
-            <Text style={s.metaT}>{dist} km away</Text>
-            <Text style={s.metaT}>  •  {item.reviewCount || Math.floor(Math.random() * 40 + 5)} reviews</Text>
+            <Text style={s.metaT}>{dist !== '—' ? `${dist} km away` : (item.city || 'Location N/A')}</Text>
+            {item.city ? <Text style={s.metaT}>  •  {item.city}</Text> : null}
           </View>
           <View style={s.tagRow}>
             {(item.tags || ['Wedding', 'Candid', 'Pre Wedding']).slice(0, 3).map((t: string, i: number) => (
@@ -290,9 +298,16 @@ export default function NearMeScreen({ navigation }: any) {
       ) : error ? (
         <View style={s.center}>
           <Ionicons name="location-outline" size={52} color="#E5E7EB" />
-          <Text style={s.errTitle}>{error === 'location_denied' ? 'Location Permission Required' : 'Could Not Detect Location'}</Text>
-          <Text style={s.errSub}>Enable location to discover nearby wedding creators</Text>
-          <TouchableOpacity style={s.retryBtn} onPress={init}><Ionicons name="navigate" size={14} color="#fff" /><Text style={s.retryT}>Enable Location</Text></TouchableOpacity>
+          <Text style={s.errTitle}>{error === 'gps_disabled' ? 'GPS is Turned Off' : error === 'location_denied' ? 'Location Permission Required' : 'Could Not Detect Location'}</Text>
+          <Text style={s.errSub}>{error === 'gps_disabled' ? 'Please enable GPS/Location in your phone settings to discover nearby creators' : 'Enable location to discover nearby wedding creators'}</Text>
+          <TouchableOpacity style={s.retryBtn} onPress={error === 'gps_disabled' ? () => Linking.openSettings() : init}>
+            <Ionicons name={error === 'gps_disabled' ? 'settings-outline' : 'navigate'} size={14} color="#fff" />
+            <Text style={s.retryT}>{error === 'gps_disabled' ? 'Open Settings' : 'Enable Location'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[s.retryBtn, { backgroundColor: '#F3F4F6', marginTop: 10 }]} onPress={init}>
+            <Ionicons name="refresh" size={14} color="#6C3BFF" />
+            <Text style={[s.retryT, { color: '#6C3BFF' }]}>Try Again</Text>
+          </TouchableOpacity>
         </View>
       ) : (
         <FlatList
@@ -319,8 +334,8 @@ export default function NearMeScreen({ navigation }: any) {
                       initialRegion={{ latitude: coords.lat, longitude: coords.lng, latitudeDelta: 0.05, longitudeDelta: 0.05 }}
                       showsUserLocation showsMyLocationButton={false}
                     >
-                      {filtered.slice(0, 6).map((c, i) => (
-                        <Marker key={i} coordinate={{ latitude: coords.lat + (Math.random() - 0.5) * 0.04, longitude: coords.lng + (Math.random() - 0.5) * 0.04 }} onPress={() => navigation.navigate('CreatorProfile', { id: c._id })}>
+                      {filtered.filter((c: any) => c.creatorLat && c.creatorLng).slice(0, 10).map((c: any, i: number) => (
+                        <Marker key={i} coordinate={{ latitude: c.creatorLat, longitude: c.creatorLng }} onPress={() => navigation.navigate('CreatorProfile', { id: c._id })}>
                           <View style={s.marker}><Image source={{ uri: getImg(c) }} style={s.markerImg} /></View>
                         </Marker>
                       ))}

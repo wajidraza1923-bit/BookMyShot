@@ -11,6 +11,104 @@ const MAX_VIDEOS = 4;
 
 const router = express.Router();
 
+// ═══ Known city coordinates (fallback when creator has no GPS coordinates) ═══
+const CITY_COORDS = {
+  'poonch': [33.77, 74.09], 'surankote': [33.64, 74.03], 'rajouri': [33.38, 74.31],
+  'jammu': [32.73, 74.87], 'srinagar': [34.08, 74.79], 'kathua': [32.39, 75.52],
+  'udhampur': [32.92, 75.14], 'anantnag': [33.73, 75.15], 'baramulla': [34.20, 74.34],
+  'doda': [33.15, 75.55], 'kishtwar': [33.31, 75.77], 'reasi': [33.08, 74.83],
+  'sunderbani': [33.36, 74.20], 'mendhar': [33.75, 74.10], 'haveli': [33.82, 73.97],
+  'delhi': [28.61, 77.21], 'new delhi': [28.61, 77.21], 'mumbai': [19.07, 72.87],
+  'bangalore': [12.97, 77.59], 'bengaluru': [12.97, 77.59], 'jaipur': [26.91, 75.79],
+  'chandigarh': [30.73, 76.77], 'lucknow': [26.85, 80.95], 'pune': [18.52, 73.85],
+  'hyderabad': [17.38, 78.49], 'kolkata': [22.57, 88.36], 'ahmedabad': [23.02, 72.57],
+  'goa': [15.49, 73.83], 'noida': [28.57, 77.32], 'gurgaon': [28.46, 77.03],
+  'gurugram': [28.46, 77.03], 'amritsar': [31.63, 74.87], 'ludhiana': [30.90, 75.86],
+  'dehradun': [30.32, 78.03], 'patna': [25.60, 85.10], 'bhopal': [23.26, 77.41],
+  'indore': [22.72, 75.86], 'nagpur': [21.15, 79.09], 'chennai': [13.08, 80.27],
+  'coimbatore': [11.00, 76.96], 'kochi': [9.93, 76.26], 'thiruvananthapuram': [8.52, 76.94],
+  'visakhapatnam': [17.69, 83.22], 'agra': [27.18, 78.02], 'varanasi': [25.32, 83.01],
+  'udaipur': [24.58, 73.68], 'jodhpur': [26.29, 73.02], 'mysore': [12.30, 76.66],
+};
+
+// Haversine distance formula (km)
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// Get creator coordinates: use stored lat/lng, or fallback to city lookup
+function getCreatorCoords(creator) {
+  if (creator.latitude && creator.longitude) {
+    return { lat: creator.latitude, lng: creator.longitude, source: 'gps' };
+  }
+  // Fallback: lookup city
+  const city = (creator.city || creator.location || '').toLowerCase().trim();
+  const match = CITY_COORDS[city];
+  if (match) return { lat: match[0], lng: match[1], source: 'city' };
+  return null;
+}
+
+// ═══ Public: Get nearby creators with distance calculation ═══
+router.get("/nearby", async (req, res, next) => {
+  try {
+    const { lat, lng, radius, category } = req.query;
+    const userLat = parseFloat(lat);
+    const userLng = parseFloat(lng);
+    const maxRadius = parseFloat(radius) || 100; // default 100km
+
+    if (!userLat || !userLng || isNaN(userLat) || isNaN(userLng)) {
+      return res.status(400).json({ success: false, message: "User latitude and longitude required (lat, lng query params)" });
+    }
+
+    // Fetch all approved creators
+    const filter = { status: "approved" };
+    const creators = await Creator.find(filter).populate("user", "name avatar").lean();
+
+    // Calculate distance for each creator
+    const withDistance = creators.map(c => {
+      const coords = getCreatorCoords(c);
+      if (!coords) return { ...c, distance: null, distanceSource: 'none' };
+      const distance = haversineKm(userLat, userLng, coords.lat, coords.lng);
+      return { ...c, distance: Math.round(distance * 10) / 10, distanceSource: coords.source, creatorLat: coords.lat, creatorLng: coords.lng };
+    });
+
+    // Filter by radius
+    let results = withDistance.filter(c => c.distance !== null && c.distance <= maxRadius);
+
+    // Filter by category if provided
+    if (category && category !== 'all') {
+      results = results.filter(c => {
+        const cat = (c.category || c.categorySlug || c.specialty || '').toLowerCase();
+        return cat.includes(category.toLowerCase());
+      });
+    }
+
+    // Sort by distance (nearest first)
+    results.sort((a, b) => (a.distance || 9999) - (b.distance || 9999));
+
+    // Normalize portfolio/videos
+    results.forEach(c => {
+      if (c.portfolio) c.portfolio = c.portfolio.map(item => typeof item === 'string' ? item : (item?.url || ''));
+      if (c.videos) c.videos = c.videos.map(item => typeof item === 'string' ? item : (item?.url || ''));
+    });
+
+    console.log(`[NearMe] User: ${userLat.toFixed(4)}, ${userLng.toFixed(4)} | Found: ${results.length} creators within ${maxRadius}km`);
+
+    res.json({
+      success: true,
+      count: results.length,
+      userLocation: { lat: userLat, lng: userLng },
+      creators: results,
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
 // Public: list approved creators with filters (NO email exposed)
 router.get("/", async (req, res, next) => {
   try {

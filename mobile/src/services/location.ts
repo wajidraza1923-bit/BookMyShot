@@ -58,7 +58,8 @@ export async function getFreshLocation(): Promise<UserLocation | null> {
     }
 
     const position = await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.Balanced,
+      accuracy: Location.Accuracy.High,
+      timeInterval: 5000,
     });
 
     let city = '', district = '', state = '', area = '';
