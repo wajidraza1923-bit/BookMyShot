@@ -15,15 +15,15 @@ const router = express.Router();
 router.get("/", async (req, res, next) => {
   try {
     const [creatorsCount, citiesAgg, bookingsCount, reviewsAgg, activities] = await Promise.all([
-      Creator.countDocuments({ status: "approved", subscriptionStatus: { $in: ["active", "trial"] } }),
+      Creator.countDocuments({ status: "approved" }),
       Creator.aggregate([
-        { $match: { status: "approved", subscriptionStatus: { $in: ["active", "trial"] } } },
-        { $group: { _id: "$city" } },
+        { $match: { status: "approved" } },
+        { $group: { _id: { $toLower: "$city" } } },
+        { $match: { _id: { $ne: "" } } },
         { $count: "total" },
       ]),
       Booking.countDocuments({ status: { $in: ["Completed", "Payment Approved", "Creator Accepted", "Event Scheduled"] } }),
       Review.aggregate([
-        { $match: { approved: true, hidden: false } },
         { $group: { _id: null, avg: { $avg: "$rating" }, count: { $sum: 1 } } },
       ]),
       LiveActivity.find().sort("-createdAt").limit(10).lean(),
