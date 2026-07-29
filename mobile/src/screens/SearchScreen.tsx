@@ -101,7 +101,6 @@ export default function SearchScreen({ navigation, route }: any) {
       setTrendingCreators(trendCR.data?.data || []);
       setFeaturedCreators(featR.data?.data || []);
     } catch {}
-    searchCreators();
   };
 
   const searchCreators = useCallback(async () => {
