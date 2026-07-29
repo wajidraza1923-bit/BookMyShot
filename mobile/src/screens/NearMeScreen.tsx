@@ -75,7 +75,7 @@ export default function NearMeScreen({ navigation }: any) {
     }
   }, []);
 
-  const fetchCreators = async (city?: string, district?: string, state?: string, search?: string) => {
+  const fetchCreators = async (city?: string, district?: string, state?: string, search?: string, category?: string) => {
     setLoading(true);
     try {
       const params: any = {};
@@ -83,7 +83,9 @@ export default function NearMeScreen({ navigation }: any) {
       if (district) params.district = district;
       if (state) params.state = state;
       if (search) params.search = search;
-      if (selectedCat !== 'all') params.category = selectedCat;
+      // Use passed category, or fall back to current state
+      const cat = category !== undefined ? category : selectedCat;
+      if (cat && cat !== 'all') params.category = cat;
       if (sortBy !== 'nearest') params.sort = sortBy;
 
       const res = await api.get('/discovery/creators-by-area', { params });
@@ -280,7 +282,7 @@ export default function NearMeScreen({ navigation }: any) {
           {CATEGORIES.map(c => {
             const isActive = selectedCat === c.id;
             return (
-              <TouchableOpacity key={c.id} activeOpacity={0.75} onPress={() => { setSelectedCat(c.id); fetchCreators(savedLocation.city, savedLocation.district, savedLocation.state); }}>
+              <TouchableOpacity key={c.id} activeOpacity={0.75} onPress={() => { setSelectedCat(c.id); fetchCreators(savedLocation.city, savedLocation.district, savedLocation.state, undefined, c.id); }}>
                 {isActive ? (
                   <LinearGradient colors={['#7C3AED', '#D946EF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.chipSelected}>
                     <Text style={s.chipEmojiActive}>{c.emoji}</Text>
