@@ -128,25 +128,16 @@ export default function SearchScreen({ navigation, route }: any) {
     finally { setLoading(false); }
   }, [query, selectedCity, selectedCategory, selectedSubcategory, selectedState]);
 
-  // Single debounced search effect — handles all cases
+  // Single search effect — debounced for typing, immediate for mount
+  const hasSearchedOnMount = React.useRef(false);
   useEffect(() => {
     if (query.length >= 2 || showResults) {
-      const timer = setTimeout(() => { searchCreators(); }, query.length >= 2 ? 300 : 0);
+      // On first mount with params, search immediately (no delay)
+      const delay = !hasSearchedOnMount.current && route?.params?.search ? 0 : 300;
+      const timer = setTimeout(() => { searchCreators(); hasSearchedOnMount.current = true; }, delay);
       return () => clearTimeout(timer);
     }
   }, [query, selectedCity, selectedCategory, selectedSubcategory, selectedState]);
-
-  // Also trigger search immediately on mount if we have a search param
-  useEffect(() => {
-    if (route?.params?.search && route.params.search.length >= 2) {
-      // Direct API call on mount (bypass useCallback stale closure issue)
-      setLoading(true);
-      api.get('/creators/search', { params: { q: route.params.search, state: selectedState || undefined } })
-        .then(res => { setCreators(res.data?.creators || []); setSuggestions(res.data?.suggestions || []); setShowResults(true); })
-        .catch(() => { setCreators([]); })
-        .finally(() => setLoading(false));
-    }
-  }, []);
 
   const handleSearch = (t: string) => { setQuery(t); if (t.length > 0) setShowResults(true); };
   const clearFilters = () => { setQuery(''); setSelectedCity(''); setSelectedCategory(''); setSelectedSubcategory(''); setShowResults(false); };
