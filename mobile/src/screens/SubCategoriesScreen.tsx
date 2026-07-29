@@ -34,6 +34,7 @@ const SUB_IMAGES: Record<string, string> = {
   'day-of-coordination': 'https://images.pexels.com/photos/2253870/pexels-photo-2253870.jpeg?auto=compress&w=400',
   'destination-wedding-planning': 'https://images.pexels.com/photos/169198/pexels-photo-169198.jpeg?auto=compress&w=400',
   'budget-planning': 'https://images.pexels.com/photos/1024993/pexels-photo-1024993.jpeg?auto=compress&w=400',
+  'tent-house': 'https://images.pexels.com/photos/1045541/pexels-photo-1045541.jpeg?auto=compress&w=400',
   'veg-catering': 'https://images.pexels.com/photos/587741/pexels-photo-587741.jpeg?auto=compress&w=400',
   'non-veg-catering': 'https://images.pexels.com/photos/2983101/pexels-photo-2983101.jpeg?auto=compress&w=400',
   'multi-cuisine': 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&w=400',
@@ -88,6 +89,7 @@ const FALLBACK_SUBCATEGORIES: Record<string, any[]> = {
     { _id: '2', name: 'Non-Veg Catering', slug: 'non-veg-catering', icon: 'restaurant-outline', creatorCount: 0 },
     { _id: '3', name: 'Multi-Cuisine', slug: 'multi-cuisine', icon: 'globe-outline', creatorCount: 0 },
     { _id: '4', name: 'Live Food Counter', slug: 'live-food-counter', icon: 'flame-outline', creatorCount: 0 },
+    { _id: '5', name: 'Tent House', slug: 'tent-house', icon: 'home-outline', creatorCount: 0 },
     { _id: '5', name: 'Bakery & Cakes', slug: 'bakery-cakes', icon: 'cafe-outline', creatorCount: 0 },
   ],
   'venues': [
