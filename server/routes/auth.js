@@ -25,13 +25,12 @@ router.post("/register", async (req, res, next) => {
     if (email) {
       const existingUser = await User.findOne({ email });
       if (existingUser) {
-        // Check if this is a previously deleted account that wasn't cleaned up
-        if (existingUser.accountDeletedAt) {
-          // Account was marked for deletion — clean up and allow re-registration
+        // Check if this is a previously deleted account OR user wants to re-register
+        if (existingUser.accountDeletedAt || existingUser.accountDeleteRequested) {
+          // Account was marked for deletion — force clean up and allow re-registration
           await User.deleteOne({ _id: existingUser._id });
           const Creator = require("../models/Creator");
           await Creator.deleteOne({ user: existingUser._id });
-          // Proceed with fresh registration
         } else if (!existingUser.emailVerified) {
           // Resend OTP and let them continue verification
           const otp = generateOTP();
