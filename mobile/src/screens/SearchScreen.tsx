@@ -8,18 +8,7 @@ import { useServiceLocation } from '../context/LocationContext';
 const { width } = Dimensions.get('window');
 const HALF = (width - 52) / 2;
 
-const DEFAULT_DISTRICTS = [
-  { name: 'Poonch', creatorCount: 120, imageUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=200' },
-  { name: 'Surankote', creatorCount: 45, imageUrl: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=200' },
-  { name: 'Rajouri', creatorCount: 85, imageUrl: 'https://images.unsplash.com/photo-1486870591958-9b9d0d1dda99?w=200' },
-  { name: 'Jammu', creatorCount: 250, imageUrl: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=200' },
-  { name: 'Srinagar', creatorCount: 180, imageUrl: 'https://images.unsplash.com/photo-1597074866923-dc0589150458?w=200' },
-  { name: 'Kathua', creatorCount: 60, imageUrl: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=200' },
-  { name: 'Udhampur', creatorCount: 55, imageUrl: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=200' },
-  { name: 'Anantnag', creatorCount: 70, imageUrl: 'https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=200' },
-  { name: 'Baramulla', creatorCount: 65, imageUrl: 'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=200' },
-  { name: 'Doda', creatorCount: 30, imageUrl: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=200' },
-];
+// No hardcoded districts — loaded dynamically from API based on selected state
 
 const DEFAULT_TRENDING = [
   { title: 'Pre Wedding', icon: 'heart-circle' },
@@ -88,15 +77,23 @@ export default function SearchScreen({ navigation, route }: any) {
 
   const loadAll = async () => {
     try {
+      // Load districts dynamically based on selected state
+      const distPromise = selectedState
+        ? api.get('/discovery/districts', { params: { state: selectedState } }).catch(() => ({ data: { districts: [] } }))
+        : api.get('/discover/districts').catch(() => ({ data: { data: [] } }));
+
       const [distR, trendR, catR, inspR, trendCR, featR] = await Promise.all([
-        api.get('/discover/districts').catch(() => ({ data: { data: [] } })),
+        distPromise,
         api.get('/discover/trending-searches').catch(() => ({ data: { data: [] } })),
         api.get('/discover/categories').catch(() => ({ data: { data: [] } })),
         api.get('/discover/inspiration').catch(() => ({ data: { data: [] } })),
         api.get('/discover/trending').catch(() => ({ data: { data: [] } })),
         api.get('/discover/featured-creators').catch(() => ({ data: { data: [] } })),
       ]);
-      setDistricts((distR.data?.data || []).length > 0 ? distR.data.data : DEFAULT_DISTRICTS);
+      // Districts from discovery API return as string array, convert to objects
+      const rawDist = distR.data?.districts || distR.data?.data || [];
+      const distList = rawDist.map((d: any) => typeof d === 'string' ? { name: d } : d);
+      setDistricts(distList);
       setTrendingSearches((trendR.data?.data || []).length > 0 ? trendR.data.data : DEFAULT_TRENDING);
       const cats = catR.data?.data || [];
       setCategories(cats.map((c: any) => ({ id: c.slug || c.name?.toLowerCase(), label: c.name, icon: c.icon || 'camera', image: c.imageUrl, count: c.creatorCount || 0 })));
