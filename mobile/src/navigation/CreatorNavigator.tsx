@@ -15,6 +15,7 @@ import CreatorNotifications from '../screens/creator/CreatorNotifications';
 import CreatorCalendar from '../screens/creator/CreatorCalendar';
 import CreatorAvailability from '../screens/creator/CreatorAvailability';
 import CreatorServiceAreas from '../screens/creator/CreatorServiceAreas';
+import CreatorOnboardingScreen from '../screens/CreatorOnboardingScreen';
 import CreatorPackages from '../screens/creator/CreatorPackages';
 import CreatorReviews from '../screens/creator/CreatorReviews';
 import CreatorPortfolio from '../screens/creator/CreatorPortfolio';
@@ -72,6 +73,7 @@ export default function CreatorNavigator() {
       <Stack.Screen name="CreatorAvailability" component={CreatorAvailability} />
       <Stack.Screen name="CreatorSettings" component={CreatorProfile} />
       <Stack.Screen name="CreatorServiceAreas" component={CreatorServiceAreas} />
+      <Stack.Screen name="CreatorOnboarding" component={CreatorOnboardingScreen} />
       <Stack.Screen name="CreatorSubscription" component={CreatorSubscription} />
       <Stack.Screen name="CreatorPromotions" component={CreatorPromotions} />
       <Stack.Screen name="CreatorPaymentVerification" component={CreatorPaymentVerification} />

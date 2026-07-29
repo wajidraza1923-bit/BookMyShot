@@ -1,5 +1,5 @@
 /**
- * CreatorRegisterScreen — Multi-step creator registration
+ * CreatorOnboardingScreen — Multi-step creator registration
  * Step 1: Basic Info (Name, Studio, Category, Experience) 
  * Step 2: Location (State, District, City, Service Radius, Service Areas)
  * Only Step 2 (Location) is required. Rest is optional for initial submission.
@@ -29,7 +29,7 @@ const CATEGORIES = [
   { slug: 'wedding-planners', name: 'Wedding Planners', icon: 'clipboard-outline' },
 ];
 
-export default function CreatorRegisterScreen({ navigation }: any) {
+export default function CreatorOnboardingScreen({ navigation }: any) {
   const { register } = useAuth();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
