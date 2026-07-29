@@ -277,9 +277,9 @@ function ResultsList({ creators, navigation, districts, selectedCity, setSelecte
       ListHeaderComponent={
         <View>
           {/* Back button + District filter bar */}
-          <TouchableOpacity onPress={() => setShowResults(false)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12, paddingVertical: 4 }}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12, paddingVertical: 4 }}>
             <Ionicons name="arrow-back" size={16} color="#6C3BFF" />
-            <Text style={{ fontSize: 12, color: '#6C3BFF', fontWeight: '600' }}>Back to Discover</Text>
+            <Text style={{ fontSize: 12, color: '#6C3BFF', fontWeight: '600' }}>Back to Home</Text>
           </TouchableOpacity>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }} contentContainerStyle={{ gap: 8 }}>
             <TouchableOpacity style={[s.distChip, !selectedCity && s.distChipActive]} onPress={() => { setSelectedCity(''); }}>
@@ -296,11 +296,11 @@ function ResultsList({ creators, navigation, districts, selectedCity, setSelecte
       }
       ListEmptyComponent={
         <View style={s.empty}>
-          <Ionicons name="search-outline" size={36} color="rgba(255,255,255,0.1)" />
-          <Text style={s.emptyTitle}>No creators found{selectedCity ? ` in ${selectedCity}` : ''}</Text>
-          <Text style={s.emptySubTitle}>Try a different location or category</Text>
-          <TouchableOpacity onPress={() => setShowResults(false)} style={{ marginTop: 16, paddingHorizontal: 20, paddingVertical: 10, backgroundColor: 'rgba(255,140,43,0.1)', borderWidth: 1, borderColor: 'rgba(255,140,43,0.25)', borderRadius: 10 }}>
-            <Text style={{ color: '#6C3BFF', fontSize: 13, fontWeight: '600' }}>← Back to Discover</Text>
+          <Ionicons name="search-outline" size={44} color="#E5E7EB" />
+          <Text style={s.emptyTitle}>No results found</Text>
+          <Text style={s.emptySubTitle}>We couldn't find any creators matching your search in this area. Try a different keyword or change your location.</Text>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginTop: 20, paddingHorizontal: 24, paddingVertical: 12, backgroundColor: '#7C3AED', borderRadius: 12 }}>
+            <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '700' }}>← Back to Home</Text>
           </TouchableOpacity>
         </View>
       }
@@ -414,8 +414,8 @@ const s = StyleSheet.create({
   distChipActive: { backgroundColor: '#6C3BFF', borderColor: '#6C3BFF' },
   distChipText: { fontSize: 11, color: '#6B7280' },
   distChipTextActive: { color: '#FFFFFF', fontWeight: '600' },
-  emptySubTitle: { fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 4 },
-  empty: { alignItems: 'center', paddingTop: 50 },
-  emptyTitle: { fontSize: 14, color: '#9CA3AF', marginTop: 10 },
+  emptySubTitle: { fontSize: 12, color: '#6B7280', marginTop: 6, textAlign: 'center', lineHeight: 18, paddingHorizontal: 20 },
+  empty: { alignItems: 'center', paddingTop: 40 },
+  emptyTitle: { fontSize: 16, fontWeight: '700', color: '#1F2937', marginTop: 12 },
 });
 
