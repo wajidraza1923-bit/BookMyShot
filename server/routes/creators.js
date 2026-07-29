@@ -138,7 +138,7 @@ router.get("/search", async (req, res, next) => {
     // Also search by user name (separate query since it's a populated field)
     const userMatches = await User.find({ name: regex, role: { $in: ['creator'] } }).select('_id').limit(10);
     const userIds = userMatches.map(u => u._id);
-    let nameMatches: any[] = [];
+    let nameMatches = [];
     if (userIds.length > 0) {
       nameMatches = await Creator.find({ user: { $in: userIds }, status: "approved" }).populate("user", "name avatar").limit(10).lean();
     }
@@ -155,12 +155,12 @@ router.get("/search", async (req, res, next) => {
 
     // Normalize portfolio
     unique.forEach(c => {
-      if (c.portfolio) c.portfolio = c.portfolio.map((item: any) => typeof item === 'string' ? item : (item?.url || ''));
+      if (c.portfolio) c.portfolio = c.portfolio.map((item) => typeof item === 'string' ? item : (item?.url || ''));
     });
 
     // Generate suggestions (categories, cities, services that match)
-    const suggestions: string[] = [];
-    const addSuggestion = (val: string) => { if (val && !suggestions.includes(val)) suggestions.push(val); };
+    const suggestions = [];
+    const addSuggestion = (val) => { if (val && !suggestions.includes(val)) suggestions.push(val); };
     unique.forEach(c => {
       if (c.specialty && regex.test(c.specialty)) addSuggestion(c.specialty);
       if (c.city && regex.test(c.city)) addSuggestion(c.city);
