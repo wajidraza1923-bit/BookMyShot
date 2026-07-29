@@ -68,8 +68,22 @@ router.get("/creators-by-area", async (req, res, next) => {
     // Fetch all approved creators first, then filter by visibility rules
     const baseFilter = { status: "approved" };
     if (category && category !== 'all') {
+      // Map broad category chips to their subcategory slugs
+      const CATEGORY_MAP = {
+        'photography': ['photography', 'wedding-photography', 'wedding-photographer', 'pre-wedding', 'candid-photography', 'bridal-shoot', 'portrait', 'drone-coverage', 'destination-wedding', 'photography-videography'],
+        'videography': ['videography', 'cinematography', 'wedding-films', 'drone-coverage', 'pre-wedding-video', 'cinematic-video', 'photography-videography'],
+        'makeup': ['makeup', 'makeup-artist', 'makeup-artists', 'bridal-makeup', 'party-makeup', 'engagement-makeup', 'hair-styling', 'mehndi-artist', 'mehndi', 'beauty'],
+        'decoration': ['decoration', 'decoration-floral', 'floral', 'stage-decoration', 'lighting', 'mandap-decoration', 'tent-house'],
+        'dj': ['dj', 'djs-entertainment', 'anchors-djs', 'entertainment', 'anchor', 'music', 'band'],
+        'catering': ['catering', 'catering-services', 'veg-catering', 'non-veg-catering', 'multi-cuisine', 'live-food-counter', 'tent-house'],
+        'planner': ['planner', 'wedding-planners', 'wedding-planning', 'event-planner', 'coordinator'],
+        'venues': ['venues', 'venue', 'banquet-hall', 'resort', 'hotel', 'destination'],
+      };
+
+      const subcats = CATEGORY_MAP[category.toLowerCase()] || [category];
+      const catRegexes = subcats.map(s => new RegExp(s, 'i'));
+
       if (subcategory) {
-        // Exact subcategory match
         baseFilter.$or = [
           { categorySlug: category, subcategorySlug: subcategory },
           { categorySlug: subcategory },
@@ -78,9 +92,10 @@ router.get("/creators-by-area", async (req, res, next) => {
         ];
       } else {
         baseFilter.$or = [
-          { categorySlug: new RegExp(category, "i") },
-          { category: new RegExp(category, "i") },
-          { specialty: new RegExp(category, "i") },
+          { categorySlug: { $in: catRegexes } },
+          { subcategorySlug: { $in: catRegexes } },
+          { category: { $in: catRegexes } },
+          { specialty: new RegExp(category.replace(/[-\s]+/g, '.*'), "i") },
         ];
       }
     }
