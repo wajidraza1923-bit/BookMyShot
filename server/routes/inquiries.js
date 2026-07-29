@@ -36,15 +36,11 @@ router.post("/", optionalAuth, async (req, res, next) => {
     const creator = await Creator.findById(creatorId);
     if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
 
-    // Block inquiries only for suspended/expired/pending creators
+    // NEVER block inquiries based on subscription or lead limits
+    // Customers can ALWAYS send inquiries to approved creators
+    // Lead/subscription limits only affect CREATOR's ability to VIEW inquiry details
     if (creator.status !== "approved") {
-      return res.status(403).json({ success: false, message: `This creator cannot receive inquiries. Reason: Account status is "${creator.status}". Only approved creators can receive inquiries.` });
-    }
-    if (creator.subscriptionStatus === "suspended") {
-      return res.status(403).json({ success: false, message: "This creator's account is suspended. They cannot receive inquiries at this time." });
-    }
-    if (creator.subscriptionStatus === "expired") {
-      return res.status(403).json({ success: false, message: "This creator's subscription has expired. They cannot receive inquiries until renewed." });
+      return res.status(403).json({ success: false, message: `This creator cannot receive inquiries. Account status: "${creator.status}".` });
     }
 
     // Parse eventDate properly — handle multiple formats (DD/MM/YYYY, ISO, etc.)
@@ -151,8 +147,50 @@ router.get("/creator", protect, async (req, res, next) => {
 
     const inquiries = await Inquiry.find({ creator: creator._id })
       .populate("user", "name email phone avatar")
-      .sort("-createdAt");
-    res.json({ success: true, inquiries });
+      .sort("-createdAt")
+      .lean();
+
+    // Determine if creator can view full inquiry details
+    const LeadSettings = require("../models/LeadSettings");
+    const leadSettings = await LeadSettings.getSettings();
+    const isSubscribed = creator.subscriptionStatus === "active" || creator.subscriptionStatus === "trial";
+    const freeLimit = creator.freeLeadsLimit || leadSettings.freeLeadLimit || 3;
+    const freeUsed = creator.freeLeadsUsed || 0;
+    const hasFreeQuota = freeUsed < freeLimit;
+    const unlockedIds = (creator.unlockedLeads || []).map(id => id.toString());
+
+    // Mark each inquiry as locked/unlocked
+    const processedInquiries = inquiries.map((inq, idx) => {
+      // If subscribed — all visible
+      if (isSubscribed) return { ...inq, isLocked: false };
+      // If individually unlocked
+      if (unlockedIds.includes(inq._id.toString())) return { ...inq, isLocked: false };
+      // If within free quota (first N inquiries are free)
+      if (idx < freeLimit && freeUsed <= idx) return { ...inq, isLocked: false };
+      // Otherwise locked — blur contact details
+      return {
+        ...inq,
+        isLocked: true,
+        // Hide sensitive contact info
+        name: inq.name ? inq.name[0] + '***' : '***',
+        phone: '**********',
+        email: '***@***.com',
+        user: inq.user ? { ...inq.user, phone: '**********', email: '***@***.com' } : null,
+      };
+    });
+
+    res.json({
+      success: true,
+      inquiries: processedInquiries,
+      leadInfo: {
+        isSubscribed,
+        freeLimit,
+        freeUsed,
+        hasFreeQuota,
+        leadUnlockPrice: leadSettings.leadUnlockPrice || 70,
+        monthlyPrice: leadSettings.monthlyPrice || 199,
+      },
+    });
   } catch (e) {
     next(e);
   }
