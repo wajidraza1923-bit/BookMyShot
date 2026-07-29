@@ -16,6 +16,7 @@ import CreatorCalendar from '../screens/creator/CreatorCalendar';
 import CreatorAvailability from '../screens/creator/CreatorAvailability';
 import CreatorServiceAreas from '../screens/creator/CreatorServiceAreas';
 import CreatorOnboardingScreen from '../screens/CreatorOnboardingScreen';
+import { useAuth } from '../context/AuthContext';
 import CreatorPackages from '../screens/creator/CreatorPackages';
 import CreatorReviews from '../screens/creator/CreatorReviews';
 import CreatorPortfolio from '../screens/creator/CreatorPortfolio';
@@ -59,9 +60,14 @@ function CreatorTabs() {
 }
 
 export default function CreatorNavigator() {
+  const { user } = useAuth();
+  // Check if creator has completed onboarding (has state/district set)
+  const needsOnboarding = user && (!user.creatorStatus || user.creatorStatus === 'pending') && !user.state;
+
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', contentStyle: { backgroundColor: '#FFFFFF' } }}>
+    <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', contentStyle: { backgroundColor: '#FFFFFF' } }} initialRouteName={needsOnboarding ? 'CreatorOnboarding' : 'CreatorTabs'}>
       <Stack.Screen name="CreatorTabs" component={CreatorTabs} />
+      <Stack.Screen name="CreatorOnboarding" component={CreatorOnboardingScreen} />
       <Stack.Screen name="CreatorBookings" component={CreatorBookings} />
       <Stack.Screen name="BookingDetail" component={BookingDetail} />
       <Stack.Screen name="CreatorLeads" component={CreatorLeads} />
@@ -73,7 +79,6 @@ export default function CreatorNavigator() {
       <Stack.Screen name="CreatorAvailability" component={CreatorAvailability} />
       <Stack.Screen name="CreatorSettings" component={CreatorProfile} />
       <Stack.Screen name="CreatorServiceAreas" component={CreatorServiceAreas} />
-      <Stack.Screen name="CreatorOnboarding" component={CreatorOnboardingScreen} />
       <Stack.Screen name="CreatorSubscription" component={CreatorSubscription} />
       <Stack.Screen name="CreatorPromotions" component={CreatorPromotions} />
       <Stack.Screen name="CreatorPaymentVerification" component={CreatorPaymentVerification} />
