@@ -471,17 +471,19 @@ export default function NearMeScreen({ navigation }: any) {
                 { icon: 'briefcase-outline', label: 'Experience', get: (c: any) => `${c?.experience || '3'}+ Years` },
                 { icon: 'images-outline', label: 'Portfolio', get: (c: any) => `${(c?.portfolio || []).length} Photos` },
                 { icon: 'location-outline', label: 'Location', get: (c: any) => c?.baseCity || c?.city || '—' },
-                { icon: 'checkmark-circle', label: 'Verified', get: (c: any) => c?.verified ? '✔️' : '—' },
+                { icon: 'shield-checkmark', label: 'Verified', get: (c: any) => c?.verified ? '● Verified' : '—', color: '#10B981' },
                 { icon: 'flash-outline', label: 'Available', get: (c: any) => '🟢 Available' },
               ].map((row, i) => (
                 <View key={i} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' }}>
                   <View style={{ width: 90, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                    <Ionicons name={row.icon as any} size={14} color="#7C3AED" />
+                    <Ionicons name={row.icon as any} size={14} color={(row as any).color || '#7C3AED'} />
                     <Text style={{ fontSize: 11, fontWeight: '600', color: '#6B7280' }}>{row.label}</Text>
                   </View>
                   {compareList.map(id => {
                     const c = filtered.find(x => x._id === id);
-                    return <Text key={id} style={{ flex: 1, fontSize: 12, fontWeight: '600', color: '#1F2937', textAlign: 'center' }}>{row.get(c)}</Text>;
+                    const val = row.get(c);
+                    const isGreen = val.includes('●') || val.includes('🟢');
+                    return <Text key={id} style={{ flex: 1, fontSize: 12, fontWeight: '600', color: isGreen ? '#10B981' : '#1F2937', textAlign: 'center' }}>{val}</Text>;
                   })}
                 </View>
               ))}
