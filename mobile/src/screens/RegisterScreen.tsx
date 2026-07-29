@@ -35,12 +35,61 @@ export default function RegisterScreen({ navigation }: any) {
     try {
       const res = await api.get(`/subcategories/${slug}`);
       const data = res.data?.data || [];
-      setSubcategories(data);
-      return data;
-    } catch {
-      setSubcategories([]);
-      return [];
-    }
+      if (data.length > 0) { setSubcategories(data); return data; }
+    } catch {}
+    // Fallback: use local subcategory mapping (same as Home/SubCategories screen)
+    const LOCAL_SUBS: Record<string, any[]> = {
+      'photography-videography': [
+        { name: 'Wedding Photography', slug: 'wedding-photography', icon: 'camera-outline' },
+        { name: 'Pre-Wedding Shoot', slug: 'pre-wedding', icon: 'heart-outline' },
+        { name: 'Candid Photography', slug: 'candid-photography', icon: 'aperture-outline' },
+        { name: 'Cinematography', slug: 'cinematography', icon: 'film-outline' },
+        { name: 'Drone Coverage', slug: 'drone-coverage', icon: 'airplane-outline' },
+        { name: 'Album Design', slug: 'album-design', icon: 'albums-outline' },
+      ],
+      'makeup-artists': [
+        { name: 'Bridal Makeup', slug: 'bridal-makeup', icon: 'color-palette-outline' },
+        { name: 'Party Makeup', slug: 'party-makeup', icon: 'sparkles-outline' },
+        { name: 'Engagement Makeup', slug: 'engagement-makeup', icon: 'heart-circle-outline' },
+        { name: 'Hair Styling', slug: 'hair-styling', icon: 'cut-outline' },
+        { name: 'Mehndi Artist', slug: 'mehndi-artist', icon: 'hand-left-outline' },
+      ],
+      'decoration-floral': [
+        { name: 'Stage Decoration', slug: 'stage-decoration', icon: 'flower-outline' },
+        { name: 'Mandap Decoration', slug: 'mandap-decoration', icon: 'home-outline' },
+        { name: 'Floral Decoration', slug: 'floral-decoration', icon: 'leaf-outline' },
+        { name: 'Lighting', slug: 'lighting', icon: 'bulb-outline' },
+        { name: 'Tent House', slug: 'tent-house', icon: 'home-outline' },
+      ],
+      'catering-services': [
+        { name: 'Veg Catering', slug: 'veg-catering', icon: 'leaf-outline' },
+        { name: 'Non-Veg Catering', slug: 'non-veg-catering', icon: 'restaurant-outline' },
+        { name: 'Multi-Cuisine', slug: 'multi-cuisine', icon: 'globe-outline' },
+        { name: 'Live Food Counter', slug: 'live-food-counter', icon: 'flame-outline' },
+        { name: 'Tent House', slug: 'tent-house', icon: 'home-outline' },
+      ],
+      'djs-entertainment': [
+        { name: 'DJ', slug: 'dj', icon: 'musical-notes-outline' },
+        { name: 'Live Band', slug: 'live-band', icon: 'mic-outline' },
+        { name: 'Anchor/Host', slug: 'anchor-host', icon: 'megaphone-outline' },
+        { name: 'Dhol Players', slug: 'dhol-players', icon: 'musical-note-outline' },
+      ],
+      'venues': [
+        { name: 'Banquet Hall', slug: 'banquet-hall', icon: 'business-outline' },
+        { name: 'Resort', slug: 'resort', icon: 'bed-outline' },
+        { name: 'Farm House', slug: 'farm-house', icon: 'leaf-outline' },
+        { name: 'Open Lawn', slug: 'open-lawn', icon: 'sunny-outline' },
+      ],
+      'wedding-planners': [
+        { name: 'Full Wedding Planning', slug: 'full-wedding-planning', icon: 'clipboard-outline' },
+        { name: 'Day Coordination', slug: 'day-coordination', icon: 'calendar-outline' },
+        { name: 'Destination Wedding', slug: 'destination-wedding', icon: 'airplane-outline' },
+        { name: 'Budget Planning', slug: 'budget-planning', icon: 'wallet-outline' },
+      ],
+    };
+    const fallback = LOCAL_SUBS[slug] || [];
+    setSubcategories(fallback);
+    return fallback;
   };
 
   const selectCategory = async (item: any) => {
