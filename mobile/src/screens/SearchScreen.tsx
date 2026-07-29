@@ -43,17 +43,35 @@ function _img(item: any): string { if (!item) return ''; if (typeof item === 'st
 export default function SearchScreen({ navigation, route }: any) {
   const [query, setQuery] = useState('');
   const [creators, setCreators] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCity, setSelectedCity] = useState(route?.params?.city || '');
   const [selectedCategory, setSelectedCategory] = useState(route?.params?.category || '');
   const [selectedSubcategory, setSelectedSubcategory] = useState(route?.params?.subcategory || '');
   const [showResults, setShowResults] = useState(!!route?.params?.city || !!route?.params?.category || !!route?.params?.subcategory);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [districts, setDistricts] = useState<any[]>([]);
   const [trendingSearches, setTrendingSearches] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [inspiration, setInspiration] = useState<any[]>([]);
   const [trendingCreators, setTrendingCreators] = useState<any[]>([]);
   const [featuredCreators, setFeaturedCreators] = useState<any[]>([]);
+
+  // Load recent searches from storage
+  useEffect(() => {
+    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+    AsyncStorage.getItem('bms_recent_searches').then((raw: string | null) => {
+      if (raw) try { setRecentSearches(JSON.parse(raw)); } catch {}
+    }).catch(() => {});
+  }, []);
+
+  const saveRecentSearch = async (term: string) => {
+    if (!term || term.length < 2) return;
+    const updated = [term, ...recentSearches.filter(s => s !== term)].slice(0, 8);
+    setRecentSearches(updated);
+    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+    await AsyncStorage.setItem('bms_recent_searches', JSON.stringify(updated)).catch(() => {});
+  };
 
   useEffect(() => { loadAll(); }, []);
 
@@ -88,16 +106,36 @@ export default function SearchScreen({ navigation, route }: any) {
   const searchCreators = useCallback(async () => {
     setLoading(true);
     try {
-      const params: any = {};
-      if (query) params.search = query;
-      if (selectedCity) params.city = selectedCity;
-      if (selectedCategory) params.category = selectedCategory;
-      if (selectedSubcategory) params.subcategory = selectedSubcategory;
-      const res = await creatorsAPI.getAll(params);
-      setCreators(res.data?.creators || res.data?.data || []);
+      if (query && query.length >= 2) {
+        // Use dedicated fast search endpoint
+        const res = await api.get('/creators/search', { params: { q: query } });
+        setCreators(res.data?.creators || []);
+        setSuggestions(res.data?.suggestions || []);
+        setShowResults(true);
+        saveRecentSearch(query);
+      } else {
+        // Fallback: use filters
+        const params: any = {};
+        if (selectedCity) params.city = selectedCity;
+        if (selectedCategory) params.category = selectedCategory;
+        if (selectedSubcategory) params.subcategory = selectedSubcategory;
+        const res = await creatorsAPI.getAll(params);
+        setCreators(res.data?.creators || res.data?.data || []);
+        setSuggestions([]);
+      }
     } catch { setCreators([]); }
     finally { setLoading(false); }
   }, [query, selectedCity, selectedCategory, selectedSubcategory]);
+
+  // Debounced real-time search (300ms delay)
+  useEffect(() => {
+    if (query.length >= 2) {
+      const timer = setTimeout(() => { searchCreators(); }, 300);
+      return () => clearTimeout(timer);
+    } else if (query.length === 0 && showResults) {
+      searchCreators();
+    }
+  }, [query]);
 
   useEffect(() => {
     if (showResults || query.length > 0) { const t = setTimeout(searchCreators, 300); return () => clearTimeout(t); }

@@ -109,6 +109,69 @@ router.get("/nearby", async (req, res, next) => {
   }
 });
 
+// ═══ Fast creator search (real-time, as-you-type) ═══
+router.get("/search", async (req, res, next) => {
+  try {
+    const { q } = req.query;
+    if (!q || String(q).length < 2) return res.json({ success: true, creators: [], suggestions: [] });
+
+    const query = String(q).trim();
+    const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+
+    // Search across all relevant fields
+    const creators = await Creator.find({
+      status: "approved",
+      $or: [
+        { specialty: regex },
+        { category: regex },
+        { categorySlug: regex },
+        { subcategorySlug: regex },
+        { city: regex },
+        { baseCity: regex },
+        { district: regex },
+        { state: regex },
+        { studioName: regex },
+        { serviceAreas: { $elemMatch: { $regex: regex } } },
+      ],
+    }).populate("user", "name avatar").limit(20).lean();
+
+    // Also search by user name (separate query since it's a populated field)
+    const userMatches = await User.find({ name: regex, role: { $in: ['creator'] } }).select('_id').limit(10);
+    const userIds = userMatches.map(u => u._id);
+    let nameMatches: any[] = [];
+    if (userIds.length > 0) {
+      nameMatches = await Creator.find({ user: { $in: userIds }, status: "approved" }).populate("user", "name avatar").limit(10).lean();
+    }
+
+    // Merge and deduplicate
+    const allResults = [...creators, ...nameMatches];
+    const seen = new Set();
+    const unique = allResults.filter(c => {
+      const id = c._id.toString();
+      if (seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
+
+    // Normalize portfolio
+    unique.forEach(c => {
+      if (c.portfolio) c.portfolio = c.portfolio.map((item: any) => typeof item === 'string' ? item : (item?.url || ''));
+    });
+
+    // Generate suggestions (categories, cities, services that match)
+    const suggestions: string[] = [];
+    const addSuggestion = (val: string) => { if (val && !suggestions.includes(val)) suggestions.push(val); };
+    unique.forEach(c => {
+      if (c.specialty && regex.test(c.specialty)) addSuggestion(c.specialty);
+      if (c.city && regex.test(c.city)) addSuggestion(c.city);
+      if (c.baseCity && regex.test(c.baseCity)) addSuggestion(c.baseCity);
+      if (c.district && regex.test(c.district)) addSuggestion(c.district);
+    });
+
+    res.json({ success: true, count: unique.length, creators: unique, suggestions: suggestions.slice(0, 5) });
+  } catch (e) { next(e); }
+});
+
 // Public: list approved creators with filters (NO email exposed)
 router.get("/", async (req, res, next) => {
   try {
