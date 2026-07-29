@@ -168,33 +168,15 @@ export default function RegisterScreen({ navigation }: any) {
           <View style={s.errorBanner}><Ionicons name="alert-circle" size={16} color="#EF4444" /><Text style={s.errorBannerText}>{errors.general}</Text></View>
         )}
 
-        {/* Category for creators — shown INLINE, no modal needed */}
+        {/* Category for creators — tap once to open modal with categories pre-loaded */}
         {role === 'creator' && (
           <View style={s.fieldWrap}>
             <Text style={s.label}>Service Category *</Text>
-            {/* Categories — horizontal scrollable */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
-              {categories.map((item: any) => (
-                <TouchableOpacity key={item.slug || item._id} style={[s.catChip, selectedCategorySlug === item.slug && s.catChipActive]} onPress={() => selectCategory(item)}>
-                  <Ionicons name={item.icon || 'camera'} size={14} color={selectedCategorySlug === item.slug ? '#fff' : '#6B7280'} />
-                  <Text style={[s.catChipText, selectedCategorySlug === item.slug && { color: '#fff' }]}>{item.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            {/* Subcategories — shown as chips below when category selected */}
-            {selectedCategorySlug && subcategories.length > 0 && (
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                {subcategories.map((item: any) => (
-                  <TouchableOpacity key={item.slug || item._id} style={[s.subChip, selectedSubcategorySlug === item.slug && s.subChipActive]} onPress={() => selectSubcategory(item)}>
-                    {selectedSubcategorySlug === item.slug && <Ionicons name="checkmark-circle" size={12} color="#fff" />}
-                    <Text style={[s.subChipText, selectedSubcategorySlug === item.slug && { color: '#fff' }]}>{item.name}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-
-            {selectedSubcategoryName ? <Text style={{ fontSize: 11, color: '#10B981', marginTop: 6, fontWeight: '600' }}>✓ {selectedCategoryName} → {selectedSubcategoryName}</Text> : null}
+            <TouchableOpacity style={[s.inputRow, errors.category && s.inputError]} onPress={() => setShowCatPicker(true)}>
+              <Ionicons name="briefcase-outline" size={18} color="#9CA3AF" />
+              <Text style={[s.input, { color: selectedCategorySlug ? '#1F2937' : '#D1D5DB' }]}>{selectedSubcategoryName ? `${selectedCategoryName} → ${selectedSubcategoryName}` : (selectedCategoryName !== 'Select Service' ? selectedCategoryName : 'Select Service')}</Text>
+              <Ionicons name="chevron-down" size={16} color="#6C3BFF" />
+            </TouchableOpacity>
             {errors.category && <Text style={s.fieldError}>{errors.category}</Text>}
           </View>
         )}
