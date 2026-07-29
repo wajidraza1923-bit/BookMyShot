@@ -109,6 +109,43 @@ router.get("/nearby", async (req, res, next) => {
   }
 });
 
+// ═══ Live search suggestions (as-you-type, grouped) ═══
+router.get("/suggestions", async (req, res, next) => {
+  try {
+    const { q } = req.query;
+    if (!q || String(q).length < 2) return res.json({ success: true, locations: [], creators: [], categories: [], popular: [] });
+
+    const query = String(q).trim();
+    const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+
+    // Search locations
+    const ServiceLocation = require("../models/ServiceLocation");
+    const locations = await ServiceLocation.find({
+      isActive: true,
+      $or: [{ city: regex }, { district: regex }, { state: regex }],
+    }).limit(5).lean();
+
+    // Search creators by name
+    const creatorUsers = await User.find({ name: regex, role: 'creator' }).select('_id name').limit(5);
+    const creatorIds = creatorUsers.map(u => u._id);
+    const creatorResults = creatorIds.length > 0
+      ? await Creator.find({ user: { $in: creatorIds }, status: "approved" }).populate("user", "name avatar").select("user specialty city studioName categorySlug").limit(5).lean()
+      : [];
+
+    // Search categories/services
+    const categoryMatches = await Creator.distinct("specialty", { status: "approved", specialty: regex });
+    const categoryResults = categoryMatches.slice(0, 5);
+
+    res.json({
+      success: true,
+      locations: locations.map(l => ({ city: l.city, district: l.district, state: l.state })),
+      creators: creatorResults.map(c => ({ _id: c._id, name: c.user?.name, avatar: c.user?.avatar, specialty: c.specialty, city: c.city, studioName: c.studioName })),
+      categories: categoryResults,
+      popular: ['Wedding Photographer', 'Bridal Makeup', 'Mehendi Artist', 'Wedding Decor', 'DJ'].filter(p => regex.test(p)),
+    });
+  } catch (e) { next(e); }
+});
+
 // ═══ Fast creator search (real-time, as-you-type) ═══
 router.get("/search", async (req, res, next) => {
   try {

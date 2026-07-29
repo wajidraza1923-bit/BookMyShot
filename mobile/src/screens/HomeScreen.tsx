@@ -109,6 +109,25 @@ export default function HomeScreen({ navigation }: any) {
   const [pickerStep, setPickerStep] = useState<'state' | 'district'>('state');
   const [pickerState, setPickerState] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchSuggestions, setSearchSuggestions] = useState<any>(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Live search suggestions
+  useEffect(() => {
+    if (searchQuery.length >= 2) {
+      const timer = setTimeout(async () => {
+        try {
+          const res = await api.get('/creators/suggestions', { params: { q: searchQuery } });
+          setSearchSuggestions(res.data);
+          setShowSuggestions(true);
+        } catch {}
+      }, 300);
+      return () => clearTimeout(timer);
+    } else {
+      setShowSuggestions(false);
+      setSearchSuggestions(null);
+    }
+  }, [searchQuery]);
   const [heroConfig, setHeroConfig] = useState({ cashbackPercentage: 10, heroTitle: 'Your Dream Wedding,', heroTitleAccent: 'More Rewards!', heroSubtitle: 'Book verified wedding creators and get exciting cashback on every successful booking.', heroEyebrow: 'CELEBRATE BEAUTIFULLY. SAVE MORE.', heroCta1Text: 'Find Creator', heroCta2Text: 'Get Free Quote' });
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const shineAnim = useRef(new Animated.Value(-1)).current;
@@ -390,9 +409,57 @@ export default function HomeScreen({ navigation }: any) {
         <View style={st.searchRow}>
           <View style={st.searchBar}>
             <Ionicons name="search" size={15} color="#9CA3AF" />
-            <TextInput style={st.searchInput} placeholder="Search creators, services or anything..." placeholderTextColor="#9CA3AF" value={searchQuery} onChangeText={setSearchQuery} onSubmitEditing={() => { if (searchQuery.length > 1) navigation.navigate('Discover', { search: searchQuery }); }} />
+            <TextInput style={st.searchInput} placeholder="Search creators, services or anything..." placeholderTextColor="#9CA3AF" value={searchQuery} onChangeText={setSearchQuery} onSubmitEditing={() => { if (searchQuery.length > 1) { setShowSuggestions(false); navigation.navigate('Discover', { search: searchQuery }); } }} />
+            {searchQuery.length > 0 && <TouchableOpacity onPress={() => { setSearchQuery(''); setShowSuggestions(false); }}><Ionicons name="close-circle" size={16} color="#D1D5DB" /></TouchableOpacity>}
           </View>
           <TouchableOpacity style={[st.filtersBtn, filtersApplied && { backgroundColor: '#FF4FA3' }]} onPress={openFilterModal}>
+
+        {/* Live Search Suggestions */}
+        {showSuggestions && searchSuggestions && (
+          <View style={st.suggestionsBox}>
+            {/* Locations */}
+            {searchSuggestions.locations?.length > 0 && (
+              <View style={st.sugGroup}>
+                <Text style={st.sugGroupTitle}>📍 Locations</Text>
+                {searchSuggestions.locations.map((l: any, i: number) => (
+                  <TouchableOpacity key={i} style={st.sugItem} onPress={() => { setSearchQuery(''); setShowSuggestions(false); navigation.navigate('Discover', { city: l.city, search: l.city }); }}>
+                    <Ionicons name="location-outline" size={14} color="#7C3AED" />
+                    <Text style={st.sugItemText}>{l.city}, {l.district}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+            {/* Creators */}
+            {searchSuggestions.creators?.length > 0 && (
+              <View style={st.sugGroup}>
+                <Text style={st.sugGroupTitle}>👤 Creators</Text>
+                {searchSuggestions.creators.map((c: any) => (
+                  <TouchableOpacity key={c._id} style={st.sugItem} onPress={() => { setSearchQuery(''); setShowSuggestions(false); navigation.navigate('CreatorProfile', { id: c._id }); }}>
+                    <Ionicons name="person-outline" size={14} color="#7C3AED" />
+                    <Text style={st.sugItemText}>{c.name}{c.studioName ? ` (${c.studioName})` : ''}</Text>
+                    <Text style={st.sugItemMeta}>{c.specialty}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+            {/* Categories */}
+            {searchSuggestions.categories?.length > 0 && (
+              <View style={st.sugGroup}>
+                <Text style={st.sugGroupTitle}>🎯 Services</Text>
+                {searchSuggestions.categories.map((cat: string, i: number) => (
+                  <TouchableOpacity key={i} style={st.sugItem} onPress={() => { setSearchQuery(''); setShowSuggestions(false); navigation.navigate('Discover', { search: cat }); }}>
+                    <Ionicons name="briefcase-outline" size={14} color="#7C3AED" />
+                    <Text style={st.sugItemText}>{cat}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+            {/* View all results */}
+            <TouchableOpacity style={st.sugViewAll} onPress={() => { setShowSuggestions(false); navigation.navigate('Discover', { search: searchQuery }); }}>
+              <Text style={st.sugViewAllText}>View all results for "{searchQuery}" →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
             <Ionicons name="options" size={14} color="#fff" /><Text style={st.filtersBtnT}>{filtersApplied ? 'Filtered' : 'Filters'}</Text>
           </TouchableOpacity>
         </View>
@@ -844,6 +911,15 @@ const st = StyleSheet.create({
   searchRow: { flexDirection: 'row', paddingHorizontal: 16, marginTop: 12, gap: 8 },
   searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFB', borderRadius: 12, paddingHorizontal: 12, height: 44, borderWidth: 1, borderColor: '#E5E7EB', gap: 8 },
   searchInput: { flex: 1, fontSize: 12, color: '#1F2937' },
+  // Suggestions
+  suggestionsBox: { marginHorizontal: 16, backgroundColor: '#FFFFFF', borderRadius: 14, borderWidth: 1, borderColor: '#E5E7EB', padding: 12, elevation: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, marginTop: 4 },
+  sugGroup: { marginBottom: 10 },
+  sugGroupTitle: { fontSize: 11, fontWeight: '700', color: '#6B7280', marginBottom: 6 },
+  sugItem: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+  sugItemText: { fontSize: 13, color: '#1F2937', flex: 1 },
+  sugItemMeta: { fontSize: 10, color: '#9CA3AF' },
+  sugViewAll: { paddingVertical: 10, alignItems: 'center' },
+  sugViewAllText: { fontSize: 12, fontWeight: '600', color: '#7C3AED' },
   filtersBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#6C3BFF', borderRadius: 12, paddingHorizontal: 14, height: 44 },
   filtersBtnT: { fontSize: 12, fontWeight: '800', color: '#FFFFFF', letterSpacing: 0.3 },
   // ═══ HERO — Image as integrated full background ═══
