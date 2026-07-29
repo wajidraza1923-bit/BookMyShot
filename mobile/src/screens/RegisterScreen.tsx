@@ -32,15 +32,30 @@ export default function RegisterScreen({ navigation }: any) {
   };
 
   const loadSubcategories = async (slug: string) => {
-    try { const res = await api.get(`/subcategories/${slug}`); setSubcategories(res.data?.data || []); } catch { setSubcategories([]); }
+    try {
+      const res = await api.get(`/subcategories/${slug}`);
+      const data = res.data?.data || [];
+      setSubcategories(data);
+      return data;
+    } catch {
+      setSubcategories([]);
+      return [];
+    }
   };
 
-  const selectCategory = (item: any) => {
+  const selectCategory = async (item: any) => {
     setSelectedCategorySlug(item.slug);
     setSelectedCategoryName(item.name);
     setSelectedGroup(item.group || '');
     setCatPickerStep('subcategory');
-    loadSubcategories(item.slug);
+    const subs = await loadSubcategories(item.slug);
+    // If no subcategories exist, use the category itself as selection
+    if (!subs || subs.length === 0) {
+      setSelectedSubcategorySlug(item.slug);
+      setSelectedSubcategoryName(item.name);
+      setShowCatPicker(false);
+      setCatPickerStep('category');
+    }
   };
 
   const selectSubcategory = (item: any) => {
