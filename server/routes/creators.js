@@ -241,7 +241,7 @@ router.get("/profile", protect, authorize("creator"), async (req, res, next) => 
 router.put("/profile", protect, authorize("creator"), async (req, res, next) => {
   try {
     // Whitelist allowed fields — prevent creators from modifying sensitive fields
-    const ALLOWED_FIELDS = ['specialty', 'bio', 'experience', 'location', 'city', 'category', 'categorySlug', 'subcategorySlug', 'categoryGroup', 'categoryData', 'budgetMin', 'budgetMax', 'social', 'gear', 'team', 'darkMode', 'coverImage'];
+    const ALLOWED_FIELDS = ['specialty', 'bio', 'experience', 'location', 'city', 'category', 'categorySlug', 'subcategorySlug', 'categoryGroup', 'categoryData', 'budgetMin', 'budgetMax', 'social', 'gear', 'team', 'darkMode', 'coverImage', 'state', 'district', 'baseCity', 'studioName', 'studioAddress', 'pincode', 'serviceAreas', 'travelPreference', 'maxTravelDistance'];
     const update = {};
     for (const key of ALLOWED_FIELDS) {
       if (req.body[key] !== undefined) update[key] = req.body[key];
