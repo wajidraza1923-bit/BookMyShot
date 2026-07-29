@@ -142,7 +142,12 @@ export default function SearchScreen({ navigation, route }: any) {
   // Also trigger search immediately on mount if we have a search param
   useEffect(() => {
     if (route?.params?.search && route.params.search.length >= 2) {
-      searchCreators();
+      // Direct API call on mount (bypass useCallback stale closure issue)
+      setLoading(true);
+      api.get('/creators/search', { params: { q: route.params.search } })
+        .then(res => { setCreators(res.data?.creators || []); setSuggestions(res.data?.suggestions || []); setShowResults(true); })
+        .catch(() => { setCreators([]); })
+        .finally(() => setLoading(false));
     }
   }, []);
 
