@@ -46,9 +46,9 @@ export default function NearMeScreen({ navigation }: any) {
   const [creators, setCreators] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedCity, setSelectedCity] = useState(savedLocation.city || '');
-  const [selectedDistrict, setSelectedDistrict] = useState(savedLocation.district || '');
-  const [selectedState, setSelectedState] = useState(savedLocation.state || '');
+  // Using savedLocation from context directly
+  
+  
   const [selectedCat, setSelectedCat] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showLocationPicker, setShowLocationPicker] = useState(false);
@@ -64,11 +64,9 @@ export default function NearMeScreen({ navigation }: any) {
   const [pickerStep, setPickerStep] = useState<'state' | 'district' | 'city'>('state');
 
   // Load saved location on mount (from shared context)
+  // Load creators on mount based on shared location
   useEffect(() => {
     if (savedLocation.district || savedLocation.city) {
-      setSelectedCity(savedLocation.city || '');
-      setSelectedDistrict(savedLocation.district || '');
-      setSelectedState(savedLocation.state || '');
       fetchCreators(savedLocation.city, savedLocation.district, savedLocation.state);
     } else {
       setLoading(false);
@@ -104,7 +102,7 @@ export default function NearMeScreen({ navigation }: any) {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchCreators(selectedCity, selectedDistrict, selectedState);
+    await fetchCreators(savedLocation.city, savedLocation.district, savedLocation.state);
     setRefreshing(false);
   };
 
@@ -132,11 +130,8 @@ export default function NearMeScreen({ navigation }: any) {
   const selectDistrict = (d: string) => { setPickerDistrict(d); setPickerStep('city'); loadCities(d); };
   const selectCity = async (c: string) => {
     setPickerCity(c);
-    setSelectedCity(c);
-    setSelectedDistrict(pickerDistrict);
-    setSelectedState(pickerState);
     setShowLocationPicker(false);
-    // Save to shared context (syncs with Home)
+    // Save to shared context (instantly syncs with Home)
     await saveLocation({ city: c, district: pickerDistrict, state: pickerState });
     fetchCreators(c, pickerDistrict, pickerState);
   };
@@ -252,7 +247,7 @@ export default function NearMeScreen({ navigation }: any) {
             <Ionicons name="location" size={20} color="#6C3BFF" />
             <View>
               <Text style={s.hTitle}>Near Me</Text>
-              <Text style={s.hSub}>{selectedCity || selectedDistrict || 'Select Location'}</Text>
+              <Text style={s.hSub}>{savedLocation.city || savedLocation.district || 'Select Location'}</Text>
             </View>
           </View>
           <View style={s.hRight}>
@@ -263,7 +258,7 @@ export default function NearMeScreen({ navigation }: any) {
         {/* SERVICE LOCATION SELECTOR */}
         <TouchableOpacity style={s.locSelector} onPress={() => { loadStates(); setPickerStep('state'); setShowLocationPicker(true); }}>
           <Ionicons name="navigate-circle" size={18} color="#6C3BFF" />
-          <Text style={s.locText}>{selectedCity ? `${selectedCity}, ${selectedDistrict}` : 'Select your service location'}</Text>
+          <Text style={s.locText}>{savedLocation.city ? `${savedLocation.city}, ${savedLocation.district}` : 'Select your service location'}</Text>
           <Ionicons name="chevron-down" size={16} color="#9CA3AF" />
         </TouchableOpacity>
 
@@ -272,7 +267,7 @@ export default function NearMeScreen({ navigation }: any) {
           <View style={s.searchBar}>
             <Ionicons name="search" size={14} color="#9CA3AF" />
             <TextInput style={s.searchInput} placeholder="Search city, district or creator..." placeholderTextColor="#9CA3AF" value={searchQuery} onChangeText={setSearchQuery} returnKeyType="search" onSubmitEditing={() => { if (searchQuery.length >= 2) fetchCreators(searchQuery, searchQuery, ''); }} />
-            {searchQuery.length > 0 && <TouchableOpacity onPress={() => { setSearchQuery(''); fetchCreators(selectedCity, selectedDistrict, selectedState); }}><Ionicons name="close-circle" size={16} color="#D1D5DB" /></TouchableOpacity>}
+            {searchQuery.length > 0 && <TouchableOpacity onPress={() => { setSearchQuery(''); fetchCreators(savedLocation.city, savedLocation.district, savedLocation.state); }}><Ionicons name="close-circle" size={16} color="#D1D5DB" /></TouchableOpacity>}
           </View>
           <TouchableOpacity style={s.sortBtn} onPress={() => setShowSort(true)}>
             <Ionicons name="swap-vertical" size={14} color="#fff" />
@@ -284,7 +279,7 @@ export default function NearMeScreen({ navigation }: any) {
           {CATEGORIES.map(c => {
             const isActive = selectedCat === c.id;
             return (
-              <TouchableOpacity key={c.id} activeOpacity={0.75} onPress={() => { setSelectedCat(c.id); fetchCreators(selectedCity, selectedDistrict, selectedState); }}>
+              <TouchableOpacity key={c.id} activeOpacity={0.75} onPress={() => { setSelectedCat(c.id); fetchCreators(savedLocation.city, savedLocation.district, savedLocation.state); }}>
                 {isActive ? (
                   <LinearGradient colors={['#7C3AED', '#D946EF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.chipSelected}>
                     <Text style={s.chipEmojiActive}>{c.emoji}</Text>
@@ -307,7 +302,7 @@ export default function NearMeScreen({ navigation }: any) {
             <View style={{ alignItems: 'center', paddingTop: 20 }}><ActivityIndicator size="large" color="#6C3BFF" /><Text style={s.loadT}>Finding creators...</Text></View>
           ) : filtered.length > 0 ? (
             <>
-              <Text style={s.resTitle}>{filtered.length} Creator{filtered.length !== 1 ? 's' : ''} in {selectedCity || selectedDistrict || 'your area'}</Text>
+              <Text style={s.resTitle}>{filtered.length} Creator{filtered.length !== 1 ? 's' : ''} in {savedLocation.city || savedLocation.district || 'your area'}</Text>
               {filtered.map(item => (
                 <PremiumCreatorCard
                   key={item._id}
@@ -401,7 +396,7 @@ export default function NearMeScreen({ navigation }: any) {
             <View style={s.sheetBar} />
             <Text style={s.sheetTitle}>Sort By</Text>
             {SORT_OPTIONS.map(o => (
-              <TouchableOpacity key={o.id} style={[s.sortOption, sortBy === o.id && s.sortOptionActive]} onPress={() => { setSortBy(o.id); setShowSort(false); fetchCreators(selectedCity, selectedDistrict, selectedState); }}>
+              <TouchableOpacity key={o.id} style={[s.sortOption, sortBy === o.id && s.sortOptionActive]} onPress={() => { setSortBy(o.id); setShowSort(false); fetchCreators(savedLocation.city, savedLocation.district, savedLocation.state); }}>
                 <Text style={[s.sortOptionT, sortBy === o.id && { color: '#6C3BFF', fontWeight: '700' }]}>{o.label}</Text>
                 {sortBy === o.id && <Ionicons name="checkmark-circle" size={18} color="#6C3BFF" />}
               </TouchableOpacity>

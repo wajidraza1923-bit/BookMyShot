@@ -101,21 +101,13 @@ export default function HomeScreen({ navigation }: any) {
   const [locationArea, setLocationArea] = useState('');
   const [locationLoading, setLocationLoading] = useState(false);
   const [showLocationDenied, setShowLocationDenied] = useState(false);
-  // Shared location from context (synced with NearMe)
+  // Shared location from context (synced with NearMe) — NO local state, read directly
   const { location: savedLocation, setLocation: saveLocation, isLocationSet } = useServiceLocation();
-  const [selectedState, setSelectedState] = useState(savedLocation.state || '');
-  const [selectedDistrict, setSelectedDistrict] = useState(savedLocation.district || '');
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [pickerStates, setPickerStates] = useState<string[]>([]);
   const [pickerDistricts, setPickerDistricts] = useState<string[]>([]);
   const [pickerStep, setPickerStep] = useState<'state' | 'district'>('state');
   const [pickerState, setPickerState] = useState('');
-
-  // Keep local state in sync with context
-  useEffect(() => {
-    if (savedLocation.state) setSelectedState(savedLocation.state);
-    if (savedLocation.district) setSelectedDistrict(savedLocation.district);
-  }, [savedLocation.state, savedLocation.district]);
   const [searchQuery, setSearchQuery] = useState('');
   const [heroConfig, setHeroConfig] = useState({ cashbackPercentage: 10, heroTitle: 'Your Dream Wedding,', heroTitleAccent: 'More Rewards!', heroSubtitle: 'Book verified wedding creators and get exciting cashback on every successful booking.', heroEyebrow: 'CELEBRATE BEAUTIFULLY. SAVE MORE.', heroCta1Text: 'Find Creator', heroCta2Text: 'Get Free Quote' });
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -390,7 +382,7 @@ export default function HomeScreen({ navigation }: any) {
         {/* LOCATION SELECTOR (State/District) */}
         <TouchableOpacity style={st.locRow} onPress={() => { setShowLocationPicker(true); setPickerStep('state'); api.get('/discovery/states').then(r => setPickerStates(r.data?.states || [])).catch(() => {}); }}>
           <Ionicons name="location" size={16} color="#6C3BFF" />
-          <Text style={st.locText}>{selectedDistrict ? `${selectedDistrict}, ${selectedState}` : 'Select your location'}</Text>
+          <Text style={st.locText}>{savedLocation.district ? `${savedLocation.district}, ${savedLocation.state}` : 'Select your location'}</Text>
           <Ionicons name="chevron-down" size={14} color="#9CA3AF" />
         </TouchableOpacity>
 
@@ -682,8 +674,6 @@ export default function HomeScreen({ navigation }: any) {
                   {pickerDistricts.length === 0 ? <ActivityIndicator color="#6C3BFF" style={{ marginTop: 20 }} /> :
                     pickerDistricts.map(d => (
                       <TouchableOpacity key={d} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F3F4F6', gap: 8 }} onPress={async () => {
-                        setSelectedState(pickerState);
-                        setSelectedDistrict(d);
                         setShowLocationPicker(false);
                         await saveLocation({ state: pickerState, district: d, city: d });
                         loadData();
