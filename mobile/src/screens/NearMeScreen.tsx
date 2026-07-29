@@ -75,13 +75,14 @@ export default function NearMeScreen({ navigation }: any) {
     }
   }, []);
 
-  const fetchCreators = async (city?: string, district?: string, state?: string) => {
+  const fetchCreators = async (city?: string, district?: string, state?: string, search?: string) => {
     setLoading(true);
     try {
       const params: any = {};
       if (city) params.city = city;
       if (district) params.district = district;
       if (state) params.state = state;
+      if (search) params.search = search;
       if (selectedCat !== 'all') params.category = selectedCat;
       if (sortBy !== 'nearest') params.sort = sortBy;
 
@@ -266,7 +267,7 @@ export default function NearMeScreen({ navigation }: any) {
         <View style={s.searchRow}>
           <View style={s.searchBar}>
             <Ionicons name="search" size={14} color="#9CA3AF" />
-            <TextInput style={s.searchInput} placeholder="Search city, district or creator..." placeholderTextColor="#9CA3AF" value={searchQuery} onChangeText={setSearchQuery} returnKeyType="search" onSubmitEditing={() => { if (searchQuery.length >= 2) fetchCreators(searchQuery, searchQuery, ''); }} />
+            <TextInput style={s.searchInput} placeholder="Search city, district or creator..." placeholderTextColor="#9CA3AF" value={searchQuery} onChangeText={setSearchQuery} returnKeyType="search" onSubmitEditing={() => { if (searchQuery.length >= 2) fetchCreators(searchQuery, searchQuery, '', searchQuery); }} />
             {searchQuery.length > 0 && <TouchableOpacity onPress={() => { setSearchQuery(''); fetchCreators(savedLocation.city, savedLocation.district, savedLocation.state); }}><Ionicons name="close-circle" size={16} color="#D1D5DB" /></TouchableOpacity>}
           </View>
           <TouchableOpacity style={s.sortBtn} onPress={() => setShowSort(true)}>

@@ -59,10 +59,10 @@ router.get("/search-locations", async (req, res, next) => {
 // ═══ PUBLIC: Find creators by service area (replaces Near Me GPS) ═══
 router.get("/creators-by-area", async (req, res, next) => {
   try {
-    const { city, district, state, category, sort, minPrice, maxPrice, verified, featured } = req.query;
+    const { city, district, state, category, sort, minPrice, maxPrice, verified, featured, search } = req.query;
 
-    if (!city && !district && !state) {
-      return res.status(400).json({ success: false, message: "At least city, district, or state required" });
+    if (!city && !district && !state && !search) {
+      return res.status(400).json({ success: false, message: "At least city, district, state, or search required" });
     }
 
     // Fetch all approved creators first, then filter by visibility rules
@@ -86,6 +86,7 @@ router.get("/creators-by-area", async (req, res, next) => {
     const customerCity = (city || '').toLowerCase().trim();
     const customerDistrict = (district || '').toLowerCase().trim();
     const customerState = (state || '').toLowerCase().trim();
+    const searchText = (search || '').toLowerCase().trim();
 
     creators = creators.filter(c => {
       const pref = c.travelPreference || '';
@@ -93,6 +94,20 @@ router.get("/creators-by-area", async (req, res, next) => {
       const creatorDistrict = (c.district || '').toLowerCase().trim();
       const creatorState = (c.state || '').toLowerCase().trim();
       const areas = (c.serviceAreas || []).map((a) => a.toLowerCase().trim());
+      const creatorName = (c.user?.name || '').toLowerCase();
+      const creatorSpec = (c.specialty || '').toLowerCase();
+
+      // If search text provided — match against name, specialty, city, district, serviceAreas
+      if (searchText && !customerCity && !customerDistrict && !customerState) {
+        // Pure text search (user typed something not in the picker)
+        if (creatorName.includes(searchText)) return true;
+        if (creatorSpec.includes(searchText)) return true;
+        if (creatorCity.includes(searchText)) return true;
+        if (creatorDistrict.includes(searchText)) return true;
+        if (creatorState.includes(searchText)) return true;
+        if (areas.some(a => a.includes(searchText))) return true;
+        return false;
+      }
 
       // Rule 1: Check Service Areas (always applies regardless of travel preference)
       if (customerCity && areas.includes(customerCity)) return true;
