@@ -109,60 +109,17 @@ router.get("/nearby", async (req, res, next) => {
   }
 });
 
-// ═══ Live search suggestions (as-you-type, grouped) ═══
-router.get("/suggestions", async (req, res, next) => {
-  try {
-    const { q, state } = req.query;
-    if (!q || String(q).length < 2) return res.json({ success: true, locations: [], creators: [], categories: [], popular: [] });
-
-    const query = String(q).trim();
-    const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-    const selectedState = state ? String(state).trim() : '';
-
-    // Search locations — filter by state if provided
-    const ServiceLocation = require("../models/ServiceLocation");
-    const locFilter = { isActive: true, $or: [{ city: regex }, { district: regex }] };
-    if (selectedState) locFilter.state = new RegExp(selectedState, 'i');
-    const locations = await ServiceLocation.find(locFilter).limit(5).lean();
-
-    // Search creators by name — filter by state
-    const creatorUsers = await User.find({ name: regex, role: 'creator' }).select('_id name').limit(10);
-    const creatorIds = creatorUsers.map(u => u._id);
-    let creatorFilter = { user: { $in: creatorIds }, status: "approved" };
-    if (selectedState) creatorFilter.state = new RegExp(selectedState, 'i');
-    const creatorResults = creatorIds.length > 0
-      ? await Creator.find(creatorFilter).populate("user", "name avatar").select("user specialty city studioName categorySlug state").limit(5).lean()
-      : [];
-
-    // Search categories/services
-    const catFilter = { status: "approved", specialty: regex };
-    if (selectedState) catFilter.state = new RegExp(selectedState, 'i');
-    const categoryMatches = await Creator.distinct("specialty", catFilter);
-    const categoryResults = categoryMatches.slice(0, 5);
-
-    res.json({
-      success: true,
-      locations: locations.map(l => ({ city: l.city, district: l.district, state: l.state })),
-      creators: creatorResults.map(c => ({ _id: c._id, name: c.user?.name, avatar: c.user?.avatar, specialty: c.specialty, city: c.city, studioName: c.studioName })),
-      categories: categoryResults,
-      popular: ['Wedding Photographer', 'Bridal Makeup', 'Mehendi Artist', 'Wedding Decor', 'DJ'].filter(p => regex.test(p)),
-    });
-  } catch (e) { next(e); }
-});
-
 // ═══ Fast creator search (real-time, as-you-type) ═══
 router.get("/search", async (req, res, next) => {
   try {
-    const { q, state, district, category } = req.query;
+    const { q } = req.query;
     if (!q || String(q).length < 2) return res.json({ success: true, creators: [], suggestions: [] });
 
     const query = String(q).trim();
     const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-    const selectedState = state ? String(state).toLowerCase().trim() : '';
-    const selectedDistrict = district ? String(district).toLowerCase().trim() : '';
 
-    // Step 1: Find creators matching the search text
-    const textFilter = {
+    // Search across all relevant fields
+    const creators = await Creator.find({
       status: "approved",
       $or: [
         { specialty: regex },
@@ -176,74 +133,42 @@ router.get("/search", async (req, res, next) => {
         { studioName: regex },
         { serviceAreas: { $elemMatch: { $regex: regex } } },
       ],
-    };
-    if (category) textFilter.categorySlug = new RegExp(category, 'i');
+    }).populate("user", "name avatar").limit(20).lean();
 
-    let creators = await Creator.find(textFilter).populate("user", "name avatar").limit(50).lean();
-
-    // Also search by user name
-    const userMatches = await User.find({ name: regex, role: 'creator' }).select('_id').limit(10);
-    if (userMatches.length > 0) {
-      const nameFilter = { user: { $in: userMatches.map(u => u._id) }, status: "approved" };
-      const nameResults = await Creator.find(nameFilter).populate("user", "name avatar").limit(10).lean();
-      creators = [...creators, ...nameResults];
+    // Also search by user name (separate query since it's a populated field)
+    const userMatches = await User.find({ name: regex, role: { $in: ['creator'] } }).select('_id').limit(10);
+    const userIds = userMatches.map(u => u._id);
+    let nameMatches = [];
+    if (userIds.length > 0) {
+      nameMatches = await Creator.find({ user: { $in: userIds }, status: "approved" }).populate("user", "name avatar").limit(10).lean();
     }
 
-    // Deduplicate
+    // Merge and deduplicate
+    const allResults = [...creators, ...nameMatches];
     const seen = new Set();
-    creators = creators.filter(c => { const id = c._id.toString(); if (seen.has(id)) return false; seen.add(id); return true; });
-
-    // Search shows ALL matching creators — no location restriction
-    // (Location filtering is done on Near Me/Discovery pages, not on text search)
-
-    // ALL SEARCH IS STATE-RESTRICTED
-    // Customer only sees creators from their own selected state
-    // Even if searching a location name, only show if creator is in same state
-    if (state) {
-      const selectedState = String(state).toLowerCase().trim();
-      const ServiceLocation = require("../models/ServiceLocation");
-      // Get all cities/districts in the customer's selected state
-      const stateLocations = await ServiceLocation.find({ state: new RegExp(selectedState, 'i'), isActive: true }).select('city district').lean();
-      const stateCities = new Set(stateLocations.map(l => l.city.toLowerCase()));
-      const stateDistricts = new Set(stateLocations.map(l => l.district.toLowerCase()));
-
-      creators = creators.filter(c => {
-        const creatorState = (c.state || '').toLowerCase().trim();
-        const creatorCity = (c.baseCity || c.city || '').toLowerCase().trim();
-        const creatorDistrict = (c.district || '').toLowerCase().trim();
-        const pref = c.travelPreference || '';
-        const areas = (c.serviceAreas || []).map(a => a.toLowerCase().trim());
-
-        // Pan India creators show everywhere
-        if (pref === 'pan_india') return true;
-        // Creator's state matches customer's state
-        if (creatorState === selectedState) return true;
-        // Creator's city is in customer's state
-        if (creatorCity && stateCities.has(creatorCity)) return true;
-        // Creator's district is in customer's state
-        if (creatorDistrict && stateDistricts.has(creatorDistrict)) return true;
-        // Any service area is in customer's state
-        if (areas.some(a => stateCities.has(a) || stateDistricts.has(a))) return true;
-        return false;
-      });
-    }
+    const unique = allResults.filter(c => {
+      const id = c._id.toString();
+      if (seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
 
     // Normalize portfolio
-    creators.forEach(c => {
+    unique.forEach(c => {
       if (c.portfolio) c.portfolio = c.portfolio.map((item) => typeof item === 'string' ? item : (item?.url || ''));
     });
 
-    // Generate suggestions
+    // Generate suggestions (categories, cities, services that match)
     const suggestions = [];
-    const addSuggestion = (val) => { if (val && !suggestions.includes(val)) suggestions.push(val); };
-    creators.forEach(c => {
+    const addSuggestion = (val: string) => { if (val && !suggestions.includes(val)) suggestions.push(val); };
+    unique.forEach(c => {
       if (c.specialty && regex.test(c.specialty)) addSuggestion(c.specialty);
       if (c.city && regex.test(c.city)) addSuggestion(c.city);
+      if (c.baseCity && regex.test(c.baseCity)) addSuggestion(c.baseCity);
       if (c.district && regex.test(c.district)) addSuggestion(c.district);
     });
 
-    console.log(`[Search] q="${query}" state="${selectedState}" district="${selectedDistrict}" → ${creators.length} results`);
-    res.json({ success: true, count: creators.length, creators: creators.slice(0, 20), suggestions: suggestions.slice(0, 5) });
+    res.json({ success: true, count: unique.length, creators: unique, suggestions: suggestions.slice(0, 5) });
   } catch (e) { next(e); }
 });
 
@@ -379,7 +304,7 @@ router.get("/profile", protect, authorize("creator"), async (req, res, next) => 
 router.put("/profile", protect, authorize("creator"), async (req, res, next) => {
   try {
     // Whitelist allowed fields — prevent creators from modifying sensitive fields
-    const ALLOWED_FIELDS = ['specialty', 'bio', 'experience', 'location', 'city', 'category', 'categorySlug', 'subcategorySlug', 'categoryGroup', 'categoryData', 'budgetMin', 'budgetMax', 'social', 'gear', 'team', 'darkMode', 'coverImage', 'state', 'district', 'baseCity', 'studioName', 'studioAddress', 'pincode', 'serviceAreas', 'selectedDistricts', 'selectedStates', 'travelPreference', 'maxTravelDistance', 'businessType', 'teamSize', 'yearsInBusiness', 'priceRange', 'travelPref', 'destinationWeddings', 'languages', 'servicesOffered', 'equipmentLevel', 'editingIncluded', 'droneAvailable', 'liveStreaming', 'deliveryTime', 'logo'];
+    const ALLOWED_FIELDS = ['specialty', 'bio', 'experience', 'location', 'city', 'category', 'categorySlug', 'subcategorySlug', 'categoryGroup', 'categoryData', 'budgetMin', 'budgetMax', 'social', 'gear', 'team', 'darkMode', 'coverImage', 'state', 'district', 'baseCity', 'studioName', 'studioAddress', 'pincode', 'serviceAreas', 'selectedDistricts', 'selectedStates', 'travelPreference', 'maxTravelDistance'];
     const update = {};
     for (const key of ALLOWED_FIELDS) {
       if (req.body[key] !== undefined) update[key] = req.body[key];
@@ -398,6 +323,74 @@ router.put("/profile", protect, authorize("creator"), async (req, res, next) => 
       });
     }
     res.json({ success: true, creator });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ═══ COMPLETE ONBOARDING (First Login) ═══
+// Creator submits detailed info after first login, sets status to pending for admin review
+router.post("/complete-onboarding", protect, authorize("creator"), async (req, res, next) => {
+  try {
+    const ONBOARDING_FIELDS = [
+      'studioName', 'experience', 'state', 'district', 'baseCity', 'city',
+      'serviceAreas', 'travelPreference', 'businessType', 'teamSize',
+      'yearsInBusiness', 'priceRange', 'budgetMin', 'budgetMax',
+      'travelPref', 'destinationWeddings', 'languages', 'servicesOffered',
+      'equipmentLevel', 'editingIncluded', 'droneAvailable', 'liveStreaming',
+      'deliveryTime', 'bio', 'categorySlug', 'subcategorySlug', 'categoryGroup',
+      'selectedDistricts', 'selectedStates', 'maxTravelDistance', 'pincode',
+    ];
+
+    const update = {};
+    for (const key of ONBOARDING_FIELDS) {
+      if (req.body[key] !== undefined) update[key] = req.body[key];
+    }
+
+    // Mark status as pending (awaiting admin review)
+    update.status = "pending";
+
+    const creator = await Creator.findOneAndUpdate(
+      { user: req.user._id },
+      { $set: update },
+      { new: true, runValidators: true }
+    );
+
+    if (!creator) {
+      return res.status(404).json({ success: false, message: "Creator profile not found" });
+    }
+
+    // Update user fields (name, phone, state, district)
+    const userUpdate = {};
+    if (req.body.name) userUpdate.name = req.body.name;
+    if (req.body.phone) userUpdate.phone = req.body.phone;
+    if (req.body.state) userUpdate.state = req.body.state;
+    if (req.body.district) userUpdate.district = req.body.district;
+    if (req.body.city) userUpdate.city = req.body.city;
+    if (Object.keys(userUpdate).length > 0) {
+      await User.findByIdAndUpdate(req.user._id, userUpdate);
+    }
+
+    // Create notification for admin
+    try {
+      const Notification = require("../models/Notification");
+      const admins = await User.find({ role: "admin" });
+      for (const admin of admins) {
+        await Notification.create({
+          user: admin._id,
+          type: "creator",
+          title: "🆕 New Creator Application",
+          message: `${req.body.name || req.user.name} has submitted their profile for verification.`,
+          targetScreen: "AdminCreators",
+        });
+      }
+    } catch (e) { /* non-fatal */ }
+
+    res.json({
+      success: true,
+      message: "Profile submitted for verification. Our team will review it shortly.",
+      creator,
+    });
   } catch (e) {
     next(e);
   }

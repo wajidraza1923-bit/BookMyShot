@@ -174,7 +174,7 @@ const s = StyleSheet.create({
   errorText: { fontSize: 12, color: '#EF4444', marginBottom: 12 },
   verifyBtn: { width: '100%', backgroundColor: '#6C3BFF', borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginTop: 8 },
   verifyBtnDisabled: { opacity: 0.6 },
-  verifyBtnText: { fontSize: 15, fontWeight: '700', color: '#000' },
+  verifyBtnText: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
   resendRow: { alignItems: 'center', marginTop: 24 },
   resendLabel: { fontSize: 12, color: '#9CA3AF' },
   countdownText: { fontSize: 12, color: '#9CA3AF', marginTop: 4 },

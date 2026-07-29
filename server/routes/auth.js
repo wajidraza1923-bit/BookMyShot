@@ -204,6 +204,7 @@ router.post("/login", async (req, res, next) => {
             emailVerified: user.emailVerified,
             creatorStatus: creator.status,
             subscriptionStatus: creator.subscriptionStatus,
+            state: creator.state || "",
           },
           message: `Your account is ${creator.status}. Our admin team will review your profile before approval.`,
         });
@@ -221,6 +222,7 @@ router.post("/login", async (req, res, next) => {
         role: user.role,
         avatar: user.avatar,
         emailVerified: user.emailVerified,
+        ...(user.role === "creator" && creator ? { creatorStatus: creator.status, subscriptionStatus: creator.subscriptionStatus, state: creator.state || "" } : {}),
       },
     });
   } catch (e) {
@@ -505,7 +507,12 @@ router.get("/me", protect, async (req, res, next) => {
         }
       }
     }
-    res.json({ success: true, user: req.user, creator });
+    // Attach creator state to user response
+    const userResponse = { ...req.user.toObject ? req.user.toObject() : req.user };
+    if (creator) {
+      userResponse.state = creator.state || "";
+    }
+    res.json({ success: true, user: userResponse, creator });
   } catch (e) {
     next(e);
   }

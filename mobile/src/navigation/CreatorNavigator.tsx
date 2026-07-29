@@ -16,6 +16,7 @@ import CreatorCalendar from '../screens/creator/CreatorCalendar';
 import CreatorAvailability from '../screens/creator/CreatorAvailability';
 import CreatorServiceAreas from '../screens/creator/CreatorServiceAreas';
 import CreatorOnboardingScreen from '../screens/CreatorOnboardingScreen';
+import CreatorPendingScreen from '../screens/CreatorPendingScreen';
 import { useAuth } from '../context/AuthContext';
 import CreatorPackages from '../screens/creator/CreatorPackages';
 import CreatorReviews from '../screens/creator/CreatorReviews';
@@ -61,13 +62,37 @@ function CreatorTabs() {
 
 export default function CreatorNavigator() {
   const { user } = useAuth();
-  // Check if creator has completed onboarding (has state/district set)
-  const needsOnboarding = user && (!user.creatorStatus || user.creatorStatus === 'pending') && !user.state;
+  
+  // Three states:
+  // 1. No state set → needs onboarding (first login, hasn't filled details)
+  // 2. Has state but status is pending/rejected → show pending verification screen
+  // 3. Approved → show normal dashboard
+  const needsOnboarding = user && !user.state && (!user.creatorStatus || user.creatorStatus === 'pending');
+  const isPending = user && user.state && user.creatorStatus && user.creatorStatus !== 'approved';
+
+  // If needs onboarding, show only onboarding screen
+  if (needsOnboarding) {
+    return (
+      <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#FFFFFF' } }}>
+        <Stack.Screen name="CreatorOnboarding" component={CreatorOnboardingScreen} />
+      </Stack.Navigator>
+    );
+  }
+
+  // If pending verification, show pending screen
+  if (isPending) {
+    return (
+      <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#FFFFFF' } }}>
+        <Stack.Screen name="CreatorPending" component={CreatorPendingScreen} />
+      </Stack.Navigator>
+    );
+  }
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', contentStyle: { backgroundColor: '#FFFFFF' } }} initialRouteName={needsOnboarding ? 'CreatorOnboarding' : 'CreatorTabs'}>
+    <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', contentStyle: { backgroundColor: '#FFFFFF' } }} initialRouteName="CreatorTabs">
       <Stack.Screen name="CreatorTabs" component={CreatorTabs} />
       <Stack.Screen name="CreatorOnboarding" component={CreatorOnboardingScreen} />
+      <Stack.Screen name="CreatorPending" component={CreatorPendingScreen} />
       <Stack.Screen name="CreatorBookings" component={CreatorBookings} />
       <Stack.Screen name="BookingDetail" component={BookingDetail} />
       <Stack.Screen name="CreatorLeads" component={CreatorLeads} />
