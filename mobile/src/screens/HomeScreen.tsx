@@ -256,7 +256,7 @@ export default function HomeScreen({ navigation }: any) {
       setLoading(false);
       Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
     }
-  }, []);
+  }, [savedLocation.district, savedLocation.state, savedLocation.city]);
 
   useEffect(() => { loadData(); }, [savedLocation.district, savedLocation.state]);
   const onRefresh = async () => { setRefreshing(true); await loadData(); setRefreshing(false); };
