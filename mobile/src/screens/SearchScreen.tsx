@@ -126,7 +126,7 @@ export default function SearchScreen({ navigation, route }: any) {
       }
     } catch { setCreators([]); }
     finally { setLoading(false); }
-  }, [query, selectedCity, selectedCategory, selectedSubcategory]);
+  }, [query, selectedCity, selectedCategory, selectedSubcategory, selectedState]);
 
   // Single debounced search effect — handles all cases
   useEffect(() => {
@@ -134,7 +134,7 @@ export default function SearchScreen({ navigation, route }: any) {
       const timer = setTimeout(() => { searchCreators(); }, query.length >= 2 ? 300 : 0);
       return () => clearTimeout(timer);
     }
-  }, [query, selectedCity, selectedCategory, selectedSubcategory]);
+  }, [query, selectedCity, selectedCategory, selectedSubcategory, selectedState]);
 
   // Also trigger search immediately on mount if we have a search param
   useEffect(() => {
