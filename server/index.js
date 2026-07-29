@@ -219,59 +219,13 @@ const startServer = async () => {
     try {
       const ServiceLocation = require("./models/ServiceLocation");
       const locCount = await ServiceLocation.countDocuments();
-      if (locCount === 0) {
-        const jkLocations = [
-          { state: "Jammu & Kashmir", district: "Poonch", city: "Poonch" },
-          { state: "Jammu & Kashmir", district: "Poonch", city: "Surankote" },
-          { state: "Jammu & Kashmir", district: "Poonch", city: "Mendhar" },
-          { state: "Jammu & Kashmir", district: "Poonch", city: "Haveli" },
-          { state: "Jammu & Kashmir", district: "Poonch", city: "Mandi" },
-          { state: "Jammu & Kashmir", district: "Rajouri", city: "Rajouri" },
-          { state: "Jammu & Kashmir", district: "Rajouri", city: "Sunderbani" },
-          { state: "Jammu & Kashmir", district: "Rajouri", city: "Nowshera" },
-          { state: "Jammu & Kashmir", district: "Rajouri", city: "Kalakote" },
-          { state: "Jammu & Kashmir", district: "Jammu", city: "Jammu" },
-          { state: "Jammu & Kashmir", district: "Jammu", city: "R.S. Pura" },
-          { state: "Jammu & Kashmir", district: "Jammu", city: "Akhnoor" },
-          { state: "Jammu & Kashmir", district: "Jammu", city: "Bishnah" },
-          { state: "Jammu & Kashmir", district: "Kathua", city: "Kathua" },
-          { state: "Jammu & Kashmir", district: "Kathua", city: "Hiranagar" },
-          { state: "Jammu & Kashmir", district: "Kathua", city: "Billawar" },
-          { state: "Jammu & Kashmir", district: "Udhampur", city: "Udhampur" },
-          { state: "Jammu & Kashmir", district: "Udhampur", city: "Ramnagar" },
-          { state: "Jammu & Kashmir", district: "Samba", city: "Samba" },
-          { state: "Jammu & Kashmir", district: "Reasi", city: "Reasi" },
-          { state: "Jammu & Kashmir", district: "Reasi", city: "Katra" },
-          { state: "Jammu & Kashmir", district: "Doda", city: "Doda" },
-          { state: "Jammu & Kashmir", district: "Doda", city: "Bhaderwah" },
-          { state: "Jammu & Kashmir", district: "Kishtwar", city: "Kishtwar" },
-          { state: "Jammu & Kashmir", district: "Ramban", city: "Ramban" },
-          { state: "Jammu & Kashmir", district: "Srinagar", city: "Srinagar" },
-          { state: "Jammu & Kashmir", district: "Anantnag", city: "Anantnag" },
-          { state: "Jammu & Kashmir", district: "Baramulla", city: "Baramulla" },
-          { state: "Jammu & Kashmir", district: "Baramulla", city: "Sopore" },
-          { state: "Jammu & Kashmir", district: "Kupwara", city: "Kupwara" },
-          { state: "Jammu & Kashmir", district: "Pulwama", city: "Pulwama" },
-          { state: "Jammu & Kashmir", district: "Shopian", city: "Shopian" },
-          { state: "Jammu & Kashmir", district: "Budgam", city: "Budgam" },
-          { state: "Jammu & Kashmir", district: "Ganderbal", city: "Ganderbal" },
-          { state: "Jammu & Kashmir", district: "Bandipora", city: "Bandipora" },
-          { state: "Jammu & Kashmir", district: "Kulgam", city: "Kulgam" },
-          // Major Indian cities
-          { state: "Delhi", district: "New Delhi", city: "New Delhi" },
-          { state: "Delhi", district: "North Delhi", city: "Delhi" },
-          { state: "Punjab", district: "Amritsar", city: "Amritsar" },
-          { state: "Punjab", district: "Ludhiana", city: "Ludhiana" },
-          { state: "Punjab", district: "Jalandhar", city: "Jalandhar" },
-          { state: "Haryana", district: "Gurugram", city: "Gurugram" },
-          { state: "Uttar Pradesh", district: "Noida", city: "Noida" },
-          { state: "Uttar Pradesh", district: "Lucknow", city: "Lucknow" },
-          { state: "Rajasthan", district: "Jaipur", city: "Jaipur" },
-          { state: "Maharashtra", district: "Mumbai", city: "Mumbai" },
-          { state: "Karnataka", district: "Bangalore Urban", city: "Bangalore" },
-        ];
-        await ServiceLocation.insertMany(jkLocations);
-        console.log(`[STARTUP] ✅ Service Locations seeded (${jkLocations.length})`);
+      if (locCount < 500) {
+        // Clear old limited data and seed comprehensive all-India locations
+        if (locCount > 0) await ServiceLocation.deleteMany({});
+        // Use comprehensive all-India seed data
+        const allLocations = require("./seeds/allIndiaLocations.data");
+        await ServiceLocation.insertMany(allLocations);
+        console.log(`[STARTUP] ✅ Service Locations seeded (${allLocations.length} across all India)`);
       }
     } catch (locSeedErr) {
       console.log("[STARTUP] Location seed:", locSeedErr.message);
