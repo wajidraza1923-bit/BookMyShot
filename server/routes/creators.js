@@ -189,36 +189,8 @@ router.get("/search", async (req, res, next) => {
     const seen = new Set();
     creators = creators.filter(c => { const id = c._id.toString(); if (seen.has(id)) return false; seen.add(id); return true; });
 
-    // Step 2: ENFORCE location filter — only show creators who serve the selected area
-    if (selectedState || selectedDistrict) {
-      creators = creators.filter(c => {
-        const creatorState = (c.state || '').toLowerCase().trim();
-        const creatorDistrict = (c.district || '').toLowerCase().trim();
-        const creatorCity = (c.baseCity || c.city || '').toLowerCase().trim();
-        const areas = (c.serviceAreas || []).map(a => a.toLowerCase().trim());
-        const pref = c.travelPreference || '';
-
-        // State filter: creator must be in same state OR pan_india
-        if (selectedState && pref !== 'pan_india') {
-          if (creatorState !== selectedState) return false;
-        }
-
-        // District filter: creator must serve that district
-        if (selectedDistrict) {
-          if (pref === 'pan_india') return true;
-          if (pref === 'entire_state' && creatorState === selectedState) return true;
-          if (pref === 'my_district' && creatorDistrict === selectedDistrict) return true;
-          if (pref === 'only_my_city' && creatorCity === selectedDistrict) return true;
-          if (areas.includes(selectedDistrict)) return true;
-          if ((c.selectedDistricts || []).map(d => d.toLowerCase()).includes(selectedDistrict)) return true;
-          // Default: must match district or city
-          if (creatorDistrict === selectedDistrict || creatorCity === selectedDistrict) return true;
-          return false;
-        }
-
-        return true;
-      });
-    }
+    // Search shows ALL matching creators — no location restriction
+    // (Location filtering is done on Near Me/Discovery pages, not on text search)
 
     // Normalize portfolio
     creators.forEach(c => {
