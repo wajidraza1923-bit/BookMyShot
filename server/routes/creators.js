@@ -196,36 +196,9 @@ router.get("/search", async (req, res, next) => {
     // Search shows ALL matching creators — no location restriction
     // (Location filtering is done on Near Me/Discovery pages, not on text search)
 
-    // STATE FILTER: Show creators who serve the selected state
-    // Check: state field, OR city is in that state, OR serviceAreas overlap with state's locations
-    if (state) {
-      const selectedState = String(state).toLowerCase().trim();
-      // Get all cities/districts in the selected state for matching
-      const ServiceLocation = require("../models/ServiceLocation");
-      const stateLocations = await ServiceLocation.find({ state: new RegExp(selectedState, 'i'), isActive: true }).select('city district').lean();
-      const stateCities = new Set(stateLocations.map(l => l.city.toLowerCase()));
-      const stateDistricts = new Set(stateLocations.map(l => l.district.toLowerCase()));
-
-      creators = creators.filter(c => {
-        const creatorState = (c.state || '').toLowerCase().trim();
-        const creatorCity = (c.baseCity || c.city || '').toLowerCase().trim();
-        const creatorDistrict = (c.district || '').toLowerCase().trim();
-        const pref = c.travelPreference || '';
-        const areas = (c.serviceAreas || []).map(a => a.toLowerCase().trim());
-
-        // Pan India = show everywhere
-        if (pref === 'pan_india') return true;
-        // State matches directly
-        if (creatorState === selectedState) return true;
-        // Creator's city is in the selected state
-        if (creatorCity && stateCities.has(creatorCity)) return true;
-        // Creator's district is in the selected state
-        if (creatorDistrict && stateDistricts.has(creatorDistrict)) return true;
-        // Any service area is in the selected state
-        if (areas.some(a => stateCities.has(a) || stateDistricts.has(a))) return true;
-        return false;
-      });
-    }
+    // SEARCH IS GLOBAL — no state restriction
+    // When a user actively searches, they want to find what they typed
+    // State restriction only applies to passive browsing (Home/NearMe pages)
 
     // Normalize portfolio
     creators.forEach(c => {
