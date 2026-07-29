@@ -1,4 +1,4 @@
-﻿const express = require("express");
+const express = require("express");
 const User = require("../models/User");
 const Creator = require("../models/Creator");
 const Booking = require("../models/Booking");
@@ -115,31 +115,18 @@ router.delete("/creators/:id", async (req, res, next) => {
     const creatorId = creator._id;
     const mongoose = require("mongoose");
 
-    // Check for pending financial obligations â€” block permanent deletion if any exist
-    const pendingCommissions = mongoose.models.Commission
-      ? await mongoose.models.Commission.countDocuments({ creator: creatorId, status: { $in: ["pending", "overdue"] } })
-      : 0;
-    const unresolvedBookings = mongoose.models.Booking
-      ? await mongoose.models.Booking.countDocuments({ creator: creatorId, status: { $in: ["Creator Accepted", "Pending", "In Progress"] } })
-      : 0;
+    // Admin force-delete: clear commissions and cancel bookings
+    if (mongoose.models.Commission) await mongoose.models.Commission.deleteMany({ creator: creatorId });
+    if (mongoose.models.Booking) await mongoose.models.Booking.updateMany({ creator: creatorId, status: { $nin: ['Completed','completed','cancelled','rejected'] } }, { $set: { status: 'cancelled', creatorNotes: 'Creator deleted by admin' } });
 
-    if (pendingCommissions > 0 || unresolvedBookings > 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Cannot delete: Creator has ${pendingCommissions} pending commission(s) and ${unresolvedBookings} unresolved booking(s). Resolve these first.`,
-        pendingCommissions,
-        unresolvedBookings,
-      });
-    }
-
-    // SOFT DELETE â€” mark as deleted, preserve all financial/business records
-    creator.status = "deleted";
-    creator.deletedAt = new Date();
-    creator.deletedBy = req.user._id;
-    creator.deleteReason = req.body.reason || "Deleted by admin";
-    creator.featured = false;
-    creator.rank = 0;
-    await creator.save();
+    // HARD DELETE � permanently remove creator and user — mark as deleted, preserve all financial/business records
+    // Delete user account too
+    const userId = creator.user?._id || creator.user;
+    await Creator.deleteOne({ _id: creatorId });
+    if (userId) await User.deleteOne({ _id: userId });
+    // Deleted from DB
+    
+    
 
     // Remove from search results (remove from favorites)
     try { await User.updateMany({ favorites: creatorId }, { $pull: { favorites: creatorId } }); } catch {}
@@ -162,7 +149,7 @@ router.delete("/creators/:id", async (req, res, next) => {
     // Clear media arrays (files removed from cloud, no need to keep references)
     creator.portfolio = [];
     creator.videos = [];
-    await creator.save();
+    
 
     res.json({
       success: true,
@@ -184,14 +171,14 @@ router.patch("/creators/:id/restore", async (req, res, next) => {
     creator.deletedAt = null;
     creator.deletedBy = null;
     creator.deleteReason = "";
-    await creator.save();
+    
 
-    // ═══ NOTIFICATION: Account Reactivated ═══
+    // --- NOTIFICATION: Account Reactivated ---
     if (creator.user?._id) {
       await Notification.create({
         user: creator.user._id,
         type: "info",
-        title: "✅ Account Reactivated",
+        title: "? Account Reactivated",
         message: "Your creator account has been reactivated. All features are now accessible again. Welcome back!",
         targetScreen: "CreatorHome",
       });
@@ -253,7 +240,7 @@ router.patch("/creator-accounts/:id/badge", async (req, res, next) => {
     const creator = await Creator.findById(req.params.id);
     if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
     creator.badge = badge || "";
-    await creator.save();
+    
     res.json({ success: true, data: creator });
   } catch (e) { next(e); }
 });
@@ -264,7 +251,7 @@ router.patch("/creator-accounts/:id/rank", async (req, res, next) => {
     const creator = await Creator.findById(req.params.id);
     if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
     creator.rank = parseInt(rank, 10) || 0;
-    await creator.save();
+    
     res.json({ success: true, data: creator });
   } catch (e) { next(e); }
 });
@@ -465,9 +452,9 @@ router.get("/commissions/overdue-report", async (req, res, next) => {
       .populate({ path: "creator", populate: { path: "user", select: "name email" } })
       .sort("dueDate").lean();
     const report = {
-      over30: overdue.filter(c => c.dueDate && new Date(c.dueDate) <= thirtyDaysAgo).map(c => ({ _id: c._id, creator: c.creator?.user?.name || "â€”", email: c.creator?.user?.email || "â€”", amount: c.commissionAmount, dueDate: c.dueDate, daysOverdue: Math.floor((now - new Date(c.dueDate)) / 86400000) })),
-      over60: overdue.filter(c => c.dueDate && new Date(c.dueDate) <= sixtyDaysAgo).map(c => ({ _id: c._id, creator: c.creator?.user?.name || "â€”", email: c.creator?.user?.email || "â€”", amount: c.commissionAmount, dueDate: c.dueDate, daysOverdue: Math.floor((now - new Date(c.dueDate)) / 86400000) })),
-      over90: overdue.filter(c => c.dueDate && new Date(c.dueDate) <= ninetyDaysAgo).map(c => ({ _id: c._id, creator: c.creator?.user?.name || "â€”", email: c.creator?.user?.email || "â€”", amount: c.commissionAmount, dueDate: c.dueDate, daysOverdue: Math.floor((now - new Date(c.dueDate)) / 86400000) })),
+      over30: overdue.filter(c => c.dueDate && new Date(c.dueDate) <= thirtyDaysAgo).map(c => ({ _id: c._id, creator: c.creator?.user?.name || "—", email: c.creator?.user?.email || "—", amount: c.commissionAmount, dueDate: c.dueDate, daysOverdue: Math.floor((now - new Date(c.dueDate)) / 86400000) })),
+      over60: overdue.filter(c => c.dueDate && new Date(c.dueDate) <= sixtyDaysAgo).map(c => ({ _id: c._id, creator: c.creator?.user?.name || "—", email: c.creator?.user?.email || "—", amount: c.commissionAmount, dueDate: c.dueDate, daysOverdue: Math.floor((now - new Date(c.dueDate)) / 86400000) })),
+      over90: overdue.filter(c => c.dueDate && new Date(c.dueDate) <= ninetyDaysAgo).map(c => ({ _id: c._id, creator: c.creator?.user?.name || "—", email: c.creator?.user?.email || "—", amount: c.commissionAmount, dueDate: c.dueDate, daysOverdue: Math.floor((now - new Date(c.dueDate)) / 86400000) })),
       totalOverdue: overdue.reduce((s, c) => s + (c.commissionAmount || 0), 0),
     };
     res.json({ success: true, data: report });
@@ -498,8 +485,8 @@ router.patch("/payment-proofs/:id/verify", async (req, res, next) => {
     if (!proof) return res.status(404).json({ success: false, message: "Payment proof not found" });
     await Notification.create({
       user: proof.user,
-      title: "✅ Payment Proof " + (req.body.status === "verified" ? "Verified" : "Rejected"),
-      message: `Your payment proof of ₹${proof.amount} has been ${req.body.status}`,
+      title: "? Payment Proof " + (req.body.status === "verified" ? "Verified" : "Rejected"),
+      message: `Your payment proof of ?${proof.amount} has been ${req.body.status}`,
       type: "payment",
     });
     res.json({ success: true, proof });
@@ -521,9 +508,9 @@ router.get("/inquiries", async (req, res, next) => {
   }
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════════════
 // ENHANCED SUPER ADMIN ENDPOINTS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════════════
 
 const AuditLog = require("../models/AuditLog");
 const PaymentRecord = require("../models/PaymentRecord");
@@ -536,7 +523,7 @@ async function logAction(adminId, action, target, targetId, details, ip) {
   } catch (e) { /* non-critical */ }
 }
 
-// â”€â”€â”€ SUBSCRIPTION MANAGEMENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── SUBSCRIPTION MANAGEMENT ────────────────────────────────────────────────
 
 router.get("/subscriptions", async (req, res, next) => {
   try {
@@ -560,13 +547,13 @@ router.patch("/subscriptions/:creatorId", async (req, res, next) => {
     if (autoRenew !== undefined) creator.autoRenew = autoRenew;
     if (subscriptionStatus === "active" && !creator.subscriptionStartDate) creator.subscriptionStartDate = new Date();
     if (subscriptionStatus === "active") creator.lastPaymentDate = new Date();
-    await creator.save();
+    
     await logAction(req.user._id, "subscription_update", "creator", creator._id.toString(), `Status: ${subscriptionStatus}`, req.ip);
     res.json({ success: true, creator });
   } catch (e) { next(e); }
 });
 
-// â”€â”€â”€ BOOKING MANAGEMENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── BOOKING MANAGEMENT ─────────────────────────────────────────────────────
 
 router.get("/bookings", async (req, res, next) => {
   try {
@@ -595,7 +582,7 @@ router.delete("/bookings/:id", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// â”€â”€â”€ INQUIRY MANAGEMENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── INQUIRY MANAGEMENT ─────────────────────────────────────────────────────
 
 router.patch("/inquiries/:id", async (req, res, next) => {
   try {
@@ -614,7 +601,7 @@ router.delete("/inquiries/:id", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// â”€â”€â”€ PAYMENT MANAGEMENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── PAYMENT MANAGEMENT ─────────────────────────────────────────────────────
 
 router.get("/payment-records", async (req, res, next) => {
   try {
@@ -637,12 +624,12 @@ router.post("/payment-records", async (req, res, next) => {
       amount, paymentType: paymentType || "other", notes: notes || "Admin manual payment",
       addedBy: "creator", status: "approved",
     });
-    await logAction(req.user._id, "payment_add", "booking", bookingId, `₹${amount}`, req.ip);
+    await logAction(req.user._id, "payment_add", "booking", bookingId, `?${amount}`, req.ip);
     res.status(201).json({ success: true, record });
   } catch (e) { next(e); }
 });
 
-// â”€â”€â”€ NOTIFICATION CENTER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── NOTIFICATION CENTER ────────────────────────────────────────────────────
 
 router.post("/notifications/send", async (req, res, next) => {
   try {
@@ -679,7 +666,7 @@ router.post("/notifications/send", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// â”€â”€â”€ CREATOR PROFILE EDIT (ADMIN) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── CREATOR PROFILE EDIT (ADMIN) ───────────────────────────────────────────
 
 router.patch("/creators/:id/profile", async (req, res, next) => {
   try {
@@ -690,7 +677,7 @@ router.patch("/creators/:id/profile", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// â”€â”€â”€ CALENDAR MANAGEMENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── CALENDAR MANAGEMENT ────────────────────────────────────────────────────
 
 router.get("/calendar/all", async (req, res, next) => {
   try {
@@ -727,7 +714,7 @@ router.delete("/calendar/:id", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// â”€â”€â”€ SUBSCRIPTION ALERTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── SUBSCRIPTION ALERTS ────────────────────────────────────────────────────
 
 // POST: Trigger subscription expiry reminders (admin or cron job)
 router.post("/subscription-alerts", async (req, res, next) => {
@@ -747,11 +734,11 @@ router.post("/subscription-alerts", async (req, res, next) => {
         await c.save();
         await Notification.create({
           user: c.user._id, type: "subscription",
-          title: "⚠ï¸ Subscription Expired",
+          title: "?️ Subscription Expired",
           message: "Your BookMyShot subscription has expired. Please renew to continue using all features.",
         });
 
-        // â•â• EMAIL: Creator â€” Subscription Expired â•â•
+        // ══ EMAIL: Creator — Subscription Expired ══
         if (c.user.email) {
           emailService.sendSubscriptionExpired({
             email: c.user.email,
@@ -761,7 +748,7 @@ router.post("/subscription-alerts", async (req, res, next) => {
           }).catch(e => console.error("[Email] alert expired:", e.message));
         }
 
-        // â•â• EMAIL: Admin â€” Subscription Expired â•â•
+        // ══ EMAIL: Admin — Subscription Expired ══
         emailService.sendAdminSubscriptionExpired({
           creatorName: c.user.name || "Unknown",
           creatorEmail: c.user.email || "",
@@ -781,11 +768,11 @@ router.post("/subscription-alerts", async (req, res, next) => {
           if (!existing) {
             await Notification.create({
               user: c.user._id, type: "subscription",
-              title: `â° Subscription Expires in ${daysLeft} Day${daysLeft > 1 ? 's' : ''}`,
+              title: `⏰ Subscription Expires in ${daysLeft} Day${daysLeft > 1 ? 's' : ''}`,
               message: `Your BookMyShot subscription expires in ${daysLeft} day${daysLeft > 1 ? 's' : ''}. Renew now to avoid interruption.`,
             });
 
-            // â•â• EMAIL: Creator â€” Expiry Reminder â•â•
+            // ══ EMAIL: Creator — Expiry Reminder ══
             if (c.user.email) {
               emailService.sendSubscriptionExpiryReminder({
                 email: c.user.email,
@@ -824,7 +811,7 @@ router.post("/promotion-alerts", async (req, res, next) => {
       const daysLeft = Math.ceil((new Date(promo.expiryDate) - now) / 86400000);
 
       if (daysLeft <= 0) {
-        // Expired â€” expire it and send notification
+        // Expired — expire it and send notification
         promo.status = "expired";
         await promo.save();
         await Creator.updateOne({ _id: promo.creator._id }, { $set: { featured: false } });
@@ -840,13 +827,13 @@ router.post("/promotion-alerts", async (req, res, next) => {
         await Notification.create({
           user: promo.creator.user._id,
           type: "promotion",
-          title: "ðŸ“‹ Promotion Expired",
+          title: "📋 Promotion Expired",
           message: `Your ${promo.planType} promotion has expired. Renew to maintain visibility.`,
         });
         sent++;
 
       } else if ([7, 3, 1].includes(daysLeft)) {
-        // Reminder â€” check if we already sent today
+        // Reminder — check if we already sent today
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const existing = await Notification.findOne({
           user: promo.creator.user._id,
@@ -858,9 +845,9 @@ router.post("/promotion-alerts", async (req, res, next) => {
         if (!existing) {
           await emailService.sendEmail({
             to: promo.creator.user.email,
-            subject: `â° Your ${promo.planType} expires in ${daysLeft} day${daysLeft > 1 ? 's' : ''} â€” BookMyShot`,
+            subject: `⏰ Your ${promo.planType} expires in ${daysLeft} day${daysLeft > 1 ? 's' : ''} — BookMyShot`,
             html: `<div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:2rem;background:#111;color:#f6eee7;border-radius:12px">
-              <h2 style="color:${daysLeft <= 1 ? '#ef4444' : '#DAAF37'};margin:0 0 1rem">â° Promotion Expiring Soon</h2>
+              <h2 style="color:${daysLeft <= 1 ? '#ef4444' : '#DAAF37'};margin:0 0 1rem">⏰ Promotion Expiring Soon</h2>
               <p style="color:#b9aa98">Hi ${promo.creator.user.name},</p>
               <p style="color:#d4c8bc">Your <strong style="color:#DAAF37">${promo.planType}</strong> promotion expires in <strong>${daysLeft} day${daysLeft > 1 ? 's' : ''}</strong>.</p>
               <table style="width:100%;margin:1rem 0;font-size:0.85rem;border-collapse:collapse">
@@ -879,7 +866,7 @@ router.post("/promotion-alerts", async (req, res, next) => {
           await Notification.create({
             user: promo.creator.user._id,
             type: "promotion",
-            title: `â° Promotion expires in ${daysLeft} day${daysLeft > 1 ? 's' : ''}`,
+            title: `⏰ Promotion expires in ${daysLeft} day${daysLeft > 1 ? 's' : ''}`,
             message: `Your ${promo.planType} promotion expires on ${new Date(promo.expiryDate).toLocaleDateString("en-IN")}. Renew to stay visible.`,
           });
           sent++;
@@ -924,14 +911,14 @@ router.post("/commission-alerts", async (req, res, next) => {
 
           await emailService.sendEmail({
             to: creator.user.email,
-            subject: "ðŸš« Account Suspended â€” Unpaid Commission",
+            subject: "🚫 Account Suspended — Unpaid Commission",
             html: `<div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:2rem;background:#111;color:#f6eee7;border-radius:12px">
-              <h2 style="color:#ef4444;margin:0 0 1rem">ðŸš« Account Suspended</h2>
+              <h2 style="color:#ef4444;margin:0 0 1rem">🚫 Account Suspended</h2>
               <p style="color:#b9aa98">Hello ${creator.user.name},</p>
               <p style="color:#d4c8bc">Your account has been temporarily suspended because the commission payment was not completed within the required period.</p>
               <table style="width:100%;margin:1rem 0;font-size:0.85rem;border-collapse:collapse">
-                <tr><td style="padding:0.4rem 0;color:#8a7e72">Outstanding Amount</td><td style="color:#ef4444;text-align:right;font-weight:700">₹${comm.commissionAmount}</td></tr>
-                <tr><td style="padding:0.4rem 0;color:#8a7e72">Booking</td><td style="color:#f6eee7;text-align:right">${comm.booking?.clientName || 'â€”'} (${comm.booking?.eventType || 'â€”'})</td></tr>
+                <tr><td style="padding:0.4rem 0;color:#8a7e72">Outstanding Amount</td><td style="color:#ef4444;text-align:right;font-weight:700">?${comm.commissionAmount}</td></tr>
+                <tr><td style="padding:0.4rem 0;color:#8a7e72">Booking</td><td style="color:#f6eee7;text-align:right">${comm.booking?.clientName || '—'} (${comm.booking?.eventType || '—'})</td></tr>
                 <tr><td style="padding:0.4rem 0;color:#8a7e72">Due Date</td><td style="color:#ef4444;text-align:right">${new Date(comm.dueDate).toLocaleDateString("en-IN")}</td></tr>
                 <tr><td style="padding:0.4rem 0;color:#8a7e72">Suspended On</td><td style="color:#f6eee7;text-align:right">${now.toLocaleDateString("en-IN")}</td></tr>
               </table>
@@ -943,7 +930,7 @@ router.post("/commission-alerts", async (req, res, next) => {
             meta: { action: "commission_suspension", amount: comm.commissionAmount },
           }).catch(() => {});
 
-          await Notification.create({ user: creator.user._id, type: "payment", title: "ðŸš« Account Suspended", message: `Unpaid commission of ₹${comm.commissionAmount}. Pay to reactivate.` });
+          await Notification.create({ user: creator.user._id, type: "payment", title: "🚫 Account Suspended", message: `Unpaid commission of ?${comm.commissionAmount}. Pay to reactivate.` });
           suspended++;
         }
         continue;
@@ -962,14 +949,14 @@ router.post("/commission-alerts", async (req, res, next) => {
         if (!alreadySent) {
           await emailService.sendEmail({
             to: comm.creator.user.email,
-            subject: `â° Commission due in ${daysUntilDue} day${daysUntilDue > 1 ? 's' : ''} â€” ₹${comm.commissionAmount}`,
+            subject: `⏰ Commission due in ${daysUntilDue} day${daysUntilDue > 1 ? 's' : ''} — ?${comm.commissionAmount}`,
             html: `<div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:2rem;background:#111;color:#f6eee7;border-radius:12px">
-              <h2 style="color:${daysUntilDue <= 1 ? '#ef4444' : '#f59e0b'};margin:0 0 1rem">â° Commission Payment Due</h2>
+              <h2 style="color:${daysUntilDue <= 1 ? '#ef4444' : '#f59e0b'};margin:0 0 1rem">⏰ Commission Payment Due</h2>
               <p style="color:#b9aa98">Hi ${comm.creator.user.name},</p>
-              <p style="color:#d4c8bc">Your commission payment of <strong style="color:#DAAF37">₹${comm.commissionAmount}</strong> is due in <strong>${daysUntilDue} day${daysUntilDue > 1 ? 's' : ''}</strong>.</p>
+              <p style="color:#d4c8bc">Your commission payment of <strong style="color:#DAAF37">?${comm.commissionAmount}</strong> is due in <strong>${daysUntilDue} day${daysUntilDue > 1 ? 's' : ''}</strong>.</p>
               <table style="width:100%;margin:1rem 0;font-size:0.85rem;border-collapse:collapse">
-                <tr><td style="padding:0.4rem 0;color:#8a7e72">Amount</td><td style="color:#DAAF37;text-align:right;font-weight:600">₹${comm.commissionAmount}</td></tr>
-                <tr><td style="padding:0.4rem 0;color:#8a7e72">Booking</td><td style="color:#f6eee7;text-align:right">${comm.booking?.clientName || 'â€”'}</td></tr>
+                <tr><td style="padding:0.4rem 0;color:#8a7e72">Amount</td><td style="color:#DAAF37;text-align:right;font-weight:600">?${comm.commissionAmount}</td></tr>
+                <tr><td style="padding:0.4rem 0;color:#8a7e72">Booking</td><td style="color:#f6eee7;text-align:right">${comm.booking?.clientName || '—'}</td></tr>
                 <tr><td style="padding:0.4rem 0;color:#8a7e72">Due Date</td><td style="color:#ef4444;text-align:right">${new Date(comm.dueDate).toLocaleDateString("en-IN")}</td></tr>
               </table>
               <p style="color:#8a7e72;font-size:0.8rem">Failure to pay before the due date will result in account suspension.</p>
@@ -980,7 +967,7 @@ router.post("/commission-alerts", async (req, res, next) => {
             meta: { action: "commission_reminder", daysUntilDue, amount: comm.commissionAmount },
           }).catch(() => {});
 
-          await Notification.create({ user: comm.creator.user._id, type: "payment", title: `â° Commission due in ${daysUntilDue} day${daysUntilDue > 1 ? 's' : ''}`, message: `₹${comm.commissionAmount} commission payment due on ${new Date(comm.dueDate).toLocaleDateString("en-IN")}.` });
+          await Notification.create({ user: comm.creator.user._id, type: "payment", title: `⏰ Commission due in ${daysUntilDue} day${daysUntilDue > 1 ? 's' : ''}`, message: `?${comm.commissionAmount} commission payment due on ${new Date(comm.dueDate).toLocaleDateString("en-IN")}.` });
           comm.lastReminderSent = now;
           comm.reminderCount = (comm.reminderCount || 0) + 1;
           await comm.save();
@@ -1010,9 +997,9 @@ router.post("/creators/:id/reactivate", async (req, res, next) => {
     if (creator.user?.email) {
       await emailService.sendEmail({
         to: creator.user.email,
-        subject: "✅ Account Reactivated â€” BookMyShot",
+        subject: "? Account Reactivated — BookMyShot",
         html: `<div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:2rem;background:#111;color:#f6eee7;border-radius:12px">
-          <h2 style="color:#10b981;margin:0 0 1rem">✅ Account Reactivated</h2>
+          <h2 style="color:#10b981;margin:0 0 1rem">? Account Reactivated</h2>
           <p style="color:#b9aa98">Hello ${creator.user.name},</p>
           <p style="color:#d4c8bc">Your BookMyShot creator account has been reactivated by our team. All your data (listings, leads, bookings, promotions) remains intact.</p>
           <p style="color:#d4c8bc">You can now access all features from your Creator Dashboard.</p>
@@ -1024,7 +1011,7 @@ router.post("/creators/:id/reactivate", async (req, res, next) => {
       }).catch(() => {});
     }
 
-    await Notification.create({ user: creator.user._id, type: "info", title: "✅ Account Reactivated", message: "Your account has been reactivated. All features are restored." });
+    await Notification.create({ user: creator.user._id, type: "info", title: "? Account Reactivated", message: "Your account has been reactivated. All features are restored." });
     await logAction(req.user._id, "reactivate_creator", "creator", creator._id.toString(), "Account reactivated from suspended", req.ip);
 
     res.json({ success: true, message: "Creator reactivated" });
@@ -1095,7 +1082,7 @@ router.delete("/notifications/:id", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// â”€â”€â”€ AUDIT LOGS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── AUDIT LOGS ─────────────────────────────────────────────────────────────
 
 router.get("/audit-logs", async (req, res, next) => {
   try {
@@ -1107,7 +1094,7 @@ router.get("/audit-logs", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// â”€â”€â”€ REVENUE OVERVIEW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── REVENUE OVERVIEW ───────────────────────────────────────────────────────
 
 router.get("/revenue", async (req, res, next) => {
   try {
@@ -1157,7 +1144,7 @@ router.get("/revenue", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// â”€â”€â”€ SUBSCRIPTION ANALYTICS (for admin mobile dashboard) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── SUBSCRIPTION ANALYTICS (for admin mobile dashboard) ─────────────────────
 router.get("/subscription-analytics", async (req, res, next) => {
   try {
     const now = new Date();
