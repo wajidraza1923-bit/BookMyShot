@@ -123,15 +123,14 @@ export default function SubCategoriesScreen({ navigation, route }: any) {
     setError(false);
     try {
       const res = await api.get(`/subcategories/${slug}`);
-      const data = res.data?.data || [];
-      if (data.length > 0) {
-        setSubcategories(data);
-      } else {
-        // API returned empty — use fallback
-        setSubcategories(FALLBACK_SUBCATEGORIES[slug] || []);
-      }
+      const apiData = res.data?.data || [];
+      const fallback = FALLBACK_SUBCATEGORIES[slug] || [];
+      
+      // Merge: use API data + add any fallback items not in API (by slug)
+      const apiSlugs = new Set(apiData.map((d: any) => d.slug));
+      const merged = [...apiData, ...fallback.filter(f => !apiSlugs.has(f.slug))];
+      setSubcategories(merged.length > 0 ? merged : fallback);
     } catch {
-      // API failed — use local fallback subcategories
       const fallback = FALLBACK_SUBCATEGORIES[slug];
       if (fallback && fallback.length > 0) {
         setSubcategories(fallback);
