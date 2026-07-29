@@ -196,9 +196,70 @@ router.get("/search", async (req, res, next) => {
     // Search shows ALL matching creators — no location restriction
     // (Location filtering is done on Near Me/Discovery pages, not on text search)
 
-    // SEARCH IS GLOBAL — no state restriction
-    // When a user actively searches, they want to find what they typed
-    // State restriction only applies to passive browsing (Home/NearMe pages)
+    // SMART SEARCH LOGIC:
+    // - Location search (city/district/area) = GLOBAL (show creators who serve that location)
+    // - Name/service search = RESTRICTED to customer's selected state
+    if (state) {
+      const selectedState = String(state).toLowerCase().trim();
+      const ServiceLocation = require("../models/ServiceLocation");
+      // Check if the search query is a known location (city/district)
+      const locationMatch = await ServiceLocation.findOne({
+        isActive: true,
+        $or: [
+          { city: new RegExp('^' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') },
+          { district: new RegExp('^' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') },
+        ],
+      }).lean();
+
+      if (locationMatch) {
+        // User searched a LOCATION — show all creators who serve that location (global)
+        // No state restriction needed — they want creators from that specific place
+        const searchedCity = locationMatch.city.toLowerCase();
+        const searchedDistrict = locationMatch.district.toLowerCase();
+        creators = creators.filter(c => {
+          const creatorCity = (c.baseCity || c.city || '').toLowerCase().trim();
+          const creatorDistrict = (c.district || '').toLowerCase().trim();
+          const creatorState = (c.state || '').toLowerCase().trim();
+          const areas = (c.serviceAreas || []).map(a => a.toLowerCase().trim());
+          const pref = c.travelPreference || '';
+          // Pan India
+          if (pref === 'pan_india') return true;
+          // Direct match
+          if (creatorCity === searchedCity || creatorDistrict === searchedDistrict) return true;
+          // Service areas include the location
+          if (areas.includes(searchedCity) || areas.includes(searchedDistrict)) return true;
+          // Entire state and same state
+          if (pref === 'entire_state' && creatorState === locationMatch.state.toLowerCase()) return true;
+          // No preference but city matches
+          if (!pref && creatorCity === searchedCity) return true;
+          return false;
+        });
+      } else {
+        // User searched a NAME or SERVICE — restrict to their selected state only
+        const stateLocations = await ServiceLocation.find({ state: new RegExp(selectedState, 'i'), isActive: true }).select('city district').lean();
+        const stateCities = new Set(stateLocations.map(l => l.city.toLowerCase()));
+        const stateDistricts = new Set(stateLocations.map(l => l.district.toLowerCase()));
+
+        creators = creators.filter(c => {
+          const creatorState = (c.state || '').toLowerCase().trim();
+          const creatorCity = (c.baseCity || c.city || '').toLowerCase().trim();
+          const creatorDistrict = (c.district || '').toLowerCase().trim();
+          const pref = c.travelPreference || '';
+          const areas = (c.serviceAreas || []).map(a => a.toLowerCase().trim());
+          // Pan India
+          if (pref === 'pan_india') return true;
+          // State matches
+          if (creatorState === selectedState) return true;
+          // City is in state
+          if (creatorCity && stateCities.has(creatorCity)) return true;
+          // District is in state
+          if (creatorDistrict && stateDistricts.has(creatorDistrict)) return true;
+          // Service areas overlap with state
+          if (areas.some(a => stateCities.has(a) || stateDistricts.has(a))) return true;
+          return false;
+        });
+      }
+    }
 
     // Normalize portfolio
     creators.forEach(c => {
