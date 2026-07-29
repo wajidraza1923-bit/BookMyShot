@@ -5,7 +5,7 @@
  */
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity,
+  View, Text, StyleSheet, TouchableOpacity, Image,
   ActivityIndicator, Dimensions, Platform, StatusBar, TextInput,
   ScrollView, Modal, RefreshControl,
 } from 'react-native';
@@ -436,65 +436,71 @@ export default function NearMeScreen({ navigation }: any) {
         </TouchableOpacity>
       )}
 
-      {/* ═══ COMPARE MODAL ═══ */}
+      {/* ═══ COMPARE MODAL — Premium Design ═══ */}
       <Modal visible={showCompare} transparent animationType="slide" onRequestClose={() => setShowCompare(false)}>
-        <View style={s.modalBg}>
-          <View style={[s.sheet, { maxHeight: '90%' }]}>
-            <View style={s.sheetBar} />
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Text style={s.sheetTitle}>Compare Creators</Text>
-              <TouchableOpacity onPress={() => setShowCompare(false)}><Ionicons name="close" size={20} color="#6B7280" /></TouchableOpacity>
-            </View>
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {/* Names row */}
-              <View style={s.compRow}>
-                <Text style={s.compLabel}>Name</Text>
-                {compareList.map(id => { const c = filtered.find(x => x._id === id); return <Text key={id} style={s.compVal}>{c?.user?.name || '—'}</Text>; })}
-              </View>
-              <View style={s.compRow}>
-                <Text style={s.compLabel}>Category</Text>
-                {compareList.map(id => { const c = filtered.find(x => x._id === id); return <Text key={id} style={s.compVal}>{c?.specialty || '—'}</Text>; })}
-              </View>
-              <View style={s.compRow}>
-                <Text style={s.compLabel}>Location</Text>
-                {compareList.map(id => { const c = filtered.find(x => x._id === id); return <Text key={id} style={s.compVal}>{c?.baseCity || c?.city || '—'}</Text>; })}
-              </View>
-              <View style={s.compRow}>
-                <Text style={s.compLabel}>Rating</Text>
-                {compareList.map(id => { const c = filtered.find(x => x._id === id); return <Text key={id} style={s.compVal}>⭐ {c?.rating || '5.0'}</Text>; })}
-              </View>
-              <View style={s.compRow}>
-                <Text style={s.compLabel}>Price</Text>
-                {compareList.map(id => { const c = filtered.find(x => x._id === id); return <Text key={id} style={s.compVal}>₹{(c?.budgetMin || 10000).toLocaleString('en-IN')}+</Text>; })}
-              </View>
-              <View style={s.compRow}>
-                <Text style={s.compLabel}>Experience</Text>
-                {compareList.map(id => { const c = filtered.find(x => x._id === id); return <Text key={id} style={s.compVal}>{c?.experience || '3'}+ Yrs</Text>; })}
-              </View>
-              <View style={s.compRow}>
-                <Text style={s.compLabel}>Bookings</Text>
-                {compareList.map(id => { const c = filtered.find(x => x._id === id); return <Text key={id} style={s.compVal}>{c?.weddingsCount || 0}</Text>; })}
-              </View>
-              <View style={s.compRow}>
-                <Text style={s.compLabel}>Verified</Text>
-                {compareList.map(id => { const c = filtered.find(x => x._id === id); return <Text key={id} style={s.compVal}>{c?.verified ? '✅ Yes' : '❌ No'}</Text>; })}
-              </View>
-              <View style={s.compRow}>
-                <Text style={s.compLabel}>Portfolio</Text>
-                {compareList.map(id => { const c = filtered.find(x => x._id === id); return <Text key={id} style={s.compVal}>{(c?.portfolio || []).length} photos</Text>; })}
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: '#FFFFFF', borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: '90%', paddingBottom: 30 }}>
+            {/* Handle */}
+            <View style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 8 }}><View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#E5E7EB' }} /></View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}>
+              {/* Header */}
+              <Text style={{ fontSize: 18, fontWeight: '800', color: '#1F2937', textAlign: 'center', marginBottom: 16 }}>Compare Creators</Text>
+
+              {/* Profile Photos + VS */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+                {compareList.map((id, idx) => {
+                  const c = filtered.find(x => x._id === id);
+                  const img = c?.coverImage || c?.portfolio?.[0] || c?.user?.avatar || '';
+                  return (
+                    <View key={id} style={{ alignItems: 'center', flex: 1 }}>
+                      <Image source={{ uri: img || 'https://via.placeholder.com/60' }} style={{ width: 60, height: 60, borderRadius: 30, borderWidth: 2, borderColor: idx === 0 ? '#7C3AED' : '#F59E0B' }} />
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: '#1F2937', marginTop: 6 }} numberOfLines={1}>{c?.user?.name || '—'}</Text>
+                      <Text style={{ fontSize: 10, color: '#6B7280' }}>{c?.specialty || 'Creator'}</Text>
+                      {c?.verified && <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 3 }}><Ionicons name="shield-checkmark" size={10} color="#10B981" /><Text style={{ fontSize: 9, color: '#10B981', fontWeight: '600' }}>Verified</Text></View>}
+                    </View>
+                  );
+                })}
+                {compareList.length === 2 && <View style={{ position: 'absolute', width: 36, height: 36, borderRadius: 18, backgroundColor: '#7C3AED', alignItems: 'center', justifyContent: 'center', elevation: 4 }}><Text style={{ fontSize: 12, fontWeight: '800', color: '#fff' }}>VS</Text></View>}
               </View>
 
-              {/* Action buttons */}
-              <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
-                {compareList.map(id => { const c = filtered.find(x => x._id === id); return (
-                  <TouchableOpacity key={id} style={{ flex: 1, backgroundColor: '#7C3AED', borderRadius: 10, paddingVertical: 10, alignItems: 'center' }} onPress={() => { setShowCompare(false); navigation.navigate('CreatorProfile', { id }); }}>
-                    <Text style={{ fontSize: 11, fontWeight: '700', color: '#fff' }}>View {(c?.user?.name || '').split(' ')[0]}</Text>
-                  </TouchableOpacity>
-                ); })}
+              {/* Comparison Rows */}
+              {[
+                { icon: 'star', label: 'Rating', get: (c: any) => `⭐ ${c?.rating || '5.0'} (${c?.reviewCount || 0})` },
+                { icon: 'wallet-outline', label: 'Price', get: (c: any) => `₹${(c?.budgetMin || 10000).toLocaleString('en-IN')}+` },
+                { icon: 'briefcase-outline', label: 'Experience', get: (c: any) => `${c?.experience || '3'}+ Years` },
+                { icon: 'calendar-outline', label: 'Bookings', get: (c: any) => `${c?.weddingsCount || 0} Done` },
+                { icon: 'images-outline', label: 'Portfolio', get: (c: any) => `${(c?.portfolio || []).length} Photos` },
+                { icon: 'location-outline', label: 'Location', get: (c: any) => c?.baseCity || c?.city || '—' },
+                { icon: 'checkmark-circle-outline', label: 'Verified', get: (c: any) => c?.verified ? '✅ Verified' : '—' },
+                { icon: 'flash-outline', label: 'Available', get: (c: any) => '🟢 Available' },
+              ].map((row, i) => (
+                <View key={i} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' }}>
+                  <View style={{ width: 90, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                    <Ionicons name={row.icon as any} size={14} color="#7C3AED" />
+                    <Text style={{ fontSize: 11, fontWeight: '600', color: '#6B7280' }}>{row.label}</Text>
+                  </View>
+                  {compareList.map(id => {
+                    const c = filtered.find(x => x._id === id);
+                    return <Text key={id} style={{ flex: 1, fontSize: 12, fontWeight: '600', color: '#1F2937', textAlign: 'center' }}>{row.get(c)}</Text>;
+                  })}
+                </View>
+              ))}
+
+              {/* Action Buttons */}
+              <View style={{ flexDirection: 'row', gap: 10, marginTop: 20 }}>
+                {compareList.map(id => {
+                  const c = filtered.find(x => x._id === id);
+                  return (
+                    <TouchableOpacity key={id} style={{ flex: 1, backgroundColor: '#7C3AED', borderRadius: 12, paddingVertical: 12, alignItems: 'center' }} onPress={() => { setShowCompare(false); navigation.navigate('CreatorProfile', { id }); }}>
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>View {(c?.user?.name || '').split(' ')[0]}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
 
               <TouchableOpacity style={{ alignItems: 'center', marginTop: 14, paddingVertical: 10 }} onPress={() => { setCompareList([]); setShowCompare(false); }}>
-                <Text style={{ fontSize: 12, color: '#9CA3AF' }}>Clear Selection</Text>
+                <Text style={{ fontSize: 12, color: '#9CA3AF' }}>Clear & Close</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -562,8 +568,4 @@ const s = StyleSheet.create({
   compareCheckText: { fontSize: 11, fontWeight: '600', color: '#7C3AED' },
   compareFloating: { position: 'absolute', bottom: 30, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#7C3AED', borderRadius: 24, paddingHorizontal: 20, paddingVertical: 14, elevation: 8, shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10 },
   compareFloatingText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
-  // Compare modal rows
-  compRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
-  compLabel: { width: 80, fontSize: 11, fontWeight: '600', color: '#6B7280' },
-  compVal: { flex: 1, fontSize: 12, fontWeight: '600', color: '#1F2937', textAlign: 'center' },
 });
