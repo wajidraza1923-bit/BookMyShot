@@ -81,7 +81,15 @@ router.get("/creators-by-area", async (req, res, next) => {
       };
 
       const subcats = CATEGORY_MAP[category.toLowerCase()] || [category];
-      const catRegexes = subcats.map(s => new RegExp(s, 'i'));
+      // Build regex OR conditions for all subcategory slugs
+      const catConditions = [];
+      subcats.forEach(s => {
+        const r = new RegExp(s, 'i');
+        catConditions.push({ categorySlug: r });
+        catConditions.push({ subcategorySlug: r });
+        catConditions.push({ category: r });
+      });
+      catConditions.push({ specialty: new RegExp(category.replace(/[-\s]+/g, '.*'), "i") });
 
       if (subcategory) {
         baseFilter.$or = [
@@ -91,12 +99,7 @@ router.get("/creators-by-area", async (req, res, next) => {
           { specialty: new RegExp(subcategory.replace(/[-\s]+/g, '.*'), "i") },
         ];
       } else {
-        baseFilter.$or = [
-          { categorySlug: { $in: catRegexes } },
-          { subcategorySlug: { $in: catRegexes } },
-          { category: { $in: catRegexes } },
-          { specialty: new RegExp(category.replace(/[-\s]+/g, '.*'), "i") },
-        ];
+        baseFilter.$or = catConditions;
       }
     }
     if (minPrice) baseFilter.budgetMin = { $gte: Number(minPrice) };
