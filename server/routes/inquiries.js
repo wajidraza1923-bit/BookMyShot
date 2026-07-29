@@ -67,6 +67,23 @@ router.post("/", optionalAuth, async (req, res, next) => {
       parsedDate = new Date(Date.now() + 30 * 86400000);
     }
 
+    // Validate: check if the selected date is blocked by the creator
+    if (parsedDate) {
+      const CalendarEvent = require("../models/CalendarEvent");
+      const dateStart = new Date(parsedDate);
+      dateStart.setHours(0, 0, 0, 0);
+      const dateEnd = new Date(parsedDate);
+      dateEnd.setHours(23, 59, 59, 999);
+      const blocked = await CalendarEvent.findOne({
+        creator: creator._id,
+        type: { $in: ["unavailable", "booking"] },
+        date: { $gte: dateStart, $lte: dateEnd },
+      });
+      if (blocked) {
+        return res.status(400).json({ success: false, message: "🚫 This date is unavailable. The creator has already blocked or booked this date. Please choose another available date." });
+      }
+    }
+
     const inquiry = await Inquiry.create({
       user: req.user ? req.user._id : undefined,
       creator: creatorId,

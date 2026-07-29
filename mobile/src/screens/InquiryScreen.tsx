@@ -67,12 +67,27 @@ export default function InquiryScreen({ route, navigation }: any) {
 
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [blockedDates, setBlockedDates] = useState<string[]>([]);
+
+  // Fetch blocked dates for this creator
+  React.useEffect(() => {
+    if (creatorId) {
+      api.get(`/creators/${creatorId}/availability`).then(res => {
+        const events = res.data?.events || [];
+        setBlockedDates(events.map((e: any) => new Date(e.date).toDateString()));
+      }).catch(() => {});
+    }
+  }, [creatorId]);
 
   const selectDate = (date: Date) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (date < today) {
       Alert.alert('Invalid Date', 'Please select a valid future event date.');
+      return;
+    }
+    if (blockedDates.includes(date.toDateString())) {
+      Alert.alert('🚫 Date Unavailable', 'This date is unavailable. The creator has already blocked or booked this date. Please choose another available date.');
       return;
     }
     setSelectedDate(date);
@@ -217,7 +232,7 @@ export default function InquiryScreen({ route, navigation }: any) {
             <View style={s.modalOverlay}>
               <View style={s.modalCard}>
                 <Text style={s.modalTitle}>Select Event Date</Text>
-                <DateGrid selectedDate={selectedDate} onSelect={selectDate} />
+                <DateGrid selectedDate={selectedDate} onSelect={selectDate} blockedDates={blockedDates} />
                 <TouchableOpacity style={s.modalClose} onPress={() => setShowDatePicker(false)}>
                   <Text style={s.modalCloseText}>Cancel</Text>
                 </TouchableOpacity>
@@ -324,7 +339,7 @@ const s = StyleSheet.create({
 });
 
 // Simple Calendar Grid Component (works in Expo Go, no native modules)
-function DateGrid({ selectedDate, onSelect }: { selectedDate: Date | null; onSelect: (d: Date) => void }) {
+function DateGrid({ selectedDate, onSelect, blockedDates = [] }: { selectedDate: Date | null; onSelect: (d: Date) => void; blockedDates?: string[] }) {
   const [viewMonth, setViewMonth] = React.useState(new Date());
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const year = viewMonth.getFullYear();
@@ -355,12 +370,14 @@ function DateGrid({ selectedDate, onSelect }: { selectedDate: Date | null; onSel
           if (!day) return <View key={i} style={{ width: '14.28%', height: 38 }} />;
           const date = new Date(year, month, day);
           const isPast = date < today;
+          const isBlocked = blockedDates.includes(date.toDateString());
+          const isDisabled = isPast || isBlocked;
           const isSelected = selectedDate && date.toDateString() === selectedDate.toDateString();
           const isToday = date.toDateString() === today.toDateString();
           return (
-            <TouchableOpacity key={i} style={{ width: '14.28%', height: 38, alignItems: 'center', justifyContent: 'center' }} onPress={() => !isPast && onSelect(date)} disabled={isPast}>
-              <View style={[{ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' }, isSelected && { backgroundColor: '#F97316' }, isToday && !isSelected && { borderWidth: 1, borderColor: '#F97316' }]}>
-                <Text style={[{ fontSize: 13, color: isPast ? '#D1D5DB' : '#1F2937' }, isSelected && { color: '#FFFFFF', fontWeight: '700' }]}>{day}</Text>
+            <TouchableOpacity key={i} style={{ width: '14.28%', height: 38, alignItems: 'center', justifyContent: 'center' }} onPress={() => !isDisabled && onSelect(date)} disabled={isDisabled}>
+              <View style={[{ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' }, isSelected && { backgroundColor: '#F97316' }, isToday && !isSelected && { borderWidth: 1, borderColor: '#F97316' }, isBlocked && { backgroundColor: '#FEE2E2' }]}>
+                <Text style={[{ fontSize: 13, color: isDisabled ? '#D1D5DB' : '#1F2937' }, isSelected && { color: '#FFFFFF', fontWeight: '700' }, isBlocked && { color: '#EF4444' }]}>{day}{isBlocked ? '🚫' : ''}</Text>
               </View>
             </TouchableOpacity>
           );
