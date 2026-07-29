@@ -128,19 +128,20 @@ export default function SearchScreen({ navigation, route }: any) {
     finally { setLoading(false); }
   }, [query, selectedCity, selectedCategory, selectedSubcategory]);
 
-  // Debounced real-time search (300ms delay)
+  // Single debounced search effect — handles all cases
   useEffect(() => {
-    if (query.length >= 2) {
-      const timer = setTimeout(() => { searchCreators(); }, 300);
+    if (query.length >= 2 || showResults) {
+      const timer = setTimeout(() => { searchCreators(); }, query.length >= 2 ? 300 : 0);
       return () => clearTimeout(timer);
-    } else if (query.length === 0 && showResults) {
+    }
+  }, [query, selectedCity, selectedCategory, selectedSubcategory]);
+
+  // Also trigger search immediately on mount if we have a search param
+  useEffect(() => {
+    if (route?.params?.search && route.params.search.length >= 2) {
       searchCreators();
     }
-  }, [query]);
-
-  useEffect(() => {
-    if (showResults || query.length > 0) { const t = setTimeout(searchCreators, 300); return () => clearTimeout(t); }
-  }, [query, selectedCity, selectedCategory, selectedSubcategory, showResults]);
+  }, []);
 
   const handleSearch = (t: string) => { setQuery(t); if (t.length > 0) setShowResults(true); };
   const clearFilters = () => { setQuery(''); setSelectedCity(''); setSelectedCategory(''); setSelectedSubcategory(''); setShowResults(false); };
