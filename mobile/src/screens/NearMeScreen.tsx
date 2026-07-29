@@ -93,11 +93,7 @@ export default function NearMeScreen({ navigation }: any) {
       console.log(`[NearMe] Found ${res.data?.count || 0} creators in ${city || district || state}`);
     } catch (e: any) {
       console.log('[NearMe] Fetch error:', e.message);
-      // Fallback to all creators
-      try {
-        const all = await creatorsAPI.getAll();
-        setCreators(all.data?.creators || []);
-      } catch { setCreators([]); }
+      setCreators([]);
     } finally {
       setLoading(false);
     }
