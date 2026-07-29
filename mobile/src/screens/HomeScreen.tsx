@@ -213,14 +213,14 @@ export default function HomeScreen({ navigation }: any) {
         setCategories(mapped.length > 0 ? mapped : CATEGORIES_DEFAULT);
       }
 
-      // Top Creators — use saved district from shared context
+      // Top Creators — strictly filtered by selected location
       const all = creatorsRes.data?.creators || creatorsRes.data?.data || [];
       let top = [...all].sort((a: any, b: any) => (b.rating || 0) - (a.rating || 0)).slice(0, 10);
-      if (savedLocation.district) {
+      if (savedLocation.district || savedLocation.city) {
         try {
-          const nearRes = await api.get('/discovery/creators-by-area', { params: { district: savedLocation.district, state: savedLocation.state } });
+          const nearRes = await api.get('/discovery/creators-by-area', { params: { city: savedLocation.city || savedLocation.district, district: savedLocation.district, state: savedLocation.state } });
           const nearby = nearRes.data?.creators || [];
-          if (nearby.length > 0) top = nearby.slice(0, 10);
+          top = nearby.slice(0, 10); // Use ONLY location-filtered results, never fall back to all
         } catch {}
       }
       setTopCreators(top);
@@ -258,7 +258,7 @@ export default function HomeScreen({ navigation }: any) {
     }
   }, []);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [savedLocation.district, savedLocation.state]);
   const onRefresh = async () => { setRefreshing(true); await loadData(); setRefreshing(false); };
 
   const getCreatorImg = (item: any) => {
