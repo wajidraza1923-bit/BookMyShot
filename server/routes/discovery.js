@@ -181,8 +181,10 @@ router.get("/creators-by-area", async (req, res, next) => {
           return true;
 
         default:
-          // No preference set — show everywhere (default visible until creator configures)
-          return true;
+          // No preference set — only show if creator's city/district matches
+          if (customerCity && creatorCity === customerCity) return true;
+          if (customerDistrict && creatorDistrict === customerDistrict) return true;
+          return false;
       }
     });
 

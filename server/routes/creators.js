@@ -197,7 +197,7 @@ router.get("/search", async (req, res, next) => {
     // (Location filtering is done on Near Me/Discovery pages, not on text search)
 
     // STATE FILTER: If state is provided, only show creators from that state
-    // (Creators with no state or pan_india preference still show)
+    // Creators MUST have their state configured to match — no free pass
     if (state) {
       const selectedState = String(state).toLowerCase().trim();
       creators = creators.filter(c => {
@@ -205,9 +205,7 @@ router.get("/search", async (req, res, next) => {
         const pref = c.travelPreference || '';
         // Pan India creators show everywhere
         if (pref === 'pan_india') return true;
-        // No state set on creator = show everywhere (default)
-        if (!creatorState) return true;
-        // Must match selected state
+        // Must match selected state — no state = not visible
         return creatorState === selectedState;
       });
     }
