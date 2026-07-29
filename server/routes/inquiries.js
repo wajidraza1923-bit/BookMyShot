@@ -36,12 +36,15 @@ router.post("/", optionalAuth, async (req, res, next) => {
     const creator = await Creator.findById(creatorId);
     if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
 
-    // Block inquiries only for suspended/expired creators — free and active creators can receive inquiries
+    // Block inquiries only for suspended/expired/pending creators
     if (creator.status !== "approved") {
-      return res.status(403).json({ success: false, message: "This creator is not currently accepting inquiries" });
+      return res.status(403).json({ success: false, message: `This creator cannot receive inquiries. Reason: Account status is "${creator.status}". Only approved creators can receive inquiries.` });
     }
-    if (creator.subscriptionStatus === "suspended" || creator.subscriptionStatus === "expired") {
-      return res.status(403).json({ success: false, message: "This creator is currently unavailable" });
+    if (creator.subscriptionStatus === "suspended") {
+      return res.status(403).json({ success: false, message: "This creator's account is suspended. They cannot receive inquiries at this time." });
+    }
+    if (creator.subscriptionStatus === "expired") {
+      return res.status(403).json({ success: false, message: "This creator's subscription has expired. They cannot receive inquiries until renewed." });
     }
 
     // Parse eventDate properly — handle multiple formats (DD/MM/YYYY, ISO, etc.)
