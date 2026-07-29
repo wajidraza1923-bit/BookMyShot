@@ -157,7 +157,7 @@ export default function RegisterScreen({ navigation }: any) {
             <Ionicons name="heart" size={16} color={role === 'user' ? '#6C3BFF' : '#9CA3AF'} />
             <Text style={[s.roleText, role === 'user' && s.roleTextActive]}>Customer</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[s.roleBtn, role === 'creator' && s.roleBtnActive]} onPress={() => { setRole('creator'); Haptics.selectionAsync(); }}>
+          <TouchableOpacity style={[s.roleBtn, role === 'creator' && s.roleBtnActive]} onPress={() => { navigation.navigate('CreatorRegister'); }}>
             <Ionicons name="camera" size={16} color={role === 'creator' ? '#6C3BFF' : '#9CA3AF'} />
             <Text style={[s.roleText, role === 'creator' && s.roleTextActive]}>Creator / Vendor</Text>
           </TouchableOpacity>

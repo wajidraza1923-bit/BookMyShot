@@ -10,6 +10,7 @@ import GuestProfileScreen from '../screens/GuestProfileScreen';
 import CreatorProfileScreen from '../screens/CreatorProfileScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
+import CreatorRegisterScreen from '../screens/CreatorRegisterScreen';
 import AdminLoginScreen from '../screens/AdminLoginScreen';
 import InfoScreen from '../screens/InfoScreen';
 import VerifyEmailScreen from '../screens/VerifyEmailScreen';
@@ -56,6 +57,7 @@ export default function GuestNavigator() {
       <Stack.Screen name="CreatorProfile" component={CreatorProfileScreen} options={{ animation: 'slide_from_bottom' }} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen name="CreatorRegister" component={CreatorRegisterScreen} />
       <Stack.Screen name="AdminLogin" component={AdminLoginScreen} />
       <Stack.Screen name="Info" component={InfoScreen} />
       <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} />
