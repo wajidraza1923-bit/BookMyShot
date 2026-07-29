@@ -469,10 +469,9 @@ export default function NearMeScreen({ navigation }: any) {
                 { icon: 'star', label: 'Rating', get: (c: any) => `⭐ ${c?.rating || '5.0'} (${c?.reviewCount || 0})` },
                 { icon: 'wallet-outline', label: 'Price', get: (c: any) => `₹${(c?.budgetMin || 10000).toLocaleString('en-IN')}+` },
                 { icon: 'briefcase-outline', label: 'Experience', get: (c: any) => `${c?.experience || '3'}+ Years` },
-                { icon: 'calendar-outline', label: 'Bookings', get: (c: any) => `${c?.weddingsCount || 0} Done` },
                 { icon: 'images-outline', label: 'Portfolio', get: (c: any) => `${(c?.portfolio || []).length} Photos` },
                 { icon: 'location-outline', label: 'Location', get: (c: any) => c?.baseCity || c?.city || '—' },
-                { icon: 'checkmark-circle-outline', label: 'Verified', get: (c: any) => c?.verified ? '✅ Verified' : '—' },
+                { icon: 'checkmark-circle', label: 'Verified', get: (c: any) => c?.verified ? '✔️' : '—' },
                 { icon: 'flash-outline', label: 'Available', get: (c: any) => '🟢 Available' },
               ].map((row, i) => (
                 <View key={i} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' }}>
