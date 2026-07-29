@@ -41,14 +41,14 @@ const DEFAULT_INSPIRATION = [
 function _img(item: any): string { if (!item) return ''; if (typeof item === 'string') return item; return item?.url || item?.secure_url || item?.uri || ''; }
 
 export default function SearchScreen({ navigation, route }: any) {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(route?.params?.search || '');
   const [creators, setCreators] = useState<any[]>([]);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCity, setSelectedCity] = useState(route?.params?.city || '');
   const [selectedCategory, setSelectedCategory] = useState(route?.params?.category || '');
   const [selectedSubcategory, setSelectedSubcategory] = useState(route?.params?.subcategory || '');
-  const [showResults, setShowResults] = useState(!!route?.params?.city || !!route?.params?.category || !!route?.params?.subcategory);
+  const [showResults, setShowResults] = useState(!!route?.params?.city || !!route?.params?.category || !!route?.params?.subcategory || !!route?.params?.search);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [districts, setDistricts] = useState<any[]>([]);
   const [trendingSearches, setTrendingSearches] = useState<any[]>([]);
@@ -80,7 +80,8 @@ export default function SearchScreen({ navigation, route }: any) {
     if (route?.params?.category) { setSelectedCategory(route.params.category); setShowResults(true); }
     if (route?.params?.subcategory) { setSelectedSubcategory(route.params.subcategory); setShowResults(true); }
     if (route?.params?.city) { setSelectedCity(route.params.city); setShowResults(true); }
-  }, [route?.params?.category, route?.params?.subcategory, route?.params?.city]);
+    if (route?.params?.search) { setQuery(route.params.search); setShowResults(true); }
+  }, [route?.params?.category, route?.params?.subcategory, route?.params?.city, route?.params?.search]);
 
   const loadAll = async () => {
     try {
