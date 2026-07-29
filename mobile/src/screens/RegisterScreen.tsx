@@ -18,13 +18,36 @@ export default function RegisterScreen({ navigation }: any) {
   const [selectedCategorySlug, setSelectedCategorySlug] = useState('');
   const [selectedCategoryName, setSelectedCategoryName] = useState('Select Service');
   const [selectedGroup, setSelectedGroup] = useState('');
+  const [selectedSubcategorySlug, setSelectedSubcategorySlug] = useState('');
+  const [selectedSubcategoryName, setSelectedSubcategoryName] = useState('');
   const [categories, setCategories] = useState<any[]>([]);
+  const [subcategories, setSubcategories] = useState<any[]>([]);
   const [showCatPicker, setShowCatPicker] = useState(false);
+  const [catPickerStep, setCatPickerStep] = useState<'category' | 'subcategory'>('category');
 
   useEffect(() => { if (role === 'creator') loadCategories(); }, [role]);
 
   const loadCategories = async () => {
     try { const res = await api.get('/discover/categories'); setCategories(res.data?.data || []); } catch {}
+  };
+
+  const loadSubcategories = async (slug: string) => {
+    try { const res = await api.get(`/subcategories/${slug}`); setSubcategories(res.data?.data || []); } catch { setSubcategories([]); }
+  };
+
+  const selectCategory = (item: any) => {
+    setSelectedCategorySlug(item.slug);
+    setSelectedCategoryName(item.name);
+    setSelectedGroup(item.group || '');
+    setCatPickerStep('subcategory');
+    loadSubcategories(item.slug);
+  };
+
+  const selectSubcategory = (item: any) => {
+    setSelectedSubcategorySlug(item.slug);
+    setSelectedSubcategoryName(item.name);
+    setShowCatPicker(false);
+    setCatPickerStep('category');
   };
 
   const validate = () => {
@@ -34,7 +57,7 @@ export default function RegisterScreen({ navigation }: any) {
     else if (!/\S+@\S+\.\S+/.test(email)) e.email = 'Enter a valid email';
     if (!password) e.password = 'Password is required';
     else if (password.length < 6) e.password = 'Minimum 6 characters';
-    if (role === 'creator' && !selectedCategorySlug) e.category = 'Select your service';
+    if (role === 'creator' && !selectedSubcategorySlug && !selectedCategorySlug) e.category = 'Select your service category & subcategory';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -44,7 +67,7 @@ export default function RegisterScreen({ navigation }: any) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setLoading(true);
     setErrors({});
-    const result = await authRegister(name.trim(), email.trim().toLowerCase(), password, role, role === 'creator' ? { categorySlug: selectedCategorySlug, categoryGroup: selectedGroup, category: selectedCategorySlug } : undefined);
+    const result = await authRegister(name.trim(), email.trim().toLowerCase(), password, role, role === 'creator' ? { categorySlug: selectedCategorySlug, subcategorySlug: selectedSubcategorySlug || selectedCategorySlug, categoryGroup: selectedGroup, category: selectedCategorySlug } : undefined);
     setLoading(false);
     if (result.success) return;
     if (result.requiresVerification) { navigation.navigate('VerifyEmail', { email: email.trim().toLowerCase() }); }
@@ -87,7 +110,7 @@ export default function RegisterScreen({ navigation }: any) {
             <Text style={s.label}>Service Category *</Text>
             <TouchableOpacity style={[s.inputRow, errors.category && s.inputError]} onPress={() => setShowCatPicker(true)}>
               <Ionicons name="briefcase-outline" size={18} color="#9CA3AF" />
-              <Text style={[s.input, { color: selectedCategorySlug ? '#1F2937' : '#D1D5DB' }]}>{selectedCategoryName}</Text>
+              <Text style={[s.input, { color: selectedCategorySlug ? '#1F2937' : '#D1D5DB' }]}>{selectedSubcategoryName ? `${selectedCategoryName} → ${selectedSubcategoryName}` : selectedCategoryName}</Text>
               <Ionicons name="chevron-down" size={16} color="#6C3BFF" />
             </TouchableOpacity>
             {errors.category && <Text style={s.fieldError}>{errors.category}</Text>}
@@ -140,19 +163,38 @@ export default function RegisterScreen({ navigation }: any) {
         <Text style={s.terms}>By creating an account, you agree to our <Text style={s.termsLink}>Terms of Service</Text> and <Text style={s.termsLink}>Privacy Policy</Text></Text>
       </ScrollView>
 
-      {/* Category Picker Modal */}
+      {/* Category Picker Modal — 2 Step: Category → Subcategory */}
       <Modal visible={showCatPicker} transparent animationType="slide">
-        <TouchableOpacity style={s.modalBg} activeOpacity={1} onPress={() => setShowCatPicker(false)}>
+        <TouchableOpacity style={s.modalBg} activeOpacity={1} onPress={() => { setShowCatPicker(false); setCatPickerStep('category'); }}>
           <View style={s.modalSheet} onStartShouldSetResponder={() => true}>
             <View style={s.sheetBar} />
-            <Text style={s.sheetTitle}>Select Your Service</Text>
-            <FlatList data={categories} keyExtractor={item => item.slug || item._id} renderItem={({ item }) => (
-              <TouchableOpacity style={[s.catItem, selectedCategorySlug === item.slug && s.catItemActive]} onPress={() => { setSelectedCategorySlug(item.slug); setSelectedCategoryName(item.name); setSelectedGroup(item.group || ''); setShowCatPicker(false); }}>
-                <Ionicons name={item.icon || 'camera'} size={18} color={selectedCategorySlug === item.slug ? '#6C3BFF' : '#6B7280'} />
-                <Text style={[s.catItemText, selectedCategorySlug === item.slug && { color: '#6C3BFF', fontWeight: '700' }]}>{item.name}</Text>
-                {selectedCategorySlug === item.slug && <Ionicons name="checkmark-circle" size={18} color="#6C3BFF" />}
-              </TouchableOpacity>
-            )} />
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <Text style={s.sheetTitle}>{catPickerStep === 'category' ? 'Select Category' : 'Select Service'}</Text>
+              {catPickerStep === 'subcategory' && <TouchableOpacity onPress={() => setCatPickerStep('category')}><Text style={{ fontSize: 12, color: '#6C3BFF', fontWeight: '600' }}>← Back</Text></TouchableOpacity>}
+            </View>
+
+            {catPickerStep === 'category' ? (
+              <FlatList data={categories} keyExtractor={item => item.slug || item._id} renderItem={({ item }) => (
+                <TouchableOpacity style={[s.catItem, selectedCategorySlug === item.slug && s.catItemActive]} onPress={() => selectCategory(item)}>
+                  <Ionicons name={item.icon || 'camera'} size={18} color={selectedCategorySlug === item.slug ? '#6C3BFF' : '#6B7280'} />
+                  <Text style={[s.catItemText, selectedCategorySlug === item.slug && { color: '#6C3BFF', fontWeight: '700' }]}>{item.name}</Text>
+                  <Ionicons name="chevron-forward" size={14} color="#9CA3AF" />
+                </TouchableOpacity>
+              )} />
+            ) : (
+              <FlatList
+                data={subcategories}
+                keyExtractor={item => item.slug || item._id}
+                ListEmptyComponent={<View style={{ alignItems: 'center', paddingVertical: 20 }}><ActivityIndicator color="#6C3BFF" /><Text style={{ marginTop: 8, color: '#6B7280', fontSize: 12 }}>Loading services...</Text></View>}
+                renderItem={({ item }) => (
+                  <TouchableOpacity style={[s.catItem, selectedSubcategorySlug === item.slug && s.catItemActive]} onPress={() => selectSubcategory(item)}>
+                    <Ionicons name={item.icon || 'briefcase-outline'} size={18} color={selectedSubcategorySlug === item.slug ? '#6C3BFF' : '#6B7280'} />
+                    <Text style={[s.catItemText, selectedSubcategorySlug === item.slug && { color: '#6C3BFF', fontWeight: '700' }]}>{item.name}</Text>
+                    {selectedSubcategorySlug === item.slug && <Ionicons name="checkmark-circle" size={18} color="#6C3BFF" />}
+                  </TouchableOpacity>
+                )}
+              />
+            )}
           </View>
         </TouchableOpacity>
       </Modal>
