@@ -25,7 +25,7 @@ export default function RegisterScreen({ navigation }: any) {
   const [showCatPicker, setShowCatPicker] = useState(false);
   const [catPickerStep, setCatPickerStep] = useState<'category' | 'subcategory'>('category');
 
-  useEffect(() => { if (role === 'creator') loadCategories(); }, [role]);
+  useEffect(() => { loadCategories(); }, []);
 
   const loadCategories = async () => {
     try { const res = await api.get('/discover/categories'); setCategories(res.data?.data || []); } catch {}
@@ -168,15 +168,33 @@ export default function RegisterScreen({ navigation }: any) {
           <View style={s.errorBanner}><Ionicons name="alert-circle" size={16} color="#EF4444" /><Text style={s.errorBannerText}>{errors.general}</Text></View>
         )}
 
-        {/* Category for creators */}
+        {/* Category for creators — shown INLINE, no modal needed */}
         {role === 'creator' && (
           <View style={s.fieldWrap}>
             <Text style={s.label}>Service Category *</Text>
-            <TouchableOpacity style={[s.inputRow, errors.category && s.inputError]} onPress={() => setShowCatPicker(true)}>
-              <Ionicons name="briefcase-outline" size={18} color="#9CA3AF" />
-              <Text style={[s.input, { color: selectedCategorySlug ? '#1F2937' : '#D1D5DB' }]}>{selectedSubcategoryName ? `${selectedCategoryName} → ${selectedSubcategoryName}` : selectedCategoryName}</Text>
-              <Ionicons name="chevron-down" size={16} color="#6C3BFF" />
-            </TouchableOpacity>
+            {/* Categories — horizontal scrollable */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
+              {categories.map((item: any) => (
+                <TouchableOpacity key={item.slug || item._id} style={[s.catChip, selectedCategorySlug === item.slug && s.catChipActive]} onPress={() => selectCategory(item)}>
+                  <Ionicons name={item.icon || 'camera'} size={14} color={selectedCategorySlug === item.slug ? '#fff' : '#6B7280'} />
+                  <Text style={[s.catChipText, selectedCategorySlug === item.slug && { color: '#fff' }]}>{item.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {/* Subcategories — shown as chips below when category selected */}
+            {selectedCategorySlug && subcategories.length > 0 && (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                {subcategories.map((item: any) => (
+                  <TouchableOpacity key={item.slug || item._id} style={[s.subChip, selectedSubcategorySlug === item.slug && s.subChipActive]} onPress={() => selectSubcategory(item)}>
+                    {selectedSubcategorySlug === item.slug && <Ionicons name="checkmark-circle" size={12} color="#fff" />}
+                    <Text style={[s.subChipText, selectedSubcategorySlug === item.slug && { color: '#fff' }]}>{item.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            {selectedSubcategoryName ? <Text style={{ fontSize: 11, color: '#10B981', marginTop: 6, fontWeight: '600' }}>✓ {selectedCategoryName} → {selectedSubcategoryName}</Text> : null}
             {errors.category && <Text style={s.fieldError}>{errors.category}</Text>}
           </View>
         )}
@@ -306,4 +324,11 @@ const s = StyleSheet.create({
   catItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
   catItemActive: { backgroundColor: '#F8F6FF', marginHorizontal: -8, paddingHorizontal: 8, borderRadius: 10 },
   catItemText: { fontSize: 13, color: '#4B5563', flex: 1 },
+  // Inline category chips
+  catChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 10, backgroundColor: '#F3F4F6', marginRight: 8, borderWidth: 1, borderColor: '#E5E7EB' },
+  catChipActive: { backgroundColor: '#7C3AED', borderColor: '#7C3AED' },
+  catChipText: { fontSize: 11, fontWeight: '600', color: '#6B7280' },
+  subChip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 8, backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB' },
+  subChipActive: { backgroundColor: '#7C3AED', borderColor: '#7C3AED' },
+  subChipText: { fontSize: 11, fontWeight: '500', color: '#4B5563' },
 });
