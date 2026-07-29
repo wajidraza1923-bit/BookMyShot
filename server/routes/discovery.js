@@ -107,13 +107,18 @@ router.get("/creators-by-area", async (req, res, next) => {
         case 'my_district':
           // Visible anywhere in their home district
           if (customerDistrict && creatorDistrict === customerDistrict) return true;
-          // Also match if customer city is in creator's district (same district)
           return customerCity && creatorCity === customerCity;
 
         case 'multiple_districts':
-          // Visible in selected districts (stored in serviceAreas as district names)
+          // Visible in selected districts
+          const selDists = (c.selectedDistricts || []).map((d) => d.toLowerCase().trim());
+          if (selDists.length > 0) {
+            if (customerDistrict && selDists.includes(customerDistrict)) return true;
+            return false;
+          }
+          // Fallback to serviceAreas
           if (customerDistrict && areas.includes(customerDistrict)) return true;
-          if (customerCity && (creatorCity === customerCity || areas.includes(customerCity))) return true;
+          if (customerCity && areas.includes(customerCity)) return true;
           return false;
 
         case 'entire_state':
@@ -121,8 +126,11 @@ router.get("/creators-by-area", async (req, res, next) => {
           return customerState && creatorState === customerState;
 
         case 'multiple_states':
-          // Visible in selected states (stored in serviceAreas)
-          if (customerState && areas.includes(customerState)) return true;
+          // Visible in selected states
+          const selStates = (c.selectedStates || []).map((s) => s.toLowerCase().trim());
+          if (selStates.length > 0) {
+            return customerState && selStates.includes(customerState);
+          }
           return false;
 
         case 'pan_india':
@@ -214,9 +222,11 @@ router.delete("/admin/locations/:id", protect, async (req, res, next) => {
 router.put("/creator/service-areas", protect, async (req, res, next) => {
   try {
     if (req.user.role !== "creator") return res.status(403).json({ success: false });
-    const { serviceAreas, travelPreference, maxTravelDistance, baseCity, state, district, studioName, studioAddress, pincode } = req.body;
+    const { serviceAreas, selectedDistricts, selectedStates, travelPreference, maxTravelDistance, baseCity, state, district, studioName, studioAddress, pincode } = req.body;
     const update = {};
     if (serviceAreas !== undefined) update.serviceAreas = serviceAreas;
+    if (selectedDistricts !== undefined) update.selectedDistricts = selectedDistricts;
+    if (selectedStates !== undefined) update.selectedStates = selectedStates;
     if (travelPreference !== undefined) update.travelPreference = travelPreference;
     if (maxTravelDistance !== undefined) update.maxTravelDistance = maxTravelDistance;
     if (baseCity !== undefined) { update.baseCity = baseCity; update.city = baseCity; }

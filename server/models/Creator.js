@@ -27,6 +27,8 @@ const creatorSchema = new mongoose.Schema(
     studioAddress: { type: String, default: "" },
     pincode: { type: String, default: "" },
     serviceAreas: [{ type: String }], // Array of city/town names creator serves
+    selectedDistricts: [{ type: String }], // For "multiple_districts" preference
+    selectedStates: [{ type: String }], // For "multiple_states" preference
     travelPreference: { type: String, enum: ["only_my_city", "my_district", "multiple_districts", "entire_state", "multiple_states", "pan_india", ""], default: "" },
     maxTravelDistance: { type: Number, default: 0 },
     category: { type: String, default: "wedding" },

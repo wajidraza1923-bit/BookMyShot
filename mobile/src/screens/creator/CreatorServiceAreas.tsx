@@ -62,6 +62,8 @@ export default function CreatorServiceAreas({ navigation }: any) {
         studioAddress: address,
         studioName,
         serviceAreas: serviceAreas.length > 0 ? serviceAreas : (homeCity ? [homeCity] : []),
+        selectedDistricts: serviceAreas.filter(a => districts.some(d => d === a) || true), // districts selected
+        selectedStates: serviceAreas.filter(a => states.some(s => s === a) || false), // states selected
         travelPreference,
       });
       Alert.alert('✅ Saved', 'Service areas updated successfully!');
