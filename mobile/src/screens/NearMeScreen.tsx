@@ -158,7 +158,16 @@ export default function NearMeScreen({ navigation }: any) {
   const [wishlist, setWishlist] = useState<Set<string>>(new Set());
   const toggleWishlist = (id: string) => {
     setWishlist(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
-    // TODO: sync with backend
+  };
+
+  // Compare feature
+  const [compareList, setCompareList] = useState<string[]>([]);
+  const toggleCompare = (id: string) => {
+    setCompareList(prev => {
+      if (prev.includes(id)) return prev.filter(x => x !== id);
+      if (prev.length >= 3) return prev; // max 3
+      return [...prev, id];
+    });
   };
 
   // ═══ PREMIUM CREATOR CARD ═══
@@ -303,14 +312,24 @@ export default function NearMeScreen({ navigation }: any) {
             <>
               <Text style={s.resTitle}>{filtered.length} Creator{filtered.length !== 1 ? 's' : ''} in {savedLocation.city || savedLocation.district || 'your area'}</Text>
               {filtered.map(item => (
-                <PremiumCreatorCard
-                  key={item._id}
-                  item={item}
-                  onPress={() => navigation.navigate('CreatorProfile', { id: item._id })}
-                  onGetQuote={() => navigation.navigate('Inquiry', { creatorId: item._id, creatorName: item.user?.name })}
-                  onWishlist={() => toggleWishlist(item._id)}
-                  isSaved={wishlist.has(item._id)}
-                />
+                <View key={item._id}>
+                  <PremiumCreatorCard
+                    item={item}
+                    onPress={() => navigation.navigate('CreatorProfile', { id: item._id })}
+                    onGetQuote={() => navigation.navigate('Inquiry', { creatorId: item._id, creatorName: item.user?.name })}
+                    onWishlist={() => toggleWishlist(item._id)}
+                    isSaved={wishlist.has(item._id)}
+                  />
+                  <TouchableOpacity
+                    style={[s.compareCheck, compareList.includes(item._id) && s.compareCheckActive]}
+                    onPress={() => toggleCompare(item._id)}
+                  >
+                    <Ionicons name={compareList.includes(item._id) ? 'checkmark-circle' : 'add-circle-outline'} size={16} color={compareList.includes(item._id) ? '#fff' : '#7C3AED'} />
+                    <Text style={[s.compareCheckText, compareList.includes(item._id) && { color: '#fff' }]}>
+                      {compareList.includes(item._id) ? 'Added' : 'Compare'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               ))}
             </>
           ) : (
@@ -403,6 +422,21 @@ export default function NearMeScreen({ navigation }: any) {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      {/* ═══ FLOATING COMPARE BUTTON ═══ */}
+      {compareList.length >= 2 && (
+        <TouchableOpacity
+          style={s.compareFloating}
+          activeOpacity={0.9}
+          onPress={() => {
+            const selected = filtered.filter(c => compareList.includes(c._id));
+            navigation.navigate('CompareCreators', { creators: selected });
+          }}
+        >
+          <Ionicons name="git-compare-outline" size={16} color="#fff" />
+          <Text style={s.compareFloatingText}>Compare ({compareList.length})</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -459,4 +493,10 @@ const s = StyleSheet.create({
   sortOption: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
   sortOptionActive: { backgroundColor: '#F8F6FF', marginHorizontal: -8, paddingHorizontal: 8, borderRadius: 10 },
   sortOptionT: { fontSize: 14, color: '#4B5563' },
+  // Compare
+  compareCheck: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, marginHorizontal: 16, marginTop: -8, marginBottom: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1.5, borderColor: '#7C3AED', backgroundColor: '#FFFFFF' },
+  compareCheckActive: { backgroundColor: '#7C3AED', borderColor: '#7C3AED' },
+  compareCheckText: { fontSize: 11, fontWeight: '600', color: '#7C3AED' },
+  compareFloating: { position: 'absolute', bottom: 30, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#7C3AED', borderRadius: 24, paddingHorizontal: 20, paddingVertical: 14, elevation: 8, shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10 },
+  compareFloatingText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
 });
