@@ -93,6 +93,7 @@ export default function CreatorServiceAreas({ navigation }: any) {
     { id: 'my_district', label: 'My District', icon: 'business' },
     { id: 'multiple_districts', label: 'Multiple Districts', icon: 'map' },
     { id: 'entire_state', label: 'Entire State', icon: 'globe' },
+    { id: 'multiple_states', label: 'Multiple States', icon: 'earth' },
     { id: 'pan_india', label: 'Pan India', icon: 'airplane' },
   ];
 

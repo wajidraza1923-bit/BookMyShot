@@ -65,73 +65,77 @@ router.get("/creators-by-area", async (req, res, next) => {
       return res.status(400).json({ success: false, message: "At least city, district, or state required" });
     }
 
+    // Fetch all approved creators first, then filter by visibility rules
     const baseFilter = { status: "approved" };
-
-    // Build service area matching query
-    let areaConditions = [];
-
-    if (city) {
-      const cityRegex = new RegExp(city, "i");
-      areaConditions.push(
-        { serviceAreas: { $elemMatch: { $regex: cityRegex } } },
-        { baseCity: cityRegex },
-        { city: cityRegex },
-        // Pan-India or state-wide creators also match
-        { travelPreference: "pan_india" },
-      );
-      // Include district-wide creators if we know the district
-      if (district) {
-        areaConditions.push(
-          { travelPreference: "my_district", district: new RegExp(district, "i") },
-          { travelPreference: "multiple_districts", district: new RegExp(district, "i") },
-        );
-      }
-      if (state) {
-        areaConditions.push(
-          { travelPreference: "entire_state", state: new RegExp(state, "i") },
-        );
-      }
-    } else if (district) {
-      const distRegex = new RegExp(district, "i");
-      areaConditions.push(
-        { district: distRegex },
-        { serviceAreas: { $elemMatch: { $regex: distRegex } } },
-        { travelPreference: "pan_india" },
-      );
-      if (state) {
-        areaConditions.push({ travelPreference: "entire_state", state: new RegExp(state, "i") });
-      }
-    } else if (state) {
-      const stateRegex = new RegExp(state, "i");
-      areaConditions.push(
-        { state: stateRegex },
-        { travelPreference: "pan_india" },
-      );
-    }
-
-    baseFilter.$or = areaConditions;
-
-    // Category filter
     if (category && category !== 'all') {
-      baseFilter.$and = baseFilter.$and || [];
-      baseFilter.$and.push({
-        $or: [
-          { categorySlug: new RegExp(category, "i") },
-          { category: new RegExp(category, "i") },
-          { specialty: new RegExp(category, "i") },
-        ],
-      });
+      baseFilter.$or = [
+        { categorySlug: new RegExp(category, "i") },
+        { category: new RegExp(category, "i") },
+        { specialty: new RegExp(category, "i") },
+      ];
     }
-
-    // Price filter
     if (minPrice) baseFilter.budgetMin = { $gte: Number(minPrice) };
     if (maxPrice) baseFilter.budgetMax = { $lte: Number(maxPrice) };
-
-    // Verified filter
     if (verified === 'true') baseFilter.verified = true;
     if (featured === 'true') baseFilter.featured = true;
 
     let creators = await Creator.find(baseFilter).populate("user", "name avatar phone").lean();
+
+    // ═══ STRICT VISIBILITY FILTERING ═══
+    // Each creator is visible ONLY based on their travelPreference + serviceAreas
+    const customerCity = (city || '').toLowerCase().trim();
+    const customerDistrict = (district || '').toLowerCase().trim();
+    const customerState = (state || '').toLowerCase().trim();
+
+    creators = creators.filter(c => {
+      const pref = c.travelPreference || '';
+      const creatorCity = (c.baseCity || c.city || '').toLowerCase().trim();
+      const creatorDistrict = (c.district || '').toLowerCase().trim();
+      const creatorState = (c.state || '').toLowerCase().trim();
+      const areas = (c.serviceAreas || []).map((a) => a.toLowerCase().trim());
+
+      // Rule 1: Check Service Areas (always applies regardless of travel preference)
+      if (customerCity && areas.includes(customerCity)) return true;
+      if (customerDistrict && areas.includes(customerDistrict)) return true;
+
+      // Rule 2: Apply Travel Preference rules
+      switch (pref) {
+        case 'only_my_city':
+          // Visible ONLY in their home city
+          return customerCity && creatorCity === customerCity;
+
+        case 'my_district':
+          // Visible anywhere in their home district
+          if (customerDistrict && creatorDistrict === customerDistrict) return true;
+          // Also match if customer city is in creator's district (same district)
+          return customerCity && creatorCity === customerCity;
+
+        case 'multiple_districts':
+          // Visible in selected districts (stored in serviceAreas as district names)
+          if (customerDistrict && areas.includes(customerDistrict)) return true;
+          if (customerCity && (creatorCity === customerCity || areas.includes(customerCity))) return true;
+          return false;
+
+        case 'entire_state':
+          // Visible anywhere in their home state
+          return customerState && creatorState === customerState;
+
+        case 'multiple_states':
+          // Visible in selected states (stored in serviceAreas)
+          if (customerState && areas.includes(customerState)) return true;
+          return false;
+
+        case 'pan_india':
+          // Visible everywhere
+          return true;
+
+        default:
+          // No preference set — default to city match or district match
+          if (customerCity && creatorCity === customerCity) return true;
+          if (customerDistrict && creatorDistrict === customerDistrict) return true;
+          return false;
+      }
+    });
 
     // Sort
     if (sort === 'rated') creators.sort((a, b) => (b.rating || 0) - (a.rating || 0));
@@ -140,12 +144,12 @@ router.get("/creators-by-area", async (req, res, next) => {
     else if (sort === 'newest') creators.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     else if (sort === 'featured') creators.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
     else {
-      // Default: prioritize exact city match > district match > state match
+      // Default: exact city match first, then others
       creators.sort((a, b) => {
-        const aCity = city && (a.baseCity || a.city || '').toLowerCase().includes(city.toLowerCase());
-        const bCity = city && (b.baseCity || b.city || '').toLowerCase().includes(city.toLowerCase());
-        if (aCity && !bCity) return -1;
-        if (!aCity && bCity) return 1;
+        const aExact = customerCity && (a.baseCity || a.city || '').toLowerCase() === customerCity;
+        const bExact = customerCity && (b.baseCity || b.city || '').toLowerCase() === customerCity;
+        if (aExact && !bExact) return -1;
+        if (!aExact && bExact) return 1;
         return (b.rating || 0) - (a.rating || 0);
       });
     }
@@ -155,8 +159,7 @@ router.get("/creators-by-area", async (req, res, next) => {
       if (c.portfolio) c.portfolio = c.portfolio.map(item => typeof item === 'string' ? item : (item?.url || ''));
     });
 
-    console.log(`[Discovery] Query: city=${city} district=${district} state=${state} | Found: ${creators.length}`);
-
+    console.log(`[Discovery] city=${city} district=${district} state=${state} | Found: ${creators.length} (strict filter)`);
     res.json({ success: true, count: creators.length, creators });
   } catch (e) { next(e); }
 });
