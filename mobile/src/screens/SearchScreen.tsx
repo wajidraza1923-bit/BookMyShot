@@ -3,6 +3,7 @@ import { View, Text, FlatList, StyleSheet, TouchableOpacity, ScrollView, Image, 
 import { Ionicons } from '@expo/vector-icons';
 import { creatorsAPI } from '../services/api';
 import api from '../services/api';
+import { useServiceLocation } from '../context/LocationContext';
 
 const { width } = Dimensions.get('window');
 const HALF = (width - 52) / 2;
@@ -41,6 +42,8 @@ const DEFAULT_INSPIRATION = [
 function _img(item: any): string { if (!item) return ''; if (typeof item === 'string') return item; return item?.url || item?.secure_url || item?.uri || ''; }
 
 export default function SearchScreen({ navigation, route }: any) {
+  const { location: savedLocation } = useServiceLocation();
+  const selectedState = savedLocation.state || '';
   const [query, setQuery] = useState(route?.params?.search || '');
   const [creators, setCreators] = useState<any[]>([]);
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -109,7 +112,7 @@ export default function SearchScreen({ navigation, route }: any) {
     try {
       if (query && query.length >= 2) {
         // Use dedicated fast search endpoint
-        const res = await api.get('/creators/search', { params: { q: query } });
+        const res = await api.get('/creators/search', { params: { q: query, state: selectedState || undefined, district: selectedCity || undefined, category: selectedCategory || undefined } });
         setCreators(res.data?.creators || []);
         setSuggestions(res.data?.suggestions || []);
         setShowResults(true);

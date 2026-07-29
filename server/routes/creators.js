@@ -112,14 +112,16 @@ router.get("/nearby", async (req, res, next) => {
 // ═══ Fast creator search (real-time, as-you-type) ═══
 router.get("/search", async (req, res, next) => {
   try {
-    const { q } = req.query;
+    const { q, state, district, category } = req.query;
     if (!q || String(q).length < 2) return res.json({ success: true, creators: [], suggestions: [] });
 
     const query = String(q).trim();
     const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    const selectedState = state ? String(state).toLowerCase().trim() : '';
+    const selectedDistrict = district ? String(district).toLowerCase().trim() : '';
 
-    // Search across all relevant fields
-    const creators = await Creator.find({
+    // Step 1: Find creators matching the search text
+    const textFilter = {
       status: "approved",
       $or: [
         { specialty: regex },
@@ -133,42 +135,70 @@ router.get("/search", async (req, res, next) => {
         { studioName: regex },
         { serviceAreas: { $elemMatch: { $regex: regex } } },
       ],
-    }).populate("user", "name avatar").limit(20).lean();
+    };
+    if (category) textFilter.categorySlug = new RegExp(category, 'i');
 
-    // Also search by user name (separate query since it's a populated field)
-    const userMatches = await User.find({ name: regex, role: { $in: ['creator'] } }).select('_id').limit(10);
-    const userIds = userMatches.map(u => u._id);
-    let nameMatches = [];
-    if (userIds.length > 0) {
-      nameMatches = await Creator.find({ user: { $in: userIds }, status: "approved" }).populate("user", "name avatar").limit(10).lean();
+    let creators = await Creator.find(textFilter).populate("user", "name avatar").limit(50).lean();
+
+    // Also search by user name
+    const userMatches = await User.find({ name: regex, role: 'creator' }).select('_id').limit(10);
+    if (userMatches.length > 0) {
+      const nameFilter = { user: { $in: userMatches.map(u => u._id) }, status: "approved" };
+      const nameResults = await Creator.find(nameFilter).populate("user", "name avatar").limit(10).lean();
+      creators = [...creators, ...nameResults];
     }
 
-    // Merge and deduplicate
-    const allResults = [...creators, ...nameMatches];
+    // Deduplicate
     const seen = new Set();
-    const unique = allResults.filter(c => {
-      const id = c._id.toString();
-      if (seen.has(id)) return false;
-      seen.add(id);
-      return true;
-    });
+    creators = creators.filter(c => { const id = c._id.toString(); if (seen.has(id)) return false; seen.add(id); return true; });
+
+    // Step 2: ENFORCE location filter — only show creators who serve the selected area
+    if (selectedState || selectedDistrict) {
+      creators = creators.filter(c => {
+        const creatorState = (c.state || '').toLowerCase().trim();
+        const creatorDistrict = (c.district || '').toLowerCase().trim();
+        const creatorCity = (c.baseCity || c.city || '').toLowerCase().trim();
+        const areas = (c.serviceAreas || []).map(a => a.toLowerCase().trim());
+        const pref = c.travelPreference || '';
+
+        // State filter: creator must be in same state OR pan_india
+        if (selectedState && pref !== 'pan_india') {
+          if (creatorState !== selectedState) return false;
+        }
+
+        // District filter: creator must serve that district
+        if (selectedDistrict) {
+          if (pref === 'pan_india') return true;
+          if (pref === 'entire_state' && creatorState === selectedState) return true;
+          if (pref === 'my_district' && creatorDistrict === selectedDistrict) return true;
+          if (pref === 'only_my_city' && creatorCity === selectedDistrict) return true;
+          if (areas.includes(selectedDistrict)) return true;
+          if ((c.selectedDistricts || []).map(d => d.toLowerCase()).includes(selectedDistrict)) return true;
+          // Default: must match district or city
+          if (creatorDistrict === selectedDistrict || creatorCity === selectedDistrict) return true;
+          return false;
+        }
+
+        return true;
+      });
+    }
 
     // Normalize portfolio
-    unique.forEach(c => {
+    creators.forEach(c => {
       if (c.portfolio) c.portfolio = c.portfolio.map((item) => typeof item === 'string' ? item : (item?.url || ''));
     });
 
-    // Generate suggestions (categories, cities, services that match)
+    // Generate suggestions
     const suggestions = [];
     const addSuggestion = (val) => { if (val && !suggestions.includes(val)) suggestions.push(val); };
-    unique.forEach(c => {
+    creators.forEach(c => {
       if (c.specialty && regex.test(c.specialty)) addSuggestion(c.specialty);
       if (c.city && regex.test(c.city)) addSuggestion(c.city);
-      if (c.baseCity && regex.test(c.baseCity)) addSuggestion(c.baseCity);
       if (c.district && regex.test(c.district)) addSuggestion(c.district);
     });
 
-    res.json({ success: true, count: unique.length, creators: unique, suggestions: suggestions.slice(0, 5) });
+    console.log(`[Search] q="${query}" state="${selectedState}" district="${selectedDistrict}" → ${creators.length} results`);
+    res.json({ success: true, count: creators.length, creators: creators.slice(0, 20), suggestions: suggestions.slice(0, 5) });
   } catch (e) { next(e); }
 });
 
