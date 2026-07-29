@@ -28,7 +28,21 @@ export default function RegisterScreen({ navigation }: any) {
   useEffect(() => { loadCategories(); }, []);
 
   const loadCategories = async () => {
-    try { const res = await api.get('/discover/categories'); setCategories(res.data?.data || []); } catch {}
+    try {
+      const res = await api.get('/discover/categories');
+      const data = res.data?.data || [];
+      if (data.length > 0) { setCategories(data); return; }
+    } catch {}
+    // Fallback: hardcoded categories (same as backend seed)
+    setCategories([
+      { name: 'Photography & Videography', slug: 'photography-videography', group: 'Photography & Video', icon: 'camera-outline' },
+      { name: 'Makeup Artists', slug: 'makeup-artists', group: 'Beauty', icon: 'color-palette-outline' },
+      { name: 'Decoration & Floral', slug: 'decoration-floral', group: 'Decoration', icon: 'flower-outline' },
+      { name: 'Wedding Planners', slug: 'wedding-planners', group: 'Wedding Management', icon: 'clipboard-outline' },
+      { name: 'Catering Services', slug: 'catering-services', group: 'Food', icon: 'restaurant-outline' },
+      { name: 'Venues', slug: 'venues', group: 'Venue', icon: 'business-outline' },
+      { name: 'DJs & Entertainment', slug: 'djs-entertainment', group: 'Entertainment', icon: 'musical-notes-outline' },
+    ]);
   };
 
   const loadSubcategories = async (slug: string) => {
@@ -172,7 +186,7 @@ export default function RegisterScreen({ navigation }: any) {
         {role === 'creator' && (
           <View style={s.fieldWrap}>
             <Text style={s.label}>Service Category *</Text>
-            <TouchableOpacity style={[s.inputRow, errors.category && s.inputError]} onPress={() => setShowCatPicker(true)}>
+            <TouchableOpacity style={[s.inputRow, errors.category && s.inputError]} onPress={() => { if (categories.length === 0) loadCategories(); setShowCatPicker(true); }}>
               <Ionicons name="briefcase-outline" size={18} color="#9CA3AF" />
               <Text style={[s.input, { color: selectedCategorySlug ? '#1F2937' : '#D1D5DB' }]}>{selectedSubcategoryName ? `${selectedCategoryName} → ${selectedSubcategoryName}` : (selectedCategoryName !== 'Select Service' ? selectedCategoryName : 'Select Service')}</Text>
               <Ionicons name="chevron-down" size={16} color="#6C3BFF" />
