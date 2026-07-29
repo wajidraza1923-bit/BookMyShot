@@ -59,7 +59,7 @@ router.get("/search-locations", async (req, res, next) => {
 // ═══ PUBLIC: Find creators by service area (replaces Near Me GPS) ═══
 router.get("/creators-by-area", async (req, res, next) => {
   try {
-    const { city, district, state, category, sort, minPrice, maxPrice, verified, featured, search } = req.query;
+    const { city, district, state, category, subcategory, sort, minPrice, maxPrice, verified, featured, search } = req.query;
 
     if (!city && !district && !state && !search) {
       return res.status(400).json({ success: false, message: "At least city, district, state, or search required" });
@@ -68,11 +68,21 @@ router.get("/creators-by-area", async (req, res, next) => {
     // Fetch all approved creators first, then filter by visibility rules
     const baseFilter = { status: "approved" };
     if (category && category !== 'all') {
-      baseFilter.$or = [
-        { categorySlug: new RegExp(category, "i") },
-        { category: new RegExp(category, "i") },
-        { specialty: new RegExp(category, "i") },
-      ];
+      if (subcategory) {
+        // Exact subcategory match
+        baseFilter.$or = [
+          { categorySlug: category, subcategorySlug: subcategory },
+          { categorySlug: subcategory },
+          { subcategorySlug: subcategory },
+          { specialty: new RegExp(subcategory.replace(/[-\s]+/g, '.*'), "i") },
+        ];
+      } else {
+        baseFilter.$or = [
+          { categorySlug: new RegExp(category, "i") },
+          { category: new RegExp(category, "i") },
+          { specialty: new RegExp(category, "i") },
+        ];
+      }
     }
     if (minPrice) baseFilter.budgetMin = { $gte: Number(minPrice) };
     if (maxPrice) baseFilter.budgetMax = { $lte: Number(maxPrice) };

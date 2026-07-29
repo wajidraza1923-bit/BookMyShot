@@ -81,12 +81,13 @@ router.post("/register", async (req, res, next) => {
     }
 
     if (user.role === "creator") {
-      const { categorySlug, categoryGroup, category: catField } = req.body;
+      const { categorySlug, subcategorySlug, categoryGroup, category: catField } = req.body;
       await Creator.create({
         user: user._id,
         status: "pending",
         category: catField || categorySlug || "wedding",
         categorySlug: categorySlug || "wedding-photographer",
+        subcategorySlug: subcategorySlug || categorySlug || "",
         categoryGroup: categoryGroup || "Photography & Video",
         subscriptionPlan: "basic",
         subscriptionStatus: "free",
