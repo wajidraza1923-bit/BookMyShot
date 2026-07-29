@@ -144,7 +144,7 @@ export default function SearchScreen({ navigation, route }: any) {
     if (route?.params?.search && route.params.search.length >= 2) {
       // Direct API call on mount (bypass useCallback stale closure issue)
       setLoading(true);
-      api.get('/creators/search', { params: { q: route.params.search } })
+      api.get('/creators/search', { params: { q: route.params.search, state: selectedState || undefined } })
         .then(res => { setCreators(res.data?.creators || []); setSuggestions(res.data?.suggestions || []); setShowResults(true); })
         .catch(() => { setCreators([]); })
         .finally(() => setLoading(false));

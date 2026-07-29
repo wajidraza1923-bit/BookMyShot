@@ -112,28 +112,32 @@ router.get("/nearby", async (req, res, next) => {
 // ═══ Live search suggestions (as-you-type, grouped) ═══
 router.get("/suggestions", async (req, res, next) => {
   try {
-    const { q } = req.query;
+    const { q, state } = req.query;
     if (!q || String(q).length < 2) return res.json({ success: true, locations: [], creators: [], categories: [], popular: [] });
 
     const query = String(q).trim();
     const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    const selectedState = state ? String(state).trim() : '';
 
-    // Search locations
+    // Search locations — filter by state if provided
     const ServiceLocation = require("../models/ServiceLocation");
-    const locations = await ServiceLocation.find({
-      isActive: true,
-      $or: [{ city: regex }, { district: regex }, { state: regex }],
-    }).limit(5).lean();
+    const locFilter = { isActive: true, $or: [{ city: regex }, { district: regex }] };
+    if (selectedState) locFilter.state = new RegExp(selectedState, 'i');
+    const locations = await ServiceLocation.find(locFilter).limit(5).lean();
 
-    // Search creators by name
-    const creatorUsers = await User.find({ name: regex, role: 'creator' }).select('_id name').limit(5);
+    // Search creators by name — filter by state
+    const creatorUsers = await User.find({ name: regex, role: 'creator' }).select('_id name').limit(10);
     const creatorIds = creatorUsers.map(u => u._id);
+    let creatorFilter = { user: { $in: creatorIds }, status: "approved" };
+    if (selectedState) creatorFilter.state = new RegExp(selectedState, 'i');
     const creatorResults = creatorIds.length > 0
-      ? await Creator.find({ user: { $in: creatorIds }, status: "approved" }).populate("user", "name avatar").select("user specialty city studioName categorySlug").limit(5).lean()
+      ? await Creator.find(creatorFilter).populate("user", "name avatar").select("user specialty city studioName categorySlug state").limit(5).lean()
       : [];
 
     // Search categories/services
-    const categoryMatches = await Creator.distinct("specialty", { status: "approved", specialty: regex });
+    const catFilter = { status: "approved", specialty: regex };
+    if (selectedState) catFilter.state = new RegExp(selectedState, 'i');
+    const categoryMatches = await Creator.distinct("specialty", catFilter);
     const categoryResults = categoryMatches.slice(0, 5);
 
     res.json({
@@ -191,6 +195,22 @@ router.get("/search", async (req, res, next) => {
 
     // Search shows ALL matching creators — no location restriction
     // (Location filtering is done on Near Me/Discovery pages, not on text search)
+
+    // STATE FILTER: If state is provided, only show creators from that state
+    // (Creators with no state or pan_india preference still show)
+    if (state) {
+      const selectedState = String(state).toLowerCase().trim();
+      creators = creators.filter(c => {
+        const creatorState = (c.state || '').toLowerCase().trim();
+        const pref = c.travelPreference || '';
+        // Pan India creators show everywhere
+        if (pref === 'pan_india') return true;
+        // No state set on creator = show everywhere (default)
+        if (!creatorState) return true;
+        // Must match selected state
+        return creatorState === selectedState;
+      });
+    }
 
     // Normalize portfolio
     creators.forEach(c => {

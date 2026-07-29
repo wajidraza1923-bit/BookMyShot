@@ -390,7 +390,7 @@ export default function HomeScreen({ navigation }: any) {
         <View style={st.searchRow}>
           <View style={st.searchBar}>
             <Ionicons name="search" size={15} color="#9CA3AF" />
-            <TextInput style={st.searchInput} placeholder="Search creators, services or anything..." placeholderTextColor="#9CA3AF" value={searchQuery} onChangeText={setSearchQuery} onSubmitEditing={() => { if (searchQuery.length > 1) { navigation.navigate('Discover', { search: searchQuery }); setSearchQuery(''); } }} />
+            <TextInput style={st.searchInput} placeholder="Search creators, services or anything..." placeholderTextColor="#9CA3AF" value={searchQuery} onChangeText={setSearchQuery} onSubmitEditing={() => { if (searchQuery.length > 1) { navigation.navigate('Discover', { search: searchQuery, state: savedLocation.state }); setSearchQuery(''); } }} />
             {searchQuery.length > 0 && <TouchableOpacity onPress={() => setSearchQuery('')}><Ionicons name="close-circle" size={16} color="#D1D5DB" /></TouchableOpacity>}
           </View>
           <TouchableOpacity style={[st.filtersBtn, filtersApplied && { backgroundColor: '#FF4FA3' }]} onPress={openFilterModal}>
