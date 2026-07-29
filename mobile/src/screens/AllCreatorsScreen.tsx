@@ -7,6 +7,7 @@ import { View, Text, FlatList, StyleSheet, TouchableOpacity, ScrollView, Image, 
 import { Ionicons } from '@expo/vector-icons';
 import { creatorsAPI } from '../services/api';
 import api from '../services/api';
+import { useServiceLocation } from '../context/LocationContext';
 
 const { width } = Dimensions.get('window');
 
@@ -15,6 +16,7 @@ const { width } = Dimensions.get('window');
 function _img(item: any): string { if (!item) return ''; if (typeof item === 'string') return item; return item?.url || item?.secure_url || item?.uri || ''; }
 
 export default function AllCreatorsScreen({ navigation, route }: any) {
+  const { location: savedLocation } = useServiceLocation();
   // Accept category/subcategory from SubCategories screen
   const initialCategory = route?.params?.categorySlug || '';
   const initialSubcategory = route?.params?.subcategorySlug || '';
@@ -40,26 +42,37 @@ export default function AllCreatorsScreen({ navigation, route }: any) {
     { id: 'wedding', label: 'Planners', icon: 'clipboard-outline' },
   ];
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [savedLocation.state, savedLocation.district]);
 
   const loadData = async () => {
+    setLoading(true);
     try {
-      // Pass category/subcategory filters to backend
-      const params: any = {};
-      if (initialCategory) params.category = initialCategory;
-      if (initialSubcategory) params.subcategory = initialSubcategory;
+      // Load districts dynamically from selected state
+      const distPromise = savedLocation.state
+        ? api.get('/discovery/districts', { params: { state: savedLocation.state } }).catch(() => ({ data: { districts: [] } }))
+        : api.get('/discover/districts').catch(() => ({ data: { data: [] } }));
+
+      // Load creators from discovery API (state-filtered)
+      const crParams: any = {};
+      if (savedLocation.district) crParams.district = savedLocation.district;
+      if (savedLocation.state) crParams.state = savedLocation.state;
+      if (initialCategory) crParams.category = initialCategory;
+      if (initialSubcategory) crParams.subcategory = initialSubcategory;
 
       const [crRes, distRes] = await Promise.all([
-        creatorsAPI.getAll(params),
-        api.get('/discover/districts').catch(() => ({ data: { data: [] } })),
+        api.get('/discovery/creators-by-area', { params: crParams }).catch(() => creatorsAPI.getAll({ category: initialCategory, subcategory: initialSubcategory })),
+        distPromise,
       ]);
-      const creatorsData = crRes.data?.creators || crRes.data?.data || crRes.data || [];
+
+      const creatorsData = crRes.data?.creators || crRes.data?.data || [];
       const finalCreators = Array.isArray(creatorsData) ? creatorsData : [];
-      console.log('[AllCreators] Loaded', finalCreators.length, 'creators', initialCategory || '', initialSubcategory || '');
       setCreators(finalCreators);
-      setDistricts(distRes.data?.data || []);
+
+      // Districts: convert string array to objects
+      const rawDist = distRes.data?.districts || distRes.data?.data || [];
+      setDistricts(rawDist.map((d: any) => typeof d === 'string' ? { name: d } : d));
     } catch (err: any) {
-      console.log('[AllCreators] API error:', err.message, err.response?.status);
+      console.log('[AllCreators] API error:', err.message);
     } finally { setLoading(false); }
   };
 
