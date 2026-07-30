@@ -154,7 +154,7 @@ export default function CreatorOnboardingScreen({ navigation }: any) {
             <View style={st.successContact}>
               <Text style={st.successContactTitle}>Need Help?</Text>
               <Text style={st.successContactText}>📧 bookmyshott@gmail.com</Text>
-              <Text style={st.successContactText}>📞 +91 9596075498</Text>
+              <Text style={st.successContactText}>📞 +91 8492922173</Text>
             </View>
             <TouchableOpacity style={st.successBtn} onPress={() => setShowSuccessModal(false)}>
               <Text style={st.successBtnText}>Done</Text>
