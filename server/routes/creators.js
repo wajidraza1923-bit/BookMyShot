@@ -160,7 +160,7 @@ router.get("/search", async (req, res, next) => {
 
     // Generate suggestions (categories, cities, services that match)
     const suggestions = [];
-    const addSuggestion = (val: string) => { if (val && !suggestions.includes(val)) suggestions.push(val); };
+    const addSuggestion = (val) => { if (val && !suggestions.includes(val)) suggestions.push(val); };
     unique.forEach(c => {
       if (c.specialty && regex.test(c.specialty)) addSuggestion(c.specialty);
       if (c.city && regex.test(c.city)) addSuggestion(c.city);
