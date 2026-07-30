@@ -267,10 +267,10 @@ export default function CreatorSubscription({ navigation }: any) {
   const isExpired = subStatus === 'expired' || subStatus === 'suspended' || subStatus === 'overdue';
   const isOverdue = subStatus === 'overdue';
 
-  // Yearly plan removed — always monthly
-  const isViewingYearlyPreview = false;
-  const isViewingMonthlyPreview = false;
-  const selectedPlan = 'monthly' as const;
+  // Plan selection state
+  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('monthly');
+  const isViewingYearlyPreview = selectedPlan === 'yearly';
+  const isViewingMonthlyPreview = selectedPlan === 'monthly';
 
   const statusColor = subStatus === 'active' ? colors.success
     : subStatus === 'trial' ? colors.primary
