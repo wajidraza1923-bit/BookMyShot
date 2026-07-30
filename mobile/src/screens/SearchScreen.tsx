@@ -158,7 +158,7 @@ export default function SearchScreen({ navigation, route }: any) {
           <TextInput style={s.searchInput} value={query} onChangeText={handleSearch} placeholder="Search creators, cities, categories..." placeholderTextColor="rgba(255,255,255,0.25)" selectioncolor="#6C3BFF" />
           {query.length > 0 && <TouchableOpacity onPress={clearFilters}><Ionicons name="close-circle" size={17} color="rgba(255,255,255,0.3)" /></TouchableOpacity>}
         </View>
-        <TouchableOpacity style={s.locBtn}><Ionicons name="location" size={14} color="#6C3BFF" /><Text style={s.locText}>J&K</Text></TouchableOpacity>
+        <TouchableOpacity style={s.locBtn}><Ionicons name="location" size={14} color="#6C3BFF" /><Text style={s.locText}>{selectedState ? selectedState.substring(0, 10) : 'All'}</Text></TouchableOpacity>
       </View>
 
       {/* FILTERS */}

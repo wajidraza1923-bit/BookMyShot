@@ -112,15 +112,22 @@ router.get("/nearby", async (req, res, next) => {
 // ═══ Fast creator search (real-time, as-you-type) ═══
 router.get("/search", async (req, res, next) => {
   try {
-    const { q } = req.query;
+    const { q, state, district, category } = req.query;
     if (!q || String(q).length < 2) return res.json({ success: true, creators: [], suggestions: [] });
 
     const query = String(q).trim();
     const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
 
-    // Search across all relevant fields
+    // Base filter: approved creators + state restriction
+    const baseFilter = { status: "approved" };
+    if (state) {
+      // ALWAYS restrict to user's selected state
+      baseFilter.state = new RegExp(`^${state.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+    }
+
+    // Search across all relevant fields WITHIN the state
     const creators = await Creator.find({
-      status: "approved",
+      ...baseFilter,
       $or: [
         { specialty: regex },
         { category: regex },
@@ -129,9 +136,10 @@ router.get("/search", async (req, res, next) => {
         { city: regex },
         { baseCity: regex },
         { district: regex },
-        { state: regex },
         { studioName: regex },
         { serviceAreas: { $elemMatch: { $regex: regex } } },
+        { bio: regex },
+        { location: regex },
       ],
     }).populate("user", "name avatar").limit(20).lean();
 
@@ -140,7 +148,7 @@ router.get("/search", async (req, res, next) => {
     const userIds = userMatches.map(u => u._id);
     let nameMatches = [];
     if (userIds.length > 0) {
-      nameMatches = await Creator.find({ user: { $in: userIds }, status: "approved" }).populate("user", "name avatar").limit(10).lean();
+      nameMatches = await Creator.find({ ...baseFilter, user: { $in: userIds } }).populate("user", "name avatar").limit(10).lean();
     }
 
     // Merge and deduplicate
