@@ -19,6 +19,9 @@ export default function CreatorSubscription({ navigation }: any) {
   const [showRazorpay, setShowRazorpay] = useState(false);
   const [rpSubConfig, setRpSubConfig] = useState<{ keyId: string; subscriptionId: string; name: string; email: string }>({ keyId: '', subscriptionId: '', name: '', email: '' });
 
+  // Plan selection state
+  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('monthly');
+
   const load = useCallback(async () => {
     try {
       const [dashRes, configRes, autopayRes, leadRes, masterRes] = await Promise.all([
@@ -267,8 +270,7 @@ export default function CreatorSubscription({ navigation }: any) {
   const isExpired = subStatus === 'expired' || subStatus === 'suspended' || subStatus === 'overdue';
   const isOverdue = subStatus === 'overdue';
 
-  // Plan selection state
-  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('monthly');
+  // Plan viewing helpers
   const isViewingYearlyPreview = selectedPlan === 'yearly';
   const isViewingMonthlyPreview = selectedPlan === 'monthly';
 
