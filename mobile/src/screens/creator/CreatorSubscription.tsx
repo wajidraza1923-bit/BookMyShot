@@ -17,7 +17,7 @@ export default function CreatorSubscription({ navigation }: any) {
   const [cancelling, setCancelling] = useState(false);
   // WebView Razorpay state for subscription
   const [showRazorpay, setShowRazorpay] = useState(false);
-  const [rpSubConfig, setRpSubConfig] = useState<{ keyId: string; subscriptionId: string; name: string; email: string }>({ keyId: '', subscriptionId: '', name: '', email: '' });
+  const [rpSubConfig, setRpSubConfig] = useState<{ keyId: string; subscriptionId: string; orderId?: string; amount?: number; name: string; email: string }>({ keyId: '', subscriptionId: '', name: '', email: '' });
 
   // Plan selection state
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('monthly');
@@ -128,9 +128,9 @@ export default function CreatorSubscription({ navigation }: any) {
             else Alert.alert('Payment Failed', e.description || e.message || 'Please try again.');
           }
         } else {
-          // WebView fallback for yearly
+          // WebView fallback for yearly (one-time order, NOT subscription)
           const meRes2 = await api.get('/auth/me');
-          setRpSubConfig({ keyId: rpConfig.keyId, subscriptionId: subRes.orderId, name: meRes2.data?.user?.name || '', email: meRes2.data?.user?.email || '' });
+          setRpSubConfig({ keyId: rpConfig.keyId, subscriptionId: '', orderId: subRes.orderId, amount: subRes.amount || 0, name: meRes2.data?.user?.name || '', email: meRes2.data?.user?.email || '' });
           setShowRazorpay(true);
         }
         setSubscribing(false);
@@ -587,27 +587,41 @@ export default function CreatorSubscription({ navigation }: any) {
       <RazorpayWebCheckout
         visible={showRazorpay}
         keyId={rpSubConfig.keyId}
-        subscriptionId={rpSubConfig.subscriptionId}
+        subscriptionId={rpSubConfig.subscriptionId || undefined}
+        orderId={rpSubConfig.orderId || undefined}
+        amount={rpSubConfig.amount || undefined}
         name="BookMyShot"
-        description="Creator Monthly Subscription (AutoPay)"
+        description={rpSubConfig.orderId ? "Creator Yearly Subscription" : "Creator Monthly Subscription (AutoPay)"}
         prefillName={rpSubConfig.name}
         prefillEmail={rpSubConfig.email}
         onSuccess={async (paymentData) => {
           setShowRazorpay(false);
           setSubscribing(true);
           try {
-            const { verifySubscription } = require('../../services/payment');
-            const verified = await verifySubscription(
-              paymentData.razorpay_subscription_id,
-              paymentData.razorpay_payment_id,
-              paymentData.razorpay_signature
-            );
-            if (verified) { Alert.alert('Success! 🎉', 'Subscription activated!'); await load(); await refreshUser(); }
-            else Alert.alert('Verification Failed', 'Contact support if charged.');
+            if (rpSubConfig.orderId) {
+              // Yearly: verify one-time payment
+              const verifyRes = await api.post('/razorpay/verify-yearly-payment', {
+                razorpay_order_id: paymentData.razorpay_order_id,
+                razorpay_payment_id: paymentData.razorpay_payment_id,
+                razorpay_signature: paymentData.razorpay_signature,
+              });
+              if (verifyRes.data?.success) { Alert.alert('Success! 🎉', verifyRes.data.message || 'Yearly subscription activated!'); await load(); await refreshUser(); }
+              else Alert.alert('Verification Failed', 'Contact support if charged.');
+            } else {
+              // Monthly: verify subscription
+              const { verifySubscription } = require('../../services/payment');
+              const verified = await verifySubscription(
+                paymentData.razorpay_subscription_id,
+                paymentData.razorpay_payment_id,
+                paymentData.razorpay_signature
+              );
+              if (verified) { Alert.alert('Success! 🎉', 'Subscription activated!'); await load(); await refreshUser(); }
+              else Alert.alert('Verification Failed', 'Contact support if charged.');
+            }
           } catch (e: any) { Alert.alert('Error', e.message || 'Verification failed'); }
           setSubscribing(false);
         }}
-        onFailure={(error) => { setShowRazorpay(false); Alert.alert('Payment Failed', error?.description || 'Subscription payment was not completed'); }}
+        onFailure={(error) => { setShowRazorpay(false); Alert.alert('Payment Failed', error?.description || 'Payment was not completed'); }}
         onClose={() => { setShowRazorpay(false); setSubscribing(false); }}
       />
     </View>
