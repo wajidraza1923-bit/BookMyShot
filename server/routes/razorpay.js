@@ -132,8 +132,11 @@ router.post("/create-subscription", protect, authorize("creator"), async (req, r
     const { planType } = req.body; // 'monthly' or 'yearly'
     const isYearly = planType === 'yearly';
     
-    const monthlyPrice = subSettings.monthlyPlanPrice || 299;
-    const yearlyPrice = subSettings.yearlyPlanPrice || Math.round(monthlyPrice * 10);
+    // Use Master Settings as PRIMARY pricing source
+    const MasterSettings = require("../models/MasterSettings");
+    const masterSettings = await MasterSettings.findOne();
+    const monthlyPrice = (masterSettings && masterSettings.monthlySubscriptionPrice) || subSettings.monthlyPlanPrice || 199;
+    const yearlyPrice = (masterSettings && masterSettings.yearlySubscriptionPrice) || subSettings.yearlyPlanPrice || Math.round(monthlyPrice * 10);
     const amount = isYearly ? yearlyPrice : monthlyPrice;
 
     const creator = await Creator.findOne({ user: req.user._id });
@@ -326,7 +329,10 @@ router.post("/verify-subscription", protect, async (req, res, next) => {
     if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
 
     const subSettings = await configService.getSubscriptionSettings();
-    const amount = subSettings.monthlyPlanPrice || 99;
+    // Use Master Settings for amount
+    const MasterSettings2 = require("../models/MasterSettings");
+    const ms2 = await MasterSettings2.findOne();
+    const amount = (ms2 && ms2.monthlySubscriptionPrice) || subSettings.monthlyPlanPrice || 199;
     const trialDays = subSettings.trialDays || 0;
     const now = new Date();
 
