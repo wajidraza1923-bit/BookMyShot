@@ -355,8 +355,9 @@ router.post("/complete-onboarding", protect, authorize("creator"), async (req, r
       if (req.body[key] !== undefined) update[key] = req.body[key];
     }
 
-    // Mark status as pending (awaiting admin review)
+    // Mark status as pending (awaiting admin review) and onboarding as complete
     update.status = "pending";
+    update.onboardingCompleted = true;
 
     const creator = await Creator.findOneAndUpdate(
       { user: req.user._id },

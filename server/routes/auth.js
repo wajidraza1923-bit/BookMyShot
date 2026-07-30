@@ -205,6 +205,7 @@ router.post("/login", async (req, res, next) => {
             creatorStatus: creator.status,
             subscriptionStatus: creator.subscriptionStatus,
             state: creator.state || "",
+            onboardingCompleted: creator.onboardingCompleted || false,
           },
           message: `Your account is ${creator.status}. Our admin team will review your profile before approval.`,
         });
@@ -224,6 +225,7 @@ router.post("/login", async (req, res, next) => {
           creatorStatus: creator.status,
           subscriptionStatus: creator.subscriptionStatus,
           state: creator.state || "",
+          onboardingCompleted: creator.onboardingCompleted || false,
         },
       });
     }
@@ -527,6 +529,7 @@ router.get("/me", protect, async (req, res, next) => {
     const userResponse = req.user.toObject ? req.user.toObject() : { ...req.user };
     if (creator) {
       userResponse.state = creator.state || "";
+      userResponse.onboardingCompleted = creator.onboardingCompleted || false;
     }
     res.json({ success: true, user: userResponse, creator });
   } catch (e) {

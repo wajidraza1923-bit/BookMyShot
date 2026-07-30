@@ -64,11 +64,11 @@ export default function CreatorNavigator() {
   const { user } = useAuth();
   
   // Three states:
-  // 1. No state set → needs onboarding (first login, hasn't filled details)
-  // 2. Has state but status is pending/rejected → show pending verification screen
+  // 1. onboardingCompleted is false → needs onboarding (first login, hasn't filled details)
+  // 2. onboardingCompleted is true but status is pending/rejected → show pending verification screen
   // 3. Approved → show normal dashboard
-  const needsOnboarding = user && !user.state && (!user.creatorStatus || user.creatorStatus === 'pending');
-  const isPending = user && user.state && user.creatorStatus && user.creatorStatus !== 'approved';
+  const needsOnboarding = user && !user.onboardingCompleted && user.creatorStatus !== 'approved';
+  const isPending = user && user.onboardingCompleted && user.creatorStatus && user.creatorStatus !== 'approved';
 
   // If needs onboarding, show only onboarding screen
   if (needsOnboarding) {

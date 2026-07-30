@@ -117,6 +117,8 @@ const creatorSchema = new mongoose.Schema(
     deletedAt: { type: Date, default: null },
     deletedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
     deleteReason: { type: String, default: "" },
+    // Onboarding tracking
+    onboardingCompleted: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

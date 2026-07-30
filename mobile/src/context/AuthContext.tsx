@@ -19,6 +19,7 @@ interface User {
   creatorStatus?: string;
   subscriptionStatus?: string;
   state?: string;
+  onboardingCompleted?: boolean;
 }
 
 interface AuthState {
@@ -89,10 +90,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               normalized.creatorStatus = freshCreator.status;
               normalized.subscriptionStatus = freshCreator.subscriptionStatus;
               normalized.state = freshCreator.state || '';
+              normalized.onboardingCompleted = freshCreator.onboardingCompleted || false;
             }
             setUser(normalized);
             await AsyncStorage.setItem('bms_user', JSON.stringify(normalized));
-            console.log('[Auth] Session valid, user:', normalized.name, 'role:', normalized.role, 'creatorStatus:', normalized.creatorStatus, 'state:', normalized.state, 'subStatus:', normalized.subscriptionStatus);
+            console.log('[Auth] Session valid, user:', normalized.name, 'role:', normalized.role, 'creatorStatus:', normalized.creatorStatus, 'state:', normalized.state, 'onboarded:', normalized.onboardingCompleted, 'subStatus:', normalized.subscriptionStatus);
             registerPush();
             // Connect Socket.IO for real-time
             try { const { connect, setupAppStateHandler } = require('../services/socket'); connect(); setupAppStateHandler(); } catch {}
@@ -134,6 +136,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     creatorStatus: u.creatorStatus,
     subscriptionStatus: u.subscriptionStatus,
     state: u.state || '',
+    onboardingCompleted: u.onboardingCompleted || false,
   });
 
   const clearSession = async () => {
@@ -330,6 +333,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           normalized.creatorStatus = freshCreator.status;
           normalized.subscriptionStatus = freshCreator.subscriptionStatus;
           normalized.state = freshCreator.state || '';
+          normalized.onboardingCompleted = freshCreator.onboardingCompleted || false;
         }
         setUser(normalized);
         await AsyncStorage.setItem('bms_user', JSON.stringify(normalized));
