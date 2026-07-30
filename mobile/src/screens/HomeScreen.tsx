@@ -546,42 +546,35 @@ export default function HomeScreen({ navigation }: any) {
           </View>
         )}
 
-        {/* ═══ HOW IT WORKS — Compact horizontal cards ═══ */}
-        <View style={{ marginTop: 20 }}>
-          <Text style={st.secTitle2}>✨ How It Works</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 4 }}>
-            <View style={st.hiwCard}>
-              <LinearGradient colors={['#EDE9FE', '#F3E8FF']} style={st.hiwGradient}>
-                <Text style={st.hiwIcon}>🟣</Text>
-                <Text style={st.hiwStep}>1. Find</Text>
-                <Text style={st.hiwDesc}>Browse your perfect creator</Text>
-              </LinearGradient>
+        {/* ═══ HOW IT WORKS — Clean white container, all 4 steps visible ═══ */}
+        <View style={st.hiwContainer}>
+          <Text style={st.hiwTitle}>✨ How It Works</Text>
+          <Text style={st.hiwSubtitle}>4 simple steps to book your perfect creator</Text>
+          <View style={st.hiwRow}>
+            <View style={st.hiwItem}>
+              <View style={st.hiwIconWrap}><Ionicons name="search" size={18} color="#6C3BFF" /><View style={st.hiwBadge}><Text style={st.hiwBadgeText}>1</Text></View></View>
+              <Text style={st.hiwItemTitle}>Find Creator</Text>
+              <Text style={st.hiwItemDesc}>Browse & choose the best creator</Text>
             </View>
-            <Text style={st.hiwArrow}>➡️</Text>
-            <View style={st.hiwCard}>
-              <LinearGradient colors={['#FEF3C7', '#FDE68A']} style={st.hiwGradient}>
-                <Text style={st.hiwIcon}>💬</Text>
-                <Text style={st.hiwStep}>2. Enquire</Text>
-                <Text style={st.hiwDesc}>Send your requirements</Text>
-              </LinearGradient>
+            <Text style={st.hiwArrowInline}>→</Text>
+            <View style={st.hiwItem}>
+              <View style={st.hiwIconWrap}><Ionicons name="chatbubble-ellipses-outline" size={18} color="#6C3BFF" /><View style={st.hiwBadge}><Text style={st.hiwBadgeText}>2</Text></View></View>
+              <Text style={st.hiwItemTitle}>Send Enquiry</Text>
+              <Text style={st.hiwItemDesc}>Check availability & get a quote</Text>
             </View>
-            <Text style={st.hiwArrow}>➡️</Text>
-            <View style={st.hiwCard}>
-              <LinearGradient colors={['#ECFDF5', '#D1FAE5']} style={st.hiwGradient}>
-                <Text style={st.hiwIcon}>💳</Text>
-                <Text style={st.hiwStep}>3. Book</Text>
-                <Text style={st.hiwDesc}>Pay securely & confirm</Text>
-              </LinearGradient>
+            <Text style={st.hiwArrowInline}>→</Text>
+            <View style={st.hiwItem}>
+              <View style={st.hiwIconWrap}><Ionicons name="card-outline" size={18} color="#6C3BFF" /><View style={st.hiwBadge}><Text style={st.hiwBadgeText}>3</Text></View></View>
+              <Text style={st.hiwItemTitle}>Confirm</Text>
+              <Text style={st.hiwItemDesc}>Pay securely & get confirmation</Text>
             </View>
-            <Text style={st.hiwArrow}>➡️</Text>
-            <View style={st.hiwCard}>
-              <LinearGradient colors={['#FFF1F2', '#FFE4E6']} style={st.hiwGradient}>
-                <Text style={st.hiwIcon}>🎁</Text>
-                <Text style={st.hiwStep}>4. Enjoy</Text>
-                <Text style={st.hiwDesc}>Earn {masterOffer.cashback}% Cashback</Text>
-              </LinearGradient>
+            <Text style={st.hiwArrowInline}>→</Text>
+            <View style={st.hiwItem}>
+              <View style={st.hiwIconWrap}><Ionicons name="gift-outline" size={18} color="#6C3BFF" /><View style={st.hiwBadge}><Text style={st.hiwBadgeText}>4</Text></View></View>
+              <Text style={st.hiwItemTitle}>Enjoy & Earn</Text>
+              <Text style={st.hiwItemDesc}>Earn {masterOffer.cashback}% Cashback</Text>
             </View>
-          </ScrollView>
+          </View>
         </View>
 
         {/* ═══ FEATURED WEDDING MOMENTS ═══ */}
@@ -964,14 +957,18 @@ const st = StyleSheet.create({
   fmStatText: { fontSize: 8, color: 'rgba(255,255,255,0.85)' },
   // Top Creators — clean white cards, no overlays
   tcCard: { width: 160, borderRadius: 16, overflow: 'hidden', marginRight: 12, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#F1F5F9', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4 },
-  // How It Works
-  secTitle2: { fontSize: 15, fontWeight: '800', color: '#1F2937', paddingHorizontal: 20, marginBottom: 12 },
-  hiwCard: { width: 100, height: 100, borderRadius: 14, overflow: 'hidden', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4 },
-  hiwGradient: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 8, borderRadius: 14 },
-  hiwIcon: { fontSize: 20, marginBottom: 4 },
-  hiwStep: { fontSize: 11, fontWeight: '800', color: '#1F2937' },
-  hiwDesc: { fontSize: 8, color: '#6B7280', textAlign: 'center', marginTop: 2, lineHeight: 11 },
-  hiwArrow: { fontSize: 12, alignSelf: 'center', marginHorizontal: 2 },
+  // How It Works — clean white container
+  hiwContainer: { marginHorizontal: 16, marginTop: 20, backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#F1F5F9', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 6 },
+  hiwTitle: { fontSize: 15, fontWeight: '800', color: '#1F2937', textAlign: 'center' },
+  hiwSubtitle: { fontSize: 10, color: '#6B7280', textAlign: 'center', marginTop: 3, marginBottom: 14 },
+  hiwRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center' },
+  hiwItem: { flex: 1, alignItems: 'center' },
+  hiwIconWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F3E8FF', alignItems: 'center', justifyContent: 'center', marginBottom: 6, position: 'relative' },
+  hiwBadge: { position: 'absolute', top: -3, right: -3, width: 16, height: 16, borderRadius: 8, backgroundColor: '#6C3BFF', alignItems: 'center', justifyContent: 'center' },
+  hiwBadgeText: { fontSize: 8, fontWeight: '800', color: '#FFFFFF' },
+  hiwItemTitle: { fontSize: 9, fontWeight: '700', color: '#1F2937', textAlign: 'center' },
+  hiwItemDesc: { fontSize: 7.5, color: '#6B7280', textAlign: 'center', marginTop: 2, lineHeight: 10 },
+  hiwArrowInline: { fontSize: 12, color: '#D1D5DB', alignSelf: 'center', marginTop: 10, marginHorizontal: 2 },
   tcImg: { width: '100%', height: 110, resizeMode: 'cover' },
   tcOnline: { position: 'absolute', top: 8, left: 8, flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#fff', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 3, elevation: 1 },
   tcGreenDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#10B981' },
