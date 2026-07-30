@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, Alert, Image } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, Alert, Image, Modal, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, radius } from '../../theme';
 import api from '../../services/api';
@@ -9,6 +9,7 @@ export default function AdminCreators({ navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [tab, setTab] = useState('all');
+  const [detailCreator, setDetailCreator] = useState<any>(null);
 
   const load = useCallback(async () => {
     try {
@@ -142,7 +143,7 @@ export default function AdminCreators({ navigation }: any) {
           keyExtractor={item => item._id}
           ListEmptyComponent={<View style={s.empty}><Text style={s.emptyText}>No creators in this tab</Text></View>}
           renderItem={({ item }) => (
-            <View style={s.card}>
+            <TouchableOpacity style={s.card} activeOpacity={0.7} onPress={() => setDetailCreator(item)}>
               <View style={s.cardTop}>
                 <Image source={{ uri: item.user?.avatar || 'https://via.placeholder.com/40' }} style={s.avatar} />
                 <View style={s.cardInfo}>
@@ -174,10 +175,115 @@ export default function AdminCreators({ navigation }: any) {
                 <TouchableOpacity style={s.deleteBtn} onPress={() => deleteCreator(item._id, item.user?.name || 'Creator')}><Ionicons name="trash-outline" size={14} color={colors.error} /><Text style={s.deleteText}>Delete</Text></TouchableOpacity>
                 <TouchableOpacity style={s.financeBtn} onPress={() => navigation.navigate('AdminCreatorLedger', { creatorId: item._id, creatorName: item.user?.name })}><Ionicons name="wallet-outline" size={13} color="#10b981" /><Text style={s.financeBtnText}>Finances</Text></TouchableOpacity>
               </View>
-            </View>
+            </TouchableOpacity>
           )}
         />
       )}
+
+      {/* ═══ CREATOR DETAIL MODAL ═══ */}
+      {detailCreator && (
+        <Modal visible={!!detailCreator} transparent animationType="slide" onRequestClose={() => setDetailCreator(null)}>
+          <View style={s.modalOverlay}>
+            <View style={s.modalContent}>
+              <View style={s.modalHeader}>
+                <Text style={s.modalTitle}>Creator Details</Text>
+                <TouchableOpacity onPress={() => setDetailCreator(null)}><Ionicons name="close" size={22} color={colors.text} /></TouchableOpacity>
+              </View>
+              <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
+                {/* Profile */}
+                <View style={s.detailSection}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                    <Image source={{ uri: detailCreator.user?.avatar || 'https://via.placeholder.com/50' }} style={{ width: 56, height: 56, borderRadius: 28, borderWidth: 2, borderColor: colors.primary }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>{detailCreator.user?.name || 'Creator'}</Text>
+                      <Text style={{ fontSize: 12, color: colors.textMuted }}>{detailCreator.studioName || ''}</Text>
+                    </View>
+                    <View style={[s.badge, { backgroundColor: getStatusColor(detailCreator.status) + '15' }]}>
+                      <Text style={[s.badgeText, { color: getStatusColor(detailCreator.status) }]}>{detailCreator.status}</Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Info Grid */}
+                <View style={s.detailSection}>
+                  <Text style={s.detailSectionTitle}>📋 Profile Information</Text>
+                  <DetailRow label="📧 Email" value={detailCreator.user?.email} />
+                  <DetailRow label="📱 Phone" value={detailCreator.user?.phone || '—'} />
+                  <DetailRow label="📁 Category" value={detailCreator.categoryGroup || detailCreator.categorySlug || '—'} />
+                  <DetailRow label="🏷 Subcategory" value={detailCreator.subcategorySlug || '—'} />
+                  <DetailRow label="💼 Experience" value={detailCreator.experience === 'Fresher' ? 'Fresher' : (detailCreator.experience || '—')} />
+                  <DetailRow label="🏢 Business Type" value={detailCreator.businessType || '—'} />
+                  <DetailRow label="👥 Team Size" value={detailCreator.teamSize || '—'} />
+                  <DetailRow label="📍 State" value={detailCreator.state || '—'} />
+                  <DetailRow label="🏘 District" value={detailCreator.district || '—'} />
+                  <DetailRow label="🌆 City" value={detailCreator.baseCity || detailCreator.city || '—'} />
+                  <DetailRow label="💰 Price Range" value={detailCreator.priceRange || (detailCreator.budgetMin ? `₹${detailCreator.budgetMin}` : '—')} />
+                  <DetailRow label="🎯 Equipment" value={detailCreator.equipmentLevel || '—'} />
+                  <DetailRow label="🚗 Travel" value={detailCreator.travelPreference || '—'} />
+                  <DetailRow label="📅 Delivery" value={detailCreator.deliveryTime || '—'} />
+                  <DetailRow label="🗓 Registered" value={detailCreator.createdAt ? new Date(detailCreator.createdAt).toLocaleDateString('en-IN') : '—'} />
+                </View>
+
+                {/* Bio */}
+                {detailCreator.bio ? (
+                  <View style={s.detailSection}>
+                    <Text style={s.detailSectionTitle}>✍️ About</Text>
+                    <Text style={{ fontSize: 13, color: colors.text, lineHeight: 19 }}>{detailCreator.bio}</Text>
+                  </View>
+                ) : null}
+
+                {/* Languages */}
+                {detailCreator.languages && detailCreator.languages.length > 0 ? (
+                  <View style={s.detailSection}>
+                    <Text style={s.detailSectionTitle}>🗣 Languages</Text>
+                    <Text style={{ fontSize: 13, color: colors.text }}>{detailCreator.languages.join(', ')}</Text>
+                  </View>
+                ) : null}
+
+                {/* Portfolio */}
+                {detailCreator.portfolio && detailCreator.portfolio.length > 0 ? (
+                  <View style={s.detailSection}>
+                    <Text style={s.detailSectionTitle}>📸 Portfolio ({detailCreator.portfolio.length} photos)</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
+                      {detailCreator.portfolio.filter((p: any) => p).slice(0, 8).map((p: any, i: number) => (
+                        <Image key={i} source={{ uri: typeof p === 'string' ? p : p?.url || '' }} style={{ width: 70, height: 70, borderRadius: 10, marginRight: 8 }} />
+                      ))}
+                    </ScrollView>
+                  </View>
+                ) : null}
+
+                {/* Actions */}
+                <View style={[s.detailSection, { paddingBottom: 30 }]}>
+                  {detailCreator.status === 'pending' && (
+                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                      <TouchableOpacity style={[s.approveBtn, { flex: 1, paddingVertical: 14 }]} onPress={() => { updateStatus(detailCreator._id, 'approved', 'Approve'); setDetailCreator(null); }}>
+                        <Text style={s.approveText}>✅ Approve</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={[s.rejectBtn, { flex: 1, paddingVertical: 14 }]} onPress={() => { updateStatus(detailCreator._id, 'rejected', 'Reject'); setDetailCreator(null); }}>
+                        <Text style={s.rejectText}>❌ Decline</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                  {detailCreator.status === 'approved' && (
+                    <TouchableOpacity style={[s.suspendBtn, { paddingVertical: 14 }]} onPress={() => { updateStatus(detailCreator._id, 'suspended', 'Suspend'); setDetailCreator(null); }}>
+                      <Text style={[s.suspendText, { textAlign: 'center' }]}>Suspend Creator</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+      )}
+    </View>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.04)' }}>
+      <Text style={{ fontSize: 12, color: colors.textMuted }}>{label}</Text>
+      <Text style={{ fontSize: 12, color: colors.text, fontWeight: '500', maxWidth: '55%', textAlign: 'right' }}>{value}</Text>
     </View>
   );
 }
@@ -219,4 +325,11 @@ const s = StyleSheet.create({
   financeBtnText: { ...typography.labelSm, color: '#10b981', fontWeight: '600' },
   empty: { alignItems: 'center', paddingTop: spacing['4xl'] },
   emptyText: { ...typography.bodyMd, color: colors.textMuted },
+  // Detail Modal
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  modalContent: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '90%', flex: 1 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+  modalTitle: { fontSize: 17, fontWeight: '700', color: '#1F2937' },
+  detailSection: { padding: 16, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+  detailSectionTitle: { fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 8 },
 });
