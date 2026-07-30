@@ -209,6 +209,23 @@ router.post("/login", async (req, res, next) => {
           message: `Your account is ${creator.status}. Our admin team will review your profile before approval.`,
         });
       }
+      // Approved creator
+      return res.json({
+        success: true,
+        token: generateToken(user._id),
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          role: user.role,
+          avatar: user.avatar,
+          emailVerified: user.emailVerified,
+          creatorStatus: creator.status,
+          subscriptionStatus: creator.subscriptionStatus,
+          state: creator.state || "",
+        },
+      });
     }
 
     res.json({
@@ -222,7 +239,6 @@ router.post("/login", async (req, res, next) => {
         role: user.role,
         avatar: user.avatar,
         emailVerified: user.emailVerified,
-        ...(user.role === "creator" && creator ? { creatorStatus: creator.status, subscriptionStatus: creator.subscriptionStatus, state: creator.state || "" } : {}),
       },
     });
   } catch (e) {
@@ -508,7 +524,7 @@ router.get("/me", protect, async (req, res, next) => {
       }
     }
     // Attach creator state to user response
-    const userResponse = { ...req.user.toObject ? req.user.toObject() : req.user };
+    const userResponse = req.user.toObject ? req.user.toObject() : { ...req.user };
     if (creator) {
       userResponse.state = creator.state || "";
     }
