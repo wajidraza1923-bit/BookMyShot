@@ -27,7 +27,7 @@ try {
 // Types
 export interface RazorpayConfig { keyId: string; configured: boolean; }
 export interface PaymentOrder { id: string; amount: number; currency: string; }
-export interface SubscriptionResult { subscriptionId: string; status?: string; message?: string; keyId?: string; amount?: number; }
+export interface SubscriptionResult { subscriptionId: string; status?: string; message?: string; keyId?: string; amount?: number; orderId?: string; isOneTime?: boolean; }
 
 // ═══ GET RAZORPAY CONFIG ═══
 export async function getRazorpayConfig(): Promise<RazorpayConfig> {
@@ -53,6 +53,9 @@ export async function createSubscription(planType: 'monthly' | 'yearly' = 'month
     message: res.data?.message,
     keyId: res.data?.keyId,
     amount: res.data?.amount,
+    // Yearly one-time payment fields
+    orderId: res.data?.orderId || res.data?.order?.id || '',
+    isOneTime: res.data?.isOneTime || false,
   };
 }
 
