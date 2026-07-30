@@ -720,6 +720,14 @@ router.post("/inquiries", async (req, res, next) => {
     });
 
     // Create booking directly (auto-accepted, no approval needed)
+    // Fetch current Master Settings for commission & cashback snapshot
+    const MasterSettings = require("../models/MasterSettings");
+    let masterSettings = await MasterSettings.findOne();
+    if (!masterSettings) masterSettings = { bookingCommission: 2.5, cashbackPercentage: 2.5 };
+    const commPct = masterSettings.bookingCommission || 2.5;
+    const cbPct = masterSettings.cashbackPercentage || 2.5;
+    const bAmount = budget || 0;
+
     const booking = await Booking.create({
       user: req.user._id,
       creator: creator._id,
@@ -736,6 +744,10 @@ router.post("/inquiries", async (req, res, next) => {
       creatorNotes: "Created by creator",
       invoiceNumber: `BMS-CRT-${Date.now()}`,
       leadSource: "creator",
+      // Snapshot Master Settings at creation time
+      commissionPercentUsed: commPct,
+      cashbackPercentUsed: cbPct,
+      cashbackAmount: Math.round((bAmount * cbPct) / 100),
     });
 
     // Calculate commission immediately if amount > 0
@@ -817,6 +829,11 @@ router.patch("/inquiries/:id/reply", async (req, res, next) => {
       if (!existingBooking) {
         const bookingAmount = inquiry.budget || 0;
 
+        // Fetch Master Settings for snapshot
+        const MasterSettings2 = require("../models/MasterSettings");
+        let ms2 = await MasterSettings2.findOne();
+        if (!ms2) ms2 = { bookingCommission: 2.5, cashbackPercentage: 2.5 };
+
         createdBooking = await Booking.create({
           user: inquiry.user,
           creator: creator._id,
@@ -834,6 +851,10 @@ router.patch("/inquiries/:id/reply", async (req, res, next) => {
           highestBudget: bookingAmount,
           invoiceNumber: `BMS-INQ-${Date.now()}`,
           leadSource: "bookmyshot",
+          // Snapshot Master Settings at creation time
+          commissionPercentUsed: ms2.bookingCommission || 2.5,
+          cashbackPercentUsed: ms2.cashbackPercentage || 2.5,
+          cashbackAmount: Math.round((bookingAmount * (ms2.cashbackPercentage || 2.5)) / 100),
         });
 
         // â•â•â• COMMISSION GENERATION â€” Immediately on first booking acceptance â•â•â•

@@ -74,6 +74,16 @@ router.post("/", protect, async (req, res, next) => {
       return res.status(400).json({ success: false, message: "Creator not available" });
     }
 
+    // Fetch current Master Settings for commission & cashback snapshot
+    const MasterSettings = require("../models/MasterSettings");
+    let masterSettings = await MasterSettings.findOne();
+    if (!masterSettings) masterSettings = { bookingCommission: 2.5, cashbackPercentage: 2.5 };
+    const commissionPct = masterSettings.bookingCommission || 2.5;
+    const cashbackPct = masterSettings.cashbackPercentage || 2.5;
+    const bookingAmount = budget || 0;
+    const commissionAmt = Math.round((bookingAmount * commissionPct) / 100);
+    const cashbackAmt = Math.round((bookingAmount * cashbackPct) / 100);
+
     const booking = await Booking.create({
       user: req.user._id,
       creator: creatorId,
@@ -89,6 +99,13 @@ router.post("/", protect, async (req, res, next) => {
       status: "Booking Created",
       invoiceNumber: `BMS-${Date.now()}`,
       leadSource: "bookmyshot",
+      // Snapshot Master Settings at creation time (never changes)
+      commissionPercentUsed: commissionPct,
+      commissionPercent: commissionPct,
+      commissionAmount: commissionAmt,
+      cashbackPercentUsed: cashbackPct,
+      cashbackAmount: cashbackAmt,
+      bookingFeePercent: commissionPct,
     });
 
     await CalendarEvent.create({

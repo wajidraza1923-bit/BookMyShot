@@ -13,11 +13,18 @@ const router = express.Router();
 // Get dynamic fee percent from Admin Panel (CommissionSettings)
 async function getBookingFeePercent() {
   try {
+    // Primary: use Master Settings (global admin control)
+    const MasterSettings = require("../models/MasterSettings");
+    const masterSettings = await MasterSettings.findOne();
+    if (masterSettings && masterSettings.bookingCommission) {
+      return masterSettings.bookingCommission;
+    }
+    // Fallback: old CommissionSettings model
     const CommissionSettings = require("../models/CommissionSettings");
     const settings = await CommissionSettings.getSettings();
     return settings.advanceBookingPercent || settings.bmsLeadCommissionPercent || 5;
   } catch {
-    return 5; // fallback
+    return 2.5; // fallback
   }
 }
 

@@ -77,6 +77,10 @@ const bookingSchema = new mongoose.Schema(
     cashbackReleased: { type: Boolean, default: false },
     cashbackReleasedAt: { type: Date, default: null },
     cashbackTransactionId: { type: mongoose.Schema.Types.ObjectId, ref: "CashbackTransaction", default: null },
+    // Snapshot of Master Settings at booking creation time (never changes after creation)
+    cashbackPercentUsed: { type: Number, default: 0 },
+    cashbackAmount: { type: Number, default: 0 },
+    commissionPercentUsed: { type: Number, default: 0 },
     // Source tracking for cashback eligibility
     createdByCreator: { type: Boolean, default: false },
     source: { type: String, enum: ['customer_app', 'customer_web', 'creator_manual', 'walk_in', 'admin'], default: 'customer_app' },
