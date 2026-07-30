@@ -108,6 +108,11 @@ export default function HomeScreen({ navigation }: any) {
   const [pickerDistricts, setPickerDistricts] = useState<string[]>([]);
   const [pickerStep, setPickerStep] = useState<'state' | 'district'>('state');
   const [pickerState, setPickerState] = useState('');
+
+  // Pre-load states on mount so picker opens instantly
+  useEffect(() => {
+    api.get('/discovery/states').then(r => setPickerStates(r.data?.states || [])).catch(() => {});
+  }, []);
   const [searchQuery, setSearchQuery] = useState('');
   const [heroConfig, setHeroConfig] = useState({ cashbackPercentage: 10, heroTitle: 'Your Dream Wedding,', heroTitleAccent: 'More Rewards!', heroSubtitle: 'Book verified wedding creators and get exciting cashback on every successful booking.', heroEyebrow: 'CELEBRATE BEAUTIFULLY. SAVE MORE.', heroCta1Text: 'Find Creator', heroCta2Text: 'Get Free Quote' });
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -380,7 +385,7 @@ export default function HomeScreen({ navigation }: any) {
         </View>
 
         {/* LOCATION SELECTOR (State/District) */}
-        <TouchableOpacity style={st.locRow} onPress={() => { setShowLocationPicker(true); setPickerStep('state'); api.get('/discovery/states').then(r => setPickerStates(r.data?.states || [])).catch(() => {}); }}>
+        <TouchableOpacity style={st.locRow} onPress={() => { setShowLocationPicker(true); setPickerStep('state'); if (pickerStates.length === 0) api.get('/discovery/states').then(r => setPickerStates(r.data?.states || [])).catch(() => {}); }}>
           <Ionicons name="location" size={16} color="#6C3BFF" />
           <Text style={st.locText}>{savedLocation.district ? `${savedLocation.district}, ${savedLocation.state}` : 'Select your location'}</Text>
           <Ionicons name="chevron-down" size={14} color="#9CA3AF" />
