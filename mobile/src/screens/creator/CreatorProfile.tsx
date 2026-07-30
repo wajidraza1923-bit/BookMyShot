@@ -35,9 +35,20 @@ export default function CreatorProfile({ navigation }: any) {
         specialty: creator?.specialty || '',
         bio: creator?.bio || '',
         experience: creator?.experience || '',
-        city: creator?.city || '',
-        location: creator?.location || '',
-        category: creator?.category || 'wedding',
+        city: creator?.baseCity || creator?.city || '',
+        location: creator?.state || creator?.location || '',
+        district: creator?.district || '',
+        state: creator?.state || '',
+        category: creator?.categorySlug || creator?.category || '',
+        categoryGroup: creator?.categoryGroup || '',
+        subcategorySlug: creator?.subcategorySlug || '',
+        studioName: creator?.studioName || '',
+        businessType: creator?.businessType || '',
+        teamSize: creator?.teamSize || '',
+        priceRange: creator?.priceRange || '',
+        equipmentLevel: creator?.equipmentLevel || '',
+        travelPreference: creator?.travelPreference || '',
+        deliveryTime: creator?.deliveryTime || '',
         budgetMin: String(creator?.budgetMin || ''),
         budgetMax: String(creator?.budgetMax || ''),
         instagram: creator?.social?.instagram || '',
@@ -65,8 +76,13 @@ export default function CreatorProfile({ navigation }: any) {
         bio: form.bio.trim(),
         experience: form.experience.trim(),
         city: form.city.trim(),
-        location: form.location.trim(),
-        category: form.category.trim(),
+        state: form.state.trim(),
+        district: form.district.trim(),
+        baseCity: form.city.trim(),
+        categorySlug: form.category.trim(),
+        subcategorySlug: form.subcategorySlug.trim(),
+        categoryGroup: form.categoryGroup.trim(),
+        studioName: form.studioName.trim(),
         budgetMin: Number(form.budgetMin) || 0,
         budgetMax: Number(form.budgetMax) || 0,
         social: {
@@ -211,11 +227,45 @@ export default function CreatorProfile({ navigation }: any) {
         <View style={s.fieldGroup}>
           <Field label="Full Name *" value={form.name} onChange={(v: string) => setForm({...form, name: v})} icon="person-outline" />
           <Field label="Phone" value={form.phone} onChange={(v: string) => setForm({...form, phone: v})} icon="call-outline" keyboard="phone-pad" />
+          <Field label="Studio / Brand Name" value={form.studioName} onChange={(v: string) => setForm({...form, studioName: v})} icon="business-outline" placeholder="Your studio name" />
           <Field label="Specialty / Profession" value={form.specialty} onChange={(v: string) => setForm({...form, specialty: v})} icon="camera-outline" placeholder="e.g. Wedding Photographer" />
-          <Field label="Category" value={form.category} onChange={(v: string) => setForm({...form, category: v})} icon="grid-outline" placeholder="e.g. wedding, cinematography" />
+
+          {/* Category — read-only display (set during signup/onboarding) */}
+          <View style={s.field}>
+            <Text style={s.fieldLabel}>Category</Text>
+            <View style={[s.fieldInput, { backgroundColor: '#F3F4F6' }]}>
+              <Ionicons name="grid-outline" size={14} color="#6C3BFF" />
+              <Text style={[s.fieldText, { color: form.categoryGroup || form.category ? '#1F2937' : '#9CA3AF' }]}>
+                {form.categoryGroup || form.category || 'Not set'}
+              </Text>
+            </View>
+          </View>
+
+          {/* Subcategory — read-only display */}
+          {form.subcategorySlug ? (
+            <View style={s.field}>
+              <Text style={s.fieldLabel}>Subcategory</Text>
+              <View style={[s.fieldInput, { backgroundColor: '#F3F4F6' }]}>
+                <Ionicons name="pricetag-outline" size={14} color="#6C3BFF" />
+                <Text style={s.fieldText}>{form.subcategorySlug.replace(/-/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}</Text>
+              </View>
+            </View>
+          ) : null}
+
           <Field label="City" value={form.city} onChange={(v: string) => setForm({...form, city: v})} icon="location-outline" placeholder="e.g. Poonch" />
-          <Field label="Location / Area" value={form.location} onChange={(v: string) => setForm({...form, location: v})} icon="map-outline" placeholder="e.g. Jammu & Kashmir" />
-          <Field label="Experience" value={form.experience} onChange={(v: string) => setForm({...form, experience: v})} icon="briefcase-outline" placeholder="e.g. 5+ years" />
+          <Field label="State" value={form.state} onChange={(v: string) => setForm({...form, state: v})} icon="map-outline" placeholder="e.g. Jammu & Kashmir" />
+          <Field label="District" value={form.district} onChange={(v: string) => setForm({...form, district: v})} icon="navigate-outline" placeholder="e.g. Poonch" />
+
+          {/* Experience — read-only display (set during onboarding) */}
+          <View style={s.field}>
+            <Text style={s.fieldLabel}>Experience</Text>
+            <View style={[s.fieldInput, { backgroundColor: '#F3F4F6' }]}>
+              <Ionicons name="briefcase-outline" size={14} color="#6C3BFF" />
+              <Text style={[s.fieldText, { color: form.experience ? '#1F2937' : '#9CA3AF' }]}>
+                {form.experience || 'Not set'}
+              </Text>
+            </View>
+          </View>
         </View>
 
         {/* BIO */}
