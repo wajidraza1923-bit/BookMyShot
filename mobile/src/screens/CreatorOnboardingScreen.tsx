@@ -28,6 +28,7 @@ export default function CreatorOnboardingScreen({ navigation }: any) {
   const [loading, setLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const scaleAnim = useState(new Animated.Value(0))[0];
+  const [supportInfo, setSupportInfo] = useState({ email: 'bookmyshott@gmail.com', phone: '8492922173' });
 
   // Step 1 - Basic Info
   const [studioName, setStudioName] = useState('');
@@ -65,6 +66,7 @@ export default function CreatorOnboardingScreen({ navigation }: any) {
   const [showCityPicker, setShowCityPicker] = useState(false);
 
   useEffect(() => { loadStates(); }, []);
+  useEffect(() => { api.get('/master-settings').then(r => { const d = r.data?.data; if (d) setSupportInfo({ email: d.supportEmail || 'bookmyshott@gmail.com', phone: d.supportPhone || '8492922173' }); }).catch(() => {}); }, []);
 
   const loadStates = async () => { try { const r = await api.get('/discovery/states'); setStates(r.data?.states || []); } catch {} };
   const loadDistricts = async (s: string) => { try { const r = await api.get('/discovery/districts', { params: { state: s } }); setDistricts(r.data?.districts || []); } catch {} };
@@ -153,8 +155,8 @@ export default function CreatorOnboardingScreen({ navigation }: any) {
             <Text style={st.successMsg}>Your profile has been submitted for admin verification.{'\n\n'}Our team will review your profile shortly. You'll receive a notification as soon as your account is approved.{'\n\n'}Thank you for joining BookMyShot.</Text>
             <View style={st.successContact}>
               <Text style={st.successContactTitle}>Need Help?</Text>
-              <Text style={st.successContactText}>📧 bookmyshott@gmail.com</Text>
-              <Text style={st.successContactText}>📞 +91 8492922173</Text>
+              <Text style={st.successContactText}>📧 {supportInfo.email}</Text>
+              <Text style={st.successContactText}>📞 +91 {supportInfo.phone}</Text>
             </View>
             <TouchableOpacity style={st.successBtn} onPress={() => setShowSuccessModal(false)}>
               <Text style={st.successBtnText}>Done</Text>

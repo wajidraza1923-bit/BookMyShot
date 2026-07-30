@@ -89,6 +89,13 @@ export default function AdminDashboard({ navigation }: any) {
           ))}
         </View>
 
+        {/* Master Command */}
+        <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#7C3AED', borderRadius: 12, padding: 14, marginHorizontal: spacing.xl, marginBottom: 16 }} onPress={() => navigation.navigate('AdminMasterCommand')}>
+          <Ionicons name="settings" size={18} color="#fff" />
+          <Text style={{ fontSize: 14, fontWeight: '700', color: '#fff' }}>Master Command</Text>
+          <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.6)" style={{ marginLeft: 'auto' }} />
+        </TouchableOpacity>
+
         {/* Menu */}
         <Text style={s.sectionTitle}>Management</Text>
         {menuItems.map((item, i) => (
