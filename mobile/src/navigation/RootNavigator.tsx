@@ -54,7 +54,11 @@ export default function RootNavigator() {
       if (user.creatorStatus === 'suspended') {
         return <SuspendedScreen />;
       }
-      // Otherwise show pending approval / rejected screen
+      // If onboarding NOT completed, let CreatorNavigator handle it (show onboarding form)
+      if (!user.onboardingCompleted) {
+        return <CreatorNavigator />;
+      }
+      // Onboarding done but not yet approved — show pending approval / rejected screen
       return <PendingApprovalScreen status={user.creatorStatus} />;
     }
     
