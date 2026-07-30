@@ -9,11 +9,15 @@ export default function AdminMasterCommand({ navigation }: any) {
   const [savingCommission, setSavingCommission] = useState(false);
   const [savingCashback, setSavingCashback] = useState(false);
   const [savingOffers, setSavingOffers] = useState(false);
+  const [savingSub, setSavingSub] = useState(false);
   const [supportEmail, setSupportEmail] = useState('');
   const [supportPhone, setSupportPhone] = useState('');
   const [bookingCommission, setBookingCommission] = useState('');
   const [cashbackPercentage, setCashbackPercentage] = useState('');
   const [discountPercentage, setDiscountPercentage] = useState('');
+  const [subPrice, setSubPrice] = useState('');
+  const [subMode, setSubMode] = useState<'lead' | 'booking'>('lead');
+  const [freeLimit, setFreeLimit] = useState('');
 
   useEffect(() => { loadSettings(); }, []);
 
@@ -27,6 +31,9 @@ export default function AdminMasterCommand({ navigation }: any) {
         setBookingCommission(String(data.bookingCommission ?? '2.5'));
         setCashbackPercentage(String(data.cashbackPercentage ?? '2.5'));
         setDiscountPercentage(String(data.discountPercentage ?? '10'));
+        setSubPrice(String(data.monthlySubscriptionPrice ?? '499'));
+        setSubMode(data.subscriptionMode || 'lead');
+        setFreeLimit(String(data.freeMonthlyLimit ?? '3'));
       }
     } catch {} finally { setLoading(false); }
   };
@@ -76,6 +83,19 @@ export default function AdminMasterCommand({ navigation }: any) {
       Alert.alert('✅ Saved', `Offers updated globally:\n• Discount: ${disc}%\n• Cashback: ${cb}%\n• Commission: ${comm}%`);
     } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed to save'); }
     finally { setSavingOffers(false); }
+  };
+
+  const saveSubscription = async () => {
+    const price = parseFloat(subPrice);
+    const limit = parseInt(freeLimit);
+    if (isNaN(price) || price < 0) { Alert.alert('Invalid', 'Enter a valid price'); return; }
+    if (isNaN(limit) || limit < 0) { Alert.alert('Invalid', 'Enter a valid free limit'); return; }
+    setSavingSub(true);
+    try {
+      await api.put('/master-settings', { monthlySubscriptionPrice: price, subscriptionMode: subMode, freeMonthlyLimit: limit });
+      Alert.alert('✅ Saved', `Subscription updated:\n• Price: ₹${price}\n• Mode: ${subMode === 'lead' ? 'Lead-Based' : 'Booking-Based'}\n• Free Limit: ${limit}`);
+    } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed to save'); }
+    finally { setSavingSub(false); }
   };
 
   if (loading) return <View style={s.container}><ActivityIndicator size="large" color="#6C3BFF" style={{ marginTop: 80 }} /></View>;
@@ -150,6 +170,46 @@ export default function AdminMasterCommand({ navigation }: any) {
           </TouchableOpacity>
         </View>
 
+        {/* Module 3: Subscription Settings */}
+        <View style={s.card}>
+          <View style={s.cardHeader}>
+            <Ionicons name="card-outline" size={20} color="#8B5CF6" />
+            <Text style={s.cardTitle}>Subscription Settings</Text>
+          </View>
+          <Text style={s.cardDesc}>Monthly subscription pricing, mode, and free limits for creators</Text>
+
+          <Text style={s.label}>Monthly Subscription Price (₹)</Text>
+          <View style={s.inputRow}>
+            <Ionicons name="cash-outline" size={16} color="#8B5CF6" />
+            <TextInput style={s.input} value={subPrice} onChangeText={setSubPrice} placeholder="e.g. 499" placeholderTextColor="#9CA3AF" keyboardType="number-pad" />
+            <Text style={s.inputSuffix}>₹</Text>
+          </View>
+
+          <Text style={s.label}>Subscription Mode</Text>
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
+            <TouchableOpacity style={[s.modeBtn, subMode === 'lead' && s.modeBtnActive]} onPress={() => setSubMode('lead')}>
+              <Ionicons name="mail-outline" size={14} color={subMode === 'lead' ? '#fff' : '#6B7280'} />
+              <Text style={[s.modeBtnText, subMode === 'lead' && s.modeBtnTextActive]}>Lead-Based{'\n'}(Inquiry)</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[s.modeBtn, subMode === 'booking' && s.modeBtnActive]} onPress={() => setSubMode('booking')}>
+              <Ionicons name="calendar-outline" size={14} color={subMode === 'booking' ? '#fff' : '#6B7280'} />
+              <Text style={[s.modeBtnText, subMode === 'booking' && s.modeBtnTextActive]}>Booking-Based{'\n'}(Accepted)</Text>
+            </TouchableOpacity>
+          </View>
+
+          <Text style={s.label}>Free Monthly Limit</Text>
+          <View style={s.inputRow}>
+            <Ionicons name="gift-outline" size={16} color="#8B5CF6" />
+            <TextInput style={s.input} value={freeLimit} onChangeText={setFreeLimit} placeholder="e.g. 3" placeholderTextColor="#9CA3AF" keyboardType="number-pad" />
+            <Text style={s.inputSuffix}>free</Text>
+          </View>
+          <Text style={s.hint}>Creators get {freeLimit} free {subMode === 'lead' ? 'leads' : 'bookings'}/month, then must subscribe at ₹{subPrice}/month</Text>
+
+          <TouchableOpacity style={[s.saveBtn, { backgroundColor: '#8B5CF6' }, savingSub && { opacity: 0.6 }]} onPress={saveSubscription} disabled={savingSub}>
+            {savingSub ? <ActivityIndicator color="#fff" size="small" /> : (<><Ionicons name="checkmark-circle" size={16} color="#fff" /><Text style={s.saveBtnText}>Update Subscription Settings</Text></>)}
+          </TouchableOpacity>
+        </View>
+
         <Text style={s.footerNote}>All values sync instantly across:{'\n'}Home • Bookings • Dashboard • Invoices • Wallet • FAQ • Footer • Notifications</Text>
       </ScrollView>
     </View>
@@ -174,5 +234,9 @@ const s = StyleSheet.create({
   hint: { fontSize: 11, color: '#6B7280', marginTop: 6, fontStyle: 'italic' },
   saveBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#6C3BFF', borderRadius: 12, paddingVertical: 14, marginTop: 16 },
   saveBtnText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
+  modeBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 12, borderRadius: 12, backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB' },
+  modeBtnActive: { backgroundColor: '#8B5CF6', borderColor: '#8B5CF6' },
+  modeBtnText: { fontSize: 11, fontWeight: '600', color: '#6B7280', textAlign: 'center' },
+  modeBtnTextActive: { color: '#FFFFFF' },
   footerNote: { fontSize: 11, color: '#9CA3AF', textAlign: 'center', lineHeight: 18, marginTop: 10 },
 });
