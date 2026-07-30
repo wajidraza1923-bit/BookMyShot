@@ -252,7 +252,11 @@ router.post("/verify-yearly-payment", protect, authorize("creator"), async (req,
     if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
 
     const subSettings = await configService.getSubscriptionSettings();
+    // Use Master Settings for pricing
+    const MasterSettings3 = require("../models/MasterSettings");
+    const ms3 = await MasterSettings3.findOne();
     const yearlyDuration = subSettings.yearlyPlanDuration || 365;
+    const yearlyAmount = (ms3 && ms3.yearlySubscriptionPrice) || subSettings.yearlyPlanPrice || 1499;
     const now = new Date();
     const endDate = new Date(now);
     endDate.setDate(endDate.getDate() + yearlyDuration);
@@ -260,7 +264,7 @@ router.post("/verify-yearly-payment", protect, authorize("creator"), async (req,
     // Activate yearly subscription (NO AutoPay)
     creator.subscriptionStatus = "active";
     creator.subscriptionPlanType = "yearly";
-    creator.subscriptionPlanPrice = subSettings.yearlyPlanPrice || Math.round((subSettings.monthlyPlanPrice || 299) * 10);
+    creator.subscriptionPlanPrice = yearlyAmount;
     creator.subscriptionStartDate = now;
     creator.subscriptionEndDate = endDate;
     creator.nextBillingDate = endDate;
