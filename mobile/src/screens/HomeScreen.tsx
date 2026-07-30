@@ -546,6 +546,44 @@ export default function HomeScreen({ navigation }: any) {
           </View>
         )}
 
+        {/* ═══ HOW IT WORKS — Compact horizontal cards ═══ */}
+        <View style={{ marginTop: 20 }}>
+          <Text style={st.secTitle2}>✨ How It Works</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 4 }}>
+            <View style={st.hiwCard}>
+              <LinearGradient colors={['#EDE9FE', '#F3E8FF']} style={st.hiwGradient}>
+                <Text style={st.hiwIcon}>🟣</Text>
+                <Text style={st.hiwStep}>1. Find</Text>
+                <Text style={st.hiwDesc}>Browse your perfect creator</Text>
+              </LinearGradient>
+            </View>
+            <Text style={st.hiwArrow}>➡️</Text>
+            <View style={st.hiwCard}>
+              <LinearGradient colors={['#FEF3C7', '#FDE68A']} style={st.hiwGradient}>
+                <Text style={st.hiwIcon}>💬</Text>
+                <Text style={st.hiwStep}>2. Enquire</Text>
+                <Text style={st.hiwDesc}>Send your requirements</Text>
+              </LinearGradient>
+            </View>
+            <Text style={st.hiwArrow}>➡️</Text>
+            <View style={st.hiwCard}>
+              <LinearGradient colors={['#ECFDF5', '#D1FAE5']} style={st.hiwGradient}>
+                <Text style={st.hiwIcon}>💳</Text>
+                <Text style={st.hiwStep}>3. Book</Text>
+                <Text style={st.hiwDesc}>Pay securely & confirm</Text>
+              </LinearGradient>
+            </View>
+            <Text style={st.hiwArrow}>➡️</Text>
+            <View style={st.hiwCard}>
+              <LinearGradient colors={['#FFF1F2', '#FFE4E6']} style={st.hiwGradient}>
+                <Text style={st.hiwIcon}>🎁</Text>
+                <Text style={st.hiwStep}>4. Enjoy</Text>
+                <Text style={st.hiwDesc}>Earn {masterOffer.cashback}% Cashback</Text>
+              </LinearGradient>
+            </View>
+          </ScrollView>
+        </View>
+
         {/* ═══ FEATURED WEDDING MOMENTS ═══ */}
         {featuredMoments.length > 0 && (
           <View>
@@ -926,6 +964,14 @@ const st = StyleSheet.create({
   fmStatText: { fontSize: 8, color: 'rgba(255,255,255,0.85)' },
   // Top Creators — clean white cards, no overlays
   tcCard: { width: 160, borderRadius: 16, overflow: 'hidden', marginRight: 12, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#F1F5F9', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4 },
+  // How It Works
+  secTitle2: { fontSize: 15, fontWeight: '800', color: '#1F2937', paddingHorizontal: 20, marginBottom: 12 },
+  hiwCard: { width: 100, height: 100, borderRadius: 14, overflow: 'hidden', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4 },
+  hiwGradient: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 8, borderRadius: 14 },
+  hiwIcon: { fontSize: 20, marginBottom: 4 },
+  hiwStep: { fontSize: 11, fontWeight: '800', color: '#1F2937' },
+  hiwDesc: { fontSize: 8, color: '#6B7280', textAlign: 'center', marginTop: 2, lineHeight: 11 },
+  hiwArrow: { fontSize: 12, alignSelf: 'center', marginHorizontal: 2 },
   tcImg: { width: '100%', height: 110, resizeMode: 'cover' },
   tcOnline: { position: 'absolute', top: 8, left: 8, flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#fff', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 3, elevation: 1 },
   tcGreenDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#10B981' },
