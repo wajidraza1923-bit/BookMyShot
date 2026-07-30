@@ -1278,6 +1278,8 @@
       const phone = c.user?.phone || '—';
       const subStatus = c.subscriptionStatus || '—';
       const subExpiry = c.subscriptionEndDate ? new Date(c.subscriptionEndDate).toLocaleDateString('en-IN') : '—';
+      const regDate = c.createdAt ? new Date(c.createdAt).toLocaleDateString('en-IN') : '—';
+      const expText = c.experience === 'Fresher' ? 'Fresher' : (c.experience || '—');
 
       // Fetch bookings for this creator
       let bookings = [];
@@ -1285,7 +1287,6 @@
         const res = await API.get("/bookings/all");
         bookings = (res.bookings || []).filter(b => b.creator?._id === creatorId || (b.creator?.user?._id && false));
       } catch {}
-      // Filter by creator ID from the bookings
       bookings = bookings.filter(b => {
         if (b.creator && typeof b.creator === 'object') return b.creator._id === creatorId;
         return b.creator === creatorId;
@@ -1298,37 +1299,73 @@
       const creatorRevenue = bookings.filter(b => b.leadSource === 'creator').reduce((s, b) => s + (b.amount || 0), 0);
       const commDue = Math.round(bmsRevenue * (adminConfig.commission.bmsLeadPercent / 100)) + Math.round(creatorRevenue * (adminConfig.commission.creatorLeadPercent / 100));
 
+      // Portfolio images
+      const portfolio = (c.portfolio || []).filter(p => p);
+      const portfolioHtml = portfolio.length > 0 ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">${portfolio.slice(0,6).map(p => `<img src="${p}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,0.1)" onerror="this.style.display='none'">`).join('')}</div>` : '<span style="color:var(--text-dim);font-size:0.78rem">No portfolio uploaded</span>';
+
       const modal = document.getElementById("creatorDetailModal");
       document.getElementById("creatorDetailContent").innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem">
-          <div>
-            <h3 style="font-family:var(--font-display);color:var(--gold-light);font-size:1.3rem;margin:0">${name}</h3>
-            <p style="color:var(--text-dim);font-size:0.82rem;margin:0.2rem 0">${email} · ${phone}</p>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;margin-bottom:1rem">
+          <div style="display:flex;align-items:center;gap:12px">
+            ${c.user?.avatar ? `<img src="${c.user.avatar}" style="width:50px;height:50px;border-radius:50%;object-fit:cover;border:2px solid var(--gold)">` : `<div style="width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;font-size:20px">👤</div>`}
+            <div>
+              <h3 style="font-family:var(--font-display);color:var(--gold-light);font-size:1.2rem;margin:0">${name}</h3>
+              <p style="color:var(--text-dim);font-size:0.78rem;margin:0.2rem 0">${c.studioName || ''}</p>
+            </div>
           </div>
           <div style="text-align:right">
             <span class="status-badge status-${c.status}">${c.status}</span>
             <span class="status-badge status-${subStatus}" style="margin-left:0.3rem">${subStatus}</span>
           </div>
         </div>
-        <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:0.75rem">
+
+        <!-- Creator Profile Details -->
+        <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border-light);border-radius:12px;padding:14px;margin-bottom:1rem">
+          <h4 style="margin:0 0 10px;color:var(--gold-light);font-size:0.85rem">📋 Profile Information</h4>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.78rem">
+            <div><span style="color:var(--text-dim)">📧 Email:</span> <span style="color:var(--text)">${email}</span></div>
+            <div><span style="color:var(--text-dim)">📱 Phone:</span> <span style="color:var(--text)">${phone}</span></div>
+            <div><span style="color:var(--text-dim)">📁 Category:</span> <span style="color:var(--text)">${c.categoryGroup || c.categorySlug || '—'}</span></div>
+            <div><span style="color:var(--text-dim)">🏷 Subcategory:</span> <span style="color:var(--text)">${c.subcategorySlug || '—'}</span></div>
+            <div><span style="color:var(--text-dim)">💼 Experience:</span> <span style="color:var(--text)">${expText}</span></div>
+            <div><span style="color:var(--text-dim)">🏢 Business:</span> <span style="color:var(--text)">${c.businessType || '—'}</span></div>
+            <div><span style="color:var(--text-dim)">📍 State:</span> <span style="color:var(--text)">${c.state || '—'}</span></div>
+            <div><span style="color:var(--text-dim)">🏘 District:</span> <span style="color:var(--text)">${c.district || '—'}</span></div>
+            <div><span style="color:var(--text-dim)">🌆 City:</span> <span style="color:var(--text)">${c.baseCity || c.city || '—'}</span></div>
+            <div><span style="color:var(--text-dim)">👥 Team:</span> <span style="color:var(--text)">${c.teamSize || '—'}</span></div>
+            <div><span style="color:var(--text-dim)">💰 Price:</span> <span style="color:var(--text)">${c.priceRange || (c.budgetMin ? '₹'+c.budgetMin.toLocaleString('en-IN') : '—')}</span></div>
+            <div><span style="color:var(--text-dim)">🎯 Equipment:</span> <span style="color:var(--text)">${c.equipmentLevel || '—'}</span></div>
+            <div><span style="color:var(--text-dim)">🗓 Registered:</span> <span style="color:var(--text)">${regDate}</span></div>
+            <div><span style="color:var(--text-dim)">🌐 Travel:</span> <span style="color:var(--text)">${c.travelPreference || '—'}</span></div>
+          </div>
+          ${c.bio ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border-light)"><span style="color:var(--text-dim);font-size:0.75rem">About:</span><p style="color:var(--text);font-size:0.78rem;margin:4px 0 0;line-height:1.4">${c.bio}</p></div>` : ''}
+          ${c.languages && c.languages.length > 0 ? `<div style="margin-top:8px"><span style="color:var(--text-dim);font-size:0.75rem">Languages:</span> <span style="color:var(--text);font-size:0.78rem">${c.languages.join(', ')}</span></div>` : ''}
+        </div>
+
+        <!-- Portfolio -->
+        <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border-light);border-radius:12px;padding:14px;margin-bottom:1rem">
+          <h4 style="margin:0 0 8px;color:var(--gold-light);font-size:0.85rem">📸 Portfolio</h4>
+          ${portfolioHtml}
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:0.6rem">
           <div class="stat-card"><div class="label">Bookings</div><div class="value">${bookings.length}</div></div>
           <div class="stat-card"><div class="label">Revenue</div><div class="value gold">₹${totalRevenue.toLocaleString('en-IN')}</div></div>
-          <div class="stat-card"><div class="label">BMS Leads</div><div class="value">${bmsLeads}</div></div>
-          <div class="stat-card"><div class="label">Creator Leads</div><div class="value">${creatorLeads}</div></div>
           <div class="stat-card"><div class="label">Commission Due</div><div class="value danger">₹${commDue.toLocaleString('en-IN')}</div></div>
-          <div class="stat-card"><div class="label">Sub Expiry</div><div class="value" style="font-size:0.9rem">${subExpiry}</div></div>
+          <div class="stat-card"><div class="label">Sub Expiry</div><div class="value" style="font-size:0.85rem">${subExpiry}</div></div>
         </div>
+
+        <!-- Actions -->
         <div style="margin-top:1.25rem;display:flex;gap:0.5rem;flex-wrap:wrap">
-          ${c.status === 'approved' ? `<button class="btn btn-danger btn-sm" onclick="updateCreatorStatus('${c._id}','rejected');closeModal('creatorDetailModal')">Suspend</button>` : `<button class="btn btn-success btn-sm" onclick="updateCreatorStatus('${c._id}','approved');closeModal('creatorDetailModal')">Approve</button>`}
+          ${c.status === 'pending' ? `<button class="btn btn-success btn-sm" onclick="updateCreatorStatus('${c._id}','approved');closeModal('creatorDetailModal')">✅ Approve</button><button class="btn btn-danger btn-sm" onclick="updateCreatorStatus('${c._id}','rejected');closeModal('creatorDetailModal')">❌ Decline</button>` : ''}
+          ${c.status === 'approved' ? `<button class="btn btn-danger btn-sm" onclick="updateCreatorStatus('${c._id}','suspended');closeModal('creatorDetailModal')">Suspend</button>` : ''}
+          ${c.status === 'rejected' || c.status === 'suspended' ? `<button class="btn btn-success btn-sm" onclick="updateCreatorStatus('${c._id}','approved');closeModal('creatorDetailModal')">✅ Approve</button>` : ''}
           <button class="btn btn-outline btn-sm" onclick="activateSub('${c._id}')">Activate Sub</button>
           <button class="btn btn-outline btn-sm" onclick="extendSub('${c._id}')">Extend +30d</button>
           <button class="btn btn-primary btn-sm" onclick="sendNotifToCreator('${c._id}')">Send Notification</button>
           <button class="btn btn-primary btn-sm" style="background:#10b981" onclick="closeModal('creatorDetailModal');openCreatorLedger('${c._id}')">💰 View Finances</button>
         </div>
-        ${bookings.length > 0 ? `<h4 style="margin-top:1.5rem;color:var(--gold-light);font-family:var(--font-display);font-size:0.95rem">Recent Bookings</h4>
-        <div class="table-wrap" style="margin-top:0.5rem"><table><thead><tr><th>Client</th><th>Type</th><th>Amount</th><th>Lead</th><th>Status</th></tr></thead><tbody>
-        ${bookings.slice(0,10).map(b => '<tr><td>' + (b.clientName||'—') + '</td><td>' + (b.eventType||'—') + '</td><td>₹' + (b.amount||0).toLocaleString('en-IN') + '</td><td>' + (b.leadSource||'bms') + '</td><td><span class="status-badge">' + (b.status||'—') + '</span></td></tr>').join('')}
-        </tbody></table></div>` : ''}
       `;
       modal.classList.add("active");
     };

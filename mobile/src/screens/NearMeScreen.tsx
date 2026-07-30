@@ -468,7 +468,7 @@ export default function NearMeScreen({ navigation }: any) {
               {[
                 { icon: 'star', label: 'Rating', get: (c: any) => `⭐ ${c?.rating || '5.0'} (${c?.reviewCount || 0})` },
                 { icon: 'wallet-outline', label: 'Price', get: (c: any) => `₹${(c?.budgetMin || 10000).toLocaleString('en-IN')}+` },
-                { icon: 'briefcase-outline', label: 'Experience', get: (c: any) => `${c?.experience || '3'}+ Years` },
+                { icon: 'briefcase-outline', label: 'Experience', get: (c: any) => c?.experience === 'Fresher' ? 'Fresher' : `${c?.experience || '3+ Years'}` },
                 { icon: 'images-outline', label: 'Portfolio', get: (c: any) => `${(c?.portfolio || []).length} Photos` },
                 { icon: 'location-outline', label: 'Location', get: (c: any) => c?.baseCity || c?.city || '—' },
                 { icon: 'shield-checkmark', label: 'Verified', get: (c: any) => '● Verified', color: '#10B981' },
