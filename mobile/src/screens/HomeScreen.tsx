@@ -449,18 +449,26 @@ export default function HomeScreen({ navigation }: any) {
             <Text style={st.heroPinkTitle}>{heroConfig.heroTitleAccent}</Text>
             <Text style={st.heroDescription}>{heroConfig.heroSubtitle}</Text>
 
-            {/* Premium Offer Badge — dynamic from Master Command */}
-            <View style={st.heroCashbackPill}>
-              <View style={st.heroCashbackIconCircle}>
-                <Ionicons name="gift-outline" size={14} color="#D4860A" />
+            {/* ═══ PREMIUM TWIN OFFER CARDS — Dynamic from Master Command ═══ */}
+            <View style={st.heroOfferRow}>
+              {/* Discount Card */}
+              <View style={st.heroOfferCard}>
+                <LinearGradient colors={['#FF6B35', '#FF8C42']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.heroOfferGradient}>
+                  <View style={st.heroOfferIconWrap}><Text style={{ fontSize: 16 }}>🏷️</Text></View>
+                  <Text style={st.heroOfferPercent}>{masterOffer.discount}%</Text>
+                  <Text style={st.heroOfferLabel}>DISCOUNT</Text>
+                  <Text style={st.heroOfferSub}>On Every Booking</Text>
+                </LinearGradient>
               </View>
-              <View style={{ marginLeft: 6 }}>
-                <Text style={st.heroCbLabel}>🎉 {masterOffer.discount}% Discount</Text>
-                <Text style={st.heroCbValue}>{masterOffer.cashback}%<Text style={st.heroCbWord}> Cashback</Text></Text>
-                <Text style={st.heroCbLabel}>On Every Booking</Text>
+              {/* Cashback Card */}
+              <View style={st.heroOfferCard}>
+                <LinearGradient colors={['#6C3BFF', '#9F5BFF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={st.heroOfferGradient}>
+                  <View style={st.heroOfferIconWrap}><Text style={{ fontSize: 16 }}>💰</Text></View>
+                  <Text style={st.heroOfferPercent}>{masterOffer.cashback}%</Text>
+                  <Text style={st.heroOfferLabel}>CASHBACK</Text>
+                  <Text style={st.heroOfferSub}>On Every Booking</Text>
+                </LinearGradient>
               </View>
-              {/* Shine sweep */}
-              <Animated.View style={[st.heroShine, { transform: [{ translateX: shineAnim.interpolate({ inputRange: [-1, 1], outputRange: [-60, 120] }) }] }]} />
             </View>
 
             <View style={st.heroButtonRow}>
@@ -600,17 +608,21 @@ export default function HomeScreen({ navigation }: any) {
           ))}
         </ScrollView>
 
-        {/* ═══ OFFER BANNER — Dynamic from Master Command ═══ */}
+        {/* ═══ PREMIUM OFFER BANNER — Dynamic from Master Command ═══ */}
         <View style={st.offerWrap}>
-          <LinearGradient colors={['#6C3BFF', '#8B5CF6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={st.offer}>
-            <Text style={{ fontSize: 28 }}>🎁</Text>
-            <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={st.offerTitle}>{masterOffer.discount}% OFF + {masterOffer.cashback}% Cashback!</Text>
-              <Text style={st.offerSub}>Book now and save more on every booking</Text>
+          <LinearGradient colors={['#1E0A3C', '#3B1A6E', '#6C3BFF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0.5 }} style={st.offer}>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                <Text style={{ fontSize: 20 }}>🎁</Text>
+                <Text style={st.offerTitle}>Save More On Every Booking!</Text>
+              </View>
+              <Text style={st.offerSub}>{masterOffer.discount}% Instant Discount + {masterOffer.cashback}% Cashback</Text>
+              <Text style={{ fontSize: 9, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>Book verified creators and enjoy exclusive savings</Text>
             </View>
             <View style={st.offerBadge}>
-              <Text style={st.offerBadgeLabel}>Special Offer</Text>
+              <Text style={st.offerBadgeLabel}>SPECIAL OFFER</Text>
               <Text style={st.offerBadgeValue}>{masterOffer.discount}% OFF</Text>
+              <Text style={st.offerBadgeCb}>+{masterOffer.cashback}% CB</Text>
             </View>
           </LinearGradient>
         </View>
@@ -872,7 +884,15 @@ const st = StyleSheet.create({
   heroMainTitle: { fontSize: 25, fontWeight: '800', color: '#111827', lineHeight: 32, marginBottom: 2 },
   heroPinkTitle: { fontSize: 29, fontWeight: '900', color: '#FF4FA3', lineHeight: 36, marginBottom: 12 },
   heroDescription: { fontSize: 13.5, fontWeight: '600', color: '#1F2937', lineHeight: 21, marginBottom: 18, textShadowColor: 'rgba(255,255,255,0.9)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6 },
-  heroCashbackPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.95)', borderWidth: 1.2, borderColor: '#F5C542', borderRadius: 18, paddingHorizontal: 10, paddingVertical: 7, alignSelf: 'flex-start', marginBottom: 16, elevation: 4, shadowColor: '#F5C542', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 8, overflow: 'hidden' },
+  heroCashbackPill: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 },
+  // Twin Offer Cards
+  heroOfferRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
+  heroOfferCard: { flex: 1, borderRadius: 14, overflow: 'hidden', elevation: 4, shadowColor: '#6C3BFF', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 10 },
+  heroOfferGradient: { padding: 12, alignItems: 'center', borderRadius: 14 },
+  heroOfferIconWrap: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
+  heroOfferPercent: { fontSize: 24, fontWeight: '900', color: '#FFFFFF', lineHeight: 28 },
+  heroOfferLabel: { fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.9)', letterSpacing: 1.5 },
+  heroOfferSub: { fontSize: 8, color: 'rgba(255,255,255,0.6)', marginTop: 3 },
   heroCashbackIconCircle: { width: 26, height: 26, borderRadius: 13, backgroundColor: 'rgba(245,197,66,0.15)', alignItems: 'center', justifyContent: 'center' },
   heroCbLabel: { fontSize: 9, fontWeight: '500', color: '#8B7355' },
   heroCbValue: { fontSize: 20, fontWeight: '900', color: '#D4860A', lineHeight: 24 },
@@ -942,14 +962,15 @@ const st = StyleSheet.create({
   benefit: { alignItems: 'center', width: 80, gap: 4 },
   benefitL: { fontSize: 9, fontWeight: '700', color: '#1F2937', textAlign: 'center' },
   benefitS: { fontSize: 7, color: '#6B7280', textAlign: 'center' },
-  // Offer
-  offerWrap: { marginHorizontal: 16, marginTop: 16, borderRadius: 16, overflow: 'hidden' },
-  offer: { flexDirection: 'row', alignItems: 'center', padding: 16 },
-  offerTitle: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
-  offerSub: { fontSize: 10, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
-  offerBadge: { backgroundColor: '#FFFFFF', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, alignItems: 'center' },
-  offerBadgeLabel: { fontSize: 8, fontWeight: '600', color: '#6C3BFF' },
-  offerBadgeValue: { fontSize: 13, fontWeight: '800', color: '#1F2937', marginTop: 1 },
+  // Offer Banner
+  offerWrap: { marginHorizontal: 16, marginTop: 16, borderRadius: 18, overflow: 'hidden', elevation: 5, shadowColor: '#6C3BFF', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 12 },
+  offer: { flexDirection: 'row', alignItems: 'center', padding: 18 },
+  offerTitle: { fontSize: 14, fontWeight: '800', color: '#FFFFFF' },
+  offerSub: { fontSize: 11, color: 'rgba(255,255,255,0.85)', marginTop: 3, fontWeight: '600' },
+  offerBadge: { backgroundColor: 'rgba(255,255,255,0.15)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, alignItems: 'center' },
+  offerBadgeLabel: { fontSize: 7, fontWeight: '700', color: 'rgba(255,255,255,0.7)', letterSpacing: 1 },
+  offerBadgeValue: { fontSize: 16, fontWeight: '900', color: '#FFFFFF', marginTop: 2 },
+  offerBadgeCb: { fontSize: 10, fontWeight: '700', color: '#FFD700', marginTop: 1 },
   // Wallet Quick Access
   walletQuick: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginTop: 14, backgroundColor: '#FFFFFF', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#EDE9FE' },
   walletQuickTitle: { fontSize: 13, fontWeight: '600', color: '#1F2937' },
