@@ -18,6 +18,8 @@ export default function CreatorLeads({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [tab, setTab] = useState('all');
   const [processing, setProcessing] = useState(false);
+  // Subscription lock state
+  const [subInfo, setSubInfo] = useState<any>({ status: 'free', freeLeadsUsed: 0, freeLeadsLimit: 3, monthlyPrice: 199, perLeadPrice: 70 });
 
   // Modal states
   const [confirmModal, setConfirmModal] = useState<{ visible: boolean; lead: any | null; action: 'accept' | 'reject' }>({ visible: false, lead: null, action: 'accept' });
@@ -26,8 +28,21 @@ export default function CreatorLeads({ navigation }: any) {
 
   const load = useCallback(async () => {
     try {
-      const res = await api.get('/creator/leads');
-      setLeads(res.data?.inquiries || []);
+      const [leadsRes, dashRes, msRes] = await Promise.all([
+        api.get('/creator/leads'),
+        api.get('/creator/dashboard').catch(() => ({ data: {} })),
+        api.get('/master-settings').catch(() => ({ data: { data: {} } })),
+      ]);
+      setLeads(leadsRes.data?.inquiries || []);
+      const ms = msRes.data?.data || {};
+      setSubInfo({
+        status: dashRes.data?.subscriptionStatus || 'free',
+        freeLeadsUsed: dashRes.data?.freeLeadsUsed || 0,
+        freeLeadsLimit: ms.freeMonthlyLimit || dashRes.data?.freeLeadsLimit || 3,
+        monthlyPrice: ms.monthlySubscriptionPrice || 199,
+        perLeadPrice: ms.perLeadUnlockPrice || 70,
+        unlockedLeads: dashRes.data?.unlockedLeads || [],
+      });
     } catch (e: any) {
       setToast({ visible: true, type: 'error', title: 'Failed to load', message: e.response?.data?.message || 'Check your connection' });
     } finally { setLoading(false); }

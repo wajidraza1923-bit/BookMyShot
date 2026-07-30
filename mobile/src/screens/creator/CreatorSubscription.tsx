@@ -21,21 +21,25 @@ export default function CreatorSubscription({ navigation }: any) {
 
   const load = useCallback(async () => {
     try {
-      const [dashRes, configRes, autopayRes, leadRes] = await Promise.all([
+      const [dashRes, configRes, autopayRes, leadRes, masterRes] = await Promise.all([
         api.get('/creator/dashboard'),
         api.get('/config/public'),
         api.get('/razorpay/autopay-status').catch(() => ({ data: { data: {} } })),
         api.get('/leads/my-usage').catch(() => ({ data: { data: {} } })),
+        api.get('/master-settings').catch(() => ({ data: { data: {} } })),
       ]);
       setCreator(dashRes.data);
-      // Merge Business Model pricing into config
-      const leadData = leadRes.data?.data || {};
+      // Use Master Settings as the PRIMARY source for pricing
+      const ms = masterRes.data?.data || {};
       const configData = configRes.data || {};
-      if (leadData.monthlyPrice) {
-        if (!configData.subscription) configData.subscription = {};
-        configData.subscription.monthlyPlanPrice = leadData.monthlyPrice;
-        configData.subscription.yearlyPlanPrice = leadData.yearlyPrice || leadData.monthlyPrice * 10;
-      }
+      if (!configData.subscription) configData.subscription = {};
+      // Master Command overrides everything
+      configData.subscription.monthlyPlanPrice = ms.monthlySubscriptionPrice || configData.subscription.monthlyPlanPrice || 199;
+      configData.subscription.yearlyPlanPrice = ms.yearlySubscriptionPrice || configData.subscription.yearlyPlanPrice || 1499;
+      configData.subscription.freeLeadsLimit = ms.freeMonthlyLimit || 3;
+      configData.subscription.freeBookingsLimit = ms.freeBookingsLimit || 3;
+      configData.subscription.perLeadUnlockPrice = ms.perLeadUnlockPrice || 70;
+      configData.subscription.subscriptionMode = ms.subscriptionMode || 'lead';
       setConfig(configData);
       if (autopayRes.data?.data) {
         setCreator((prev: any) => ({ ...prev, _autopay: autopayRes.data.data }));

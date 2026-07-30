@@ -16,8 +16,11 @@ export default function AdminMasterCommand({ navigation }: any) {
   const [cashbackPercentage, setCashbackPercentage] = useState('');
   const [discountPercentage, setDiscountPercentage] = useState('');
   const [subPrice, setSubPrice] = useState('');
+  const [yearlyPrice, setYearlyPrice] = useState('');
   const [subMode, setSubMode] = useState<'lead' | 'booking'>('lead');
   const [freeLimit, setFreeLimit] = useState('');
+  const [freeBookings, setFreeBookings] = useState('');
+  const [perLeadPrice, setPerLeadPrice] = useState('');
 
   useEffect(() => { loadSettings(); }, []);
 
@@ -31,9 +34,12 @@ export default function AdminMasterCommand({ navigation }: any) {
         setBookingCommission(String(data.bookingCommission ?? '2.5'));
         setCashbackPercentage(String(data.cashbackPercentage ?? '2.5'));
         setDiscountPercentage(String(data.discountPercentage ?? '10'));
-        setSubPrice(String(data.monthlySubscriptionPrice ?? '499'));
+        setSubPrice(String(data.monthlySubscriptionPrice ?? '199'));
+        setYearlyPrice(String(data.yearlySubscriptionPrice ?? '1499'));
         setSubMode(data.subscriptionMode || 'lead');
         setFreeLimit(String(data.freeMonthlyLimit ?? '3'));
+        setFreeBookings(String(data.freeBookingsLimit ?? '3'));
+        setPerLeadPrice(String(data.perLeadUnlockPrice ?? '70'));
       }
     } catch {} finally { setLoading(false); }
   };
@@ -87,13 +93,17 @@ export default function AdminMasterCommand({ navigation }: any) {
 
   const saveSubscription = async () => {
     const price = parseFloat(subPrice);
+    const yPrice = parseFloat(yearlyPrice);
     const limit = parseInt(freeLimit);
-    if (isNaN(price) || price < 0) { Alert.alert('Invalid', 'Enter a valid price'); return; }
-    if (isNaN(limit) || limit < 0) { Alert.alert('Invalid', 'Enter a valid free limit'); return; }
+    const bLimit = parseInt(freeBookings);
+    const leadPrice = parseFloat(perLeadPrice);
+    if (isNaN(price) || price < 0) { Alert.alert('Invalid', 'Enter a valid monthly price'); return; }
+    if (isNaN(yPrice) || yPrice < 0) { Alert.alert('Invalid', 'Enter a valid yearly price'); return; }
+    if (isNaN(limit) || limit < 0) { Alert.alert('Invalid', 'Enter a valid free leads limit'); return; }
     setSavingSub(true);
     try {
-      await api.put('/master-settings', { monthlySubscriptionPrice: price, subscriptionMode: subMode, freeMonthlyLimit: limit });
-      Alert.alert('✅ Saved', `Subscription updated:\n• Price: ₹${price}\n• Mode: ${subMode === 'lead' ? 'Lead-Based' : 'Booking-Based'}\n• Free Limit: ${limit}`);
+      await api.put('/master-settings', { monthlySubscriptionPrice: price, yearlySubscriptionPrice: yPrice, subscriptionMode: subMode, freeMonthlyLimit: limit, freeBookingsLimit: bLimit || 3, perLeadUnlockPrice: leadPrice || 70 });
+      Alert.alert('✅ Saved', `Subscription updated:\n• Monthly: ₹${price}\n• Yearly: ₹${yPrice}\n• Free Leads: ${limit}\n• Free Bookings: ${bLimit}\n• Per Lead: ₹${leadPrice}`);
     } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed to save'); }
     finally { setSavingSub(false); }
   };
@@ -181,8 +191,15 @@ export default function AdminMasterCommand({ navigation }: any) {
           <Text style={s.label}>Monthly Subscription Price (₹)</Text>
           <View style={s.inputRow}>
             <Ionicons name="cash-outline" size={16} color="#8B5CF6" />
-            <TextInput style={s.input} value={subPrice} onChangeText={setSubPrice} placeholder="e.g. 499" placeholderTextColor="#9CA3AF" keyboardType="number-pad" />
-            <Text style={s.inputSuffix}>₹</Text>
+            <TextInput style={s.input} value={subPrice} onChangeText={setSubPrice} placeholder="e.g. 199" placeholderTextColor="#9CA3AF" keyboardType="number-pad" />
+            <Text style={s.inputSuffix}>₹/mo</Text>
+          </View>
+
+          <Text style={s.label}>Yearly Subscription Price (₹)</Text>
+          <View style={s.inputRow}>
+            <Ionicons name="calendar-outline" size={16} color="#8B5CF6" />
+            <TextInput style={s.input} value={yearlyPrice} onChangeText={setYearlyPrice} placeholder="e.g. 1499" placeholderTextColor="#9CA3AF" keyboardType="number-pad" />
+            <Text style={s.inputSuffix}>₹/yr</Text>
           </View>
 
           <Text style={s.label}>Subscription Mode</Text>
@@ -197,13 +214,28 @@ export default function AdminMasterCommand({ navigation }: any) {
             </TouchableOpacity>
           </View>
 
-          <Text style={s.label}>Free Monthly Limit</Text>
+          <Text style={s.label}>Free Leads / Month</Text>
           <View style={s.inputRow}>
-            <Ionicons name="gift-outline" size={16} color="#8B5CF6" />
+            <Ionicons name="mail-outline" size={16} color="#8B5CF6" />
             <TextInput style={s.input} value={freeLimit} onChangeText={setFreeLimit} placeholder="e.g. 3" placeholderTextColor="#9CA3AF" keyboardType="number-pad" />
-            <Text style={s.inputSuffix}>free</Text>
+            <Text style={s.inputSuffix}>leads</Text>
           </View>
-          <Text style={s.hint}>Creators get {freeLimit} free {subMode === 'lead' ? 'leads' : 'bookings'}/month, then must subscribe at ₹{subPrice}/month</Text>
+
+          <Text style={s.label}>Free Bookings / Month</Text>
+          <View style={s.inputRow}>
+            <Ionicons name="calendar-outline" size={16} color="#8B5CF6" />
+            <TextInput style={s.input} value={freeBookings} onChangeText={setFreeBookings} placeholder="e.g. 3" placeholderTextColor="#9CA3AF" keyboardType="number-pad" />
+            <Text style={s.inputSuffix}>bookings</Text>
+          </View>
+
+          <Text style={s.label}>Per Lead Unlock Price (₹)</Text>
+          <View style={s.inputRow}>
+            <Ionicons name="lock-open-outline" size={16} color="#8B5CF6" />
+            <TextInput style={s.input} value={perLeadPrice} onChangeText={setPerLeadPrice} placeholder="e.g. 70" placeholderTextColor="#9CA3AF" keyboardType="number-pad" />
+            <Text style={s.inputSuffix}>₹</Text>
+          </View>
+
+          <Text style={s.hint}>Creators get {freeLimit} free leads + {freeBookings} free bookings/month. After that: Subscribe ₹{subPrice}/mo or unlock ₹{perLeadPrice}/lead</Text>
 
           <TouchableOpacity style={[s.saveBtn, { backgroundColor: '#8B5CF6' }, savingSub && { opacity: 0.6 }]} onPress={saveSubscription} disabled={savingSub}>
             {savingSub ? <ActivityIndicator color="#fff" size="small" /> : (<><Ionicons name="checkmark-circle" size={16} color="#fff" /><Text style={s.saveBtnText}>Update Subscription Settings</Text></>)}
