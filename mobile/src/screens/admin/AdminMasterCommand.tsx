@@ -8,10 +8,12 @@ export default function AdminMasterCommand({ navigation }: any) {
   const [savingSupport, setSavingSupport] = useState(false);
   const [savingCommission, setSavingCommission] = useState(false);
   const [savingCashback, setSavingCashback] = useState(false);
+  const [savingOffers, setSavingOffers] = useState(false);
   const [supportEmail, setSupportEmail] = useState('');
   const [supportPhone, setSupportPhone] = useState('');
   const [bookingCommission, setBookingCommission] = useState('');
   const [cashbackPercentage, setCashbackPercentage] = useState('');
+  const [discountPercentage, setDiscountPercentage] = useState('');
 
   useEffect(() => { loadSettings(); }, []);
 
@@ -24,6 +26,7 @@ export default function AdminMasterCommand({ navigation }: any) {
         setSupportPhone(data.supportPhone || '');
         setBookingCommission(String(data.bookingCommission ?? '2.5'));
         setCashbackPercentage(String(data.cashbackPercentage ?? '2.5'));
+        setDiscountPercentage(String(data.discountPercentage ?? '10'));
       }
     } catch {} finally { setLoading(false); }
   };
@@ -58,6 +61,21 @@ export default function AdminMasterCommand({ navigation }: any) {
       Alert.alert('✅ Saved', `Cashback set to ${val}% globally.`);
     } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed to save'); }
     finally { setSavingCashback(false); }
+  };
+
+  const saveOffers = async () => {
+    const disc = parseFloat(discountPercentage);
+    const cb = parseFloat(cashbackPercentage);
+    const comm = parseFloat(bookingCommission);
+    if (isNaN(disc) || disc < 0 || disc > 100) { Alert.alert('Invalid', 'Discount must be 0-100'); return; }
+    if (isNaN(cb) || cb < 0 || cb > 100) { Alert.alert('Invalid', 'Cashback must be 0-100'); return; }
+    if (isNaN(comm) || comm < 0 || comm > 100) { Alert.alert('Invalid', 'Commission must be 0-100'); return; }
+    setSavingOffers(true);
+    try {
+      await api.put('/master-settings', { discountPercentage: disc, cashbackPercentage: cb, bookingCommission: comm });
+      Alert.alert('✅ Saved', `Offers updated globally:\n• Discount: ${disc}%\n• Cashback: ${cb}%\n• Commission: ${comm}%`);
+    } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed to save'); }
+    finally { setSavingOffers(false); }
   };
 
   if (loading) return <View style={s.container}><ActivityIndicator size="large" color="#6C3BFF" style={{ marginTop: 80 }} /></View>;
@@ -96,41 +114,39 @@ export default function AdminMasterCommand({ navigation }: any) {
           </TouchableOpacity>
         </View>
 
-        {/* Module 2: Booking Commission */}
+        {/* Module 2: Offers & Rewards */}
         <View style={s.card}>
           <View style={s.cardHeader}>
-            <Ionicons name="cash-outline" size={20} color="#F59E0B" />
-            <Text style={s.cardTitle}>Booking Commission</Text>
+            <Ionicons name="gift-outline" size={20} color="#F59E0B" />
+            <Text style={s.cardTitle}>Offers & Rewards Settings</Text>
           </View>
-          <Text style={s.cardDesc}>Platform commission charged on every booking</Text>
-          <Text style={s.label}>Commission Percentage (%)</Text>
+          <Text style={s.cardDesc}>Controls all offer banners, calculations & promotional displays</Text>
+
+          <Text style={s.label}>Discount Percentage (%)</Text>
           <View style={s.inputRow}>
-            <Ionicons name="trending-up-outline" size={16} color="#F59E0B" />
-            <TextInput style={s.input} value={bookingCommission} onChangeText={setBookingCommission} placeholder="e.g. 2.5" placeholderTextColor="#9CA3AF" keyboardType="decimal-pad" />
+            <Ionicons name="pricetag-outline" size={16} color="#EF4444" />
+            <TextInput style={s.input} value={discountPercentage} onChangeText={setDiscountPercentage} placeholder="e.g. 10" placeholderTextColor="#9CA3AF" keyboardType="decimal-pad" />
             <Text style={s.inputSuffix}>%</Text>
           </View>
-          <Text style={s.hint}>Current: {bookingCommission}% on every booking</Text>
-          <TouchableOpacity style={[s.saveBtn, { backgroundColor: '#F59E0B' }, savingCommission && { opacity: 0.6 }]} onPress={saveCommission} disabled={savingCommission}>
-            {savingCommission ? <ActivityIndicator color="#fff" size="small" /> : (<><Ionicons name="checkmark-circle" size={16} color="#fff" /><Text style={s.saveBtnText}>Update Commission</Text></>)}
-          </TouchableOpacity>
-        </View>
 
-        {/* Module 3: Cashback Percentage */}
-        <View style={s.card}>
-          <View style={s.cardHeader}>
-            <Ionicons name="gift-outline" size={20} color="#10B981" />
-            <Text style={s.cardTitle}>Cashback Percentage</Text>
-          </View>
-          <Text style={s.cardDesc}>Customer cashback on successful bookings</Text>
           <Text style={s.label}>Cashback Percentage (%)</Text>
           <View style={s.inputRow}>
             <Ionicons name="gift-outline" size={16} color="#10B981" />
-            <TextInput style={s.input} value={cashbackPercentage} onChangeText={setCashbackPercentage} placeholder="e.g. 2.5" placeholderTextColor="#9CA3AF" keyboardType="decimal-pad" />
+            <TextInput style={s.input} value={cashbackPercentage} onChangeText={setCashbackPercentage} placeholder="e.g. 5" placeholderTextColor="#9CA3AF" keyboardType="decimal-pad" />
             <Text style={s.inputSuffix}>%</Text>
           </View>
-          <Text style={s.hint}>Current: {cashbackPercentage}% cashback to customers</Text>
-          <TouchableOpacity style={[s.saveBtn, { backgroundColor: '#10B981' }, savingCashback && { opacity: 0.6 }]} onPress={saveCashback} disabled={savingCashback}>
-            {savingCashback ? <ActivityIndicator color="#fff" size="small" /> : (<><Ionicons name="checkmark-circle" size={16} color="#fff" /><Text style={s.saveBtnText}>Update Cashback</Text></>)}
+
+          <Text style={s.label}>Booking Commission (%)</Text>
+          <View style={s.inputRow}>
+            <Ionicons name="cash-outline" size={16} color="#F59E0B" />
+            <TextInput style={s.input} value={bookingCommission} onChangeText={setBookingCommission} placeholder="e.g. 2.5" placeholderTextColor="#9CA3AF" keyboardType="decimal-pad" />
+            <Text style={s.inputSuffix}>%</Text>
+          </View>
+
+          <Text style={s.hint}>Hero Banner will show: {discountPercentage}% Discount + {cashbackPercentage}% Cashback</Text>
+
+          <TouchableOpacity style={[s.saveBtn, { backgroundColor: '#F59E0B' }, savingOffers && { opacity: 0.6 }]} onPress={saveOffers} disabled={savingOffers}>
+            {savingOffers ? <ActivityIndicator color="#fff" size="small" /> : (<><Ionicons name="checkmark-circle" size={16} color="#fff" /><Text style={s.saveBtnText}>Update Offers & Commission</Text></>)}
           </TouchableOpacity>
         </View>
 

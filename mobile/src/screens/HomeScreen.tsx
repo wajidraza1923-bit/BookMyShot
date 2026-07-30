@@ -115,6 +115,7 @@ export default function HomeScreen({ navigation }: any) {
   }, []);
   const [searchQuery, setSearchQuery] = useState('');
   const [heroConfig, setHeroConfig] = useState({ cashbackPercentage: 10, heroTitle: 'Your Dream Wedding,', heroTitleAccent: 'More Rewards!', heroSubtitle: 'Book verified wedding creators and get exciting cashback on every successful booking.', heroEyebrow: 'CELEBRATE BEAUTIFULLY. SAVE MORE.', heroCta1Text: 'Find Creator', heroCta2Text: 'Get Free Quote' });
+  const [masterOffer, setMasterOffer] = useState({ discount: 10, cashback: 2.5, commission: 2.5 });
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const shineAnim = useRef(new Animated.Value(-1)).current;
   // Customer Quick Actions data
@@ -179,6 +180,13 @@ export default function HomeScreen({ navigation }: any) {
 
       // Hero config from admin panel
       if (homeConfigRes.data?.data) setHeroConfig(homeConfigRes.data.data);
+
+      // Master Settings (dynamic offers)
+      try {
+        const msRes = await api.get('/master-settings');
+        const ms = msRes.data?.data;
+        if (ms) setMasterOffer({ discount: ms.discountPercentage || 10, cashback: ms.cashbackPercentage || 2.5, commission: ms.bookingCommission || 2.5 });
+      } catch {}
 
       // Stats from DB
       const s = statsRes.data?.stats;
@@ -441,14 +449,14 @@ export default function HomeScreen({ navigation }: any) {
             <Text style={st.heroPinkTitle}>{heroConfig.heroTitleAccent}</Text>
             <Text style={st.heroDescription}>{heroConfig.heroSubtitle}</Text>
 
-            {/* Premium Cashback Badge — compact luxury design */}
+            {/* Premium Offer Badge — dynamic from Master Command */}
             <View style={st.heroCashbackPill}>
               <View style={st.heroCashbackIconCircle}>
                 <Ionicons name="gift-outline" size={14} color="#D4860A" />
               </View>
               <View style={{ marginLeft: 6 }}>
-                <Text style={st.heroCbLabel}>Up to</Text>
-                <Text style={st.heroCbValue}>{heroConfig.cashbackPercentage}%<Text style={st.heroCbWord}> Cashback</Text></Text>
+                <Text style={st.heroCbLabel}>🎉 {masterOffer.discount}% Discount</Text>
+                <Text style={st.heroCbValue}>{masterOffer.cashback}%<Text style={st.heroCbWord}> Cashback</Text></Text>
                 <Text style={st.heroCbLabel}>On Every Booking</Text>
               </View>
               {/* Shine sweep */}
@@ -592,17 +600,17 @@ export default function HomeScreen({ navigation }: any) {
           ))}
         </ScrollView>
 
-        {/* ═══ OFFER BANNER — Clean, readable ═══ */}
+        {/* ═══ OFFER BANNER — Dynamic from Master Command ═══ */}
         <View style={st.offerWrap}>
           <LinearGradient colors={['#6C3BFF', '#8B5CF6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={st.offer}>
             <Text style={{ fontSize: 28 }}>🎁</Text>
             <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={st.offerTitle}>More Bookings, More Cashback!</Text>
-              <Text style={st.offerSub}>The more you book, the more you earn.</Text>
+              <Text style={st.offerTitle}>{masterOffer.discount}% OFF + {masterOffer.cashback}% Cashback!</Text>
+              <Text style={st.offerSub}>Book now and save more on every booking</Text>
             </View>
             <View style={st.offerBadge}>
               <Text style={st.offerBadgeLabel}>Special Offer</Text>
-              <Text style={st.offerBadgeValue}>Upto {heroConfig.cashbackPercentage}%</Text>
+              <Text style={st.offerBadgeValue}>{masterOffer.discount}% OFF</Text>
             </View>
           </LinearGradient>
         </View>
