@@ -15,6 +15,7 @@ export default function AdminMasterCommand({ navigation }: any) {
   const [bookingCommission, setBookingCommission] = useState('');
   const [cashbackPercentage, setCashbackPercentage] = useState('');
   const [discountPercentage, setDiscountPercentage] = useState('');
+  const [cashbackDays, setCashbackDays] = useState('');
   const [subPrice, setSubPrice] = useState('');
   const [yearlyPrice, setYearlyPrice] = useState('');
   const [subMode, setSubMode] = useState<'lead' | 'booking'>('lead');
@@ -34,6 +35,7 @@ export default function AdminMasterCommand({ navigation }: any) {
         setBookingCommission(String(data.bookingCommission ?? '2.5'));
         setCashbackPercentage(String(data.cashbackPercentage ?? '2.5'));
         setDiscountPercentage(String(data.discountPercentage ?? '10'));
+        setCashbackDays(String(data.cashbackDeadlineDays ?? '30'));
         setSubPrice(String(data.monthlySubscriptionPrice ?? '199'));
         setYearlyPrice(String(data.yearlySubscriptionPrice ?? '1499'));
         setSubMode(data.subscriptionMode || 'lead');
@@ -80,13 +82,15 @@ export default function AdminMasterCommand({ navigation }: any) {
     const disc = parseFloat(discountPercentage);
     const cb = parseFloat(cashbackPercentage);
     const comm = parseFloat(bookingCommission);
+    const days = parseInt(cashbackDays);
     if (isNaN(disc) || disc < 0 || disc > 100) { Alert.alert('Invalid', 'Discount must be 0-100'); return; }
     if (isNaN(cb) || cb < 0 || cb > 100) { Alert.alert('Invalid', 'Cashback must be 0-100'); return; }
     if (isNaN(comm) || comm < 0 || comm > 100) { Alert.alert('Invalid', 'Commission must be 0-100'); return; }
+    if (isNaN(days) || days < 1) { Alert.alert('Invalid', 'Deadline must be at least 1 day'); return; }
     setSavingOffers(true);
     try {
-      await api.put('/master-settings', { discountPercentage: disc, cashbackPercentage: cb, bookingCommission: comm });
-      Alert.alert('✅ Saved', `Offers updated globally:\n• Discount: ${disc}%\n• Cashback: ${cb}%\n• Commission: ${comm}%`);
+      await api.put('/master-settings', { discountPercentage: disc, cashbackPercentage: cb, bookingCommission: comm, cashbackDeadlineDays: days });
+      Alert.alert('✅ Saved', `Offers updated globally:\n• Discount: ${disc}%\n• Cashback: ${cb}%\n• Commission: ${comm}%\n• Cashback Deadline: ${days} days`);
     } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed to save'); }
     finally { setSavingOffers(false); }
   };
@@ -173,7 +177,14 @@ export default function AdminMasterCommand({ navigation }: any) {
             <Text style={s.inputSuffix}>%</Text>
           </View>
 
-          <Text style={s.hint}>Hero Banner will show: {discountPercentage}% Discount + {cashbackPercentage}% Cashback</Text>
+          <Text style={s.label}>Cashback Deadline (Days)</Text>
+          <View style={s.inputRow}>
+            <Ionicons name="timer-outline" size={16} color="#EF4444" />
+            <TextInput style={s.input} value={cashbackDays} onChangeText={setCashbackDays} placeholder="e.g. 30" placeholderTextColor="#9CA3AF" keyboardType="number-pad" />
+            <Text style={s.inputSuffix}>days</Text>
+          </View>
+
+          <Text style={s.hint}>Cashback Policy: Customer must complete full payment within {cashbackDays} days of booking AND creator must accept. If even 1 day late → NO cashback.</Text>
 
           <TouchableOpacity style={[s.saveBtn, { backgroundColor: '#F59E0B' }, savingOffers && { opacity: 0.6 }]} onPress={saveOffers} disabled={savingOffers}>
             {savingOffers ? <ActivityIndicator color="#fff" size="small" /> : (<><Ionicons name="checkmark-circle" size={16} color="#fff" /><Text style={s.saveBtnText}>Update Offers & Commission</Text></>)}

@@ -13,6 +13,8 @@ const masterSettingsSchema = new mongoose.Schema({
   freeMonthlyLimit: { type: Number, default: 3 },
   freeBookingsLimit: { type: Number, default: 3 },
   perLeadUnlockPrice: { type: Number, default: 70 },
+  // Cashback Deadline Policy
+  cashbackDeadlineDays: { type: Number, default: 30 },
 }, { timestamps: true });
 
 module.exports = mongoose.model("MasterSettings", masterSettingsSchema);

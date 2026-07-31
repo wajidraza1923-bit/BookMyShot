@@ -184,10 +184,13 @@ router.post("/confirm-completion", protect, async (req, res, next) => {
       if (existing.status === "expired") return res.status(400).json({ success: false, message: "Cashback expired — 30-day deadline exceeded.", code: "CASHBACK_DEADLINE_EXPIRED" });
     }
 
-    // 6. 30-Day Deadline
+    // 6. Cashback Deadline (dynamic from Master Command)
+    const MasterSettingsCB = require("../models/MasterSettings");
+    const msCB = await MasterSettingsCB.findOne();
+    const deadlineDays = (msCB && msCB.cashbackDeadlineDays) || 30;
     const bookingCreatedAt = booking.createdAt || booking.bookingFeePaidAt || new Date();
     const cashbackDeadline = new Date(bookingCreatedAt);
-    cashbackDeadline.setDate(cashbackDeadline.getDate() + 30);
+    cashbackDeadline.setDate(cashbackDeadline.getDate() + deadlineDays);
     if (new Date() > cashbackDeadline) {
       await CashbackTransaction.create({
         user: req.user._id,
@@ -196,11 +199,11 @@ router.post("/confirm-completion", protect, async (req, res, next) => {
         percentage: 0,
         bookingAmount: booking.bookingFeeAmount || 0,
         status: "expired",
-        notes: "Payment completed after 30-day cashback deadline. Cashback retained by BookMyShot.",
+        notes: `Payment completed after ${deadlineDays}-day cashback deadline. Cashback not eligible.`,
       });
       return res.status(400).json({
         success: false,
-        message: "Cashback expired. Confirmation was after the 30-day deadline.",
+        message: `Cashback expired. Full payment was not completed within ${deadlineDays} days of booking.`,
         code: "CASHBACK_DEADLINE_EXPIRED",
       });
     }
@@ -285,13 +288,16 @@ router.post("/credit", protect, async (req, res, next) => {
     const existing = await CashbackTransaction.findOne({ booking: bookingId });
     if (existing) return res.status(409).json({ success: false, message: "Cashback already processed for this booking" });
 
-    // 30-Day Deadline Check
+    // Cashback Deadline Check (dynamic from Master Command)
+    const MasterSettingsCB2 = require("../models/MasterSettings");
+    const msCB2 = await MasterSettingsCB2.findOne();
+    const deadlineDays2 = (msCB2 && msCB2.cashbackDeadlineDays) || 30;
     const Booking = require("../models/Booking");
     const booking = await Booking.findById(bookingId);
     if (booking) {
       const bookingCreatedAt = booking.createdAt || new Date();
       const cashbackDeadline = new Date(bookingCreatedAt);
-      cashbackDeadline.setDate(cashbackDeadline.getDate() + 30);
+      cashbackDeadline.setDate(cashbackDeadline.getDate() + deadlineDays2);
       if (new Date() > cashbackDeadline) {
         await CashbackTransaction.create({
           user: req.user._id,
@@ -300,9 +306,9 @@ router.post("/credit", protect, async (req, res, next) => {
           percentage: 0,
           bookingAmount,
           status: "expired",
-          notes: "Payment completed after 30-day cashback deadline.",
+          notes: `Payment completed after ${deadlineDays2}-day cashback deadline.`,
         });
-        return res.status(400).json({ success: false, message: "Cashback expired — 30-day deadline exceeded.", code: "CASHBACK_DEADLINE_EXPIRED" });
+        return res.status(400).json({ success: false, message: `Cashback expired — ${deadlineDays2}-day deadline exceeded.`, code: "CASHBACK_DEADLINE_EXPIRED" });
       }
     }
 

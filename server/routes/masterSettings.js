@@ -17,7 +17,7 @@ router.get("/", async (req, res, next) => {
 // PUT / — Admin only: update global settings
 router.put("/", protect, authorize("admin"), async (req, res, next) => {
   try {
-    const { supportEmail, supportPhone, bookingCommission, cashbackPercentage, discountPercentage, monthlySubscriptionPrice, yearlySubscriptionPrice, subscriptionMode, freeMonthlyLimit, freeBookingsLimit, perLeadUnlockPrice } = req.body;
+    const { supportEmail, supportPhone, bookingCommission, cashbackPercentage, discountPercentage, monthlySubscriptionPrice, yearlySubscriptionPrice, subscriptionMode, freeMonthlyLimit, freeBookingsLimit, perLeadUnlockPrice, cashbackDeadlineDays } = req.body;
     let settings = await MasterSettings.findOne();
     if (!settings) settings = new MasterSettings();
     if (supportEmail !== undefined) settings.supportEmail = supportEmail;
@@ -31,6 +31,7 @@ router.put("/", protect, authorize("admin"), async (req, res, next) => {
     if (freeMonthlyLimit !== undefined) settings.freeMonthlyLimit = Number(freeMonthlyLimit);
     if (freeBookingsLimit !== undefined) settings.freeBookingsLimit = Number(freeBookingsLimit);
     if (perLeadUnlockPrice !== undefined) settings.perLeadUnlockPrice = Number(perLeadUnlockPrice);
+    if (cashbackDeadlineDays !== undefined) settings.cashbackDeadlineDays = Number(cashbackDeadlineDays);
     await settings.save();
     res.json({ success: true, data: settings, message: "Settings updated successfully" });
   } catch (e) { next(e); }
