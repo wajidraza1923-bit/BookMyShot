@@ -136,19 +136,23 @@ export default function WalletScreen({ navigation }: any) {
 
         {/* My Withdrawal Requests */}
         <View style={s.section}>
-          <Text style={s.sectionTitle}>Withdrawal Requests</Text>
+          <Text style={s.sectionTitle}>Withdrawal History</Text>
           {myRequests.length > 0 ? (
             myRequests.map((req: any, i: number) => (
               <View key={i} style={s.wReqCard}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Text style={s.wReqAmount}>₹{req.amount?.toLocaleString('en-IN')}</Text>
                   <View style={[s.wReqBadge, { backgroundColor: req.status === 'paid' ? '#D1FAE5' : req.status === 'rejected' ? '#FEE2E2' : req.status === 'approved' ? '#DBEAFE' : '#FEF3C7' }]}>
-                    <Text style={[s.wReqBadgeText, { color: req.status === 'paid' ? '#059669' : req.status === 'rejected' ? '#DC2626' : req.status === 'approved' ? '#2563EB' : '#D97706' }]}>{req.status}</Text>
+                    <Text style={[s.wReqBadgeText, { color: req.status === 'paid' ? '#059669' : req.status === 'rejected' ? '#DC2626' : req.status === 'approved' ? '#2563EB' : '#D97706' }]}>
+                      {req.status === 'paid' ? '✅ Paid' : req.status === 'approved' ? '✅ Approved' : req.status === 'rejected' ? '❌ Rejected' : '⏳ Pending'}
+                    </Text>
                   </View>
                 </View>
-                <Text style={s.wReqDate}>{new Date(req.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</Text>
+                <Text style={s.wReqDate}>Requested: {new Date(req.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</Text>
+                {req.processedAt && <Text style={s.wReqDate}>Processed: {new Date(req.processedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</Text>}
                 {req.rejectionReason ? <Text style={s.wReqReason}>Reason: {req.rejectionReason}</Text> : null}
                 {req.utrNumber ? <Text style={s.wReqUtr}>UTR: {req.utrNumber}</Text> : null}
+                {req.transactionId ? <Text style={s.wReqUtr}>Transaction: {req.transactionId}</Text> : null}
               </View>
             ))
           ) : (
@@ -174,7 +178,7 @@ export default function WalletScreen({ navigation }: any) {
             {[
               { icon: 'person-add', text: 'Create your BookMyShot account', done: true },
               { icon: 'search', text: 'Book a verified creator through BookMyShot', done: true },
-              { icon: 'card', text: `Pay ${masterSettings.bookingCommission || 2.5}% Advance for Booking via Razorpay`, done: false },
+              { icon: 'card', text: `Pay ${masterSettings.bookingCommission || 2.5}% Advance for Booking via BookMyShot`, done: false },
               { icon: 'cash', text: `Complete remaining payment to creator within ${masterSettings.cashbackDeadlineDays || 30} days`, done: false },
               { icon: 'checkmark-done', text: 'Creator marks "Payment Completed" in their dashboard', done: false },
               { icon: 'gift', text: 'Cashback automatically credited to your Wallet!', done: false },
