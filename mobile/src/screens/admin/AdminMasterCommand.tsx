@@ -16,6 +16,7 @@ export default function AdminMasterCommand({ navigation }: any) {
   const [cashbackPercentage, setCashbackPercentage] = useState('');
   const [discountPercentage, setDiscountPercentage] = useState('');
   const [cashbackDays, setCashbackDays] = useState('');
+  const [creatorCbPercent, setCreatorCbPercent] = useState('');
   const [subPrice, setSubPrice] = useState('');
   const [yearlyPrice, setYearlyPrice] = useState('');
   const [subMode, setSubMode] = useState<'lead' | 'booking'>('lead');
@@ -36,6 +37,7 @@ export default function AdminMasterCommand({ navigation }: any) {
         setCashbackPercentage(String(data.cashbackPercentage ?? '2.5'));
         setDiscountPercentage(String(data.discountPercentage ?? '10'));
         setCashbackDays(String(data.cashbackDeadlineDays ?? '30'));
+        setCreatorCbPercent(String(data.creatorCashbackPercent ?? '4'));
         setSubPrice(String(data.monthlySubscriptionPrice ?? '199'));
         setYearlyPrice(String(data.yearlySubscriptionPrice ?? '1499'));
         setSubMode(data.subscriptionMode || 'lead');
@@ -89,8 +91,8 @@ export default function AdminMasterCommand({ navigation }: any) {
     if (isNaN(days) || days < 1) { Alert.alert('Invalid', 'Deadline must be at least 1 day'); return; }
     setSavingOffers(true);
     try {
-      await api.put('/master-settings', { discountPercentage: disc, cashbackPercentage: cb, bookingCommission: comm, cashbackDeadlineDays: days });
-      Alert.alert('✅ Saved', `Offers updated globally:\n• Discount: ${disc}%\n• Cashback: ${cb}%\n• Commission: ${comm}%\n• Cashback Deadline: ${days} days`);
+      await api.put('/master-settings', { discountPercentage: disc, cashbackPercentage: cb, bookingCommission: comm, cashbackDeadlineDays: days, creatorCashbackPercent: parseFloat(creatorCbPercent) || 4 });
+      Alert.alert('✅ Saved', `Offers updated globally:\n• Discount: ${disc}%\n• Customer Cashback: ${cb}%\n• Creator Cashback: ${creatorCbPercent}%\n• Commission: ${comm}%\n• Deadline: ${days} days`);
     } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed to save'); }
     finally { setSavingOffers(false); }
   };
@@ -251,6 +253,31 @@ export default function AdminMasterCommand({ navigation }: any) {
           <TouchableOpacity style={[s.saveBtn, { backgroundColor: '#8B5CF6' }, savingSub && { opacity: 0.6 }]} onPress={saveSubscription} disabled={savingSub}>
             {savingSub ? <ActivityIndicator color="#fff" size="small" /> : (<><Ionicons name="checkmark-circle" size={16} color="#fff" /><Text style={s.saveBtnText}>Update Subscription Settings</Text></>)}
           </TouchableOpacity>
+        </View>
+
+        {/* Module 4: Creator Cashback Settings */}
+        <View style={s.card}>
+          <View style={s.cardHeader}>
+            <Ionicons name="sparkles-outline" size={20} color="#10B981" />
+            <Text style={s.cardTitle}>Creator Cashback Settings</Text>
+          </View>
+          <Text style={s.cardDesc}>Controls cashback distribution between customer and creator</Text>
+
+          <Text style={s.label}>Customer Cashback (%)</Text>
+          <View style={s.inputRow}>
+            <Ionicons name="person-outline" size={16} color="#10B981" />
+            <TextInput style={s.input} value={cashbackPercentage} onChangeText={setCashbackPercentage} placeholder="e.g. 5" placeholderTextColor="#9CA3AF" keyboardType="decimal-pad" />
+            <Text style={s.inputSuffix}>%</Text>
+          </View>
+
+          <Text style={s.label}>Creator Cashback (% — when customer misses deadline)</Text>
+          <View style={s.inputRow}>
+            <Ionicons name="camera-outline" size={16} color="#8B5CF6" />
+            <TextInput style={s.input} value={creatorCbPercent} onChangeText={setCreatorCbPercent} placeholder="e.g. 4" placeholderTextColor="#9CA3AF" keyboardType="decimal-pad" />
+            <Text style={s.inputSuffix}>%</Text>
+          </View>
+
+          <Text style={s.hint}>If customer pays on time → gets {cashbackPercentage}% cashback. If late → Creator gets {creatorCbPercent}% cashback instead.</Text>
         </View>
 
         <Text style={s.footerNote}>All values sync instantly across:{'\n'}Home • Bookings • Dashboard • Invoices • Wallet • FAQ • Footer • Notifications</Text>
