@@ -20,6 +20,7 @@ export default function CreatorHome({ navigation }: any) {
   const [showRazorpay, setShowRazorpay] = useState(false);
   const [rpConfig, setRpConfig] = useState<{ keyId: string; orderId: string; amount: number; name: string }>({ keyId: '', orderId: '', amount: 0, name: '' });
   const [commPercent, setCommPercent] = useState(2.5);
+  const [walletBalance, setWalletBalance] = useState(0);
 
   const loadDashboard = useCallback(async () => {
     try {
@@ -34,6 +35,8 @@ export default function CreatorHome({ navigation }: any) {
       if (dashRes.data) setStats(dashRes.data);
       if (leadRes.data?.data) setLeadUsage(leadRes.data.data);
       if (msRes.data?.data?.bookingCommission) setCommPercent(msRes.data.data.bookingCommission);
+      // Fetch wallet balance
+      try { const wRes = await api.get('/creator-wallet/my'); setWalletBalance(wRes.data?.data?.walletBalance || 0); } catch {}
       const pending = (requestsRes.data?.data || []).filter((r: any) => r.status === 'pending').length;
       setPromo({ featured: featuredRes.data?.active, rank: activeRes.data?.active, pending });
     } catch {}
@@ -88,7 +91,9 @@ export default function CreatorHome({ navigation }: any) {
     { label: 'Total Earnings', value: `₹${stats.totalEarnings.toLocaleString('en-IN')}`, icon: 'wallet', color: colors.primary },
     { label: 'This Month', value: `₹${stats.monthlyEarnings.toLocaleString('en-IN')}`, icon: 'trending-up', color: colors.success },
     { label: 'Total Bookings', value: String(stats.totalBookings), icon: 'calendar', color: colors.info },
-    { label: `To Collect (${100 - commPercent}%)`, value: `₹${Math.round(stats.totalEarnings * (100 - commPercent) / 100).toLocaleString('en-IN')}`, icon: 'cash', color: '#10B981' },
+    { label: 'Wallet Balance', value: `₹${walletBalance.toLocaleString('en-IN')}`, icon: 'cash', color: '#10B981' },
+    { label: 'New Inquiries', value: String(stats.newInquiries || 0), icon: 'mail', color: '#F59E0B' },
+    { label: 'Upcoming Events', value: String(stats.upcomingEventsCount || 0), icon: 'calendar-outline', color: '#8B5CF6' },
   ];
 
   const quickActions = [
