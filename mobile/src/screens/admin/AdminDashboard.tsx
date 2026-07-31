@@ -31,9 +31,9 @@ export default function AdminDashboard({ navigation }: any) {
     { label: 'Total Creators', value: stats.totalCreators || 0, icon: 'camera', color: colors.primary },
     { label: 'Active', value: stats.activeCreators || 0, icon: 'checkmark-circle', color: colors.success },
     { label: 'Pending', value: stats.pendingApprovals || 0, icon: 'hourglass', color: colors.warning },
-    { label: 'Suspended', value: stats.suspendedCreators || 0, icon: 'ban', color: colors.error },
-    { label: 'Featured', value: stats.featuredCreators || 0, icon: 'star', color: '#F59E0B' },
-    { label: 'Revenue', value: `₹${(stats.totalRevenue || 0).toLocaleString('en-IN')}`, icon: 'wallet', color: colors.primary },
+    { label: 'Users', value: stats.totalUsers || 0, icon: 'people', color: '#3B82F6' },
+    { label: 'Net Profit', value: `₹${(stats.netProfit || 0).toLocaleString('en-IN')}`, icon: 'trending-up', color: colors.success },
+    { label: 'Total Revenue', value: `₹${(stats.totalRevenue || 0).toLocaleString('en-IN')}`, icon: 'wallet', color: colors.primary },
   ];
 
   const menuItems = [
@@ -96,6 +96,35 @@ export default function AdminDashboard({ navigation }: any) {
           <Text style={{ fontSize: 14, fontWeight: '700', color: '#fff' }}>Master Command</Text>
           <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.6)" style={{ marginLeft: 'auto' }} />
         </TouchableOpacity>
+
+        {/* Revenue Breakdown */}
+        <View style={{ marginHorizontal: spacing.xl, marginBottom: 16, backgroundColor: '#F8F6FF', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#EDE9FE' }}>
+          <Text style={{ fontSize: 14, fontWeight: '700', color: '#1F2937', marginBottom: 10 }}>💰 Revenue Breakdown</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+            <Text style={{ fontSize: 11, color: '#6B7280' }}>Today's Advance</Text>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: '#10B981' }}>₹{(stats.today?.advance || 0).toLocaleString('en-IN')}</Text>
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+            <Text style={{ fontSize: 11, color: '#6B7280' }}>Today's Profit</Text>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: '#6C3BFF' }}>₹{(stats.today?.profit || 0).toLocaleString('en-IN')}</Text>
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+            <Text style={{ fontSize: 11, color: '#6B7280' }}>This Week</Text>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: '#1F2937' }}>₹{(stats.thisWeek?.advance || 0).toLocaleString('en-IN')} (Profit: ₹{(stats.thisWeek?.profit || 0).toLocaleString('en-IN')})</Text>
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+            <Text style={{ fontSize: 11, color: '#6B7280' }}>This Month</Text>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: '#1F2937' }}>₹{(stats.thisMonth?.advance || 0).toLocaleString('en-IN')} (Profit: ₹{(stats.thisMonth?.profit || 0).toLocaleString('en-IN')})</Text>
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6, paddingTop: 6, borderTopWidth: 1, borderTopColor: '#EDE9FE' }}>
+            <Text style={{ fontSize: 11, color: '#6B7280' }}>Total Cashback Paid</Text>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: '#EF4444' }}>-₹{(stats.totalCashbackPaid || 0).toLocaleString('en-IN')}</Text>
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <Text style={{ fontSize: 11, fontWeight: '700', color: '#1F2937' }}>Overall Net Profit</Text>
+            <Text style={{ fontSize: 13, fontWeight: '900', color: '#10B981' }}>₹{(stats.netProfit || 0).toLocaleString('en-IN')}</Text>
+          </View>
+        </View>
 
         {/* Menu */}
         <Text style={s.sectionTitle}>Management</Text>

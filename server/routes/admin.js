@@ -55,6 +55,72 @@ router.get("/analytics", async (req, res, next) => {
   }
 });
 
+// ═══ MOBILE ADMIN DASHBOARD OVERVIEW (Real Revenue) ═══
+router.get("/dashboard-overview", async (req, res, next) => {
+  try {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekStart = new Date(todayStart); weekStart.setDate(weekStart.getDate() - 7);
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // Counts
+    const [totalCreators, activeCreators, pendingApprovals, suspendedCreators, featuredCreators, totalUsers] = await Promise.all([
+      Creator.countDocuments({ status: { $ne: "deleted" } }),
+      Creator.countDocuments({ status: "approved" }),
+      Creator.countDocuments({ status: "pending" }),
+      Creator.countDocuments({ status: "suspended" }),
+      Creator.countDocuments({ featured: true }),
+      User.countDocuments({ role: "user" }),
+    ]);
+
+    // Revenue from booking advances (what BookMyShot actually received via Razorpay)
+    const allPaidBookings = await Booking.find({ bookingFeePaid: true }).select("bookingFeeAmount bookingFeePaidAt cashbackAmount cashbackPercentUsed createdAt").lean();
+    
+    const todayBookings = allPaidBookings.filter(b => b.bookingFeePaidAt && new Date(b.bookingFeePaidAt) >= todayStart);
+    const weekBookings = allPaidBookings.filter(b => b.bookingFeePaidAt && new Date(b.bookingFeePaidAt) >= weekStart);
+    const monthBookings = allPaidBookings.filter(b => b.bookingFeePaidAt && new Date(b.bookingFeePaidAt) >= monthStart);
+
+    const sumFee = (arr) => arr.reduce((s, b) => s + (b.bookingFeeAmount || 0), 0);
+    const sumCashback = (arr) => arr.reduce((s, b) => s + (b.cashbackAmount || 0), 0);
+
+    // Cashback paid out (what we gave back to customers)
+    let totalCashbackPaid = 0;
+    try {
+      const CashbackTransaction = require("../models/CashbackTransaction");
+      const cashbackAgg = await CashbackTransaction.aggregate([{ $match: { status: "credited" } }, { $group: { _id: null, total: { $sum: "$amount" } } }]);
+      totalCashbackPaid = cashbackAgg[0]?.total || 0;
+    } catch {}
+
+    // Subscription revenue
+    let subscriptionRevenue = 0;
+    try {
+      const Invoice = require("../models/Invoice");
+      const subInvoices = await Invoice.aggregate([{ $match: { type: "subscription", status: "paid" } }, { $group: { _id: null, total: { $sum: "$amount" } } }]);
+      subscriptionRevenue = subInvoices[0]?.total || 0;
+    } catch {}
+
+    const totalAdvanceReceived = sumFee(allPaidBookings);
+    const totalRevenue = totalAdvanceReceived + subscriptionRevenue;
+    const netProfit = totalRevenue - totalCashbackPaid;
+
+    res.json({
+      success: true,
+      data: {
+        totalCreators, activeCreators, pendingApprovals, suspendedCreators, featuredCreators, totalUsers,
+        totalRevenue,
+        netProfit,
+        totalAdvanceReceived,
+        totalCashbackPaid,
+        subscriptionRevenue,
+        today: { advance: sumFee(todayBookings), cashback: sumCashback(todayBookings), profit: sumFee(todayBookings) - sumCashback(todayBookings), bookings: todayBookings.length },
+        thisWeek: { advance: sumFee(weekBookings), cashback: sumCashback(weekBookings), profit: sumFee(weekBookings) - sumCashback(weekBookings), bookings: weekBookings.length },
+        thisMonth: { advance: sumFee(monthBookings), cashback: sumCashback(monthBookings), profit: sumFee(monthBookings) - sumCashback(monthBookings), bookings: monthBookings.length },
+        overall: { advance: totalAdvanceReceived, cashback: totalCashbackPaid, profit: netProfit, bookings: allPaidBookings.length },
+      },
+    });
+  } catch (e) { next(e); }
+});
+
 // Creators management
 router.get("/creators", async (req, res, next) => {
   try {
