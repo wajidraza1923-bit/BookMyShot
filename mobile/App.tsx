@@ -132,7 +132,7 @@ export default function App() {
   }
 
   return (
-    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={0}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <AuthProvider>
         <LocationProvider>
