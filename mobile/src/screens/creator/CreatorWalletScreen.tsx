@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Alert, TextInput, Modal, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import api from '../../services/api';
 
 export default function CreatorWalletScreen({ navigation }: any) {
@@ -27,6 +28,7 @@ export default function CreatorWalletScreen({ navigation }: any) {
   }, []);
 
   useEffect(() => { load(); }, []);
+  useFocusEffect(useCallback(() => { load(); }, []));
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
   const submitWithdrawal = async () => {
