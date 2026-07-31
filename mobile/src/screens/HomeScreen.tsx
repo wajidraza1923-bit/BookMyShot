@@ -941,9 +941,9 @@ const st = StyleSheet.create({
   catFallback: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', borderRadius: 26 },
   catName: { fontSize: 9, fontWeight: '700', color: '#1F2937', textAlign: 'center', lineHeight: 12 },
   catCount: { fontSize: 7.5, color: '#6C3BFF', marginTop: 1, fontWeight: '700' },
-  // Featured Moments — compact cards matching Top Creators width
-  fmCard: { width: 170, height: 120, borderRadius: 12, overflow: 'hidden', marginRight: 10, elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 6 },
-  fmImage: { width: 170, height: 120, resizeMode: 'cover' },
+  // Featured Moments — taller cards to show more of the photo
+  fmCard: { width: 180, height: 220, borderRadius: 14, overflow: 'hidden', marginRight: 10, elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 6 },
+  fmImage: { width: 180, height: 220, resizeMode: 'cover' },
   fmTopOverlay: { position: 'absolute', top: 6, left: 6, right: 6 },
   fmBadge: { backgroundColor: 'rgba(108,59,255,0.85)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5, alignSelf: 'flex-start' },
   fmBadgeText: { fontSize: 7, fontWeight: '700', color: '#fff', textTransform: 'uppercase' },
