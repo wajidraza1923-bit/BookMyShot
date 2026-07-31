@@ -167,6 +167,29 @@ export default function AdminCreatorWallets({ navigation }: any) {
                 </View>
               ))}
 
+              {/* Booking Payments (Razorpay Verified) */}
+              <Text style={{ fontSize: 14, fontWeight: '700', color: '#1F2937', marginTop: 12, marginBottom: 8 }}>💳 Booking Advance Payments (Razorpay)</Text>
+              {(detailData.bookings || []).length === 0 ? <Text style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 12 }}>No bookings</Text> : (detailData.bookings || []).map((bk: any) => (
+                <View key={bk._id} style={{ backgroundColor: bk.bookingFeePaid ? '#ECFDF5' : '#FEF3C7', borderRadius: 10, padding: 10, marginBottom: 6, borderWidth: 1, borderColor: bk.bookingFeePaid ? '#D1FAE5' : '#FDE68A' }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#1F2937' }}>{bk.clientName}</Text>
+                    <Text style={{ fontSize: 11, fontWeight: '800', color: bk.bookingFeePaid ? '#10B981' : '#F59E0B' }}>{bk.bookingFeePaid ? '✅ PAID' : '⏳ UNPAID'}</Text>
+                  </View>
+                  <Text style={{ fontSize: 10, color: '#6B7280', marginTop: 3 }}>Event: {bk.eventType} • Amount: ₹{(bk.amount || bk.budget || 0).toLocaleString('en-IN')}</Text>
+                  <Text style={{ fontSize: 10, color: '#6B7280' }}>Date: {new Date(bk.eventDate || bk.createdAt).toLocaleDateString('en-IN')}</Text>
+                  {bk.bookingFeePaid ? (
+                    <View style={{ marginTop: 4, backgroundColor: '#fff', borderRadius: 6, padding: 6 }}>
+                      <Text style={{ fontSize: 9, fontWeight: '700', color: '#10B981' }}>✅ Advance Paid: ₹{(bk.bookingFeeAmount || 0).toLocaleString('en-IN')}</Text>
+                      <Text style={{ fontSize: 8, color: '#6B7280' }}>Razorpay ID: {bk.bookingFeePaymentId || '—'}</Text>
+                      <Text style={{ fontSize: 8, color: '#6B7280' }}>Paid on: {bk.bookingFeePaidAt ? new Date(bk.bookingFeePaidAt).toLocaleString('en-IN') : '—'}</Text>
+                    </View>
+                  ) : (
+                    <Text style={{ fontSize: 9, color: '#F59E0B', marginTop: 3, fontWeight: '600' }}>⚠️ Customer has NOT paid advance yet</Text>
+                  )}
+                  <Text style={{ fontSize: 8, color: '#9CA3AF', marginTop: 2 }}>Status: {bk.status} • Customer: {bk.clientPhone || bk.clientEmail}</Text>
+                </View>
+              ))}
+
               {/* Withdrawal History */}
               <Text style={{ fontSize: 14, fontWeight: '700', color: '#1F2937', marginTop: 12, marginBottom: 8 }}>📤 Withdrawal Requests</Text>
               {(detailData.withdrawals || []).length === 0 ? <Text style={{ fontSize: 12, color: '#9CA3AF' }}>No withdrawals</Text> : (detailData.withdrawals || []).map((wd: any) => (

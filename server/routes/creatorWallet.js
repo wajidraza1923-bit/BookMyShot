@@ -113,7 +113,20 @@ router.get("/admin/:creatorId", protect, authorize("admin"), async (req, res, ne
     if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
     const transactions = await CreatorWalletTransaction.find({ creator: creator._id }).sort("-createdAt").limit(100);
     const withdrawals = await CreatorWithdrawal.find({ creator: creator._id }).sort("-createdAt");
-    res.json({ success: true, data: { creator: { _id: creator._id, name: creator.user?.name, walletBalance: creator.walletBalance, totalCashbackEarned: creator.totalCashbackEarned, totalWithdrawn: creator.totalWithdrawn }, transactions, withdrawals } });
+    
+    // Fetch bookings with payment info (Razorpay verified)
+    const Booking = require("../models/Booking");
+    const bookings = await Booking.find({ creator: creator._id, status: { $nin: ["rejected", "cancelled"] } })
+      .populate("user", "name email phone")
+      .select("clientName clientEmail clientPhone amount budget bookingFeePaid bookingFeeAmount bookingFeePaymentId bookingFeePaidAt status eventType eventDate createdAt highestBudget")
+      .sort("-createdAt").limit(30).lean();
+
+    res.json({ success: true, data: {
+      creator: { _id: creator._id, name: creator.user?.name, email: creator.user?.email, walletBalance: creator.walletBalance, totalCashbackEarned: creator.totalCashbackEarned, totalWithdrawn: creator.totalWithdrawn },
+      transactions,
+      withdrawals,
+      bookings,
+    }});
   } catch (e) { next(e); }
 });
 
