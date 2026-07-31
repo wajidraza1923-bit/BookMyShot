@@ -58,7 +58,7 @@ router.get("/", async (req, res, next) => {
 // ═══ GET FULL CUSTOMER PROFILE ═══
 router.get("/:id", async (req, res, next) => {
   try {
-    const userId = mongoose.Types.ObjectId(req.params.id);
+    const userId = new mongoose.Types.ObjectId(req.params.id);
     const user = await User.findById(userId).select("-password").lean();
     if (!user) return res.status(404).json({ success: false, message: "Customer not found" });
 
