@@ -126,7 +126,7 @@ export default function CreatorBookings({ navigation }: any) {
         if (cb?.status === 'credited') {
           setToast({ visible: true, type: 'success', title: '✅ Cashback Released', message: `₹${cb.amount} credited to customer's wallet` });
         } else if (cb?.status === 'expired') {
-          setToast({ visible: true, type: 'info', title: '✅ Payment Confirmed', message: 'Cashback expired (30-day deadline)' });
+          setToast({ visible: true, type: 'info', title: '✅ Payment Confirmed', message: 'Cashback expired (deadline exceeded)' });
         } else {
           setToast({ visible: true, type: 'success', title: '✅ Payment Confirmed' });
         }

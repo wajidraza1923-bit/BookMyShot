@@ -7,6 +7,7 @@ import { useAutoRefresh } from '../hooks/useRealTimeUpdates';
 export default function WalletScreen({ navigation }: any) {
   const [wallet, setWallet] = useState<any>(null);
   const [cashbackOffer, setCashbackOffer] = useState<any>(null);
+  const [masterSettings, setMasterSettings] = useState<any>({ cashbackPercentage: 2.5, bookingCommission: 2.5, cashbackDeadlineDays: 30, minWithdrawalAmount: 100 });
   const [loading, setLoading] = useState(true);
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [wForm, setWForm] = useState({ accountHolderName: '', bankAccountNumber: '', ifscCode: '', upiId: '', amount: '' });
@@ -20,14 +21,16 @@ export default function WalletScreen({ navigation }: any) {
 
   const loadData = async () => {
     try {
-      const [walletRes, settingsRes, reqRes] = await Promise.all([
+      const [walletRes, settingsRes, reqRes, msRes] = await Promise.all([
         api.get('/cashback/wallet').catch(() => ({ data: { data: null } })),
         api.get('/cashback/settings').catch(() => ({ data: { data: null } })),
         api.get('/withdrawal/my-requests').catch(() => ({ data: { data: [] } })),
+        api.get('/master-settings').catch(() => ({ data: { data: null } })),
       ]);
       if (walletRes.data?.data) setWallet(walletRes.data.data);
       if (settingsRes.data?.data) setCashbackOffer(settingsRes.data.data);
       if (reqRes.data?.data) setMyRequests(reqRes.data.data);
+      if (msRes.data?.data) setMasterSettings(msRes.data.data);
     } catch {} finally { setLoading(false); }
   };
 
@@ -43,7 +46,7 @@ export default function WalletScreen({ navigation }: any) {
     if (!bankAccountNumber.trim()) { Alert.alert('Error', 'Bank account number is required'); return; }
     if (!ifscCode.trim()) { Alert.alert('Error', 'IFSC code is required'); return; }
     const amt = Number(amount);
-    if (!amt || amt < 100) { Alert.alert('Error', 'Minimum withdrawal is ₹100'); return; }
+    if (!amt || amt < (masterSettings.minWithdrawalAmount || 100)) { Alert.alert('Error', `Minimum withdrawal is ₹${masterSettings.minWithdrawalAmount || 100}`); return; }
     if (amt > available) { Alert.alert('Error', `Only ₹${available.toLocaleString('en-IN')} available`); return; }
     setSubmitting(true);
     try {
@@ -100,15 +103,15 @@ export default function WalletScreen({ navigation }: any) {
         </View>
 
         {/* Withdraw Cashback Button */}
-        <TouchableOpacity style={[s.withdrawBtn, available < 100 && { opacity: 0.5 }]} onPress={() => {
-          if (available < 100) { Alert.alert('Insufficient Balance', 'Minimum ₹100 balance required to withdraw cashback.'); return; }
+        <TouchableOpacity style={[s.withdrawBtn, available < (masterSettings.minWithdrawalAmount || 100) && { opacity: 0.5 }]} onPress={() => {
+          if (available < (masterSettings.minWithdrawalAmount || 100)) { Alert.alert('Insufficient Balance', `Minimum ₹${masterSettings.minWithdrawalAmount || 100} balance required to withdraw cashback.`); return; }
           setShowWithdraw(!showWithdraw);
         }}>
           <Ionicons name="cash-outline" size={18} color="#fff" />
           <Text style={s.withdrawBtnText}>{showWithdraw ? 'Cancel' : 'Withdraw Cashback'}</Text>
         </TouchableOpacity>
-        {available < 100 && (
-          <Text style={{ textAlign: 'center', fontSize: 10, color: '#9CA3AF', marginTop: 6 }}>Min ₹100 balance required to withdraw</Text>
+        {available < (masterSettings.minWithdrawalAmount || 100) && (
+          <Text style={{ textAlign: 'center', fontSize: 10, color: '#9CA3AF', marginTop: 6 }}>Min ₹{masterSettings.minWithdrawalAmount || 100} balance required to withdraw</Text>
         )}
 
         {/* Withdrawal Form */}
@@ -173,8 +176,8 @@ export default function WalletScreen({ navigation }: any) {
             {[
               { icon: 'person-add', text: 'Create your BookMyShot account', done: true },
               { icon: 'search', text: 'Book a verified creator through BookMyShot', done: true },
-              { icon: 'card', text: 'Pay 5% Booking Fee via Razorpay', done: false },
-              { icon: 'cash', text: 'Complete remaining payment to creator within 30 days', done: false },
+              { icon: 'card', text: `Pay ${masterSettings.bookingCommission || 2.5}% Booking Fee via Razorpay`, done: false },
+              { icon: 'cash', text: `Complete remaining payment to creator within ${masterSettings.cashbackDeadlineDays || 30} days`, done: false },
               { icon: 'checkmark-done', text: 'Creator marks "Payment Completed" in their dashboard', done: false },
               { icon: 'gift', text: 'Cashback automatically credited to your Wallet!', done: false },
             ].map((step, i) => (
