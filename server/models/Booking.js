@@ -82,6 +82,9 @@ const bookingSchema = new mongoose.Schema(
     cashbackAmount: { type: Number, default: 0 },
     commissionPercentUsed: { type: Number, default: 0 },
     cashbackDeadlineDaysUsed: { type: Number, default: 30 },
+    // Amount lock & edit tracking
+    amountLocked: { type: Boolean, default: false },
+    amountHistory: [{ oldAmount: Number, newAmount: Number, changedBy: String, changedByRole: String, changedAt: { type: Date, default: Date.now } }],
     // Source tracking for cashback eligibility
     createdByCreator: { type: Boolean, default: false },
     source: { type: String, enum: ['customer_app', 'customer_web', 'creator_manual', 'walk_in', 'admin'], default: 'customer_app' },

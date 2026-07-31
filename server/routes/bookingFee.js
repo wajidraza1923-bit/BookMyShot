@@ -143,6 +143,7 @@ router.post("/verify/:bookingId", protect, async (req, res, next) => {
         advancePaid: bookingFeeAmount,
         remaining: totalAmount - bookingFeeAmount,
         paymentStatus: 'partial',
+        amountLocked: true,
         status: "Payment Approved",
       },
     }, { new: true });
@@ -300,6 +301,7 @@ router.post("/webhook", async (req, res) => {
               bookingFeePaymentId: payment.id,
               bookingFeeOrderId: payment.order_id,
               bookingFeePaidAt: new Date(),
+              amountLocked: true,
               status: "Payment Approved",
             },
           });

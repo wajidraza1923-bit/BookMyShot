@@ -153,6 +153,68 @@ router.get("/my", protect, async (req, res, next) => {
   }
 });
 
+// ═══ EDIT BOOKING AMOUNT (Creator or Customer) ═══
+// Rules: 
+// - Creator can edit while status is "Booking Created" (pending) only
+// - Customer can edit while advance payment NOT yet paid
+// - After advance payment → amount is LOCKED permanently
+router.patch("/:id/edit-amount", protect, async (req, res, next) => {
+  try {
+    const { amount } = req.body;
+    if (!amount || Number(amount) <= 0) {
+      return res.status(400).json({ success: false, message: "Amount must be a positive number" });
+    }
+
+    const booking = await Booking.findById(req.params.id).populate("creator");
+    if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
+
+    // Check if amount is locked (advance paid)
+    if (booking.amountLocked || booking.bookingFeePaid) {
+      return res.status(400).json({ success: false, message: "Amount is locked — advance payment has been completed. Cannot edit." });
+    }
+
+    // Determine who is editing
+    const isCreator = booking.creator && (await Creator.findOne({ user: req.user._id, _id: booking.creator._id || booking.creator }));
+    const isCustomer = booking.user.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === "admin";
+
+    if (!isCreator && !isCustomer && !isAdmin) {
+      return res.status(403).json({ success: false, message: "Not authorized to edit this booking" });
+    }
+
+    // Creator can only edit if status is "Booking Created" (pending)
+    if (isCreator && booking.status !== "Booking Created") {
+      return res.status(400).json({ success: false, message: "Creator can only edit amount while inquiry is pending (before accept/decline)" });
+    }
+
+    const oldAmount = booking.budget || booking.amount || 0;
+    const newAmount = Number(amount);
+    const changedBy = req.user.name || req.user.email || "Unknown";
+    const changedByRole = isCreator ? "creator" : isCustomer ? "customer" : "admin";
+
+    // Save history
+    if (!booking.amountHistory) booking.amountHistory = [];
+    booking.amountHistory.push({ oldAmount, newAmount, changedBy, changedByRole, changedAt: new Date() });
+
+    // Update amount
+    booking.budget = newAmount;
+    booking.amount = newAmount;
+    if (newAmount > (booking.highestBudget || 0)) booking.highestBudget = newAmount;
+    await booking.save();
+
+    // Notify the other party
+    const Notification = require("../models/Notification");
+    if (isCreator) {
+      await Notification.create({ user: booking.user, type: "booking", title: "💰 Booking Amount Updated", message: `Creator updated booking amount to ₹${newAmount.toLocaleString('en-IN')}`, targetScreen: "Bookings", targetId: booking._id.toString() });
+    } else if (isCustomer) {
+      const creatorDoc = await Creator.findById(booking.creator).select("user");
+      if (creatorDoc) await Notification.create({ user: creatorDoc.user, type: "booking", title: "💰 Booking Amount Updated", message: `Customer updated booking amount to ₹${newAmount.toLocaleString('en-IN')}`, targetScreen: "CreatorBookings", targetId: booking._id.toString() });
+    }
+
+    res.json({ success: true, message: `Amount updated to ₹${newAmount.toLocaleString('en-IN')}`, booking: { _id: booking._id, budget: booking.budget, amount: booking.amount, amountLocked: booking.amountLocked } });
+  } catch (e) { next(e); }
+});
+
 // Creator bookings
 router.get("/creator", protect, authorize("creator"), async (req, res, next) => {
   try {
