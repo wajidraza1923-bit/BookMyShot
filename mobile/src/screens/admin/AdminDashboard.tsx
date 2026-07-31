@@ -58,6 +58,7 @@ export default function AdminDashboard({ navigation }: any) {
     { icon: 'grid-outline', label: 'Categories', desc: 'Manage categories & subcategories', screen: 'ContentManager' },
     { icon: 'gift-outline', label: 'Cashback Management', desc: 'Cashback %, limits, offers, reports', screen: 'AdminCashback' },
     { icon: 'cash-outline', label: 'Withdrawals', desc: 'Customer withdrawal requests & payouts', screen: 'AdminWithdrawals' },
+    { icon: 'wallet-outline', label: 'Creator Wallets', desc: 'Creator cashback wallets & withdrawal management', screen: 'AdminCreatorWallets' },
     { icon: 'images-outline', label: 'Featured Moments', desc: 'Wedding showcase gallery for homepage', screen: 'AdminFeaturedMoments' },
   ];
 
