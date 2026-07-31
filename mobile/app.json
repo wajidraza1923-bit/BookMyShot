@@ -19,7 +19,7 @@
     },
     "android": {
       "package": "in.bookmyshot.app",
-      "versionCode": 9,
+      "versionCode": 10,
       "googleServicesFile": "./google-services.json",
       "icon": "./assets/icon.png",
       "softwareKeyboardLayoutMode": "pan",
