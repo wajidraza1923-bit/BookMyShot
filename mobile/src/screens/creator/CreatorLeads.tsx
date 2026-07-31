@@ -91,12 +91,22 @@ export default function CreatorLeads({ navigation }: any) {
         bookingCreated: !!res.data?.booking,
       });
     } catch (e: any) {
-      setResultModal({
-        visible: true,
-        type: 'error',
-        title: 'Failed to Accept',
-        message: e.response?.data?.message || 'Something went wrong. Please try again.',
-      });
+      if (e.response?.data?.requiresSubscription) {
+        // Free quota exhausted — show upgrade prompt
+        setResultModal({
+          visible: true,
+          type: 'error',
+          title: 'Free Quota Exhausted',
+          message: `You have used all ${subInfo.freeLeadsLimit} free leads this month.\n\nTo accept more inquiries:\n• Subscribe for ₹${subInfo.monthlyPrice}/month (unlimited leads)\n• Or unlock individual leads for ₹${subInfo.perLeadPrice} each`,
+        });
+      } else {
+        setResultModal({
+          visible: true,
+          type: 'error',
+          title: 'Failed to Accept',
+          message: e.response?.data?.message || 'Something went wrong. Please try again.',
+        });
+      }
     } finally { setProcessing(false); }
   };
 
@@ -177,12 +187,29 @@ export default function CreatorLeads({ navigation }: any) {
           <Text style={st.loadingText}>Loading inquiries...</Text>
         </View>
       ) : (
-        <FlatList
-          data={filtered}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ padding: spacing.xl, paddingBottom: 100 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />}
-          keyExtractor={(item, i) => item._id || String(i)}
+        <>
+          {/* Free Leads Counter / Subscription Banner */}
+          {subInfo.status === 'free' && (
+            <View style={{ marginHorizontal: 16, marginBottom: 10, backgroundColor: subInfo.freeLeadsUsed >= subInfo.freeLeadsLimit ? '#FEF2F2' : '#F8F6FF', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: subInfo.freeLeadsUsed >= subInfo.freeLeadsLimit ? '#FECACA' : '#EDE9FE' }}>
+              {subInfo.freeLeadsUsed >= subInfo.freeLeadsLimit ? (
+                <>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#EF4444' }}>🔒 Free Quota Exhausted</Text>
+                  <Text style={{ fontSize: 11, color: '#6B7280', marginTop: 4 }}>You've used all {subInfo.freeLeadsLimit} free leads. New inquiry details are locked.</Text>
+                  <TouchableOpacity style={{ backgroundColor: '#6C3BFF', borderRadius: 10, paddingVertical: 10, marginTop: 8, alignItems: 'center' }} onPress={() => navigation.navigate('CreatorSubscription')}>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>Subscribe ₹{subInfo.monthlyPrice}/month — Unlimited Leads</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <Text style={{ fontSize: 11, color: '#6B7280' }}>Free Leads: <Text style={{ fontWeight: '800', color: '#6C3BFF' }}>{subInfo.freeLeadsLimit - subInfo.freeLeadsUsed}</Text> / {subInfo.freeLeadsLimit} remaining</Text>
+              )}
+            </View>
+          )}
+          <FlatList
+            data={filtered}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ padding: spacing.xl, paddingBottom: 100 }}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />}
+            keyExtractor={(item, i) => item._id || String(i)}
           ListEmptyComponent={
             <View style={st.empty}>
               <View style={st.emptyIcon}>
@@ -274,6 +301,7 @@ export default function CreatorLeads({ navigation }: any) {
             </View>
           )}
         />
+        </>
       )}
 
       {/* ═══ ACCEPT CONFIRMATION MODAL ═══ */}
