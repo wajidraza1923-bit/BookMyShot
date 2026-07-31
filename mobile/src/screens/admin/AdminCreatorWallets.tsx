@@ -3,6 +3,19 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Act
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 
+const copyToClipboard = async (text: string) => {
+  try {
+    const Clipboard = require('@react-native-clipboard/clipboard')?.default;
+    if (Clipboard) { Clipboard.setString(text); return; }
+  } catch {}
+  // Fallback: use expo-clipboard if available
+  try {
+    const { setStringAsync } = require('expo-clipboard');
+    await setStringAsync(text);
+  } catch {}
+  Alert.alert('Copied', text);
+};
+
 export default function AdminCreatorWallets({ navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [creators, setCreators] = useState<any[]>([]);
@@ -13,6 +26,7 @@ export default function AdminCreatorWallets({ navigation }: any) {
   const [detailModal, setDetailModal] = useState<any>(null);
   const [detailData, setDetailData] = useState<any>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [payModal, setPayModal] = useState<any>(null);
   const [adjAmount, setAdjAmount] = useState('');
   const [adjReason, setAdjReason] = useState('');
   const [adjType, setAdjType] = useState<'credit' | 'debit'>('credit');
@@ -123,7 +137,7 @@ export default function AdminCreatorWallets({ navigation }: any) {
               <Text style={{ fontSize: 9, color: '#9CA3AF', marginTop: 2 }}>Tap to view full wallet history & verify</Text>
               {item.status === 'pending' && (
                 <View style={s.cardActions}>
-                  <TouchableOpacity style={[s.actionBtn, { backgroundColor: '#ECFDF5', borderColor: '#10B981' }]} onPress={() => processWithdrawal(item, 'paid')}>
+                  <TouchableOpacity style={[s.actionBtn, { backgroundColor: '#ECFDF5', borderColor: '#10B981' }]} onPress={() => setPayModal(item)}>
                     <Text style={[s.actionBtnT, { color: '#10B981' }]}>✅ Pay</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={[s.actionBtn, { backgroundColor: '#FEF2F2', borderColor: '#EF4444' }]} onPress={() => processWithdrawal(item, 'rejected')}>
@@ -134,6 +148,38 @@ export default function AdminCreatorWallets({ navigation }: any) {
             </TouchableOpacity>
           )} />
       )}
+
+      {/* Pay Details Modal */}
+      <Modal visible={!!payModal} transparent animationType="slide">
+        <View style={s.mOverlay}><View style={s.mContent}>
+          <Text style={s.mTitle}>💳 Payment Details</Text>
+          {payModal && (<>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#1F2937', marginBottom: 10 }}>Creator: {payModal.creator?.user?.name || 'Creator'}</Text>
+            
+            <View style={{ backgroundColor: '#F8F6FF', borderRadius: 12, padding: 14, marginBottom: 12 }}>
+              <Text style={{ fontSize: 20, fontWeight: '900', color: '#6C3BFF', textAlign: 'center' }}>₹{payModal.amount?.toLocaleString('en-IN')}</Text>
+              <Text style={{ fontSize: 10, color: '#6B7280', textAlign: 'center', marginTop: 4 }}>Amount to Pay</Text>
+            </View>
+
+            {payModal.upiId ? <CopyRow label="UPI ID" value={payModal.upiId} /> : null}
+            {payModal.accountHolderName ? <CopyRow label="Account Holder" value={payModal.accountHolderName} /> : null}
+            {payModal.bankName ? <CopyRow label="Bank" value={payModal.bankName} /> : null}
+            {payModal.accountNumber ? <CopyRow label="Account Number" value={payModal.accountNumber} /> : null}
+            {payModal.ifscCode ? <CopyRow label="IFSC Code" value={payModal.ifscCode} /> : null}
+            {payModal.note ? <Text style={{ fontSize: 10, color: '#6B7280', marginTop: 8 }}>Note: {payModal.note}</Text> : null}
+            <Text style={{ fontSize: 9, color: '#9CA3AF', marginTop: 8 }}>Requested: {new Date(payModal.createdAt).toLocaleString('en-IN')}</Text>
+
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
+              <TouchableOpacity style={[s.mBtn, { backgroundColor: '#F3F4F6' }]} onPress={() => setPayModal(null)}>
+                <Text style={{ color: '#6B7280', fontWeight: '600' }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[s.mBtn, { backgroundColor: '#10B981' }]} onPress={() => { processWithdrawal(payModal, 'paid'); setPayModal(null); }}>
+                <Text style={{ color: '#fff', fontWeight: '700' }}>✅ Mark as Paid</Text>
+              </TouchableOpacity>
+            </View>
+          </>)}
+        </View></View>
+      </Modal>
 
       {/* Creator Detail / Transparency Modal */}
       <Modal visible={!!detailModal} transparent animationType="slide">
@@ -224,6 +270,20 @@ export default function AdminCreatorWallets({ navigation }: any) {
           </View>
         </View></View>
       </Modal>
+    </View>
+  );
+}
+
+function CopyRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' }}>
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontSize: 10, color: '#6B7280' }}>{label}</Text>
+        <Text style={{ fontSize: 13, fontWeight: '600', color: '#1F2937', marginTop: 2 }}>{value}</Text>
+      </View>
+      <TouchableOpacity style={{ backgroundColor: '#F3E8FF', borderRadius: 8, padding: 8 }} onPress={() => { copyToClipboard(value); Alert.alert('Copied!', `${label}: ${value}`); }}>
+        <Ionicons name="copy-outline" size={14} color="#6C3BFF" />
+      </TouchableOpacity>
     </View>
   );
 }
