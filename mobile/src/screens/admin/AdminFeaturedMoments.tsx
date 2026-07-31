@@ -177,7 +177,7 @@ export default function AdminFeaturedMoments({ navigation }: any) {
             <TouchableOpacity style={s.coverPicker} onPress={async () => {
               const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
               if (!perm.granted) { Alert.alert('Permission', 'Allow photo access'); return; }
-              const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [16, 9], quality: 0.85 });
+              const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: false, quality: 0.9 });
               if (!r.canceled && r.assets?.length) { setCoverFile(r.assets[0]); setForm({...form, coverImage: r.assets[0].uri}); }
             }}>
               {form.coverImage ? (
