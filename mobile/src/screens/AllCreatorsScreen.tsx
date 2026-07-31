@@ -60,7 +60,9 @@ export default function AllCreatorsScreen({ navigation, route }: any) {
       if (initialSubcategory) crParams.subcategory = initialSubcategory;
 
       const [crRes, distRes] = await Promise.all([
-        api.get('/discovery/creators-by-area', { params: crParams }).catch(() => creatorsAPI.getAll({ category: initialCategory, subcategory: initialSubcategory })),
+        (savedLocation.state || savedLocation.district)
+          ? api.get('/discovery/creators-by-area', { params: crParams })
+          : api.get('/creators/search', { params: { q: initialCategory || initialSubcategory || 'all', state: savedLocation.state || undefined, category: initialCategory || undefined } }).catch(() => creatorsAPI.getAll({ category: initialCategory, subcategory: initialSubcategory })),
         distPromise,
       ]);
 
