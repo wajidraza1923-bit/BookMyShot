@@ -217,7 +217,7 @@ router.get("/", async (req, res, next) => {
     if (budget) filter.budgetMax = { $gte: Number(budget) };
     if (conditions.length > 0) filter.$and = conditions;
 
-    let creators = await Creator.find(filter).populate("user", "name avatar");
+    let creators = await Creator.find(filter).populate("user", "name avatar").lean();
 
     if (search) {
       const s = search.toLowerCase();
