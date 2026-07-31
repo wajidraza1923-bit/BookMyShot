@@ -178,12 +178,16 @@ router.patch("/admin/withdrawals/:id", protect, authorize("admin"), async (req, 
           reason: "Withdrawal rejected - refunded", adminId: req.user._id, adminName: req.user.name,
           referenceId: withdrawal._id.toString(),
         });
+        // Mark original withdrawal transaction as cancelled
+        await CreatorWalletTransaction.updateOne({ creator: creator._id, referenceId: withdrawal._id.toString(), type: "withdrawal" }, { $set: { status: "cancelled", reason: "Withdrawal rejected by admin - refunded" } });
       }
     }
 
     if (status === "paid") {
       const creator = await Creator.findById(withdrawal.creator);
       if (creator) { creator.totalWithdrawn = (creator.totalWithdrawn || 0) + withdrawal.amount; await creator.save(); }
+      // Update the wallet transaction status to completed
+      await CreatorWalletTransaction.updateOne({ creator: withdrawal.creator, referenceId: withdrawal._id.toString(), type: "withdrawal" }, { $set: { status: "completed", reason: "Withdrawal paid by admin" } });
     }
 
     await withdrawal.save();

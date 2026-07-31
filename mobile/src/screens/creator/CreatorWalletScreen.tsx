@@ -82,7 +82,7 @@ export default function CreatorWalletScreen({ navigation }: any) {
             <View style={{ flex: 1, marginLeft: 10 }}>
               <Text style={s.txType}>{tx.type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}</Text>
               <Text style={s.txReason} numberOfLines={1}>{tx.reason || tx.customerName || '—'}</Text>
-              <Text style={s.txDate}>{new Date(tx.createdAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</Text>
+              <Text style={s.txDate}>{new Date(tx.createdAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })} • {tx.status === 'completed' ? '✅ Completed' : tx.status === 'cancelled' ? '❌ Cancelled' : '⏳ Pending'}</Text>
             </View>
             <Text style={[s.txAmt, { color: tx.type.includes('credit') ? '#10B981' : '#EF4444' }]}>{tx.type.includes('credit') ? '+' : '-'}₹{tx.amount}</Text>
           </View>
