@@ -1143,15 +1143,20 @@ router.patch("/bookings/:id/confirm-payment", async (req, res, next) => {
         cashbackDeadline.setDate(cashbackDeadline.getDate() + deadlineDaysForBooking);
         const withinDeadline = new Date() <= cashbackDeadline;
 
-        const settings = await CashbackSettings.getSettings();
+        // Use Master Command for cashback percentage (primary) with CashbackSettings as fallback
+        const MasterSettingsCashback = require("../models/MasterSettings");
+        const msCashback = await MasterSettingsCashback.findOne();
+        const cashbackPercent = booking.cashbackPercentUsed || (msCashback && msCashback.cashbackPercentage) || settings.percentage || 5;
+        const cashbackEnabled = (msCashback && msCashback.cashbackEnabled !== false) || settings.enabled;
         const now = new Date();
-        const cashbackActive = settings.enabled && (!settings.startDate || new Date(settings.startDate) <= now) && (!settings.endDate || new Date(settings.endDate) >= now);
+        const cashbackActive = cashbackEnabled && (!settings.startDate || new Date(settings.startDate) <= now) && (!settings.endDate || new Date(settings.endDate) >= now);
 
         if (isCustomerInitiated && bookingFeePaid && cashbackActive && withinDeadline) {
+          // Calculate cashback on the advance amount paid
           const feeAmount = booking.bookingFeeAmount || 0;
-          let cashbackAmount = Math.round((feeAmount * settings.percentage) / 100);
-          if (cashbackAmount > settings.maxAmount) cashbackAmount = settings.maxAmount;
-          if (feeAmount < settings.minBookingAmount) cashbackAmount = 0;
+          let cashbackAmount = Math.round((feeAmount * cashbackPercent) / 100);
+          if (settings.maxAmount && cashbackAmount > settings.maxAmount) cashbackAmount = settings.maxAmount;
+          if (feeAmount < (settings.minBookingAmount || 0)) cashbackAmount = 0;
 
           if (cashbackAmount > 0) {
             // Verify customer is the same who paid the booking fee
