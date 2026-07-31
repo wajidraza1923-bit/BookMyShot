@@ -268,6 +268,20 @@ router.get("/", async (req, res, next) => {
     creators.forEach(c => {
       if (c.portfolio) c.portfolio = c.portfolio.map((item) => typeof item === 'string' ? item : (item?.url || item?.uri || ''));
       if (c.videos) c.videos = c.videos.map((item) => typeof item === 'string' ? item : (item?.url || item?.uri || ''));
+      // Remove sensitive/internal fields from public response
+      delete c.walletBalance;
+      delete c.totalCashbackEarned;
+      delete c.totalWithdrawn;
+      delete c.razorpaySubscriptionId;
+      delete c.razorpayCustomerId;
+      delete c.razorpayPlanId;
+      delete c.subscriptionAmount;
+      delete c.freeLeadsUsed;
+      delete c.unlockedLeads;
+      delete c.commissionPaid;
+      delete c.earnings;
+      delete c.paymentMethod;
+      delete c.paymentFailCount;
     });
 
     res.json({ success: true, creators });

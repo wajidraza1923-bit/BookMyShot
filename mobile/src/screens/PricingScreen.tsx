@@ -43,12 +43,12 @@ export default function PricingScreen({ navigation }: any) {
   const FAQs = [
     { q: 'How do free leads work?', a: 'Every new creator gets 3 free leads. When a customer sends you an inquiry, that counts as 1 lead. After 3 leads are used, you need a Premium subscription to receive more.' },
     { q: 'What happens after 3 free leads?', a: 'Your profile stays active but you won\'t receive new inquiries until you upgrade to Premium. Existing conversations continue normally.' },
-    { q: 'How is the 5% commission calculated?', a: 'Commission is charged only on the advance payment amount of a confirmed booking. Example: If advance is ₹20,000, commission is ₹1,000. No booking = no commission.' },
-    { q: 'How is cashback calculated?', a: 'Cashback = Razorpay Booking Fee × Admin Cashback Percentage. Example: Booking Fee ₹5,000 × 2.5% = ₹125 cashback credited to customer wallet after creator confirms payment within 30 days.' },
-    { q: 'When does the customer receive cashback?', a: 'Only after the creator marks "Payment Completed" in their dashboard AND the confirmation is within 30 days of booking date. Once credited, it never expires.' },
+    { q: 'How is the platform commission (Admin-set %) calculated?', a: 'Commission is charged only on the advance payment amount of a confirmed booking. Example: If advance is ₹20,000, commission is ₹1,000. No booking = no commission.' },
+    { q: 'How is cashback calculated?', a: 'Cashback = Razorpay Booking Fee × Admin Cashback Percentage. Example: Booking Fee ₹5,000 × 2.5% = ₹125 cashback credited to customer wallet after creator confirms payment within the payment deadline (set by Admin).' },
+    { q: 'When does the customer receive cashback?', a: 'Only after the creator marks "Payment Completed" in their dashboard AND the confirmation is within the payment deadline (set by Admin) of booking date. Once credited, it never expires.' },
     { q: 'Can I cancel my subscription anytime?', a: 'Yes! Cancel anytime from your dashboard. You keep Premium benefits until the end of your billing period. No refund for partial periods.' },
     { q: 'Is there a yearly discount?', a: `Yes! Yearly plan saves you ${yearlySavings}% compared to monthly billing. Pay ₹${yearlyPrice.toLocaleString('en-IN')}/year instead of ₹${(monthlyPrice * 12).toLocaleString('en-IN')}/year.` },
-    { q: 'When do I receive payments?', a: 'Customer payments (minus 5% commission) are settled to your bank account within 3-5 business days after the booking advance is received.' },
+    { q: 'When do I receive payments?', a: 'Customer payments (minus platform commission (Admin-set %)) are settled to your bank account within 3-5 business days after the booking advance is received.' },
   ];
 
   if (loading) {
@@ -154,7 +154,7 @@ export default function PricingScreen({ navigation }: any) {
         <View style={styles.sectionCard}>
           <View style={[styles.sectionIcon, { backgroundColor: '#FEF3C7' }]}><Ionicons name="cash" size={20} color="#D97706" /></View>
           <Text style={styles.sectionTitle}>Commission</Text>
-          <Text style={styles.sectionDesc}>BookMyShot charges 5% commission only on the advance payment of every successful booking.</Text>
+          <Text style={styles.sectionDesc}>BookMyShot charges platform commission (Admin-set %) only on the advance payment of every successful booking.</Text>
           <View style={styles.exampleBox}>
             <Text style={styles.exampleTitle}>Example:</Text>
             <View style={styles.exampleRow}><Text style={styles.exampleLabel}>Advance Paid</Text><Text style={styles.exampleValue}>₹20,000</Text></View>
@@ -172,7 +172,7 @@ export default function PricingScreen({ navigation }: any) {
           <View style={[styles.exampleBox, { marginTop: 12 }]}>
             <Text style={styles.exampleTitle}>Cashback Timeline:</Text>
             <View style={{ gap: 6, marginTop: 6 }}>
-              {['1. Book through BookMyShot', '2. Complete the remaining payment within 30 days', '3. Creator confirms payment completion', '4. Cashback is credited automatically'].map((step, i) => (
+              {['1. Book through BookMyShot', '2. Complete the remaining payment within the payment deadline (set by Admin)', '3. Creator confirms payment completion', '4. Cashback is credited automatically'].map((step, i) => (
                 <View key={i} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
                   <Ionicons name="checkmark-circle" size={14} color="#10B981" />
                   <Text style={{ fontSize: 12, color: '#374151', flex: 1 }}>{step}</Text>
@@ -180,7 +180,7 @@ export default function PricingScreen({ navigation }: any) {
               ))}
             </View>
             <View style={{ backgroundColor: '#FEF3C7', borderRadius: 8, padding: 10, marginTop: 10 }}>
-              <Text style={{ fontSize: 11, color: '#92400E', fontWeight: '600' }}>⚠️ Payments after 30 days are NOT eligible for cashback. The cashback amount will be retained by BookMyShot.</Text>
+              <Text style={{ fontSize: 11, color: '#92400E', fontWeight: '600' }}>⚠️ Payments after the deadline are NOT eligible for cashback. The cashback amount will be retained by BookMyShot.</Text>
             </View>
           </View>
         </View>

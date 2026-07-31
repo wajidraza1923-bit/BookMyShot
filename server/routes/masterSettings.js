@@ -3,14 +3,31 @@ const MasterSettings = require("../models/MasterSettings");
 const { protect, authorize } = require("../middleware/auth");
 const router = express.Router();
 
-// GET / — Public: fetch global settings
+// GET / — Public: fetch global settings (client-safe fields only)
 router.get("/", async (req, res, next) => {
   try {
     let settings = await MasterSettings.findOne();
     if (!settings) {
       settings = await MasterSettings.create({});
     }
-    res.json({ success: true, data: settings });
+    // Return only client-needed fields (hide internal business limits)
+    res.json({ success: true, data: {
+      supportEmail: settings.supportEmail,
+      supportPhone: settings.supportPhone,
+      bookingCommission: settings.bookingCommission,
+      cashbackPercentage: settings.cashbackPercentage,
+      discountPercentage: settings.discountPercentage,
+      monthlySubscriptionPrice: settings.monthlySubscriptionPrice,
+      yearlySubscriptionPrice: settings.yearlySubscriptionPrice,
+      subscriptionMode: settings.subscriptionMode,
+      freeMonthlyLimit: settings.freeMonthlyLimit,
+      freeBookingsLimit: settings.freeBookingsLimit,
+      perLeadUnlockPrice: settings.perLeadUnlockPrice,
+      cashbackDeadlineDays: settings.cashbackDeadlineDays,
+      cashbackEnabled: settings.cashbackEnabled,
+      creatorCashbackPercent: settings.creatorCashbackPercent,
+      customerCashbackPercent: settings.customerCashbackPercent,
+    }});
   } catch (e) { next(e); }
 });
 
