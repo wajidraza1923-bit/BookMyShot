@@ -119,6 +119,10 @@ const creatorSchema = new mongoose.Schema(
     deleteReason: { type: String, default: "" },
     // Onboarding tracking
     onboardingCompleted: { type: Boolean, default: false },
+    // Creator Wallet
+    walletBalance: { type: Number, default: 0 },
+    totalCashbackEarned: { type: Number, default: 0 },
+    totalWithdrawn: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

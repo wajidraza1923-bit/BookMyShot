@@ -17,7 +17,7 @@ router.get("/", async (req, res, next) => {
 // PUT / — Admin only: update global settings
 router.put("/", protect, authorize("admin"), async (req, res, next) => {
   try {
-    const { supportEmail, supportPhone, bookingCommission, cashbackPercentage, discountPercentage, monthlySubscriptionPrice, yearlySubscriptionPrice, subscriptionMode, freeMonthlyLimit, freeBookingsLimit, perLeadUnlockPrice, cashbackDeadlineDays } = req.body;
+    const { supportEmail, supportPhone, bookingCommission, cashbackPercentage, discountPercentage, monthlySubscriptionPrice, yearlySubscriptionPrice, subscriptionMode, freeMonthlyLimit, freeBookingsLimit, perLeadUnlockPrice, cashbackDeadlineDays, creatorCashbackPercent, customerCashbackPercent, creatorCashbackAutoCredit, cashbackEnabled, minWithdrawalAmount, maxWithdrawalAmount } = req.body;
     let settings = await MasterSettings.findOne();
     if (!settings) settings = new MasterSettings();
     if (supportEmail !== undefined) settings.supportEmail = supportEmail;
@@ -32,6 +32,12 @@ router.put("/", protect, authorize("admin"), async (req, res, next) => {
     if (freeBookingsLimit !== undefined) settings.freeBookingsLimit = Number(freeBookingsLimit);
     if (perLeadUnlockPrice !== undefined) settings.perLeadUnlockPrice = Number(perLeadUnlockPrice);
     if (cashbackDeadlineDays !== undefined) settings.cashbackDeadlineDays = Number(cashbackDeadlineDays);
+    if (creatorCashbackPercent !== undefined) settings.creatorCashbackPercent = Number(creatorCashbackPercent);
+    if (customerCashbackPercent !== undefined) settings.customerCashbackPercent = Number(customerCashbackPercent);
+    if (creatorCashbackAutoCredit !== undefined) settings.creatorCashbackAutoCredit = creatorCashbackAutoCredit;
+    if (cashbackEnabled !== undefined) settings.cashbackEnabled = cashbackEnabled;
+    if (minWithdrawalAmount !== undefined) settings.minWithdrawalAmount = Number(minWithdrawalAmount);
+    if (maxWithdrawalAmount !== undefined) settings.maxWithdrawalAmount = Number(maxWithdrawalAmount);
     await settings.save();
     res.json({ success: true, data: settings, message: "Settings updated successfully" });
   } catch (e) { next(e); }

@@ -15,6 +15,13 @@ const masterSettingsSchema = new mongoose.Schema({
   perLeadUnlockPrice: { type: Number, default: 70 },
   // Cashback Deadline Policy
   cashbackDeadlineDays: { type: Number, default: 30 },
+  // Creator Cashback Settings
+  creatorCashbackPercent: { type: Number, default: 4 },
+  customerCashbackPercent: { type: Number, default: 5 },
+  creatorCashbackAutoCredit: { type: Boolean, default: true },
+  cashbackEnabled: { type: Boolean, default: true },
+  minWithdrawalAmount: { type: Number, default: 100 },
+  maxWithdrawalAmount: { type: Number, default: 50000 },
 }, { timestamps: true });
 
 module.exports = mongoose.model("MasterSettings", masterSettingsSchema);
