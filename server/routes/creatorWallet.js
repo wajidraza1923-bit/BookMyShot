@@ -4,6 +4,7 @@ const CreatorWalletTransaction = require("../models/CreatorWallet");
 const CreatorWithdrawal = require("../models/CreatorWithdrawal");
 const MasterSettings = require("../models/MasterSettings");
 const { protect, authorize } = require("../middleware/auth");
+const pushService = require("../services/pushService");
 
 const router = express.Router();
 
@@ -82,13 +83,14 @@ router.post("/withdraw", protect, authorize("creator"), async (req, res, next) =
       status: "pending",
     });
 
-    // Notify admins
+    // Notify admins (in-app + push)
     try {
       const Notification = require("../models/Notification");
       const User = require("../models/User");
       const admins = await User.find({ role: "admin" });
       for (const admin of admins) {
         await Notification.create({ user: admin._id, type: "payment", title: "💸 Creator Withdrawal Request", message: `${req.user.name} requested ₹${amount} withdrawal` });
+        pushService.sendToUser(admin._id, "💸 Withdrawal Request", `${req.user.name} requested ₹${amount} withdrawal`);
       }
     } catch {}
 
@@ -186,13 +188,15 @@ router.patch("/admin/withdrawals/:id", protect, authorize("admin"), async (req, 
 
     await withdrawal.save();
 
-    // Notify creator
+    // Notify creator (in-app + push)
     try {
       const creator = await Creator.findById(withdrawal.creator);
       const Notification = require("../models/Notification");
       if (creator) {
         const msg = status === "paid" ? `Your withdrawal of ₹${withdrawal.amount} has been processed!` : status === "rejected" ? `Your withdrawal of ₹${withdrawal.amount} was rejected. Amount refunded.` : `Withdrawal status: ${status}`;
-        await Notification.create({ user: creator.user, type: "payment", title: status === "paid" ? "✅ Withdrawal Paid" : status === "rejected" ? "❌ Withdrawal Rejected" : "💰 Withdrawal Update", message: msg });
+        const title = status === "paid" ? "✅ Withdrawal Paid" : status === "rejected" ? "❌ Withdrawal Rejected" : "💰 Withdrawal Update";
+        await Notification.create({ user: creator.user, type: "payment", title, message: msg });
+        pushService.sendToUser(creator.user, title, msg);
       }
     } catch {}
 
