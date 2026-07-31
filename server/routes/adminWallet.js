@@ -38,6 +38,22 @@ router.get("/user/:userId/wallet", async (req, res, next) => {
       }
     }
 
+    // Merge wallet transactions + cashback transactions into one timeline
+    const mergedTransactions = [
+      ...transactions.map(t => ({ ...t.toObject(), source: 'wallet' })),
+      ...cashbackTxs.map(t => ({
+        _id: t._id,
+        type: t.amount > 0 ? 'cashback_credit' : 'cashback_debit',
+        amount: Math.abs(t.amount || 0),
+        balanceBefore: 0,
+        balanceAfter: 0,
+        reason: t.notes || `Cashback ${t.status} — ${t.percentage || 0}% of ₹${t.bookingAmount || 0}`,
+        status: t.status === 'credited' ? 'completed' : t.status === 'pending' ? 'pending' : 'cancelled',
+        createdAt: t.creditedAt || t.createdAt,
+        source: 'cashback',
+      })),
+    ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 50);
+
     // Calculate totals
     const allTx = await WalletTransaction.find({ user: req.params.userId });
     const totalCredits = allTx
@@ -66,12 +82,12 @@ router.get("/user/:userId/wallet", async (req, res, next) => {
         },
         stats: {
           walletBalance: user.walletBalance || 0,
-          totalCredits,
+          totalCredits: totalCredits + totalCashback,
           totalDebits,
           totalCashback,
           pendingCashback,
         },
-        transactions,
+        transactions: mergedTransactions,
         cashbackHistory: cashbackTxs || [],
       },
     });
