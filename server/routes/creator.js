@@ -802,23 +802,25 @@ router.patch("/inquiries/:id/reply", async (req, res, next) => {
     // If accepted AND inquiry has a linked user, create a Booking automatically
     let createdBooking = null;
     if (inquiry.status === "accepted" && inquiry.user) {
-      // ═══ FREE LEADS LIMIT CHECK (only in booking mode) ═══
-      const LeadSettings = require("../models/LeadSettings");
-      const leadSettings = await LeadSettings.getSettings();
-      const leadMode = leadSettings.leadCountMode || "booking";
-      const leadLimitEnabled = leadSettings.enableLeadLimit !== false;
+      // ═══ FREE LEADS LIMIT CHECK (uses Master Command) ═══
+      const MasterSettingsLead = require("../models/MasterSettings");
+      const msLead = await MasterSettingsLead.findOne();
+      const freeLimit = (msLead && msLead.freeMonthlyLimit) || 3;
 
-      if (leadLimitEnabled && leadMode === "booking" && creator.subscriptionStatus === "free") {
-        const freeLimit = creator.freeLeadsLimit || leadSettings.freeLeadLimit || 3;
+      if (creator.subscriptionStatus === "free" || !creator.subscriptionStatus) {
         if ((creator.freeLeadsUsed || 0) >= freeLimit) {
           return res.status(403).json({
             success: false,
             message: `You have used all ${freeLimit} free leads. Please subscribe to accept more.`,
             requiresSubscription: true,
+            freeLeadsUsed: creator.freeLeadsUsed,
+            freeLeadsLimit: freeLimit,
           });
         }
+        // Increment free leads counter
         creator.freeLeadsUsed = (creator.freeLeadsUsed || 0) + 1;
         await creator.save();
+        console.log(`[LEADS] Creator ${creator._id} used lead ${creator.freeLeadsUsed}/${freeLimit}`);
       }
 
       // Check if a booking already exists for this inquiry's user + creator + date
