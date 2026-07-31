@@ -56,7 +56,11 @@ export default function AdminEarnings({ navigation }: any) {
     </View>
   );
 
-  const { revenue, commission, subscriptions, forecast, payments, creators, bookings } = data;
+  const rev = data?.revenue || {};
+  const comm = data?.commission || {};
+  const stats2 = data?.stats || {};
+  const periods = data?.periods || {};
+  const forecast = data?.forecast || {};
 
   return (
     <View style={s.root}>
@@ -73,106 +77,51 @@ export default function AdminEarnings({ navigation }: any) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />}
         contentContainerStyle={{ padding: 14, paddingBottom: 100 }}
       >
-        {/* ═══ Admin Revenue (Actually Received) ═══ */}
-        <Section title="💰 Admin Revenue (Actually Received)">
-          <Row label="Total Admin Revenue" value={fmt(revenue?.lifetime)} highlight />
-          <Row label="Commission Received" value={fmt(revenue?.commissionReceived)} color="#10B981" />
-          <Row label="Subscription Received" value={fmt(revenue?.subscriptionReceived)} />
+        {/* ═══ Revenue Overview ═══ */}
+        <Section title="💰 Revenue Overview">
+          <Row label="Total Revenue" value={fmt(rev.totalRevenue)} highlight />
+          <Row label="Net Profit" value={fmt(rev.netProfit)} color="#10B981" highlight />
+          <Row label="Booking Advances" value={fmt(rev.totalAdvance)} />
+          <Row label="Subscription Revenue" value={fmt(rev.subRevenue)} />
+          <Row label="Cashback Paid (Deduction)" value={`-${fmt(rev.totalCashbackPaid)}`} color="#EF4444" />
           <Separator />
-          <Row label="Today" value={fmt(revenue?.today)} />
-          <Row label="This Week" value={fmt(revenue?.week)} />
-          <Row label="This Month" value={fmt(revenue?.month)} />
-          <Row label="This Year" value={fmt(revenue?.year)} />
-          <Separator />
-          <Row label="Avg Daily" value={fmt(revenue?.avgDaily)} muted />
-          <Row label="Avg Monthly" value={fmt(revenue?.avgMonthly)} muted />
+          <Row label="Total Booking Value" value={fmt(rev.totalBookingValue)} muted />
         </Section>
 
-        {/* ═══ Commission ═══ */}
-        <Section title="📊 Commission">
-          <Row label="Total Generated" value={fmt(commission?.total)} />
-          <Row label="Actually Received" value={fmt(commission?.received)} color="#10B981" highlight />
-          <Row label="Pending (Not Received)" value={fmt(commission?.pending)} color="#F59E0B" />
-          {commission?.cancelled > 0 && <Row label="Cancelled" value={fmt(commission.cancelled)} color="#EF4444" muted />}
-          <Separator />
-          <Row label="Today (Generated)" value={fmt(commission?.today)} />
-          <Row label="This Month (Generated)" value={fmt(commission?.month)} />
-        </Section>
-
-        {/* ═══ Creator Earnings (Info Only) ═══ */}
-        {data.creatorInfo && (
-          <Section title="👤 Creator Earnings (Info Only)">
-            <Row label="Total Creator Earnings" value={fmt(data.creatorInfo.totalEarnings)} muted />
-            <Row label="Total Booking Value" value={fmt(data.creatorInfo.totalBookingValue)} muted />
-          </Section>
-        )}
-
-        {/* ═══ Subscriptions ═══ */}
-        <Section title="💎 Subscriptions">
-          <StatRow data={[
-            { label: 'Active', value: subscriptions?.active || 0, color: '#10B981' },
-            { label: 'Pending', value: subscriptions?.pending || 0, color: '#F59E0B' },
-            { label: 'Expired', value: subscriptions?.expired || 0, color: '#EF4444' },
-            { label: 'Trial', value: subscriptions?.trial || 0, color: '#3B82F6' },
-          ]} />
+        {/* ═══ Period Breakdown ═══ */}
+        <Section title="📊 Period Breakdown">
+          <Row label="Today" value={`${fmt(periods.today?.advance)} (${periods.today?.bookings || 0} bookings)`} />
+          <Row label="This Week" value={`${fmt(periods.thisWeek?.advance)} (${periods.thisWeek?.bookings || 0} bookings)`} />
+          <Row label="This Month" value={`${fmt(periods.thisMonth?.advance)} (${periods.thisMonth?.bookings || 0} bookings)`} />
+          <Row label="All Time" value={`${fmt(comm.overall)} (${stats2.paidBookings || 0} paid bookings)`} highlight />
         </Section>
 
         {/* ═══ Revenue Forecast ═══ */}
         <Section title="📈 Revenue Forecast">
-          <Row label="Pending Commission" value={fmt(forecast?.pendingCommission)} color="#F59E0B" />
-          <Row label="Monthly Subscription" value={fmt(forecast?.expectedMonthlySubscription)} />
-          <Separator />
-          <Row label="Next 7 Days" value={fmt(forecast?.next7)} />
-          <Row label="Next 30 Days" value={fmt(forecast?.next30)} />
-          <Row label="Next 3 Months" value={fmt(forecast?.next90)} color="#10B981" />
-          <Row label="Next 6 Months" value={fmt(forecast?.next180)} />
-          <Row label="Next 12 Months" value={fmt(forecast?.next365)} highlight />
-          {forecast?.note && <Text style={s.note}>{forecast.note}</Text>}
+          <Row label="Monthly Average" value={fmt(forecast.monthlyAvg)} />
+          <Row label="Projected This Month" value={fmt(forecast.projectedMonthly)} color="#10B981" highlight />
         </Section>
 
-        {/* ═══ Payments ═══ */}
-        <Section title="💳 Payments">
+        {/* ═══ Platform Stats ═══ */}
+        <Section title="👥 Platform Stats">
           <StatRow data={[
-            { label: 'Approved', value: payments?.successful || 0, color: '#10B981' },
-            { label: 'Failed', value: payments?.failed || 0, color: '#EF4444' },
-            { label: 'Pending', value: payments?.pending || 0, color: '#F59E0B' },
+            { label: 'Creators', value: stats2.totalCreators || 0, color: '#F97316' },
+            { label: 'Active', value: stats2.activeCreators || 0, color: '#10B981' },
+            { label: 'Pending', value: stats2.pendingCreators || 0, color: '#F59E0B' },
+            { label: 'Users', value: stats2.totalUsers || 0, color: '#3B82F6' },
+          ]} />
+          <StatRow data={[
+            { label: 'Bookings', value: stats2.totalBookings || 0, color: '#6C3BFF' },
+            { label: 'Paid', value: stats2.paidBookings || 0, color: '#10B981' },
+            { label: 'Subscribed', value: stats2.activeSubscriptions || 0, color: '#F59E0B' },
           ]} />
         </Section>
 
-        {/* ═══ Bookings ═══ */}
-        <Section title="📅 Bookings">
-          <Row label="Total" value={bookings?.total || 0} highlight />
-          <StatRow data={[
-            { label: 'Today', value: bookings?.today || 0, color: '#F97316' },
-            { label: 'Monthly', value: bookings?.monthly || 0, color: '#3B82F6' },
-            { label: 'Completed', value: bookings?.completed || 0, color: '#10B981' },
-            { label: 'Cancelled', value: bookings?.cancelled || 0, color: '#EF4444' },
-          ]} />
+        {/* ═══ Subscriptions ═══ */}
+        <Section title="💎 Subscriptions">
+          <Row label="Active Subscriptions" value={String(stats2.activeSubscriptions || 0)} color="#10B981" />
+          <Row label="Subscription Revenue" value={fmt(rev.subRevenue)} highlight />
         </Section>
-
-        {/* ═══ Creators ═══ */}
-        <Section title="👥 Creators">
-          <StatRow data={[
-            { label: 'Total', value: creators?.total || 0, color: '#F97316' },
-            { label: 'Active', value: creators?.active || 0, color: '#10B981' },
-            { label: 'Pending', value: creators?.pending || 0, color: '#F59E0B' },
-            { label: 'Suspended', value: creators?.suspended || 0, color: '#EF4444' },
-          ]} />
-        </Section>
-
-        {/* ═══ Revenue Trend (Last 7 Days) ═══ */}
-        {data.trends?.revenue && data.trends.revenue.length > 0 && (
-          <Section title="📉 Revenue Trend (Last 7 Days)">
-            {data.trends.revenue.map((d: any, i: number) => (
-              <Row
-                key={i}
-                label={new Date(d.date).toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short' })}
-                value={fmt(d.revenue)}
-                muted={d.revenue === 0}
-              />
-            ))}
-          </Section>
-        )}
       </ScrollView>
     </View>
   );

@@ -121,6 +121,59 @@ router.get("/dashboard-overview", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// ═══ FULL ANALYTICS (for Earnings screen) ═══
+router.get("/analytics/full", async (req, res, next) => {
+  try {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekStart = new Date(todayStart); weekStart.setDate(weekStart.getDate() - 7);
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const [totalCreators, activeCreators, pendingCreators, totalUsers, totalBookings, activeSubscriptions] = await Promise.all([
+      Creator.countDocuments({ status: { $ne: "deleted" } }),
+      Creator.countDocuments({ status: "approved" }),
+      Creator.countDocuments({ status: "pending" }),
+      User.countDocuments({ role: "user" }),
+      Booking.countDocuments(),
+      Creator.countDocuments({ subscriptionStatus: "active" }),
+    ]);
+
+    // Revenue from booking advances
+    const allPaidBookings = await Booking.find({ bookingFeePaid: true }).select("bookingFeeAmount bookingFeePaidAt cashbackAmount createdAt amount").lean();
+    const todayBk = allPaidBookings.filter(b => b.bookingFeePaidAt && new Date(b.bookingFeePaidAt) >= todayStart);
+    const weekBk = allPaidBookings.filter(b => b.bookingFeePaidAt && new Date(b.bookingFeePaidAt) >= weekStart);
+    const monthBk = allPaidBookings.filter(b => b.bookingFeePaidAt && new Date(b.bookingFeePaidAt) >= monthStart);
+    const sumFee = (arr) => arr.reduce((s, b) => s + (b.bookingFeeAmount || 0), 0);
+
+    // Cashback paid
+    let totalCashbackPaid = 0;
+    try { const CashbackTransaction = require("../models/CashbackTransaction"); const agg = await CashbackTransaction.aggregate([{ $match: { status: "credited" } }, { $group: { _id: null, total: { $sum: "$amount" } } }]); totalCashbackPaid = agg[0]?.total || 0; } catch {}
+
+    // Subscription revenue
+    let subRevenue = 0;
+    try { const Invoice = require("../models/Invoice"); const agg = await Invoice.aggregate([{ $match: { type: "subscription", status: "paid" } }, { $group: { _id: null, total: { $sum: "$amount" } } }]); subRevenue = agg[0]?.total || 0; } catch {}
+
+    // Total booking value
+    const totalBookingValue = allPaidBookings.reduce((s, b) => s + (b.amount || 0), 0);
+
+    const totalAdvance = sumFee(allPaidBookings);
+    const totalRevenue = totalAdvance + subRevenue;
+    const netProfit = totalRevenue - totalCashbackPaid;
+
+    res.json({ success: true, data: {
+      revenue: { totalRevenue, netProfit, totalAdvance, totalCashbackPaid, subRevenue, totalBookingValue },
+      commission: { today: sumFee(todayBk), thisWeek: sumFee(weekBk), thisMonth: sumFee(monthBk), overall: totalAdvance },
+      stats: { totalCreators, activeCreators, pendingCreators, totalUsers, totalBookings, activeSubscriptions, paidBookings: allPaidBookings.length },
+      periods: {
+        today: { advance: sumFee(todayBk), bookings: todayBk.length },
+        thisWeek: { advance: sumFee(weekBk), bookings: weekBk.length },
+        thisMonth: { advance: sumFee(monthBk), bookings: monthBk.length },
+      },
+      forecast: { monthlyAvg: Math.round(totalAdvance / Math.max(1, Math.ceil((now - new Date(allPaidBookings[allPaidBookings.length-1]?.createdAt || now)) / (30*86400000)))), projectedMonthly: Math.round(sumFee(monthBk) * 30 / Math.max(1, now.getDate())) },
+    }});
+  } catch (e) { next(e); }
+});
+
 // Creators management
 router.get("/creators", async (req, res, next) => {
   try {
