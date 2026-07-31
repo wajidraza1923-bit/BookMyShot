@@ -488,6 +488,55 @@ function initScheduler() {
   }, { timezone: "Asia/Kolkata" });
 
   console.log("[Scheduler] ✅ Razorpay subscription sync registered (every 6 hours)");
+  // ═══ Daily at 10:00 AM — Cashback Deadline Reminders for Customers ═══
+  cron.schedule("0 10 * * *", async () => {
+    console.log("[Scheduler] Running cashback deadline reminders...");
+    try {
+      const Booking = require("../models/Booking");
+      const Notification = require("../models/Notification");
+      const pushService = require("./pushService");
+      const now = new Date();
+      let sent = 0;
+
+      // Find bookings where booking fee is paid but payment not yet confirmed by creator
+      const bookings = await Booking.find({
+        bookingFeePaid: true,
+        paymentConfirmed: { $ne: true },
+        status: { $in: ["Creator Accepted", "Payment Approved", "Event Scheduled"] },
+      }).select("user clientName eventType createdAt cashbackDeadlineDaysUsed bookingFeeAmount");
+
+      for (const bk of bookings) {
+        const deadlineDays = bk.cashbackDeadlineDaysUsed || 30;
+        const bookingDate = bk.createdAt || new Date();
+        const deadlineDate = new Date(bookingDate);
+        deadlineDate.setDate(deadlineDate.getDate() + deadlineDays);
+        const daysLeft = Math.ceil((deadlineDate - now) / 86400000);
+
+        // Send reminders at: 50% of deadline, 15 days, 7 days, 3 days, 1 day
+        const halfDeadline = Math.round(deadlineDays / 2);
+        const reminderDays = [halfDeadline, 15, 7, 3, 1].filter(d => d > 0 && d < deadlineDays);
+
+        if (reminderDays.includes(daysLeft) && bk.user) {
+          const title = daysLeft === 1 ? "🚨 LAST DAY! Cashback expires tomorrow" : daysLeft <= 3 ? `⚠️ Only ${daysLeft} days left for cashback!` : `⏰ ${daysLeft} days left to earn cashback`;
+          const message = daysLeft === 1
+            ? `Complete your payment today or lose your cashback on ${bk.eventType} booking!`
+            : `Complete full payment within ${daysLeft} days to earn cashback on your ${bk.eventType} booking. Don't miss out!`;
+
+          await Notification.create({ user: bk.user, type: "cashback", title, message, targetScreen: "Bookings" });
+          pushService.sendToUser(bk.user, title, message);
+          sent++;
+        }
+
+        // If deadline passed — send expiry notification (once)
+        if (daysLeft === 0 && bk.user) {
+          await Notification.create({ user: bk.user, type: "cashback", title: "❌ Cashback Deadline Expired", message: `Your cashback eligibility for ${bk.eventType} booking has expired. Payment was not completed within ${deadlineDays} days.`, targetScreen: "Bookings" });
+          pushService.sendToUser(bk.user, "❌ Cashback Expired", `Cashback deadline for your ${bk.eventType} booking has passed.`);
+          sent++;
+        }
+      }
+      console.log(`[Scheduler] Cashback deadline reminders: ${sent} sent`);
+    } catch (e) { console.error("[Scheduler] Cashback reminder error:", e.message); }
+  });
 }
 
 module.exports = { initScheduler };
