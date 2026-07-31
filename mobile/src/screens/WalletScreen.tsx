@@ -158,16 +158,14 @@ export default function WalletScreen({ navigation }: any) {
           )}
         </View>
 
-        {/* Current Offer */}
-        {cashbackOffer?.enabled && (
-          <View style={s.offerCard}>
-            <Ionicons name="sparkles" size={18} color="#6C3BFF" />
-            <View style={{ flex: 1, marginLeft: 10 }}>
-              <Text style={s.offerTitle}>Current Offer: {cashbackOffer.percentage}% Cashback</Text>
-              <Text style={s.offerSub}>Earn up to ₹{cashbackOffer.maxAmount?.toLocaleString('en-IN') || '5,000'} on your next booking</Text>
-            </View>
+        {/* Current Offer — from Master Command */}
+        <View style={s.offerCard}>
+          <Ionicons name="sparkles" size={18} color="#6C3BFF" />
+          <View style={{ flex: 1, marginLeft: 10 }}>
+            <Text style={s.offerTitle}>Current Offer: {masterSettings.cashbackPercentage || 2.5}% Cashback</Text>
+            <Text style={s.offerSub}>Earn cashback on every booking when you pay advance on time</Text>
           </View>
-        )}
+        </View>
 
         {/* How It Works */}
         <View style={s.section}>
@@ -176,7 +174,7 @@ export default function WalletScreen({ navigation }: any) {
             {[
               { icon: 'person-add', text: 'Create your BookMyShot account', done: true },
               { icon: 'search', text: 'Book a verified creator through BookMyShot', done: true },
-              { icon: 'card', text: `Pay ${masterSettings.bookingCommission || 2.5}% Booking Fee via Razorpay`, done: false },
+              { icon: 'card', text: `Pay ${masterSettings.bookingCommission || 2.5}% Advance for Booking via Razorpay`, done: false },
               { icon: 'cash', text: `Complete remaining payment to creator within ${masterSettings.cashbackDeadlineDays || 30} days`, done: false },
               { icon: 'checkmark-done', text: 'Creator marks "Payment Completed" in their dashboard', done: false },
               { icon: 'gift', text: 'Cashback automatically credited to your Wallet!', done: false },
@@ -214,9 +212,9 @@ export default function WalletScreen({ navigation }: any) {
             {[
               'Once credited, cashback NEVER expires',
               'Withdraw anytime — even after 1, 2, or 3 years',
-              'Subject only to minimum withdrawal amount (₹100)',
+              'Subject only to minimum withdrawal amount (₹' + (masterSettings.minWithdrawalAmount || 100) + ')',
               'Cannot be transferred to another account',
-              'Cashback is calculated on the Razorpay booking fee amount',
+              'Cashback is calculated on the advance booking amount',
               'Cashback percentage is set by BookMyShot Admin',
             ].map((rule, i) => (
               <View key={i} style={s.ruleRow}>
