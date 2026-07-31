@@ -128,6 +128,13 @@ export default function AdminMasterCommand({ navigation }: any) {
       <ScrollView contentContainerStyle={s.scroll}>
         <Text style={s.subtitle}>Global settings — changes apply instantly across the entire app</Text>
 
+        {/* Push Notifications Button */}
+        <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#EF4444', borderRadius: 12, padding: 14, marginBottom: 16 }} onPress={() => navigation.navigate('AdminPushNotifications')}>
+          <Ionicons name="notifications" size={18} color="#fff" />
+          <Text style={{ fontSize: 14, fontWeight: '700', color: '#fff', flex: 1 }}>Send Push Notifications</Text>
+          <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.6)" />
+        </TouchableOpacity>
+
         {/* Module 1: Customer Support */}
         <View style={s.card}>
           <View style={s.cardHeader}>

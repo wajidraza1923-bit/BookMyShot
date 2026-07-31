@@ -119,7 +119,7 @@ router.delete("/creators/:id", async (req, res, next) => {
     if (mongoose.models.Commission) await mongoose.models.Commission.deleteMany({ creator: creatorId });
     if (mongoose.models.Booking) await mongoose.models.Booking.updateMany({ creator: creatorId, status: { $nin: ['Completed','completed','cancelled','rejected'] } }, { $set: { status: 'cancelled', creatorNotes: 'Creator deleted by admin' } });
 
-    // HARD DELETE � permanently remove creator and user — mark as deleted, preserve all financial/business records
+    // HARD DELETE � permanently remove creator and user — mark as deleted, preserve all financial/business records
     // Delete user account too
     const userId = creator.user?._id || creator.user;
     await Creator.deleteOne({ _id: creatorId });
@@ -1060,6 +1060,39 @@ router.post("/broadcast", async (req, res, next) => {
 
     await logAction(req.user._id, "broadcast", "system", "", `"${title}" to ${targets.length} ${audience || 'all'}`, req.ip);
     res.json({ success: true, sent: targets.length });
+  } catch (e) { next(e); }
+});
+
+// Alias for push-broadcast (used by Master Command Push Notifications screen)
+router.post("/push-broadcast", async (req, res, next) => {
+  try {
+    const { title, body, audience } = req.body;
+    if (!title || !body) return res.status(400).json({ success: false, message: "Title and body required" });
+
+    const User = require("../models/User");
+    const pushService = require("../services/pushService");
+    const Notification = require("../models/Notification");
+
+    let filter = {};
+    if (audience === 'users') filter = { role: 'user', pushToken: { $exists: true, $ne: "" } };
+    else if (audience === 'creators') filter = { role: 'creator', pushToken: { $exists: true, $ne: "" } };
+    else filter = { pushToken: { $exists: true, $ne: "" } };
+
+    const users = await User.find(filter).select("_id pushToken");
+    const userIds = users.map(u => u._id.toString());
+
+    // Send push notifications
+    if (userIds.length > 0) {
+      await pushService.sendToUsers(userIds, title, body, { type: 'admin_push', screen: 'Notifications' });
+    }
+
+    // Also save as in-app notifications
+    const allTargetUsers = audience === 'users' ? await User.find({ role: 'user' }).select("_id") : audience === 'creators' ? await User.find({ role: 'creator' }).select("_id") : await User.find({}).select("_id");
+    for (const u of allTargetUsers) {
+      await Notification.create({ user: u._id, type: "info", title, message: body });
+    }
+
+    res.json({ success: true, message: `Sent to ${userIds.length} devices (${allTargetUsers.length} users)`, sent: userIds.length });
   } catch (e) { next(e); }
 });
 

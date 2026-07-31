@@ -27,6 +27,7 @@ import AdminFeaturedMoments from '../screens/admin/AdminFeaturedMoments';
 import AdminBusinessModel from '../screens/admin/AdminBusinessModel';
 import AdminMasterCommand from '../screens/admin/AdminMasterCommand';
 import AdminUserWallet from '../screens/admin/AdminUserWallet';
+import AdminPushNotifications from '../screens/admin/AdminPushNotifications';
 
 const Stack = createNativeStackNavigator();
 
@@ -59,6 +60,7 @@ export default function AdminNavigator() {
       <Stack.Screen name="AdminBusinessModel" component={AdminBusinessModel} />
       <Stack.Screen name="AdminMasterCommand" component={AdminMasterCommand} />
       <Stack.Screen name="AdminUserWallet" component={AdminUserWallet} />
+      <Stack.Screen name="AdminPushNotifications" component={AdminPushNotifications} />
     </Stack.Navigator>
   );
 }
