@@ -844,7 +844,7 @@ router.patch("/inquiries/:id/reply", async (req, res, next) => {
           clientEmail: `${inquiry.name.toLowerCase().replace(/\s+/g, '')}@bookmyshot.app`,
           clientPhone: inquiry.phone || "Not provided",
           eventType: inquiry.eventType || "Event",
-          eventDate: inquiry.eventDate,
+          eventDate: inquiry.eventDate || new Date(),
           eventLocation: inquiry.city || "",
           budget: bookingAmount,
           message: inquiry.message || "",
@@ -858,6 +858,7 @@ router.patch("/inquiries/:id/reply", async (req, res, next) => {
           commissionPercentUsed: ms2.bookingCommission || 2.5,
           cashbackPercentUsed: ms2.cashbackPercentage || 2.5,
           cashbackAmount: Math.round((bookingAmount * (ms2.cashbackPercentage || 2.5)) / 100),
+          cashbackDeadlineDaysUsed: ms2.cashbackDeadlineDays || 30,
         });
 
         // â•â•â• COMMISSION GENERATION â€” Immediately on first booking acceptance â•â•â•
