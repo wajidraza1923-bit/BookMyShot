@@ -89,8 +89,8 @@ router.post("/withdraw", protect, authorize("creator"), async (req, res, next) =
       const User = require("../models/User");
       const admins = await User.find({ role: "admin" });
       for (const admin of admins) {
-        await Notification.create({ user: admin._id, type: "payment", title: "💸 Creator Withdrawal Request", message: `${req.user.name} requested ₹${amount} withdrawal` });
-        pushService.sendToUser(admin._id, "💸 Withdrawal Request", `${req.user.name} requested ₹${amount} withdrawal`);
+        await Notification.create({ user: admin._id, type: "payment", title: "BookMyShot — New Withdrawal Request", message: `${req.user.name} has requested a withdrawal of ₹${amount.toLocaleString('en-IN')}. Please review and process.` });
+        pushService.sendToUser(admin._id, "BookMyShot — Withdrawal Request", `${req.user.name} requested ₹${amount.toLocaleString('en-IN')} withdrawal. Review in Creator Wallets.`);
       }
     } catch {}
 
@@ -210,8 +210,17 @@ router.patch("/admin/withdrawals/:id", protect, authorize("admin"), async (req, 
       const creator = await Creator.findById(withdrawal.creator);
       const Notification = require("../models/Notification");
       if (creator) {
-        const msg = status === "paid" ? `Your withdrawal of ₹${withdrawal.amount} has been processed!` : status === "rejected" ? `Your withdrawal of ₹${withdrawal.amount} was rejected. Amount refunded.` : `Withdrawal status: ${status}`;
-        const title = status === "paid" ? "✅ Withdrawal Paid" : status === "rejected" ? "❌ Withdrawal Rejected" : "💰 Withdrawal Update";
+        let title, msg;
+        if (status === "paid") {
+          title = "BookMyShot — Withdrawal Processed";
+          msg = `Your withdrawal of ₹${withdrawal.amount.toLocaleString('en-IN')} has been successfully processed and transferred to your account.`;
+        } else if (status === "rejected") {
+          title = "BookMyShot — Withdrawal Declined";
+          msg = `Your withdrawal request of ₹${withdrawal.amount.toLocaleString('en-IN')} was declined. The amount has been refunded to your wallet. ${remarks ? 'Reason: ' + remarks : ''}`;
+        } else {
+          title = "BookMyShot — Withdrawal Update";
+          msg = `Your withdrawal request status has been updated to: ${status}.`;
+        }
         await Notification.create({ user: creator.user, type: "payment", title, message: msg });
         pushService.sendToUser(creator.user, title, msg);
       }

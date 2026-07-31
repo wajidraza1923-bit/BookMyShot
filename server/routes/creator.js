@@ -1216,7 +1216,7 @@ router.patch("/bookings/:id/confirm-payment", async (req, res, next) => {
                 });
                 // Push notification to creator
                 const pushService = require("../services/pushService");
-                pushService.sendToUser(creator.user, "💰 Cashback Credited!", `₹${creatorCashbackAmt} credited to your wallet (customer missed payment deadline)`);
+                pushService.sendToUser(creator.user, "BookMyShot — Cashback Credited", `₹${creatorCashbackAmt.toLocaleString('en-IN')} has been credited to your wallet. The customer's payment deadline expired, and your cashback reward has been automatically processed.`);
               }
             }
           } catch (ccErr) { console.log("[ConfirmPayment] Creator cashback error:", ccErr.message); }

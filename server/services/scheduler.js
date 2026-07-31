@@ -517,10 +517,20 @@ function initScheduler() {
         const reminderDays = [halfDeadline, 15, 7, 3, 1].filter(d => d > 0 && d < deadlineDays);
 
         if (reminderDays.includes(daysLeft) && bk.user) {
-          const title = daysLeft === 1 ? "🚨 LAST DAY! Cashback expires tomorrow" : daysLeft <= 3 ? `⚠️ Only ${daysLeft} days left for cashback!` : `⏰ ${daysLeft} days left to earn cashback`;
-          const message = daysLeft === 1
-            ? `Complete your payment today or lose your cashback on ${bk.eventType} booking!`
-            : `Complete full payment within ${daysLeft} days to earn cashback on your ${bk.eventType} booking. Don't miss out!`;
+          let title, message;
+          if (daysLeft === 1) {
+            title = "BookMyShot — Final Day for Cashback";
+            message = `Tomorrow is your last day! Complete payment for your ${bk.eventType} booking to earn cashback. After this, cashback will no longer be available.`;
+          } else if (daysLeft <= 3) {
+            title = "BookMyShot — Cashback Expiring Soon";
+            message = `Only ${daysLeft} days remaining to earn cashback on your ${bk.eventType} booking. Complete the full payment to your creator before the deadline.`;
+          } else if (daysLeft <= 7) {
+            title = "BookMyShot — Payment Reminder";
+            message = `${daysLeft} days left to complete payment and earn cashback on your ${bk.eventType} booking. Don't miss this reward!`;
+          } else {
+            title = "BookMyShot — Cashback Reminder";
+            message = `You have ${daysLeft} days to complete payment for your ${bk.eventType} booking and earn cashback. Pay your creator on time to unlock your reward.`;
+          }
 
           await Notification.create({ user: bk.user, type: "cashback", title, message, targetScreen: "Bookings" });
           pushService.sendToUser(bk.user, title, message);
@@ -529,8 +539,10 @@ function initScheduler() {
 
         // If deadline passed — send expiry notification (once)
         if (daysLeft === 0 && bk.user) {
-          await Notification.create({ user: bk.user, type: "cashback", title: "❌ Cashback Deadline Expired", message: `Your cashback eligibility for ${bk.eventType} booking has expired. Payment was not completed within ${deadlineDays} days.`, targetScreen: "Bookings" });
-          pushService.sendToUser(bk.user, "❌ Cashback Expired", `Cashback deadline for your ${bk.eventType} booking has passed.`);
+          const expTitle = "BookMyShot — Cashback Expired";
+          const expMsg = `Your cashback eligibility for the ${bk.eventType} booking has expired. The ${deadlineDays}-day payment window has closed. Future bookings will have a fresh deadline.`;
+          await Notification.create({ user: bk.user, type: "cashback", title: expTitle, message: expMsg, targetScreen: "Bookings" });
+          pushService.sendToUser(bk.user, expTitle, expMsg);
           sent++;
         }
       }
