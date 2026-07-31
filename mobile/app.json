@@ -22,6 +22,7 @@
       "versionCode": 8,
       "googleServicesFile": "./google-services.json",
       "icon": "./assets/icon.png",
+      "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#FFFFFF"

@@ -3,7 +3,7 @@
  * Integrates: Auth, Navigation, Push Notifications, Update Checker
  */
 import React, { useState, useEffect, useRef } from 'react';
-import { StatusBar, View, Text, StyleSheet, Animated } from 'react-native';
+import { StatusBar, View, Text, StyleSheet, Animated, KeyboardAvoidingView, Platform } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -132,7 +132,7 @@ export default function App() {
   }
 
   return (
-    <View style={styles.root}>
+    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <AuthProvider>
         <LocationProvider>
@@ -151,7 +151,7 @@ export default function App() {
           </View>
         </Animated.View>
       )}
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
