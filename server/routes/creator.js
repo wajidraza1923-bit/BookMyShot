@@ -660,9 +660,12 @@ router.get("/leads", async (req, res, next) => {
 router.patch("/leads/:id", async (req, res, next) => {
   try {
     const creator = await getCreator(req.user._id);
+    const update = {};
+    if (req.body.status) update.status = req.body.status;
+    if (req.body.budget !== undefined && Number(req.body.budget) > 0) update.budget = Number(req.body.budget);
     const inquiry = await Inquiry.findOneAndUpdate(
       { _id: req.params.id, creator: creator._id },
-      { status: req.body.status },
+      update,
       { new: true }
     );
     if (!inquiry) return res.status(404).json({ success: false, message: "Lead not found" });

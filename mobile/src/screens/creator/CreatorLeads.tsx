@@ -4,7 +4,7 @@
  * Professional inquiry cards with all required info
  */
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, Linking } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, Linking, TextInput, Modal, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, radius } from '../../theme';
 import api from '../../services/api';
@@ -25,6 +25,9 @@ export default function CreatorLeads({ navigation }: any) {
   const [confirmModal, setConfirmModal] = useState<{ visible: boolean; lead: any | null; action: 'accept' | 'reject' }>({ visible: false, lead: null, action: 'accept' });
   const [resultModal, setResultModal] = useState<{ visible: boolean; type: 'success' | 'error'; title: string; message: string; bookingCreated?: boolean }>({ visible: false, type: 'success', title: '', message: '' });
   const [toast, setToast] = useState<{ visible: boolean; type: 'success' | 'error' | 'info'; title: string; message?: string }>({ visible: false, type: 'info', title: '' });
+  // Edit amount modal
+  const [editAmountModal, setEditAmountModal] = useState<{ visible: boolean; lead: any | null }>({ visible: false, lead: null });
+  const [editAmount, setEditAmount] = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -117,6 +120,25 @@ export default function CreatorLeads({ navigation }: any) {
   };
 
   const getStatusColor = (s: string) => s === 'accepted' ? colors.success : s === 'rejected' ? colors.error : colors.warning;
+
+  // Edit amount handler
+  const submitEditAmount = async () => {
+    const lead = editAmountModal.lead;
+    if (!editAmount || parseFloat(editAmount) <= 0) { Alert.alert('Invalid', 'Enter a valid amount'); return; }
+    setProcessing(true);
+    try {
+      // Find the booking associated with this inquiry (if exists)
+      // The edit-amount endpoint works on bookings, but inquiries have budget field
+      // Update the inquiry budget directly
+      await api.patch(`/creator/leads/${lead._id}`, { status: lead.status, budget: parseFloat(editAmount) });
+      setEditAmountModal({ visible: false, lead: null });
+      setEditAmount('');
+      await load();
+      setToast({ visible: true, type: 'success', title: 'Amount Updated', message: `Budget updated to ₹${parseFloat(editAmount).toLocaleString('en-IN')}` });
+    } catch (e: any) {
+      Alert.alert('Error', e.response?.data?.message || 'Failed to update amount');
+    } finally { setProcessing(false); }
+  };
 
   const pendingCount = leads.filter(l => l.status === 'pending').length;
 
@@ -231,15 +253,22 @@ export default function CreatorLeads({ navigation }: any) {
 
               {/* Accept / Reject (only for pending) */}
               {item.status === 'pending' && (
-                <View style={st.actionRow}>
-                  <TouchableOpacity style={st.rejectBtn} onPress={() => promptReject(item)}>
-                    <Ionicons name="close" size={15} color={colors.error} />
-                    <Text style={st.rejectText}>Reject</Text>
+                <View>
+                  {/* Edit Amount Button */}
+                  <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#F3E8FF', borderRadius: 10, paddingVertical: 10, marginBottom: 8, borderWidth: 1, borderColor: '#EDE9FE' }} onPress={() => { setEditAmountModal({ visible: true, lead: item }); setEditAmount(String(item.budget || '')); }}>
+                    <Ionicons name="create-outline" size={14} color="#7C3AED" />
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: '#7C3AED' }}>Edit Amount — ₹{(item.budget || 0).toLocaleString('en-IN')}</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={st.acceptBtn} onPress={() => promptAccept(item)}>
-                    <Ionicons name="checkmark" size={15} color="#FFFFFF" />
-                    <Text style={st.acceptText}>Accept</Text>
-                  </TouchableOpacity>
+                  <View style={st.actionRow}>
+                    <TouchableOpacity style={st.rejectBtn} onPress={() => promptReject(item)}>
+                      <Ionicons name="close" size={15} color={colors.error} />
+                      <Text style={st.rejectText}>Reject</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={st.acceptBtn} onPress={() => promptAccept(item)}>
+                      <Ionicons name="checkmark" size={15} color="#FFFFFF" />
+                      <Text style={st.acceptText}>Accept</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               )}
             </View>
@@ -311,6 +340,33 @@ export default function CreatorLeads({ navigation }: any) {
           <Text style={st.processingText}>Processing...</Text>
         </View>
       )}
+
+      {/* ═══ EDIT AMOUNT MODAL ═══ */}
+      <Modal visible={editAmountModal.visible} transparent animationType="slide">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: 24 }}>
+          <View style={{ backgroundColor: '#fff', borderRadius: 20, padding: 24 }}>
+            <Text style={{ fontSize: 18, fontWeight: '800', color: '#1F2937', marginBottom: 4 }}>💰 Edit Booking Amount</Text>
+            <Text style={{ fontSize: 12, color: '#6B7280', marginBottom: 16 }}>Update the amount for {editAmountModal.lead?.name || 'this inquiry'}</Text>
+            <Text style={{ fontSize: 12, fontWeight: '600', color: '#374151', marginBottom: 6 }}>Amount (₹)</Text>
+            <TextInput
+              style={{ backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, paddingHorizontal: 14, height: 48, fontSize: 16, color: '#1F2937', fontWeight: '700' }}
+              value={editAmount}
+              onChangeText={setEditAmount}
+              placeholder="e.g. 25000"
+              keyboardType="number-pad"
+              placeholderTextColor="#9CA3AF"
+            />
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
+              <TouchableOpacity style={{ flex: 1, alignItems: 'center', paddingVertical: 14, borderRadius: 12, backgroundColor: '#F3F4F6' }} onPress={() => setEditAmountModal({ visible: false, lead: null })}>
+                <Text style={{ color: '#6B7280', fontWeight: '600' }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={{ flex: 1, alignItems: 'center', paddingVertical: 14, borderRadius: 12, backgroundColor: '#7C3AED' }} onPress={submitEditAmount} disabled={processing}>
+                {processing ? <ActivityIndicator color="#fff" size="small" /> : <Text style={{ color: '#fff', fontWeight: '700' }}>Update Amount</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
