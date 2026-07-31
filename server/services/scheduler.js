@@ -549,6 +549,66 @@ function initScheduler() {
       console.log(`[Scheduler] Cashback deadline reminders: ${sent} sent`);
     } catch (e) { console.error("[Scheduler] Cashback reminder error:", e.message); }
   });
+  // ═══ Every 3 Days at 11:00 AM — Smart Admin Engagement Reminders ═══
+  cron.schedule("0 11 */3 * *", async () => {
+    console.log("[Scheduler] Running admin engagement reminders...");
+    try {
+      const User = require("../models/User");
+      const Notification = require("../models/Notification");
+      const pushService = require("./pushService");
+      const Booking = require("../models/Booking");
+      const Creator = require("../models/Creator");
+      const now = new Date();
+
+      const admins = await User.find({ role: "admin" }).select("_id");
+      if (admins.length === 0) return;
+
+      // Gather platform stats for smart suggestions
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const weekStart = new Date(todayStart); weekStart.setDate(weekStart.getDate() - 7);
+      const newUsers7d = await User.countDocuments({ role: "user", createdAt: { $gte: weekStart } });
+      const newCreators7d = await Creator.countDocuments({ createdAt: { $gte: weekStart } });
+      const pendingCreators = await Creator.countDocuments({ status: "pending" });
+      const inactiveCreators = await Creator.countDocuments({ status: "approved", subscriptionStatus: { $in: ["expired", "free"] } });
+      const recentBookings = await Booking.countDocuments({ createdAt: { $gte: weekStart } });
+
+      // Build smart suggestions based on data
+      const suggestions = [];
+
+      if (newUsers7d > 0) suggestions.push(`📱 ${newUsers7d} new customers joined this week. Send them a welcome offer or discount notification to encourage their first booking.`);
+      if (newCreators7d > 0) suggestions.push(`📸 ${newCreators7d} new creators registered this week. Remind them to complete their profile and portfolio.`);
+      if (pendingCreators > 0) suggestions.push(`⏳ ${pendingCreators} creator(s) awaiting approval. Review and approve them to grow your platform.`);
+      if (inactiveCreators > 3) suggestions.push(`💎 ${inactiveCreators} creators have expired/free subscriptions. Send them a subscription reminder or special offer.`);
+      if (recentBookings < 3) suggestions.push(`📅 Only ${recentBookings} bookings this week. Consider sending a promotional notification to customers about available creators.`);
+      if (recentBookings >= 5) suggestions.push(`🎉 Great week! ${recentBookings} bookings. Send a thank-you notification to active customers and encourage reviews.`);
+
+      // Rotating engagement suggestions
+      const dayOfMonth = now.getDate();
+      const rotatingTips = [
+        "💡 Tip: Send a 'Featured Creator Spotlight' notification to customers showcasing your best creators.",
+        "💡 Tip: Remind creators to update their availability calendar for upcoming wedding season.",
+        "💡 Tip: Send a cashback reminder to customers who haven't booked in 2+ weeks.",
+        "💡 Tip: Notify creators about portfolio tips — profiles with 6+ photos get 3x more inquiries.",
+        "💡 Tip: Send a seasonal offer notification (festival discounts, early bird deals).",
+        "💡 Tip: Remind inactive users about new creators in their area.",
+        "💡 Tip: Encourage creators to share their BookMyShot profile on social media.",
+        "💡 Tip: Send a 'Last chance' notification for expiring promotions or subscription offers.",
+        "💡 Tip: Notify customers about the cashback program — many may not know about it.",
+        "💡 Tip: Send creators a weekly performance summary to keep them engaged.",
+      ];
+      suggestions.push(rotatingTips[dayOfMonth % rotatingTips.length]);
+
+      const title = "BookMyShot — Admin Action Suggested";
+      const body = suggestions[0] || "Check your dashboard for pending actions.";
+
+      for (const admin of admins) {
+        await Notification.create({ user: admin._id, type: "info", title, message: suggestions.join('\n\n') });
+        pushService.sendToUser(admin._id, title, body);
+      }
+
+      console.log(`[Scheduler] Admin engagement reminder sent with ${suggestions.length} suggestions`);
+    } catch (e) { console.error("[Scheduler] Admin reminder error:", e.message); }
+  });
 }
 
 module.exports = { initScheduler };
