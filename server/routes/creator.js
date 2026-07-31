@@ -1133,10 +1133,11 @@ router.patch("/bookings/:id/confirm-payment", async (req, res, next) => {
         const isCustomerInitiated = !booking.createdByCreator && booking.source !== 'creator_manual' && booking.source !== 'walk_in';
         const bookingFeePaid = booking.bookingFeePaid && booking.bookingFeeAmount > 0;
 
-        // 30-day deadline from booking creation date
+        // 30-day deadline from booking creation date (uses snapshotted value)
+        const deadlineDaysForBooking = booking.cashbackDeadlineDaysUsed || 30;
         const bookingCreatedAt = booking.createdAt || new Date();
         const cashbackDeadline = new Date(bookingCreatedAt);
-        cashbackDeadline.setDate(cashbackDeadline.getDate() + 30);
+        cashbackDeadline.setDate(cashbackDeadline.getDate() + deadlineDaysForBooking);
         const withinDeadline = new Date() <= cashbackDeadline;
 
         const settings = await CashbackSettings.getSettings();
@@ -1182,19 +1183,49 @@ router.patch("/bookings/:id/confirm-payment", async (req, res, next) => {
             }
           }
         } else if (isCustomerInitiated && bookingFeePaid && !withinDeadline) {
+          // Customer missed deadline → No customer cashback, but Creator gets cashback
           await CashbackTransaction.create({
             user: booking.user, booking: booking._id,
             amount: 0, percentage: 0, bookingAmount: booking.bookingFeeAmount || 0,
-            status: "expired", notes: "Creator confirmed payment after 30-day deadline.",
+            status: "expired", notes: `Creator confirmed payment after ${deadlineDaysForBooking}-day deadline. Customer cashback expired.`,
           });
           await Booking.findByIdAndUpdate(booking._id, { $set: { cashbackReleased: false } });
-          cashbackResult = { status: "expired", reason: "Cashback eligibility has expired." };
+          cashbackResult = { status: "expired", reason: "Customer cashback expired — deadline exceeded." };
+
+          // ═══ CREDIT CREATOR CASHBACK (from Master Command) ═══
+          try {
+            const MasterSettingsCC = require("../models/MasterSettings");
+            const msCC = await MasterSettingsCC.findOne();
+            const creatorCbPercent = (msCC && msCC.creatorCashbackPercent) || 4;
+            const creatorCbAutoCredit = msCC ? msCC.creatorCashbackAutoCredit !== false : true;
+            if (creatorCbAutoCredit && creatorCbPercent > 0) {
+              const feeAmountForCreator = booking.bookingFeeAmount || 0;
+              const creatorCashbackAmt = Math.round((feeAmountForCreator * creatorCbPercent) / 100);
+              if (creatorCashbackAmt > 0) {
+                const CreatorWalletTx = require("../models/CreatorWallet");
+                const balBefore = creator.walletBalance || 0;
+                creator.walletBalance = balBefore + creatorCashbackAmt;
+                creator.totalCashbackEarned = (creator.totalCashbackEarned || 0) + creatorCashbackAmt;
+                await creator.save();
+                await CreatorWalletTx.create({
+                  creator: creator._id, type: "cashback_credit", amount: creatorCashbackAmt,
+                  balanceBefore: balBefore, balanceAfter: creator.walletBalance,
+                  reason: `Customer missed deadline — ${creatorCbPercent}% cashback credited (Booking: ${booking.clientName})`,
+                  bookingId: booking._id, customerName: booking.clientName, cashbackPercent: creatorCbPercent,
+                  status: "completed",
+                });
+                // Push notification to creator
+                const pushService = require("../services/pushService");
+                pushService.sendToUser(creator.user, "💰 Cashback Credited!", `₹${creatorCashbackAmt} credited to your wallet (customer missed payment deadline)`);
+              }
+            }
+          } catch (ccErr) { console.log("[ConfirmPayment] Creator cashback error:", ccErr.message); }
 
           const Notification = require("../models/Notification");
           await Notification.create({
             user: booking.user,
             title: "⏰ Cashback Expired",
-            message: `Cashback eligibility has expired for your ${booking.eventType} booking.`,
+            message: `Cashback eligibility has expired for your ${booking.eventType} booking (${deadlineDaysForBooking}-day deadline exceeded).`,
             type: "cashback", targetScreen: "Wallet",
           });
         }
