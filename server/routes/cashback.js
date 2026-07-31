@@ -184,10 +184,8 @@ router.post("/confirm-completion", protect, async (req, res, next) => {
       if (existing.status === "expired") return res.status(400).json({ success: false, message: "Cashback expired — 30-day deadline exceeded.", code: "CASHBACK_DEADLINE_EXPIRED" });
     }
 
-    // 6. Cashback Deadline (dynamic from Master Command)
-    const MasterSettingsCB = require("../models/MasterSettings");
-    const msCB = await MasterSettingsCB.findOne();
-    const deadlineDays = (msCB && msCB.cashbackDeadlineDays) || 30;
+    // 6. Cashback Deadline (uses SNAPSHOTTED value from booking creation time, NOT current Master Command)
+    const deadlineDays = booking.cashbackDeadlineDaysUsed || 30;
     const bookingCreatedAt = booking.createdAt || booking.bookingFeePaidAt || new Date();
     const cashbackDeadline = new Date(bookingCreatedAt);
     cashbackDeadline.setDate(cashbackDeadline.getDate() + deadlineDays);
@@ -199,12 +197,30 @@ router.post("/confirm-completion", protect, async (req, res, next) => {
         percentage: 0,
         bookingAmount: booking.bookingFeeAmount || 0,
         status: "expired",
-        notes: `Payment completed after ${deadlineDays}-day cashback deadline. Cashback not eligible.`,
+        notes: `Payment not completed within ${deadlineDays}-day deadline (locked at booking creation). Cashback not eligible.`,
       });
       return res.status(400).json({
         success: false,
-        message: `Cashback expired. Full payment was not completed within ${deadlineDays} days of booking.`,
+        message: `Cashback expired. Full payment was not completed within ${deadlineDays} days of booking creation.`,
         code: "CASHBACK_DEADLINE_EXPIRED",
+      });
+    }
+
+    // 7. Verify booking fee was paid via Razorpay (mandatory)
+    if (!booking.bookingFeePaid || !booking.bookingFeePaymentId) {
+      return res.status(400).json({
+        success: false,
+        message: "Booking fee must be paid via Razorpay to be eligible for cashback.",
+        code: "BOOKING_FEE_NOT_PAID",
+      });
+    }
+
+    // 8. Verify creator has accepted/confirmed the booking
+    if (!['Creator Accepted', 'Payment Approved', 'Event Scheduled', 'Completed'].includes(booking.status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Creator must accept and confirm the booking before cashback can be claimed.",
+        code: "CREATOR_NOT_CONFIRMED",
       });
     }
 
@@ -288,13 +304,11 @@ router.post("/credit", protect, async (req, res, next) => {
     const existing = await CashbackTransaction.findOne({ booking: bookingId });
     if (existing) return res.status(409).json({ success: false, message: "Cashback already processed for this booking" });
 
-    // Cashback Deadline Check (dynamic from Master Command)
-    const MasterSettingsCB2 = require("../models/MasterSettings");
-    const msCB2 = await MasterSettingsCB2.findOne();
-    const deadlineDays2 = (msCB2 && msCB2.cashbackDeadlineDays) || 30;
+    // Cashback Deadline Check (uses SNAPSHOTTED value from booking)
     const Booking = require("../models/Booking");
     const booking = await Booking.findById(bookingId);
     if (booking) {
+      const deadlineDays2 = booking.cashbackDeadlineDaysUsed || 30;
       const bookingCreatedAt = booking.createdAt || new Date();
       const cashbackDeadline = new Date(bookingCreatedAt);
       cashbackDeadline.setDate(cashbackDeadline.getDate() + deadlineDays2);
@@ -306,9 +320,19 @@ router.post("/credit", protect, async (req, res, next) => {
           percentage: 0,
           bookingAmount,
           status: "expired",
-          notes: `Payment completed after ${deadlineDays2}-day cashback deadline.`,
+          notes: `Payment completed after ${deadlineDays2}-day deadline (locked at booking time).`,
         });
         return res.status(400).json({ success: false, message: `Cashback expired — ${deadlineDays2}-day deadline exceeded.`, code: "CASHBACK_DEADLINE_EXPIRED" });
+      }
+
+      // Verify booking fee paid via Razorpay
+      if (!booking.bookingFeePaid || !booking.bookingFeePaymentId) {
+        return res.status(400).json({ success: false, message: "Booking fee must be paid via Razorpay for cashback eligibility.", code: "BOOKING_FEE_NOT_PAID" });
+      }
+
+      // Verify creator confirmed
+      if (!['Creator Accepted', 'Payment Approved', 'Event Scheduled', 'Completed'].includes(booking.status)) {
+        return res.status(400).json({ success: false, message: "Creator must accept the booking for cashback eligibility.", code: "CREATOR_NOT_CONFIRMED" });
       }
     }
 

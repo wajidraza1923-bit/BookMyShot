@@ -77,9 +77,10 @@ router.post("/", protect, async (req, res, next) => {
     // Fetch current Master Settings for commission & cashback snapshot
     const MasterSettings = require("../models/MasterSettings");
     let masterSettings = await MasterSettings.findOne();
-    if (!masterSettings) masterSettings = { bookingCommission: 2.5, cashbackPercentage: 2.5 };
+    if (!masterSettings) masterSettings = { bookingCommission: 2.5, cashbackPercentage: 2.5, cashbackDeadlineDays: 30 };
     const commissionPct = masterSettings.bookingCommission || 2.5;
     const cashbackPct = masterSettings.cashbackPercentage || 2.5;
+    const deadlineDaysSnapshot = masterSettings.cashbackDeadlineDays || 30;
     const bookingAmount = budget || 0;
     const commissionAmt = Math.round((bookingAmount * commissionPct) / 100);
     const cashbackAmt = Math.round((bookingAmount * cashbackPct) / 100);
@@ -105,6 +106,7 @@ router.post("/", protect, async (req, res, next) => {
       commissionAmount: commissionAmt,
       cashbackPercentUsed: cashbackPct,
       cashbackAmount: cashbackAmt,
+      cashbackDeadlineDaysUsed: deadlineDaysSnapshot,
       bookingFeePercent: commissionPct,
     });
 
