@@ -19,18 +19,21 @@ export default function CreatorHome({ navigation }: any) {
   const [paying, setPaying] = useState(false);
   const [showRazorpay, setShowRazorpay] = useState(false);
   const [rpConfig, setRpConfig] = useState<{ keyId: string; orderId: string; amount: number; name: string }>({ keyId: '', orderId: '', amount: 0, name: '' });
+  const [commPercent, setCommPercent] = useState(2.5);
 
   const loadDashboard = useCallback(async () => {
     try {
-      const [dashRes, featuredRes, activeRes, requestsRes, leadRes] = await Promise.all([
+      const [dashRes, featuredRes, activeRes, requestsRes, leadRes, msRes] = await Promise.all([
         api.get('/creator/dashboard'),
         api.get('/promotions/my-featured').catch(() => ({ data: { active: null } })),
         api.get('/promotions/my-active').catch(() => ({ data: { active: null } })),
         api.get('/promotions/my-requests').catch(() => ({ data: { data: [] } })),
         api.get('/leads/my-usage').catch(() => ({ data: { data: null } })),
+        api.get('/master-settings').catch(() => ({ data: { data: null } })),
       ]);
       if (dashRes.data) setStats(dashRes.data);
       if (leadRes.data?.data) setLeadUsage(leadRes.data.data);
+      if (msRes.data?.data?.bookingCommission) setCommPercent(msRes.data.data.bookingCommission);
       const pending = (requestsRes.data?.data || []).filter((r: any) => r.status === 'pending').length;
       setPromo({ featured: featuredRes.data?.active, rank: activeRes.data?.active, pending });
     } catch {}
@@ -85,7 +88,7 @@ export default function CreatorHome({ navigation }: any) {
     { label: 'Total Earnings', value: `₹${stats.totalEarnings.toLocaleString('en-IN')}`, icon: 'wallet', color: colors.primary },
     { label: 'This Month', value: `₹${stats.monthlyEarnings.toLocaleString('en-IN')}`, icon: 'trending-up', color: colors.success },
     { label: 'Total Bookings', value: String(stats.totalBookings), icon: 'calendar', color: colors.info },
-    { label: 'To Collect (95%)', value: `₹${Math.round(stats.totalEarnings * 0.95).toLocaleString('en-IN')}`, icon: 'cash', color: '#10B981' },
+    { label: `To Collect (${100 - commPercent}%)`, value: `₹${Math.round(stats.totalEarnings * (100 - commPercent) / 100).toLocaleString('en-IN')}`, icon: 'cash', color: '#10B981' },
   ];
 
   const quickActions = [
@@ -181,7 +184,7 @@ export default function CreatorHome({ navigation }: any) {
               <Ionicons name="checkmark-circle" size={18} color="#10B981" />
               <Text style={styles.platformFeeTitle}>Booking Advance Received</Text>
             </View>
-            <Text style={styles.platformFeeSub}>Your customer has paid the 5% Booking Advance to BookMyShot. Your booking is confirmed. Collect the remaining 95% directly from the customer as per your agreed terms.</Text>
+            <Text style={styles.platformFeeSub}>Your customer has paid the {commPercent}% Booking Advance to BookMyShot. Your booking is confirmed. Collect the remaining {100 - commPercent}% directly from the customer as per your agreed terms.</Text>
           </View>
         )}
 
