@@ -327,6 +327,7 @@ app.use("/api/admin/dashboard-overview", protect, authorize("admin"), adminDashb
 app.use("/api/admin/social-links", protect, authorize("admin"), adminSocialLinksRoutes);
 app.use("/api/admin/payment-history", protect, authorize("admin"), adminPaymentHistoryRoutes);
 app.use("/api/admin/homepage-enquiries", protect, authorize("admin"), adminHomepageEnquiriesRoutes);
+app.use("/api/admin/wallet", require("./routes/adminWallet"));
 
 // Backup & Reports routes
 app.use("/api/admin/backups", protect, authorize("admin"), require("./routes/admin/backups"));

@@ -25,6 +25,8 @@ const userSchema = new mongoose.Schema(
     accountDeletedAt: { type: Date },
     pushToken: { type: String, default: "" },
     pushPlatform: { type: String, enum: ["android", "ios", "web", ""], default: "" },
+    // Wallet
+    walletBalance: { type: Number, default: 0 },
     // Customer location fields (for discovery)
     state: { type: String, default: "" },
     district: { type: String, default: "" },

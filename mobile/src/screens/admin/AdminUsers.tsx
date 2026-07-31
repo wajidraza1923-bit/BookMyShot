@@ -156,6 +156,10 @@ export default function AdminUsers({ navigation }: any) {
                 <View style={{ alignItems: 'flex-end' }}>
                   <Text style={s.walletBadge}>₹{(item.walletBalance || 0).toLocaleString('en-IN')}</Text>
                   <Text style={s.bookingBadge}>{item.bookingCount || 0} bookings</Text>
+                  <TouchableOpacity onPress={() => navigation.navigate('AdminUserWallet', { userId: item._id, userName: item.name })} style={{ marginTop: 4, flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3E8FF', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, gap: 3 }}>
+                    <Ionicons name="wallet-outline" size={11} color="#6C3BFF" />
+                    <Text style={{ fontSize: 9, fontWeight: '600', color: '#6C3BFF' }}>Wallet</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
               <View style={s.cardBottom}>
@@ -310,6 +314,7 @@ export default function AdminUsers({ navigation }: any) {
               {/* Actions Tab */}
               {activeTab === 'actions' && (
                 <View style={{ gap: 10 }}>
+                  <TouchableOpacity style={s.actionBtn} onPress={() => { setDetailVisible(false); navigation.navigate('AdminUserWallet', { userId: detail.user._id, userName: detail.user.name }); }}><Ionicons name="wallet-outline" size={18} color="#6C3BFF" /><Text style={s.actionBtnText}>View Full Wallet & Transactions</Text></TouchableOpacity>
                   <TouchableOpacity style={s.actionBtn} onPress={openCashbackModal}><Ionicons name="add-circle" size={18} color="#6C3BFF" /><Text style={s.actionBtnText}>Add / Deduct Cashback</Text></TouchableOpacity>
                   <TouchableOpacity style={[s.actionBtn, { borderColor: detail.user.accountDeleteRequested ? '#D1FAE5' : '#FEE2E2' }]} onPress={() => suspendUser(detail.user._id, detail.user.accountDeleteRequested)}>
                     <Ionicons name={detail.user.accountDeleteRequested ? 'checkmark-circle' : 'ban'} size={18} color={detail.user.accountDeleteRequested ? '#10B981' : '#EF4444'} />
