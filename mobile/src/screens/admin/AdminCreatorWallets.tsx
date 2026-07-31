@@ -1,19 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, Alert, TextInput, Modal, Platform, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 import api from '../../services/api';
 
-const copyToClipboard = async (text: string) => {
-  try {
-    const Clipboard = require('@react-native-clipboard/clipboard')?.default;
-    if (Clipboard) { Clipboard.setString(text); return; }
-  } catch {}
-  // Fallback: use expo-clipboard if available
-  try {
-    const { setStringAsync } = require('expo-clipboard');
-    await setStringAsync(text);
-  } catch {}
-  Alert.alert('Copied', text);
+const copyText = async (text: string, label: string) => {
+  await Clipboard.setStringAsync(text);
+  Alert.alert('✅ Copied!', `${label}: ${text}`);
 };
 
 export default function AdminCreatorWallets({ navigation }: any) {
@@ -281,7 +274,7 @@ function CopyRow({ label, value }: { label: string; value: string }) {
         <Text style={{ fontSize: 10, color: '#6B7280' }}>{label}</Text>
         <Text style={{ fontSize: 13, fontWeight: '600', color: '#1F2937', marginTop: 2 }}>{value}</Text>
       </View>
-      <TouchableOpacity style={{ backgroundColor: '#F3E8FF', borderRadius: 8, padding: 8 }} onPress={() => { copyToClipboard(value); Alert.alert('Copied!', `${label}: ${value}`); }}>
+      <TouchableOpacity style={{ backgroundColor: '#F3E8FF', borderRadius: 8, padding: 8 }} onPress={() => copyText(value, label)}>
         <Ionicons name="copy-outline" size={14} color="#6C3BFF" />
       </TouchableOpacity>
     </View>
