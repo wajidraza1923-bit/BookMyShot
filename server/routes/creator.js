@@ -1157,11 +1157,13 @@ router.patch("/bookings/:id/confirm-payment", async (req, res, next) => {
         if (isCustomerInitiated && bookingFeePaid && cashbackActive && withinDeadline) {
           // Calculate cashback on the advance amount paid (or booking amount if advance not separate)
           const feeAmount = booking.bookingFeeAmount || booking.amount || 0;
+          const totalBookingAmount = booking.totalAmount || booking.quotedAmount || booking.amount || 0;
           let cashbackAmount = Math.round((feeAmount * cashbackPercent) / 100);
           if (settings.maxAmount && cashbackAmount > settings.maxAmount) cashbackAmount = settings.maxAmount;
-          if (feeAmount < (settings.minBookingAmount || 0)) cashbackAmount = 0;
+          // minBookingAmount applies to total booking value, not just the advance fee
+          if (totalBookingAmount < (settings.minBookingAmount || 0)) cashbackAmount = 0;
 
-          console.log("[ConfirmPayment] Cashback calc:", { feeAmount, cashbackPercent, cashbackAmount });
+          console.log("[ConfirmPayment] Cashback calc:", { feeAmount, totalBookingAmount, cashbackPercent, cashbackAmount });
 
           if (cashbackAmount > 0) {
             // Verify customer is the same who paid the booking fee
@@ -1363,9 +1365,11 @@ router.patch("/bookings/:id/complete", async (req, res, next) => {
           if (withinDeadline) {
             // ✅ All conditions met — Calculate and credit cashback
             const feeAmount = booking.bookingFeeAmount || 0;
+            const totalBookingAmount = booking.totalAmount || booking.quotedAmount || booking.amount || 0;
             let cashbackAmount = Math.round((feeAmount * settings.percentage) / 100);
             if (cashbackAmount > settings.maxAmount) cashbackAmount = settings.maxAmount;
-            if (feeAmount < settings.minBookingAmount) cashbackAmount = 0;
+            // minBookingAmount applies to total booking value, not just the advance fee
+            if (totalBookingAmount < settings.minBookingAmount) cashbackAmount = 0;
 
             if (cashbackAmount > 0) {
               const transaction = await CashbackTransaction.create({

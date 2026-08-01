@@ -413,9 +413,11 @@ router.post("/fix-cashback", async (req, res) => {
       const withinDeadline = new Date() <= deadline;
 
       const feeAmount = booking.bookingFeeAmount || 0;
+      const totalBookingAmount = booking.totalAmount || booking.quotedAmount || booking.amount || 0;
       let cashbackAmount = Math.round((feeAmount * cashbackPercent) / 100);
       if (settings.maxAmount && cashbackAmount > settings.maxAmount) cashbackAmount = settings.maxAmount;
-      if (feeAmount < (settings.minBookingAmount || 0)) cashbackAmount = 0;
+      // minBookingAmount applies to total booking value, not just the advance fee
+      if (totalBookingAmount < (settings.minBookingAmount || 0)) cashbackAmount = 0;
 
       if (!withinDeadline) {
         results.push({ bookingId: booking._id, status: "expired", reason: "deadline_exceeded" });
