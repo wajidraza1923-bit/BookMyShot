@@ -20,7 +20,7 @@ export default function CreatorLeads({ navigation }: any) {
   const [tab, setTab] = useState('all');
   const [processing, setProcessing] = useState(false);
   // Subscription lock state
-  const [subInfo, setSubInfo] = useState<any>({ status: 'free', freeLeadsUsed: 0, freeLeadsLimit: 3, monthlyPrice: 199, perLeadPrice: 70 });
+  const [subInfo, setSubInfo] = useState<any>({ status: 'free', freeLeadsUsed: 0, freeLeadsLimit: 3, monthlyPrice: 0, perLeadPrice: 0 });
 
   // Modal states
   const [confirmModal, setConfirmModal] = useState<{ visible: boolean; lead: any | null; action: 'accept' | 'reject' }>({ visible: false, lead: null, action: 'accept' });
@@ -170,21 +170,33 @@ export default function CreatorLeads({ navigation }: any) {
   // ═══ UNLOCK SINGLE LEAD (pay ₹70 via Razorpay) ═══
   const unlockLead = async (leadId: string) => {
     try {
+      console.log('[UnlockLead] Starting unlock for:', leadId);
       const orderRes = await api.post('/leads/unlock-order', { inquiryId: leadId });
+      console.log('[UnlockLead] Response:', JSON.stringify(orderRes.data));
       const order = orderRes.data?.data || orderRes.data;
-      if (!order?.orderId) { Alert.alert('Error', 'Could not create payment order'); return; }
+      const orderId = order?.orderId || order?.data?.orderId;
+      const keyId = order?.keyId || order?.data?.keyId;
+      const amount = order?.amount || order?.data?.amount || subInfo.perLeadPrice;
       
+      if (!orderId) { 
+        console.log('[UnlockLead] No orderId found in:', JSON.stringify(order));
+        Alert.alert('Error', 'Could not create payment order. Please try again.'); 
+        return; 
+      }
+      
+      console.log('[UnlockLead] Opening Razorpay with orderId:', orderId, 'keyId:', keyId, 'amount:', amount);
       setUnlockingLeadId(leadId);
       setUnlockRpConfig({
-        keyId: order.keyId || '',
-        orderId: order.orderId,
-        amount: order.amount || subInfo.perLeadPrice,
+        keyId: keyId || '',
+        orderId: orderId,
+        amount: amount,
         name: 'BookMyShot',
-        description: `Unlock Lead — ₹${order.amount || subInfo.perLeadPrice}`,
+        description: `Unlock Lead — ₹${amount}`,
       });
       setShowUnlockRazorpay(true);
     } catch (e: any) {
-      Alert.alert('Error', e.response?.data?.message || 'Failed to create unlock order');
+      console.log('[UnlockLead] Error:', e.response?.status, e.response?.data, e.message);
+      Alert.alert('Error', e.response?.data?.message || e.message || 'Failed to create unlock order');
     }
   };
 
