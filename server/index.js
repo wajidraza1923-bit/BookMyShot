@@ -120,6 +120,13 @@ const startServer = async () => {
       await collection.dropIndex("booking_1").catch(() => {});
     } catch (e) { /* Index may not exist — ignore */ }
 
+    // Drop unique compound index on CalendarEvent (allows multiple events on same date)
+    try {
+      const mongoose = require("mongoose");
+      const calCol = mongoose.connection.collection("calendarevents");
+      await calCol.dropIndex("creator_1_date_1").catch(() => {});
+    } catch (e) { /* ignore */ }
+
     // Seed default configuration documents on first run
     const configService = require("./services/configService");
     await configService.seedDefaults();
