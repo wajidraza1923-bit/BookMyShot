@@ -166,7 +166,8 @@ router.post("/create-subscription", protect, authorize("creator"), async (req, r
     }
 
     // ═══ MONTHLY PLAN: Recurring subscription (Razorpay Subscriptions API) ═══
-    const trialDays = subSettings.trialDays || 0;
+    // NO trial — creator must pay ₹199 first time, then ₹199/month via AutoPay
+    const trialDays = 0; // Disabled: payment required from day 1
 
     // If creator already has an active Razorpay subscription, check if AutoPay is truly active
     if (creator.razorpaySubscriptionId && creator.subscriptionStatus === "active") {
@@ -190,31 +191,22 @@ router.post("/create-subscription", protect, authorize("creator"), async (req, r
     }
 
     const isRenewal = creator.subscriptionStatus === "expired" || creator.subscriptionStatus === "suspended" || creator.subscriptionStatus === "overdue";
-    const applyTrial = !isRenewal && !creator.subscriptionStartDate;
 
     console.log(`[Razorpay] Creating monthly plan: ₹${monthlyPrice}${isRenewal ? " (RENEWAL)" : " (NEW)"}`);
     const plan = await razorpayService.createPlan(`BookMyShot Creator Monthly ₹${monthlyPrice}`, monthlyPrice, "monthly", 1);
     const planId = plan.id;
 
-    const effectiveTrialDays = applyTrial ? trialDays : 0;
-    const subscription = await razorpayService.createSubscription(planId, 60, effectiveTrialDays, {
+    const subscription = await razorpayService.createSubscription(planId, 60, 0, {
       creatorId: creator._id.toString(),
       userId: req.user._id.toString(),
       creatorEmail: req.user.email || "",
     });
 
+    // Only save subscription ID — do NOT activate until payment is verified
     creator.razorpaySubscriptionId = subscription.id;
     creator.razorpayPlanId = planId;
     creator.subscriptionPlanPrice = monthlyPrice;
     creator.subscriptionPlanType = "monthly";
-    if (effectiveTrialDays > 0) {
-      creator.subscriptionStatus = "trial";
-      creator.subscriptionStartDate = new Date();
-      const trialEnd = new Date();
-      trialEnd.setDate(trialEnd.getDate() + effectiveTrialDays);
-      creator.subscriptionEndDate = trialEnd;
-      creator.nextBillingDate = trialEnd;
-    }
     await creator.save();
 
     res.json({
@@ -337,11 +329,10 @@ router.post("/verify-subscription", protect, async (req, res, next) => {
     const MasterSettings2 = require("../models/MasterSettings");
     const ms2 = await MasterSettings2.findOne();
     const amount = (ms2 && ms2.monthlySubscriptionPrice) || subSettings.monthlyPlanPrice || 199;
-    const trialDays = subSettings.trialDays || 0;
     const now = new Date();
 
-    // Update creator subscription status
-    creator.subscriptionStatus = trialDays > 0 ? "trial" : "active";
+    // Update creator subscription status — ONLY activates after verified payment
+    creator.subscriptionStatus = "active";
     creator.razorpaySubscriptionId = razorpay_subscription_id;
     creator.razorpayCustomerId = razorpay_payment_id;
     if (!creator.subscriptionStartDate) creator.subscriptionStartDate = now;
@@ -362,27 +353,22 @@ router.post("/verify-subscription", protect, async (req, res, next) => {
       // If critical commission exists, account stays suspended — they must pay commission first
     }
     
-    // Set end date based on trial
+    // Set end date: 1 month from payment date
     const endDate = new Date(now);
-    if (trialDays > 0) {
-      endDate.setDate(endDate.getDate() + trialDays);
-    } else {
-      // Set end date based on plan type (monthly = 1 month, yearly = 12 months)
-      const planMonths = creator.subscriptionPlanType === 'yearly' ? 12 : 1;
-      endDate.setMonth(endDate.getMonth() + planMonths);
-    }
+    endDate.setMonth(endDate.getMonth() + 1);
     creator.subscriptionEndDate = endDate;
     creator.nextBillingDate = endDate;
     creator.lastPaymentDate = now;
+    creator.autoRenew = true;
     await creator.save();
 
-    // Create invoice (for the auth payment or first charge)
+    // Create invoice
     await Invoice.create({
       creator: creator._id,
       invoiceNumber: "BMS-SUB-" + Date.now(),
       type: "subscription",
-      description: trialDays > 0 ? `Subscription Activated (${trialDays}-day trial)` : "Monthly Subscription (First Payment)",
-      amount: trialDays > 0 ? 0 : amount,
+      description: "Monthly Subscription (₹" + amount + "/month AutoPay)",
+      amount: amount,
       status: "paid",
       paidAt: now,
       dueDate: endDate,
@@ -393,9 +379,7 @@ router.post("/verify-subscription", protect, async (req, res, next) => {
       user: req.user._id,
       type: "payment",
       title: "✅ Subscription Activated",
-      message: trialDays > 0 
-        ? `Your ${trialDays}-day free trial has started! AutoPay will charge ₹${amount}/month after trial.`
-        : "Your subscription is active. AutoPay will renew automatically every month.",
+      message: `Your monthly subscription is active (₹${amount}/month). AutoPay will renew automatically.`,
     });
 
     // ══ EMAIL: Creator — Subscription Activated ══
@@ -442,7 +426,7 @@ router.post("/verify-subscription", protect, async (req, res, next) => {
 
     res.json({ 
       success: true, 
-      message: trialDays > 0 ? `Trial started! ${trialDays} free days.` : "Subscription activated!",
+      message: "Subscription activated! ₹" + amount + "/month AutoPay enabled.",
       subscriptionId: razorpay_subscription_id,
     });
   } catch (e) {
