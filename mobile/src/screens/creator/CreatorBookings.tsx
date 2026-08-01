@@ -228,25 +228,6 @@ export default function CreatorBookings({ navigation }: any) {
                     await Print.printAsync({ html: htm });
                   } catch { setToast({ visible: true, type: 'error', title: 'Error', message: 'Invoice failed' }); }
                 }} />
-                <ActionBtn icon="share-social-outline" label="Send Invoice" onPress={async () => {
-                  try {
-                    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-                    const Print = require('expo-print');
-                    const Sharing = require('expo-sharing');
-                    const tkn = await AsyncStorage.getItem('bms_token');
-                    const resp = await fetch(`https://site--bookmyshot--ykz2mr8mzlrv.code.run/api/invoice/${item._id}?token=${encodeURIComponent(tkn || '')}`, { headers: { 'Authorization': `Bearer ${tkn}`, 'x-access-token': tkn || '' } });
-                    let htm = await resp.text();
-                    if (!resp.ok || htm.includes('"success":false')) { setToast({ visible: true, type: 'error', title: 'Error', message: 'Invoice not available' }); return; }
-                    htm = htm.replace(/<button[^>]*class="print-btn"[^>]*>.*?<\/button>/gi, '');
-                    const result = await Print.printToFileAsync({ html: htm });
-                    if (await Sharing.isAvailableAsync()) {
-                      await Sharing.shareAsync(result.uri, { mimeType: 'application/pdf', dialogTitle: 'Send Invoice via WhatsApp' });
-                    } else {
-                      const phone = (item.clientPhone || '').replace(/\D/g, '').slice(-10);
-                      if (phone) Linking.openURL(`https://wa.me/91${phone}?text=${encodeURIComponent('Invoice ready: https://site--bookmyshot--ykz2mr8mzlrv.code.run/api/invoice/' + item._id + '?token=' + encodeURIComponent(tkn || ''))}`);
-                    }
-                  } catch { setToast({ visible: true, type: 'error', title: 'Error', message: 'Share failed' }); }
-                }} />
               </View>
             ) : (
               /* ACTIVE: Payment controls + conditional Remind */
