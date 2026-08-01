@@ -11,6 +11,7 @@ import api from '../../services/api';
 import { useAutoRefresh } from '../../hooks/useRealTimeUpdates';
 import PremiumModal from '../../components/PremiumModal';
 import Toast from '../../components/Toast';
+import RazorpayWebCheckout from '../../components/RazorpayWebCheckout';
 
 export default function CreatorLeads({ navigation }: any) {
   const [leads, setLeads] = useState<any[]>([]);
@@ -27,6 +28,10 @@ export default function CreatorLeads({ navigation }: any) {
   const [toast, setToast] = useState<{ visible: boolean; type: 'success' | 'error' | 'info'; title: string; message?: string }>({ visible: false, type: 'info', title: '' });
   // Edit amount modal
   const [editAmountModal, setEditAmountModal] = useState<{ visible: boolean; lead: any | null }>({ visible: false, lead: null });
+  // Per-lead unlock (Razorpay)
+  const [showUnlockRazorpay, setShowUnlockRazorpay] = useState(false);
+  const [unlockRpConfig, setUnlockRpConfig] = useState<any>(null);
+  const [unlockingLeadId, setUnlockingLeadId] = useState('');
   const [editAmount, setEditAmount] = useState('');
 
   const load = useCallback(async () => {
@@ -157,6 +162,52 @@ export default function CreatorLeads({ navigation }: any) {
     } catch (e: any) {
       Alert.alert('Error', e.response?.data?.message || 'Failed to update amount');
     } finally { setProcessing(false); }
+  };
+
+  // ═══ UNLOCK SINGLE LEAD (pay ₹70 via Razorpay) ═══
+  const unlockLead = async (leadId: string) => {
+    try {
+      const orderRes = await api.post('/leads/unlock-order', { inquiryId: leadId });
+      const order = orderRes.data;
+      if (!order.orderId) { Alert.alert('Error', 'Could not create payment order'); return; }
+      
+      setUnlockingLeadId(leadId);
+      setUnlockRpConfig({
+        keyId: order.keyId || process.env.RAZORPAY_KEY_ID,
+        orderId: order.orderId,
+        amount: order.amount || subInfo.perLeadPrice,
+        name: 'BookMyShot',
+        description: `Unlock Lead — ₹${order.amount || subInfo.perLeadPrice}`,
+      });
+      setShowUnlockRazorpay(true);
+    } catch (e: any) {
+      Alert.alert('Error', e.response?.data?.message || 'Failed to create unlock order');
+    }
+  };
+
+  const onUnlockSuccess = async (paymentData: any) => {
+    setShowUnlockRazorpay(false);
+    try {
+      await api.post('/leads/unlock-verify', {
+        razorpay_payment_id: paymentData.razorpay_payment_id,
+        razorpay_order_id: paymentData.razorpay_order_id,
+        razorpay_signature: paymentData.razorpay_signature,
+        inquiryId: unlockingLeadId,
+      });
+      setToast({ visible: true, type: 'success', title: '🔓 Lead Unlocked!', message: 'You can now accept this inquiry.' });
+      await load();
+    } catch (e: any) {
+      Alert.alert('Verification Failed', e.response?.data?.message || 'Contact support if charged.');
+    }
+  };
+
+  // Check if a lead is locked (quota exhausted + not individually unlocked)
+  const isLeadLocked = (lead: any) => {
+    if (subInfo.status === 'active' || subInfo.status === 'trial') return false; // Subscribed = unlimited
+    if (subInfo.freeLeadsUsed < subInfo.freeLeadsLimit) return false; // Still has free quota
+    // Check if this specific lead was unlocked
+    if (subInfo.unlockedLeads?.includes(lead._id)) return false;
+    return true; // Locked
   };
 
   const pendingCount = leads.filter(l => l.status === 'pending').length;
@@ -290,21 +341,40 @@ export default function CreatorLeads({ navigation }: any) {
               {/* Accept / Reject (only for pending) */}
               {item.status === 'pending' && (
                 <View>
-                  {/* Edit Amount Button */}
-                  <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#F3E8FF', borderRadius: 10, paddingVertical: 10, marginBottom: 8, borderWidth: 1, borderColor: '#EDE9FE' }} onPress={() => { setEditAmountModal({ visible: true, lead: item }); setEditAmount(String(item.budget || '')); }}>
-                    <Ionicons name="create-outline" size={14} color="#7C3AED" />
-                    <Text style={{ fontSize: 12, fontWeight: '600', color: '#7C3AED' }}>Edit Amount — ₹{(item.budget || 0).toLocaleString('en-IN')}</Text>
-                  </TouchableOpacity>
-                  <View style={st.actionRow}>
-                    <TouchableOpacity style={st.rejectBtn} onPress={() => promptReject(item)}>
-                      <Ionicons name="close" size={15} color={colors.error} />
-                      <Text style={st.rejectText}>Reject</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={st.acceptBtn} onPress={() => promptAccept(item)}>
-                      <Ionicons name="checkmark" size={15} color="#FFFFFF" />
-                      <Text style={st.acceptText}>Accept</Text>
-                    </TouchableOpacity>
-                  </View>
+                  {isLeadLocked(item) ? (
+                    /* ═══ LOCKED: Show unlock/subscribe options ═══ */
+                    <View style={{ backgroundColor: '#FEF2F2', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#FECACA' }}>
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: '#EF4444', marginBottom: 6 }}>🔒 Lead Locked</Text>
+                      <Text style={{ fontSize: 11, color: '#6B7280', marginBottom: 10 }}>Free quota exhausted. Unlock this lead or subscribe for unlimited.</Text>
+                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                        <TouchableOpacity style={{ flex: 1, alignItems: 'center', paddingVertical: 11, borderRadius: 10, backgroundColor: '#F59E0B' }} onPress={() => unlockLead(item._id)}>
+                          <Text style={{ fontSize: 11, fontWeight: '700', color: '#FFFFFF' }}>🔓 Unlock ₹{subInfo.perLeadPrice}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={{ flex: 1, alignItems: 'center', paddingVertical: 11, borderRadius: 10, backgroundColor: '#6C3BFF' }} onPress={() => navigation.navigate('CreatorSubscription')}>
+                          <Text style={{ fontSize: 11, fontWeight: '700', color: '#FFFFFF' }}>Subscribe ₹{subInfo.monthlyPrice}/mo</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ) : (
+                    /* ═══ UNLOCKED: Show normal accept/reject ═══ */
+                    <>
+                      {/* Edit Amount Button */}
+                      <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#F3E8FF', borderRadius: 10, paddingVertical: 10, marginBottom: 8, borderWidth: 1, borderColor: '#EDE9FE' }} onPress={() => { setEditAmountModal({ visible: true, lead: item }); setEditAmount(String(item.budget || '')); }}>
+                        <Ionicons name="create-outline" size={14} color="#7C3AED" />
+                        <Text style={{ fontSize: 12, fontWeight: '600', color: '#7C3AED' }}>Edit Amount — ₹{(item.budget || 0).toLocaleString('en-IN')}</Text>
+                      </TouchableOpacity>
+                      <View style={st.actionRow}>
+                        <TouchableOpacity style={st.rejectBtn} onPress={() => promptReject(item)}>
+                          <Ionicons name="close" size={15} color={colors.error} />
+                          <Text style={st.rejectText}>Reject</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={st.acceptBtn} onPress={() => promptAccept(item)}>
+                          <Ionicons name="checkmark" size={15} color="#FFFFFF" />
+                          <Text style={st.acceptText}>Accept</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </>
+                  )}
                 </View>
               )}
             </View>
@@ -404,6 +474,21 @@ export default function CreatorLeads({ navigation }: any) {
           </View>
         </View>
       </Modal>
+
+      {/* ═══ RAZORPAY: Unlock Lead Payment ═══ */}
+      {showUnlockRazorpay && unlockRpConfig && (
+        <RazorpayWebCheckout
+          visible={true}
+          keyId={unlockRpConfig.keyId}
+          orderId={unlockRpConfig.orderId}
+          amount={unlockRpConfig.amount}
+          name={unlockRpConfig.name}
+          description={unlockRpConfig.description}
+          onSuccess={onUnlockSuccess}
+          onFailure={() => { setShowUnlockRazorpay(false); Alert.alert('Payment Failed', 'Lead unlock payment failed. Try again.'); }}
+          onClose={() => setShowUnlockRazorpay(false)}
+        />
+      )}
     </View>
   );
 }
