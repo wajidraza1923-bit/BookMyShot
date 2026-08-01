@@ -1628,8 +1628,8 @@ router.post("/backup", async (req, res, next) => {
     let html = `
       <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:800px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
         <!-- Header -->
-        <div style="background:linear-gradient(135deg,#6C3BFF,#8B5CF6);padding:32px;text-align:center;">
-          <h1 style="color:#ffffff;margin:0;font-size:24px;letter-spacing:0.5px;">📸 BookMyShot</h1>
+        <div style="background:#6C3BFF;padding:32px;text-align:center;">
+          <h1 style="color:#ffffff;margin:0;font-size:24px;">BookMyShot</h1>
           <p style="color:#e2d5ff;margin:8px 0 0;font-size:14px;">Data Backup Report</p>
         </div>
 
@@ -1646,13 +1646,15 @@ router.post("/backup", async (req, res, next) => {
 
         <!-- Stats -->
         <div style="padding:24px 32px;border-bottom:1px solid #f1f5f9;">
-          <h3 style="color:#1f2937;margin:0 0 12px;font-size:15px;">📊 Quick Stats</h3>
-          <div style="display:flex;gap:16px;flex-wrap:wrap;">
-            ${includeBookings ? `<div style="background:#f3e8ff;padding:12px 16px;border-radius:8px;flex:1;min-width:120px;"><div style="font-size:20px;font-weight:700;color:#6C3BFF;">${bookings.length}</div><div style="font-size:11px;color:#6b7280;">Bookings</div></div>` : ""}
-            ${includePayments ? `<div style="background:#ecfdf5;padding:12px 16px;border-radius:8px;flex:1;min-width:120px;"><div style="font-size:20px;font-weight:700;color:#10B981;">${payments.length}</div><div style="font-size:11px;color:#6b7280;">Payments</div></div>` : ""}
-            ${includeInquiries ? `<div style="background:#eff6ff;padding:12px 16px;border-radius:8px;flex:1;min-width:120px;"><div style="font-size:20px;font-weight:700;color:#3B82F6;">${inquiries.length}</div><div style="font-size:11px;color:#6b7280;">Inquiries</div></div>` : ""}
-            ${includeWallet ? `<div style="background:#fef3c7;padding:12px 16px;border-radius:8px;flex:1;min-width:120px;"><div style="font-size:20px;font-weight:700;color:#F59E0B;">${walletTxns.length}</div><div style="font-size:11px;color:#6b7280;">Wallet Txns</div></div>` : ""}
-          </div>
+          <h3 style="color:#1f2937;margin:0 0 12px;font-size:15px;">Quick Stats</h3>
+          <table style="width:100%;border-collapse:collapse;">
+            <tr>
+              ${includeBookings ? `<td style="padding:8px;text-align:center;background:#f3e8ff;border-radius:8px;"><div style="font-size:20px;font-weight:700;color:#6C3BFF;">${bookings.length}</div><div style="font-size:11px;color:#6b7280;">Bookings</div></td>` : ""}
+              ${includePayments ? `<td style="padding:8px;text-align:center;background:#ecfdf5;border-radius:8px;"><div style="font-size:20px;font-weight:700;color:#10B981;">${payments.length}</div><div style="font-size:11px;color:#6b7280;">Payments</div></td>` : ""}
+              ${includeInquiries ? `<td style="padding:8px;text-align:center;background:#eff6ff;border-radius:8px;"><div style="font-size:20px;font-weight:700;color:#3B82F6;">${inquiries.length}</div><div style="font-size:11px;color:#6b7280;">Inquiries</div></td>` : ""}
+              ${includeWallet ? `<td style="padding:8px;text-align:center;background:#fef3c7;border-radius:8px;"><div style="font-size:20px;font-weight:700;color:#F59E0B;">${walletTxns.length}</div><div style="font-size:11px;color:#6b7280;">Wallet</div></td>` : ""}
+            </tr>
+          </table>
         </div>
     `;
 
@@ -1786,6 +1788,13 @@ router.post("/backup", async (req, res, next) => {
           <p style="color:#9ca3af;font-size:10px;margin:8px 0 0;">© ${new Date().getFullYear()} BookMyShot. All rights reserved.</p>
         </div>
       </div>
+
+      <!-- Footer -->
+      <div style="padding:20px 32px;text-align:center;background:#f9fafb;border-top:1px solid #e5e7eb;">
+        <p style="color:#6b7280;font-size:11px;margin:0;">This is an automated backup from BookMyShot. Save this email for your records.</p>
+        <p style="color:#9ca3af;font-size:10px;margin:4px 0 0;">bookmyshott@gmail.com | bookmyshot.app</p>
+      </div>
+    </div>
     `;
 
     // Send email
