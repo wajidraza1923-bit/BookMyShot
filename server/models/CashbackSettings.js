@@ -4,8 +4,8 @@ const cashbackSettingsSchema = new mongoose.Schema(
   {
     enabled: { type: Boolean, default: true },
     percentage: { type: Number, default: 10, min: 0, max: 100 },
-    minBookingAmount: { type: Number, default: 1000 },
-    maxAmount: { type: Number, default: 5000 },
+    minBookingAmount: { type: Number, default: 0 },
+    maxAmount: { type: Number, default: 50000 },
     title: { type: String, default: "Cashback Offer" },
     subtitle: { type: String, default: "Earn cashback on every successful booking" },
     showBanner: { type: Boolean, default: true },

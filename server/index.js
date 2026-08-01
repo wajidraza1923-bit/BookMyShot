@@ -124,6 +124,12 @@ const startServer = async () => {
     const configService = require("./services/configService");
     await configService.seedDefaults();
 
+    // Ensure CashbackSettings has minBookingAmount=0 (cashback for any amount)
+    try {
+      const CashbackSettings = require("./models/CashbackSettings");
+      await CashbackSettings.updateOne({}, { $set: { minBookingAmount: 0 } }, { upsert: false });
+    } catch (e) { /* ignore */ }
+
     // Auto-seed CMS content collections if empty (Categories, Districts, etc.)
     try {
       const Category = require("./models/Category");
