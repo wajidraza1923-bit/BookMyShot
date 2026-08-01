@@ -265,4 +265,22 @@ router.get("/check/:creatorId", protect, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// Cancel inquiry (customer can cancel their own pending inquiry)
+router.patch("/:id/cancel", protect, async (req, res, next) => {
+  try {
+    const inquiry = await Inquiry.findOne({ _id: req.params.id, user: req.user._id });
+    if (!inquiry) return res.status(404).json({ success: false, message: "Inquiry not found" });
+    if (inquiry.status !== "pending") return res.status(400).json({ success: false, message: "Can only cancel pending inquiries" });
+    inquiry.status = "cancelled";
+    await inquiry.save();
+    // Notify creator
+    const Notification = require("../models/Notification");
+    const creator = await Creator.findById(inquiry.creator).select("user");
+    if (creator) {
+      await Notification.create({ user: creator.user, title: "Inquiry Cancelled", message: `${inquiry.name} cancelled their inquiry for ${inquiry.eventType}.`, type: "inquiry" });
+    }
+    res.json({ success: true, message: "Inquiry cancelled", inquiry });
+  } catch (e) { next(e); }
+});
+
 module.exports = router;

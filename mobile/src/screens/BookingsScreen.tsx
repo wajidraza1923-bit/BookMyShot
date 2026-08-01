@@ -8,12 +8,13 @@ import { bookingsAPI } from '../services/api';
 import { useAutoRefresh } from '../hooks/useRealTimeUpdates';
 import api from '../services/api';
 
-const tabs = ['Upcoming', 'Completed', 'Cancelled'];
+const tabs = ['Pending', 'Upcoming', 'Completed', 'Cancelled'];
 
 export default function BookingsScreen({ navigation }: any) {
   const { isAuthenticated, role } = useAuth();
   const [activeTab, setActiveTab] = useState('Upcoming');
   const [bookings, setBookings] = useState<any[]>([]);
+  const [pendingInquiries, setPendingInquiries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
@@ -21,10 +22,16 @@ export default function BookingsScreen({ navigation }: any) {
   const loadBookings = useCallback(async () => {
     if (!isAuthenticated) { setLoading(false); return; }
     try {
-      const res = role === 'creator' ? await bookingsAPI.getCreatorBookings() : await bookingsAPI.getUserBookings();
-      const data = res.data?.bookings || res.data?.data || [];
+      const [bookRes, inqRes] = await Promise.all([
+        role === 'creator' ? bookingsAPI.getCreatorBookings() : bookingsAPI.getUserBookings(),
+        role !== 'creator' ? api.get('/inquiries/my').catch(() => ({ data: { inquiries: [] } })) : Promise.resolve({ data: { inquiries: [] } }),
+      ]);
+      const data = bookRes.data?.bookings || bookRes.data?.data || [];
       setBookings(data);
-    } catch { setBookings([]); }
+      // Only pending inquiries (not yet accepted/rejected)
+      const inqs = (inqRes.data?.inquiries || inqRes.data?.data || []).filter((i: any) => i.status === 'pending');
+      setPendingInquiries(inqs);
+    } catch { setBookings([]); setPendingInquiries([]); }
     finally { setLoading(false); }
   }, [isAuthenticated, role]);
 
@@ -44,6 +51,7 @@ export default function BookingsScreen({ navigation }: any) {
 
   const filterBookings = () => bookings.filter(b => {
     const s = (b.status || '').toLowerCase();
+    if (activeTab === 'Pending') return false; // Pending tab shows inquiries, not bookings
     if (activeTab === 'Upcoming') return !s.includes('complete') && !s.includes('cancel') && !s.includes('reject');
     if (activeTab === 'Completed') return s.includes('complete');
     return s.includes('cancel') || s.includes('reject');
@@ -114,7 +122,47 @@ export default function BookingsScreen({ navigation }: any) {
 
       {loading ? <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} /> : (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 14, paddingBottom: 100 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />}>
-          {filtered.length > 0 ? filtered.map(b => {
+          {/* ═══ PENDING INQUIRIES TAB ═══ */}
+          {activeTab === 'Pending' ? (
+            pendingInquiries.length > 0 ? pendingInquiries.map((inq: any) => (
+              <View key={inq._id} style={[s.bookingCard, { borderLeftWidth: 3, borderLeftColor: '#F59E0B' }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                  <Ionicons name="time-outline" size={16} color="#F59E0B" />
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#1F2937', marginLeft: 8, flex: 1 }}>Pending — Waiting for creator</Text>
+                  <View style={{ backgroundColor: '#FFFBEB', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
+                    <Text style={{ fontSize: 10, fontWeight: '600', color: '#92400E' }}>Pending</Text>
+                  </View>
+                </View>
+                <Text style={{ fontSize: 12, color: '#374151', fontWeight: '600' }}>{inq.eventType || 'Event'}</Text>
+                <Text style={{ fontSize: 11, color: '#6B7280', marginTop: 2 }}>Sent to: {inq.creator?.user?.name || 'Creator'} • {inq.city || ''}</Text>
+                {inq.eventDate && <Text style={{ fontSize: 10, color: '#6B7280', marginTop: 2 }}>📅 {new Date(inq.eventDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</Text>}
+                {inq.budget > 0 && <Text style={{ fontSize: 10, color: '#6B7280', marginTop: 2 }}>💰 Budget: ₹{inq.budget.toLocaleString('en-IN')}</Text>}
+                {inq.message && <Text style={{ fontSize: 10, color: '#9CA3AF', marginTop: 4, fontStyle: 'italic' }} numberOfLines={2}>"{inq.message}"</Text>}
+                <Text style={{ fontSize: 9, color: '#9CA3AF', marginTop: 6 }}>Sent {inq.createdAt ? new Date(inq.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}</Text>
+                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 10, backgroundColor: '#FEF2F2', borderRadius: 10, paddingVertical: 10, borderWidth: 1, borderColor: '#FECACA' }} onPress={() => {
+                  Alert.alert('Cancel Inquiry?', 'Are you sure you want to cancel this inquiry?', [
+                    { text: 'Keep', style: 'cancel' },
+                    { text: 'Cancel Inquiry', style: 'destructive', onPress: async () => {
+                      try {
+                        await api.patch(`/inquiries/${inq._id}/cancel`);
+                        setPendingInquiries(prev => prev.filter(i => i._id !== inq._id));
+                        Alert.alert('Cancelled', 'Inquiry has been cancelled.');
+                      } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed to cancel'); }
+                    }},
+                  ]);
+                }}>
+                  <Ionicons name="close-circle" size={14} color="#EF4444" />
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: '#EF4444' }}>Cancel Inquiry</Text>
+                </TouchableOpacity>
+              </View>
+            )) : (
+              <View style={s.emptyState}>
+                <Ionicons name="mail-outline" size={40} color="#D1D5DB" />
+                <Text style={s.emptyTitle}>No Pending Inquiries</Text>
+                <Text style={s.emptySubtitle}>Send an inquiry to a creator to see it here</Text>
+              </View>
+            )
+          ) : filtered.length > 0 ? filtered.map(b => {
             const creatorName = b.creator?.user?.name || b.clientName || 'Creator';
             const creatorAvatar = typeof b.creator?.user?.avatar === 'string' ? b.creator.user.avatar : '';
             const eventDate = b.eventDate ? new Date(b.eventDate) : null;
