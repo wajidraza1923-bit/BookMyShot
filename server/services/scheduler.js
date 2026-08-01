@@ -609,6 +609,104 @@ function initScheduler() {
       console.log(`[Scheduler] Admin engagement reminder sent with ${suggestions.length} suggestions`);
     } catch (e) { console.error("[Scheduler] Admin reminder error:", e.message); }
   });
+
+  // ═══ Every 30 minutes — Razorpay Payment Reconciliation ═══
+  // Catches payments where verify callback failed (network issues, server restart, etc.)
+  cron.schedule("*/30 * * * *", async () => {
+    console.log("[Scheduler] Running Razorpay payment reconciliation...");
+    try {
+      const Razorpay = require("razorpay");
+      const keyId = process.env.RAZORPAY_KEY_ID;
+      const keySecret = process.env.RAZORPAY_KEY_SECRET;
+      if (!keyId || !keySecret) {
+        console.log("[Scheduler] Razorpay not configured — skipping reconciliation");
+        return;
+      }
+
+      const razorpay = new Razorpay({ key_id: keyId, key_secret: keySecret });
+      const Booking = require("../models/Booking");
+      const Notification = require("../models/Notification");
+      const Creator = require("../models/Creator");
+
+      // Fetch recent captured payments (last 24 hours)
+      const oneDayAgo = Math.floor((Date.now() - 86400000) / 1000);
+      let payments = [];
+      try {
+        const result = await razorpay.payments.all({ count: 50, from: oneDayAgo });
+        payments = (result.items || []).filter(p => p.status === "captured");
+      } catch (fetchErr) {
+        console.log("[Scheduler] Razorpay fetch error:", fetchErr.message);
+        return;
+      }
+
+      let reconciled = 0;
+      for (const payment of payments) {
+        const notes = payment.notes || {};
+        const bookingId = notes.bookingId;
+        const type = notes.type;
+
+        if (type === "booking_fee" && bookingId) {
+          // Check if this booking already has fee marked as paid
+          const booking = await Booking.findById(bookingId);
+          if (booking && !booking.bookingFeePaid) {
+            // Payment captured but booking not updated — reconcile!
+            console.log(`[Reconciliation] Found unverified payment ${payment.id} for booking ${bookingId} — fixing...`);
+            
+            const MasterSettings = require("../models/MasterSettings");
+            const ms = await MasterSettings.findOne();
+            const BOOKING_FEE_PERCENT = (ms && ms.bookingCommission) || 2.5;
+            const totalAmount = booking.totalAmount || booking.quotedAmount || booking.amount || 0;
+            const bookingFeeAmount = Math.round(totalAmount * BOOKING_FEE_PERCENT / 100);
+
+            await Booking.findByIdAndUpdate(bookingId, {
+              $set: {
+                bookingFeePaid: true,
+                bookingFeeAmount: bookingFeeAmount,
+                bookingFeePercent: BOOKING_FEE_PERCENT,
+                bookingFeePaymentId: payment.id,
+                bookingFeeOrderId: payment.order_id,
+                bookingFeePaidAt: new Date(payment.created_at * 1000),
+                advancePaid: bookingFeeAmount,
+                remaining: totalAmount - bookingFeeAmount,
+                paymentStatus: 'partial',
+                amountLocked: true,
+                status: "Payment Approved",
+              },
+            });
+
+            // Notify customer
+            await Notification.create({
+              user: booking.user,
+              title: "✅ Booking Confirmed!",
+              message: `Your advance payment of ₹${bookingFeeAmount.toLocaleString('en-IN')} has been verified. Booking confirmed!`,
+              type: "payment", targetScreen: "Bookings", targetId: bookingId,
+            });
+
+            // Notify creator
+            const creator = await Creator.findById(booking.creator).select("user");
+            if (creator) {
+              await Notification.create({
+                user: creator.user,
+                title: "💰 Advance Payment Received!",
+                message: `Customer paid ₹${bookingFeeAmount.toLocaleString('en-IN')} advance. Booking confirmed.`,
+                type: "payment", targetScreen: "CreatorBookings", targetId: bookingId,
+              });
+            }
+
+            reconciled++;
+          }
+        }
+      }
+      
+      if (reconciled > 0) {
+        console.log(`[Scheduler] Razorpay reconciliation: ${reconciled} payments recovered`);
+      }
+    } catch (e) {
+      console.error("[Scheduler] Razorpay reconciliation error:", e.message);
+    }
+  }, { timezone: "Asia/Kolkata" });
+
+  console.log("[Scheduler] ✅ Razorpay payment reconciliation registered (every 30 minutes)");
 }
 
 module.exports = { initScheduler };
