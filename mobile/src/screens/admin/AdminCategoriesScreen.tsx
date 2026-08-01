@@ -261,7 +261,7 @@ export default function AdminCategoriesScreen({ navigation }: any) {
                   if (!result.canceled && result.assets[0]) {
                     try {
                       const base64 = `data:image/jpeg;base64,${result.assets[0].base64}`;
-                      const uploadRes = await api.post('/creators/upload/avatar', { imageUrl: base64 });
+                      const uploadRes = await api.post('/discover/admin/upload-image', { imageBase64: base64 });
                       if (uploadRes.data?.url) setForm({ ...form, imageUrl: uploadRes.data.url });
                     } catch { Alert.alert('Upload Failed', 'Could not upload image'); }
                   }
@@ -315,7 +315,7 @@ export default function AdminCategoriesScreen({ navigation }: any) {
                   if (!result.canceled && result.assets[0]) {
                     try {
                       const base64 = `data:image/jpeg;base64,${result.assets[0].base64}`;
-                      const uploadRes = await api.post('/creators/upload/avatar', { imageUrl: base64 });
+                      const uploadRes = await api.post('/discover/admin/upload-image', { imageBase64: base64 });
                       if (uploadRes.data?.url) setSubForm({ ...subForm, imageUrl: uploadRes.data.url });
                     } catch { Alert.alert('Upload Failed', 'Could not upload image'); }
                   }

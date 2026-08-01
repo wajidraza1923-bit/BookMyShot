@@ -315,4 +315,21 @@ router.delete("/admin/categories/:id", protect, authorize("admin"), async (req, 
   try { await Category.findByIdAndDelete(req.params.id); res.json({ success: true }); } catch (e) { next(e); }
 });
 
+// ═══ ADMIN: Upload category/subcategory image to Cloudinary ═══
+router.post("/admin/upload-image", protect, authorize("admin"), async (req, res, next) => {
+  try {
+    const { imageBase64 } = req.body;
+    if (!imageBase64) return res.status(400).json({ success: false, message: "No image data provided" });
+
+    const { uploadBase64, isConfigured } = require("../services/cloudinaryService");
+    if (!isConfigured()) return res.status(500).json({ success: false, message: "Cloudinary not configured" });
+
+    const result = await uploadBase64(imageBase64, { folder: "bookmyshot/categories" });
+    res.json({ success: true, url: result.url, publicId: result.publicId });
+  } catch (e) {
+    console.log("[CategoryUpload] Error:", e.message);
+    next(e);
+  }
+});
+
 module.exports = router;
