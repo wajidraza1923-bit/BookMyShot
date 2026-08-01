@@ -360,8 +360,9 @@ export default function BookingDetail({ route, navigation }: any) {
   const totalPaid = approvedPays.reduce((s: number, r: any) => s + (r.amount || 0), 0);
   const bookingAmt = booking.amount || 0;
   const remaining = Math.max(0, bookingAmt - totalPaid);
-  const progress = bookingAmt > 0 ? Math.min(100, Math.round((totalPaid / bookingAmt) * 100)) : 0;
-  const advancePaid = booking.bookingFeeAmount || Math.round(bookingAmt * 0.05);
+  const progress = booking.paymentConfirmed ? 100 : (bookingAmt > 0 ? Math.min(100, Math.round((totalPaid / bookingAmt) * 100)) : 0);
+  const feePercent = booking.bookingFeePercent || booking.commissionPercentUsed || 7;
+  const advancePaid = booking.bookingFeeAmount || booking.advancePaid || Math.round(bookingAmt * feePercent / 100);
   const receivable = booking.creatorReceivable || (bookingAmt - (booking.commissionAmount || 0));
   const isCompleted = booking.status === 'Completed' || booking.status === 'completed';
 
@@ -415,7 +416,7 @@ export default function BookingDetail({ route, navigation }: any) {
               <Text style={[s.payCardAmt, { color: G }]}>{rs(bookingAmt)}</Text>
             </View>
             <View style={[s.payCard, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
-              <Text style={s.payCardLabel}>Advance (5%)</Text>
+              <Text style={s.payCardLabel}>Advance ({feePercent}%)</Text>
               <Text style={[s.payCardAmt, { color: '#92400E' }]}>{rs(advancePaid)}</Text>
               <Text style={s.payCardSub}>Paid to BookMyShot</Text>
             </View>
@@ -450,7 +451,7 @@ export default function BookingDetail({ route, navigation }: any) {
           <View style={s.advanceNote}>
             <Ionicons name="information-circle-outline" size={14} color={GOLD} />
             <Text style={s.advanceNoteTxt}>
-              5% advance ({rs(advancePaid)}) paid to BookMyShot as booking confirmation. Remaining ({rs(remaining)}) payable directly to vendor.
+              {feePercent}% advance ({rs(advancePaid)}) paid to BookMyShot as booking confirmation. Remaining ({rs(remaining)}) payable directly to vendor.
             </Text>
           </View>
         </View>
