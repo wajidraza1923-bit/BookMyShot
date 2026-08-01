@@ -74,7 +74,11 @@ export default function InquiryScreen({ route, navigation }: any) {
     if (creatorId) {
       api.get(`/creators/${creatorId}/availability`).then(res => {
         const events = res.data?.events || [];
-        setBlockedDates(events.map((e: any) => new Date(e.date).toDateString()));
+        // Use YYYY-MM-DD string comparison to avoid timezone day-shift
+        setBlockedDates(events.map((e: any) => {
+          const d = new Date(e.date);
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }));
       }).catch(() => {});
     }
   }, [creatorId]);
@@ -86,7 +90,8 @@ export default function InquiryScreen({ route, navigation }: any) {
       Alert.alert('Invalid Date', 'Please select a valid future event date.');
       return;
     }
-    if (blockedDates.includes(date.toDateString())) {
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    if (blockedDates.includes(dateStr)) {
       Alert.alert('🚫 Date Unavailable', 'This date is unavailable. The creator has already blocked or booked this date. Please choose another available date.');
       return;
     }
@@ -370,7 +375,8 @@ function DateGrid({ selectedDate, onSelect, blockedDates = [] }: { selectedDate:
           if (!day) return <View key={i} style={{ width: '14.28%', height: 38 }} />;
           const date = new Date(year, month, day);
           const isPast = date < today;
-          const isBlocked = blockedDates.includes(date.toDateString());
+          const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+          const isBlocked = blockedDates.includes(dateStr);
           const isDisabled = isPast || isBlocked;
           const isSelected = selectedDate && date.toDateString() === selectedDate.toDateString();
           const isToday = date.toDateString() === today.toDateString();

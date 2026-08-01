@@ -25,7 +25,9 @@ export default function CreatorAvailability({ navigation }: any) {
   const blockDate = async () => {
     if (!newDate.match(/^\d{4}-\d{2}-\d{2}$/)) { Alert.alert('Error', 'Enter date as YYYY-MM-DD'); return; }
     try {
-      await api.post('/creator/calendar/private', { title: newReason || 'Unavailable', date: newDate, type: 'unavailable', category: 'Personal' });
+      // Store at noon UTC to avoid timezone day-shift issues
+      const dateAtNoon = `${newDate}T12:00:00.000Z`;
+      await api.post('/creator/calendar/private', { title: newReason || 'Unavailable', date: dateAtNoon, type: 'unavailable', category: 'Personal' });
       setShowAdd(false); setNewDate(''); setNewReason('');
       await load();
       Alert.alert('Done', 'Date blocked successfully');
