@@ -185,23 +185,6 @@ export default function CreatorBackup({ navigation }: any) {
           </View>
         )}
 
-        {/* Request Button */}
-        <TouchableOpacity
-          style={[styles.requestBtn, loading && styles.requestBtnDisabled]}
-          onPress={requestBackup}
-          disabled={loading}
-          activeOpacity={0.8}
-        >
-          {loading ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <>
-              <Ionicons name="mail-outline" size={18} color="#fff" />
-              <Text style={styles.requestBtnText}>Send to Email</Text>
-            </>
-          )}
-        </TouchableOpacity>
-
         {/* Download PDF Button */}
         <TouchableOpacity
           style={[styles.requestBtn, { backgroundColor: '#1F2937', marginTop: -8 }, pdfLoading && styles.requestBtnDisabled]}
@@ -243,7 +226,7 @@ export default function CreatorBackup({ navigation }: any) {
 
         {/* Note */}
         <Text style={styles.noteText}>
-          Send to Email: delivers backup report to your registered email.{'\n'}Download PDF: generates a PDF file on your device.
+          Opens print dialog where you can save as PDF or print directly.
         </Text>
       </ScrollView>
     </View>
