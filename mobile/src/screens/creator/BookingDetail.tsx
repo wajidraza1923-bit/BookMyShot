@@ -436,7 +436,6 @@ export default function BookingDetail({ route, navigation }: any) {
           <View style={s.actionGrid}>
             <ABtn icon="chatbubble-outline" label="Chat" color={G} onPress={() => navigation.navigate('BookingChat', { bookingId })} />
             <ABtn icon="document-text-outline" label="Invoice" color={G} onPress={downloadInvoice} />
-            <ABtn icon="share-social-outline" label="Share PDF" color={GOLD} onPress={shareInvoicePDF} />
             <ABtn icon="logo-whatsapp" label="WhatsApp" color="#25D366" onPress={() => {
               const phone = (booking.clientPhone || '').replace(/\D/g, '').slice(-10);
               const docNo = booking.invoiceNumber || ('BMS-' + (booking._id || '').slice(-8).toUpperCase());
