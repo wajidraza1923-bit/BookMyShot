@@ -1552,4 +1552,253 @@ router.get("/earnings", async (req, res, next) => {
   }
 });
 
+// ─── DATA BACKUP ────────────────────────────────────────────────────────────────
+
+router.post("/backup", async (req, res, next) => {
+  try {
+    const creator = await getCreator(req.user._id);
+    const emailService = require("../services/emailService");
+    const pushService = require("../services/pushService");
+    const CreatorWalletTransaction = require("../models/CreatorWallet");
+
+    const {
+      includeBookings = true,
+      includePayments = true,
+      includeInquiries = true,
+      includeWallet = true,
+      dateFrom,
+      dateTo,
+    } = req.body;
+
+    // Build date filter
+    const dateFilter = {};
+    if (dateFrom) dateFilter.$gte = new Date(dateFrom);
+    if (dateTo) dateFilter.$lte = new Date(dateTo + "T23:59:59.999Z");
+    const hasDateFilter = Object.keys(dateFilter).length > 0;
+
+    // Collect data
+    let bookings = [];
+    let payments = [];
+    let inquiries = [];
+    let walletTxns = [];
+
+    if (includeBookings) {
+      const query = { creator: creator._id };
+      if (hasDateFilter) query.createdAt = dateFilter;
+      bookings = await Booking.find(query).populate("user", "name email phone").sort("-createdAt").lean();
+    }
+
+    if (includePayments) {
+      const query = { creator: creator._id };
+      if (hasDateFilter) query.createdAt = dateFilter;
+      payments = await PaymentRecord.find(query).sort("-createdAt").lean();
+    }
+
+    if (includeInquiries) {
+      const query = { creator: creator._id };
+      if (hasDateFilter) query.createdAt = dateFilter;
+      inquiries = await Inquiry.find(query).populate("user", "name email phone").sort("-createdAt").lean();
+    }
+
+    if (includeWallet) {
+      const query = { creator: creator._id };
+      if (hasDateFilter) query.createdAt = dateFilter;
+      walletTxns = await CreatorWalletTransaction.find(query).sort("-createdAt").lean();
+    }
+
+    // Build date range label
+    const rangeLabel = dateFrom || dateTo
+      ? `${dateFrom || "Start"} to ${dateTo || "Present"}`
+      : "All Time";
+
+    // Build HTML email
+    const categories = [];
+    if (includeBookings) categories.push("Bookings");
+    if (includePayments) categories.push("Payments");
+    if (includeInquiries) categories.push("Inquiries");
+    if (includeWallet) categories.push("Wallet Transactions");
+
+    let html = `
+      <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:800px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+        <!-- Header -->
+        <div style="background:linear-gradient(135deg,#6C3BFF,#8B5CF6);padding:32px;text-align:center;">
+          <h1 style="color:#ffffff;margin:0;font-size:24px;letter-spacing:0.5px;">📸 BookMyShot</h1>
+          <p style="color:#e2d5ff;margin:8px 0 0;font-size:14px;">Data Backup Report</p>
+        </div>
+
+        <!-- Summary -->
+        <div style="padding:24px 32px;border-bottom:1px solid #f1f5f9;">
+          <h2 style="color:#1f2937;margin:0 0 12px;font-size:18px;">Backup Summary</h2>
+          <table style="width:100%;border-collapse:collapse;">
+            <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Creator</td><td style="padding:6px 0;color:#1f2937;font-size:13px;font-weight:600;">${req.user.name || "Creator"}</td></tr>
+            <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Date Range</td><td style="padding:6px 0;color:#1f2937;font-size:13px;font-weight:600;">${rangeLabel}</td></tr>
+            <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Categories</td><td style="padding:6px 0;color:#1f2937;font-size:13px;font-weight:600;">${categories.join(", ")}</td></tr>
+            <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Generated</td><td style="padding:6px 0;color:#1f2937;font-size:13px;font-weight:600;">${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}</td></tr>
+          </table>
+        </div>
+
+        <!-- Stats -->
+        <div style="padding:24px 32px;border-bottom:1px solid #f1f5f9;">
+          <h3 style="color:#1f2937;margin:0 0 12px;font-size:15px;">📊 Quick Stats</h3>
+          <div style="display:flex;gap:16px;flex-wrap:wrap;">
+            ${includeBookings ? `<div style="background:#f3e8ff;padding:12px 16px;border-radius:8px;flex:1;min-width:120px;"><div style="font-size:20px;font-weight:700;color:#6C3BFF;">${bookings.length}</div><div style="font-size:11px;color:#6b7280;">Bookings</div></div>` : ""}
+            ${includePayments ? `<div style="background:#ecfdf5;padding:12px 16px;border-radius:8px;flex:1;min-width:120px;"><div style="font-size:20px;font-weight:700;color:#10B981;">${payments.length}</div><div style="font-size:11px;color:#6b7280;">Payments</div></div>` : ""}
+            ${includeInquiries ? `<div style="background:#eff6ff;padding:12px 16px;border-radius:8px;flex:1;min-width:120px;"><div style="font-size:20px;font-weight:700;color:#3B82F6;">${inquiries.length}</div><div style="font-size:11px;color:#6b7280;">Inquiries</div></div>` : ""}
+            ${includeWallet ? `<div style="background:#fef3c7;padding:12px 16px;border-radius:8px;flex:1;min-width:120px;"><div style="font-size:20px;font-weight:700;color:#F59E0B;">${walletTxns.length}</div><div style="font-size:11px;color:#6b7280;">Wallet Txns</div></div>` : ""}
+          </div>
+        </div>
+    `;
+
+    // Bookings table
+    if (includeBookings && bookings.length > 0) {
+      html += `
+        <div style="padding:24px 32px;border-bottom:1px solid #f1f5f9;">
+          <h3 style="color:#1f2937;margin:0 0 12px;font-size:15px;">📅 Bookings (${bookings.length})</h3>
+          <table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead>
+              <tr style="background:#f8f6ff;">
+                <th style="padding:8px;text-align:left;border-bottom:1px solid #e5e7eb;color:#6b7280;">Client</th>
+                <th style="padding:8px;text-align:left;border-bottom:1px solid #e5e7eb;color:#6b7280;">Event</th>
+                <th style="padding:8px;text-align:left;border-bottom:1px solid #e5e7eb;color:#6b7280;">Date</th>
+                <th style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb;color:#6b7280;">Amount</th>
+                <th style="padding:8px;text-align:center;border-bottom:1px solid #e5e7eb;color:#6b7280;">Status</th>
+                <th style="padding:8px;text-align:center;border-bottom:1px solid #e5e7eb;color:#6b7280;">Payment</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+      for (const b of bookings) {
+        html += `
+              <tr style="border-bottom:1px solid #f1f5f9;">
+                <td style="padding:8px;">${b.clientName || (b.user && b.user.name) || "—"}</td>
+                <td style="padding:8px;">${b.eventType || "—"}</td>
+                <td style="padding:8px;">${b.eventDate ? new Date(b.eventDate).toLocaleDateString("en-IN") : "—"}</td>
+                <td style="padding:8px;text-align:right;">₹${(b.amount || b.budget || 0).toLocaleString("en-IN")}</td>
+                <td style="padding:8px;text-align:center;"><span style="background:#f3e8ff;color:#6C3BFF;padding:2px 8px;border-radius:10px;font-size:10px;">${b.status || "—"}</span></td>
+                <td style="padding:8px;text-align:center;"><span style="font-size:10px;">${b.paymentStatus || "—"}</span></td>
+              </tr>
+        `;
+      }
+      html += `</tbody></table></div>`;
+    }
+
+    // Payments table
+    if (includePayments && payments.length > 0) {
+      html += `
+        <div style="padding:24px 32px;border-bottom:1px solid #f1f5f9;">
+          <h3 style="color:#1f2937;margin:0 0 12px;font-size:15px;">💳 Payment Records (${payments.length})</h3>
+          <table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead>
+              <tr style="background:#ecfdf5;">
+                <th style="padding:8px;text-align:left;border-bottom:1px solid #e5e7eb;color:#6b7280;">Date</th>
+                <th style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb;color:#6b7280;">Amount</th>
+                <th style="padding:8px;text-align:center;border-bottom:1px solid #e5e7eb;color:#6b7280;">Type</th>
+                <th style="padding:8px;text-align:center;border-bottom:1px solid #e5e7eb;color:#6b7280;">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+      for (const p of payments) {
+        html += `
+              <tr style="border-bottom:1px solid #f1f5f9;">
+                <td style="padding:8px;">${p.createdAt ? new Date(p.createdAt).toLocaleDateString("en-IN") : "—"}</td>
+                <td style="padding:8px;text-align:right;">₹${(p.amount || 0).toLocaleString("en-IN")}</td>
+                <td style="padding:8px;text-align:center;">${p.type || p.paymentType || "—"}</td>
+                <td style="padding:8px;text-align:center;"><span style="background:#ecfdf5;color:#10B981;padding:2px 8px;border-radius:10px;font-size:10px;">${p.status || "—"}</span></td>
+              </tr>
+        `;
+      }
+      html += `</tbody></table></div>`;
+    }
+
+    // Inquiries table
+    if (includeInquiries && inquiries.length > 0) {
+      html += `
+        <div style="padding:24px 32px;border-bottom:1px solid #f1f5f9;">
+          <h3 style="color:#1f2937;margin:0 0 12px;font-size:15px;">📩 Inquiries (${inquiries.length})</h3>
+          <table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead>
+              <tr style="background:#eff6ff;">
+                <th style="padding:8px;text-align:left;border-bottom:1px solid #e5e7eb;color:#6b7280;">Name</th>
+                <th style="padding:8px;text-align:left;border-bottom:1px solid #e5e7eb;color:#6b7280;">Event</th>
+                <th style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb;color:#6b7280;">Budget</th>
+                <th style="padding:8px;text-align:center;border-bottom:1px solid #e5e7eb;color:#6b7280;">Status</th>
+                <th style="padding:8px;text-align:left;border-bottom:1px solid #e5e7eb;color:#6b7280;">Date</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+      for (const i of inquiries) {
+        html += `
+              <tr style="border-bottom:1px solid #f1f5f9;">
+                <td style="padding:8px;">${i.name || (i.user && i.user.name) || "—"}</td>
+                <td style="padding:8px;">${i.eventType || "—"}</td>
+                <td style="padding:8px;text-align:right;">₹${(i.budget || 0).toLocaleString("en-IN")}</td>
+                <td style="padding:8px;text-align:center;"><span style="background:#eff6ff;color:#3B82F6;padding:2px 8px;border-radius:10px;font-size:10px;">${i.status || "—"}</span></td>
+                <td style="padding:8px;">${i.createdAt ? new Date(i.createdAt).toLocaleDateString("en-IN") : "—"}</td>
+              </tr>
+        `;
+      }
+      html += `</tbody></table></div>`;
+    }
+
+    // Wallet transactions table
+    if (includeWallet && walletTxns.length > 0) {
+      html += `
+        <div style="padding:24px 32px;border-bottom:1px solid #f1f5f9;">
+          <h3 style="color:#1f2937;margin:0 0 12px;font-size:15px;">💰 Wallet Transactions (${walletTxns.length})</h3>
+          <table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead>
+              <tr style="background:#fef3c7;">
+                <th style="padding:8px;text-align:left;border-bottom:1px solid #e5e7eb;color:#6b7280;">Date</th>
+                <th style="padding:8px;text-align:left;border-bottom:1px solid #e5e7eb;color:#6b7280;">Type</th>
+                <th style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb;color:#6b7280;">Amount</th>
+                <th style="padding:8px;text-align:center;border-bottom:1px solid #e5e7eb;color:#6b7280;">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+      for (const w of walletTxns) {
+        const isCredit = ["cashback_credit", "admin_credit"].includes(w.type);
+        html += `
+              <tr style="border-bottom:1px solid #f1f5f9;">
+                <td style="padding:8px;">${w.createdAt ? new Date(w.createdAt).toLocaleDateString("en-IN") : "—"}</td>
+                <td style="padding:8px;">${(w.type || "").replace(/_/g, " ")}</td>
+                <td style="padding:8px;text-align:right;color:${isCredit ? "#10B981" : "#EF4444"};">${isCredit ? "+" : "-"}₹${(w.amount || 0).toLocaleString("en-IN")}</td>
+                <td style="padding:8px;text-align:center;">${w.status || "completed"}</td>
+              </tr>
+        `;
+      }
+      html += `</tbody></table></div>`;
+    }
+
+    // Footer
+    html += `
+        <div style="padding:24px 32px;text-align:center;background:#f8f6ff;">
+          <p style="color:#6b7280;font-size:11px;margin:0;">This is an automated backup from BookMyShot. Keep this email for your records.</p>
+          <p style="color:#9ca3af;font-size:10px;margin:8px 0 0;">© ${new Date().getFullYear()} BookMyShot. All rights reserved.</p>
+        </div>
+      </div>
+    `;
+
+    // Send email
+    await emailService.sendEmail({
+      to: req.user.email,
+      subject: `📦 Your Data Backup — ${rangeLabel} | BookMyShot`,
+      html,
+      type: "backup",
+      userId: req.user._id,
+    });
+
+    // Send push notification
+    try {
+      pushService.sendToUser(req.user._id, "BookMyShot — Backup Sent ✅", "Your data backup has been sent to your registered email.");
+    } catch {}
+
+    res.json({ success: true, message: "Backup sent to your email" });
+  } catch (e) {
+    next(e);
+  }
+});
+
 module.exports = router;

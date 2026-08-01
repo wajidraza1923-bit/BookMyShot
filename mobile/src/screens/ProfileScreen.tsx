@@ -69,6 +69,7 @@ export default function ProfileScreen({ navigation }: any) {
         { icon: 'star-outline', label: 'Reviews', screen: 'CreatorReviews', badge: stats.reviews > 0 ? String(stats.reviews) : null },
         { icon: 'calendar-clear-outline', label: 'Calendar', screen: 'CreatorCalendar' },
         { icon: 'ban-outline', label: 'Availability', screen: 'CreatorAvailability' },
+        { icon: 'cloud-download-outline', label: 'Data Backup', screen: 'CreatorBackup' },
         { icon: 'location-outline', label: 'Service Areas', screen: 'CreatorServiceAreas' },
       ],
     },

@@ -1,0 +1,379 @@
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  TextInput,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, spacing, typography, radius } from '../../theme';
+import api from '../../services/api';
+
+export default function CreatorBackup({ navigation }: any) {
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [includeBookings, setIncludeBookings] = useState(true);
+  const [includePayments, setIncludePayments] = useState(true);
+  const [includeInquiries, setIncludeInquiries] = useState(true);
+  const [includeWallet, setIncludeWallet] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  const requestBackup = async () => {
+    if (!includeBookings && !includePayments && !includeInquiries && !includeWallet) {
+      Alert.alert('Select Data', 'Please select at least one data category to backup.');
+      return;
+    }
+
+    // Validate date format if provided
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (dateFrom && !dateRegex.test(dateFrom)) {
+      Alert.alert('Invalid Date', 'From date must be in YYYY-MM-DD format.');
+      return;
+    }
+    if (dateTo && !dateRegex.test(dateTo)) {
+      Alert.alert('Invalid Date', 'To date must be in YYYY-MM-DD format.');
+      return;
+    }
+
+    setLoading(true);
+    setSuccess(false);
+    try {
+      const body: any = { includeBookings, includePayments, includeInquiries, includeWallet };
+      if (dateFrom) body.dateFrom = dateFrom;
+      if (dateTo) body.dateTo = dateTo;
+
+      await api.post('/creator/backup', body);
+      setSuccess(true);
+    } catch (e: any) {
+      Alert.alert('Error', e.response?.data?.message || 'Failed to request backup. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const ToggleItem = ({
+    label,
+    icon,
+    value,
+    onToggle,
+  }: {
+    label: string;
+    icon: string;
+    value: boolean;
+    onToggle: () => void;
+  }) => (
+    <TouchableOpacity style={styles.toggleRow} onPress={onToggle} activeOpacity={0.7}>
+      <View style={styles.toggleLeft}>
+        <View style={[styles.toggleIcon, value && styles.toggleIconActive]}>
+          <Ionicons name={icon as any} size={16} color={value ? colors.primary : colors.textMuted} />
+        </View>
+        <Text style={[styles.toggleLabel, !value && styles.toggleLabelMuted]}>{label}</Text>
+      </View>
+      <View style={[styles.checkbox, value && styles.checkboxActive]}>
+        {value && <Ionicons name="checkmark" size={14} color="#fff" />}
+      </View>
+    </TouchableOpacity>
+  );
+
+  return (
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={20} color={colors.text} />
+        </TouchableOpacity>
+        <Text style={styles.title}>Data Backup</Text>
+        <View style={{ width: 36 }} />
+      </View>
+
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Info Banner */}
+        <View style={styles.infoBanner}>
+          <Ionicons name="information-circle" size={18} color={colors.info} />
+          <Text style={styles.infoText}>
+            Backup will be sent to your registered email as a formatted report.
+          </Text>
+        </View>
+
+        {/* Date Range */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Date Range (Optional)</Text>
+          <Text style={styles.sectionSubtitle}>Leave empty for all-time data</Text>
+          <View style={styles.dateRow}>
+            <View style={styles.dateField}>
+              <Text style={styles.dateLabel}>From</Text>
+              <TextInput
+                style={styles.dateInput}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={colors.textMuted}
+                value={dateFrom}
+                onChangeText={setDateFrom}
+                selectionColor={colors.primary}
+                maxLength={10}
+              />
+            </View>
+            <View style={styles.dateSeparator}>
+              <Ionicons name="arrow-forward" size={16} color={colors.textMuted} />
+            </View>
+            <View style={styles.dateField}>
+              <Text style={styles.dateLabel}>To</Text>
+              <TextInput
+                style={styles.dateInput}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={colors.textMuted}
+                value={dateTo}
+                onChangeText={setDateTo}
+                selectionColor={colors.primary}
+                maxLength={10}
+              />
+            </View>
+          </View>
+        </View>
+
+        {/* Data Categories */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Include in Backup</Text>
+          <Text style={styles.sectionSubtitle}>Select the data you want to export</Text>
+          <View style={styles.toggleList}>
+            <ToggleItem
+              label="Bookings"
+              icon="calendar-outline"
+              value={includeBookings}
+              onToggle={() => setIncludeBookings(!includeBookings)}
+            />
+            <ToggleItem
+              label="Payments"
+              icon="card-outline"
+              value={includePayments}
+              onToggle={() => setIncludePayments(!includePayments)}
+            />
+            <ToggleItem
+              label="Inquiries"
+              icon="mail-outline"
+              value={includeInquiries}
+              onToggle={() => setIncludeInquiries(!includeInquiries)}
+            />
+            <ToggleItem
+              label="Wallet Transactions"
+              icon="wallet-outline"
+              value={includeWallet}
+              onToggle={() => setIncludeWallet(!includeWallet)}
+            />
+          </View>
+        </View>
+
+        {/* Success Message */}
+        {success && (
+          <View style={styles.successBanner}>
+            <Ionicons name="checkmark-circle" size={20} color={colors.success} />
+            <Text style={styles.successText}>
+              Backup sent successfully! Check your email.
+            </Text>
+          </View>
+        )}
+
+        {/* Request Button */}
+        <TouchableOpacity
+          style={[styles.requestBtn, loading && styles.requestBtnDisabled]}
+          onPress={requestBackup}
+          disabled={loading}
+          activeOpacity={0.8}
+        >
+          {loading ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <>
+              <Ionicons name="cloud-download-outline" size={18} color="#fff" />
+              <Text style={styles.requestBtnText}>Request Backup</Text>
+            </>
+          )}
+        </TouchableOpacity>
+
+        {/* Note */}
+        <Text style={styles.noteText}>
+          The backup will be sent to your registered email address as an HTML report containing all selected data.
+        </Text>
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.xl,
+    paddingTop: 56,
+    paddingBottom: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  title: {
+    ...typography.h3,
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: spacing.xl,
+    paddingBottom: 100,
+  },
+  infoBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.infoLight,
+    padding: spacing.md,
+    borderRadius: radius.sm,
+    gap: spacing.sm,
+    marginBottom: spacing.xl,
+  },
+  infoText: {
+    ...typography.bodyMd,
+    color: colors.info,
+    flex: 1,
+  },
+  section: {
+    marginBottom: spacing.xxl,
+  },
+  sectionTitle: {
+    ...typography.h4,
+    marginBottom: 2,
+  },
+  sectionSubtitle: {
+    ...typography.bodySm,
+    marginBottom: spacing.md,
+  },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  dateField: {
+    flex: 1,
+  },
+  dateLabel: {
+    ...typography.labelSm,
+    marginBottom: spacing.xs,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  dateInput: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    fontSize: 14,
+    color: colors.text,
+  },
+  dateSeparator: {
+    paddingTop: 18,
+  },
+  toggleList: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  toggleLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  toggleIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.borderLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toggleIconActive: {
+    backgroundColor: colors.primaryMuted,
+  },
+  toggleLabel: {
+    ...typography.labelLg,
+  },
+  toggleLabelMuted: {
+    color: colors.textMuted,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: colors.borderMedium,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  successBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.successLight,
+    padding: spacing.md,
+    borderRadius: radius.sm,
+    gap: spacing.sm,
+    marginBottom: spacing.xl,
+  },
+  successText: {
+    ...typography.bodyMd,
+    color: colors.success,
+    fontWeight: '600',
+    flex: 1,
+  },
+  requestBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+    paddingVertical: 16,
+    borderRadius: radius.md,
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  requestBtnDisabled: {
+    opacity: 0.7,
+  },
+  requestBtnText: {
+    ...typography.btnLg,
+    color: '#fff',
+  },
+  noteText: {
+    ...typography.bodySm,
+    textAlign: 'center',
+    color: colors.textMuted,
+  },
+});
