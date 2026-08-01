@@ -257,7 +257,7 @@ export default function AdminCategoriesScreen({ navigation }: any) {
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <TextInput style={[s.input, { flex: 1 }]} value={form.imageUrl} onChangeText={v => setForm({ ...form, imageUrl: v })} placeholder="https://... or pick from gallery" placeholderTextColor="#9CA3AF" />
                 <TouchableOpacity style={{ backgroundColor: '#6C3BFF', borderRadius: 10, paddingHorizontal: 12, justifyContent: 'center' }} onPress={async () => {
-                  const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8, base64: true });
+                  const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8, base64: true });
                   if (!result.canceled && result.assets[0]) {
                     try {
                       const base64 = `data:image/jpeg;base64,${result.assets[0].base64}`;
@@ -311,7 +311,7 @@ export default function AdminCategoriesScreen({ navigation }: any) {
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <TextInput style={[s.input, { flex: 1 }]} value={subForm.imageUrl} onChangeText={v => setSubForm({ ...subForm, imageUrl: v })} placeholder="https://... or pick from gallery" placeholderTextColor="#9CA3AF" />
                 <TouchableOpacity style={{ backgroundColor: '#6C3BFF', borderRadius: 10, paddingHorizontal: 12, justifyContent: 'center' }} onPress={async () => {
-                  const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8, base64: true });
+                  const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8, base64: true });
                   if (!result.canceled && result.assets[0]) {
                     try {
                       const base64 = `data:image/jpeg;base64,${result.assets[0].base64}`;

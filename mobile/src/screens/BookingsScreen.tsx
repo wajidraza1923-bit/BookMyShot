@@ -54,7 +54,7 @@ export default function BookingsScreen({ navigation }: any) {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') { Alert.alert('Permission needed', 'Allow access to photos to upload proof.'); return; }
 
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8, base64: false });
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8, base64: false });
     if (result.canceled) return;
 
     const asset = result.assets[0];

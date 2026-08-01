@@ -51,7 +51,7 @@ export default function PaymentProofScreen({ route, navigation }: any) {
     if (permission.status !== 'granted') { Alert.alert('Permission needed'); return; }
     const result = source === 'camera'
       ? await ImagePicker.launchCameraAsync({ quality: 0.8 })
-      : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
+      : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
     if (!result.canceled && result.assets[0]) {
       setImage(result.assets[0]);
       setImagePreview(result.assets[0].uri);
