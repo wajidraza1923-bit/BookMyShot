@@ -20,7 +20,17 @@ export default function RegisterScreen({ navigation }: any) {
   const [selectedGroup, setSelectedGroup] = useState('');
   const [selectedSubcategorySlug, setSelectedSubcategorySlug] = useState('');
   const [selectedSubcategoryName, setSelectedSubcategoryName] = useState('');
-  const [categories, setCategories] = useState<any[]>([]);
+  // Pre-load categories immediately with fallback, then update from API
+  const FALLBACK_CATEGORIES = [
+    { name: 'Photography & Videography', slug: 'photography-videography', group: 'Photography & Video', icon: 'camera-outline' },
+    { name: 'Makeup Artists', slug: 'makeup-artists', group: 'Beauty', icon: 'color-palette-outline' },
+    { name: 'Decoration & Floral', slug: 'decoration-floral', group: 'Decoration', icon: 'flower-outline' },
+    { name: 'Wedding Planners', slug: 'wedding-planners', group: 'Wedding Management', icon: 'clipboard-outline' },
+    { name: 'Catering Services', slug: 'catering-services', group: 'Food', icon: 'restaurant-outline' },
+    { name: 'Venues', slug: 'venues', group: 'Venue', icon: 'business-outline' },
+    { name: 'DJs & Entertainment', slug: 'djs-entertainment', group: 'Entertainment', icon: 'musical-notes-outline' },
+  ];
+  const [categories, setCategories] = useState<any[]>(FALLBACK_CATEGORIES);
   const [subcategories, setSubcategories] = useState<any[]>([]);
   const [showCatPicker, setShowCatPicker] = useState(false);
   const [catPickerStep, setCatPickerStep] = useState<'category' | 'subcategory'>('category');
@@ -31,27 +41,13 @@ export default function RegisterScreen({ navigation }: any) {
     try {
       const res = await api.get('/discover/categories');
       const data = res.data?.data || [];
-      if (data.length > 0) { setCategories(data); return; }
+      if (data.length > 0) { setCategories(data); }
     } catch {}
-    // Fallback: hardcoded categories (same as backend seed)
-    setCategories([
-      { name: 'Photography & Videography', slug: 'photography-videography', group: 'Photography & Video', icon: 'camera-outline' },
-      { name: 'Makeup Artists', slug: 'makeup-artists', group: 'Beauty', icon: 'color-palette-outline' },
-      { name: 'Decoration & Floral', slug: 'decoration-floral', group: 'Decoration', icon: 'flower-outline' },
-      { name: 'Wedding Planners', slug: 'wedding-planners', group: 'Wedding Management', icon: 'clipboard-outline' },
-      { name: 'Catering Services', slug: 'catering-services', group: 'Food', icon: 'restaurant-outline' },
-      { name: 'Venues', slug: 'venues', group: 'Venue', icon: 'business-outline' },
-      { name: 'DJs & Entertainment', slug: 'djs-entertainment', group: 'Entertainment', icon: 'musical-notes-outline' },
-    ]);
+    // Fallback already set as initial state — no need to set again
   };
 
   const loadSubcategories = async (slug: string) => {
-    try {
-      const res = await api.get(`/subcategories/${slug}`);
-      const data = res.data?.data || [];
-      if (data.length > 0) { setSubcategories(data); return data; }
-    } catch {}
-    // Fallback: use local subcategory mapping (same as Home/SubCategories screen)
+    // Fallback: use local subcategory mapping — show instantly
     const LOCAL_SUBS: Record<string, any[]> = {
       'photography-videography': [
         { name: 'Wedding Photography', slug: 'wedding-photography', icon: 'camera-outline' },
@@ -103,6 +99,14 @@ export default function RegisterScreen({ navigation }: any) {
     };
     const fallback = LOCAL_SUBS[slug] || [];
     setSubcategories(fallback);
+
+    // Try API in background (update if newer data exists)
+    try {
+      const res = await api.get(`/subcategories/${slug}`);
+      const data = res.data?.data || [];
+      if (data.length > 0) { setSubcategories(data); return data; }
+    } catch {}
+
     return fallback;
   };
 
@@ -186,7 +190,7 @@ export default function RegisterScreen({ navigation }: any) {
         {role === 'creator' && (
           <View style={s.fieldWrap}>
             <Text style={s.label}>Service Category *</Text>
-            <TouchableOpacity style={[s.inputRow, errors.category && s.inputError]} onPress={() => { if (categories.length === 0) loadCategories(); setShowCatPicker(true); }}>
+            <TouchableOpacity style={[s.inputRow, errors.category && s.inputError]} onPress={() => { setShowCatPicker(true); setCatPickerStep('category'); }}>
               <Ionicons name="briefcase-outline" size={18} color="#9CA3AF" />
               <Text style={[s.input, { color: selectedCategorySlug ? '#1F2937' : '#D1D5DB' }]}>{selectedSubcategoryName ? `${selectedCategoryName} → ${selectedSubcategoryName}` : (selectedCategoryName !== 'Select Service' ? selectedCategoryName : 'Select Service')}</Text>
               <Ionicons name="chevron-down" size={16} color="#6C3BFF" />
