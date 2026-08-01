@@ -1126,6 +1126,7 @@ router.patch("/bookings/:id/confirm-payment", async (req, res, next) => {
     try {
       const CashbackTransaction = require("../models/CashbackTransaction");
       const CashbackSettings = require("../models/CashbackSettings");
+      const settings = await CashbackSettings.getSettings();
 
       // Prevent duplicate: check if any transaction exists for this booking
       const existingCashback = await CashbackTransaction.findOne({ booking: booking._id });
@@ -1151,12 +1152,16 @@ router.patch("/bookings/:id/confirm-payment", async (req, res, next) => {
         const now = new Date();
         const cashbackActive = cashbackEnabled && (!settings.startDate || new Date(settings.startDate) <= now) && (!settings.endDate || new Date(settings.endDate) >= now);
 
+        console.log("[ConfirmPayment] Cashback check:", { isCustomerInitiated, bookingFeePaid, cashbackActive, withinDeadline, cashbackPercent, deadlineDaysForBooking });
+
         if (isCustomerInitiated && bookingFeePaid && cashbackActive && withinDeadline) {
           // Calculate cashback on the advance amount paid (or booking amount if advance not separate)
           const feeAmount = booking.bookingFeeAmount || booking.amount || 0;
           let cashbackAmount = Math.round((feeAmount * cashbackPercent) / 100);
           if (settings.maxAmount && cashbackAmount > settings.maxAmount) cashbackAmount = settings.maxAmount;
           if (feeAmount < (settings.minBookingAmount || 0)) cashbackAmount = 0;
+
+          console.log("[ConfirmPayment] Cashback calc:", { feeAmount, cashbackPercent, cashbackAmount });
 
           if (cashbackAmount > 0) {
             // Verify customer is the same who paid the booking fee
@@ -1168,11 +1173,11 @@ router.patch("/bookings/:id/confirm-payment", async (req, res, next) => {
                 user: customerUserId,
                 booking: booking._id,
                 amount: cashbackAmount,
-                percentage: settings.percentage,
+                percentage: cashbackPercent,
                 bookingAmount: feeAmount,
                 status: "credited",
                 creditedAt: new Date(),
-                notes: `Cashback: ${settings.percentage}% of ₹${feeAmount} booking fee. Creator confirmed payment.`,
+                notes: `Cashback: ${cashbackPercent}% of ₹${feeAmount} advance booking fee. Creator confirmed payment.`,
               });
 
               await Booking.findByIdAndUpdate(booking._id, {
@@ -1181,6 +1186,16 @@ router.patch("/bookings/:id/confirm-payment", async (req, res, next) => {
 
               cashbackResult = { status: "credited", amount: cashbackAmount, transactionId: transaction._id };
 
+              // Credit to customer wallet
+              try {
+                const User = require("../models/User");
+                await User.findByIdAndUpdate(customerUserId, {
+                  $inc: { walletBalance: cashbackAmount },
+                });
+              } catch (walletErr) {
+                console.log("[ConfirmPayment] Wallet credit error:", walletErr.message);
+              }
+
               const Notification = require("../models/Notification");
               await Notification.create({
                 user: customerUserId,
@@ -1188,7 +1203,15 @@ router.patch("/bookings/:id/confirm-payment", async (req, res, next) => {
                 message: `₹${cashbackAmount.toLocaleString('en-IN')} cashback credited to your wallet!`,
                 type: "cashback", targetScreen: "Wallet",
               });
+
+              // Push notification
+              try {
+                const pushService = require("../services/pushService");
+                pushService.sendToUser(customerUserId, "BookMyShot — Cashback Credited", `₹${cashbackAmount.toLocaleString('en-IN')} cashback has been credited to your wallet for your booking!`);
+              } catch {}
             }
+          } else {
+            cashbackResult = { status: "ineligible", reason: "Cashback amount is 0 (below minimum or capped)" };
           }
         } else if (isCustomerInitiated && bookingFeePaid && !withinDeadline) {
           // Customer missed deadline → No customer cashback, but Creator gets cashback

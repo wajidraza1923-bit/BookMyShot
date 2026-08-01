@@ -27,6 +27,11 @@ export default function BookingPaymentScreen({ route, navigation }: any) {
   const remainingPercent = 100 - feePercent;
 
   const handlePay = async () => {
+    // Don't allow re-payment if already paid
+    if (paid || data?.feeStatus === 'paid') {
+      Alert.alert('Already Paid', 'Advance payment has already been completed for this booking.');
+      return;
+    }
     setPaying(true);
     try {
       const orderRes = await api.post(`/booking-fee/create-order/${bookingId}`);
@@ -45,7 +50,13 @@ export default function BookingPaymentScreen({ route, navigation }: any) {
       });
       setShowRazorpay(true);
     } catch (e: any) {
-      Alert.alert('Error', e.response?.data?.message || 'Payment failed');
+      const msg = e.response?.data?.message || 'Payment failed';
+      if (msg.includes('already paid')) {
+        setPaid(true);
+        Alert.alert('Already Paid', 'Advance payment has already been completed for this booking.');
+      } else {
+        Alert.alert('Error', msg);
+      }
       setPaying(false);
     }
   };

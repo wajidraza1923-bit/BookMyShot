@@ -121,7 +121,8 @@ export default function CreatorBookings({ navigation }: any) {
         console.log('[ConfirmPayment] Calling PATCH /creator/bookings/' + id + '/confirm-payment');
         const res = await api.patch(`/creator/bookings/${id}/confirm-payment`);
         console.log('[ConfirmPayment] Response:', JSON.stringify(res.data));
-        await load();
+        // Immediately update local state for instant UI feedback (progress bar fills)
+        setBookings(prev => prev.map(b => b._id === id ? { ...b, paymentConfirmed: true, paymentStatus: 'paid', status: 'Completed', cashbackReleased: res.data?.cashback?.status === 'credited' } : b));
         const cb = res.data?.cashback;
         if (cb?.status === 'credited') {
           setToast({ visible: true, type: 'success', title: '✅ Cashback Released', message: `₹${cb.amount} credited to customer's wallet` });
@@ -130,9 +131,13 @@ export default function CreatorBookings({ navigation }: any) {
         } else {
           setToast({ visible: true, type: 'success', title: '✅ Payment Confirmed' });
         }
+        // Refresh from server to ensure consistency
+        await load();
       } catch (e: any) {
         console.log('[ConfirmPayment] Error:', e.response?.status, e.response?.data, e.message);
         if (e.response?.data?.alreadyConfirmed) {
+          // Still update local state since it was already confirmed
+          setBookings(prev => prev.map(b => b._id === id ? { ...b, paymentConfirmed: true, paymentStatus: 'paid' } : b));
           setToast({ visible: true, type: 'info', title: 'Already Confirmed', message: 'Payment was already confirmed' });
         } else if (e.response?.status === 404) {
           setToast({ visible: true, type: 'error', title: 'Not Available', message: 'This feature requires server update. Please redeploy the backend.' });
@@ -156,7 +161,7 @@ export default function CreatorBookings({ navigation }: any) {
     const isExpanded = expandedId === item._id;
     const totalPaid = item.paymentConfirmed ? (item.amount || 0) : (item.advancePaid || item.bookingFeeAmount || 0);
     const remaining = item.paymentConfirmed ? 0 : Math.max(0, (item.amount || 0) - totalPaid);
-    const progress = item.paymentConfirmed || item.status === 'Completed' ? 100 : (item.amount > 0 ? Math.min(100, Math.round((totalPaid / item.amount) * 100)) : 0);
+    const progress = item.paymentConfirmed || item.status === 'Completed' || item.status === 'completed' ? 100 : (item.amount > 0 ? Math.min(100, Math.round((totalPaid / item.amount) * 100)) : 0);
     const sc = getStatusColor(item.status);
 
     return (
