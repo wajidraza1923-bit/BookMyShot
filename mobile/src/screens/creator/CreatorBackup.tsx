@@ -21,6 +21,7 @@ export default function CreatorBackup({ navigation }: any) {
   const [includeInquiries, setIncludeInquiries] = useState(true);
   const [includeWallet, setIncludeWallet] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [pickingDate, setPickingDate] = useState<'from' | 'to' | null>(null);
 
@@ -202,57 +203,42 @@ export default function CreatorBackup({ navigation }: any) {
 
         {/* Download PDF Button */}
         <TouchableOpacity
-          style={[styles.requestBtn, { backgroundColor: '#1F2937', marginTop: -8 }]}
+          style={[styles.requestBtn, { backgroundColor: '#1F2937', marginTop: -8 }, pdfLoading && styles.requestBtnDisabled]}
           onPress={async () => {
             if (!includeBookings && !includePayments && !includeInquiries && !includeWallet) {
               Alert.alert('Select Data', 'Select at least one category'); return;
             }
-            setLoading(true);
+            setPdfLoading(true);
             try {
               const body: any = { includeBookings, includePayments, includeInquiries, includeWallet, returnHtml: true };
               if (dateFrom) body.dateFrom = dateFrom;
               if (dateTo) body.dateTo = dateTo;
               
-              console.log('[Backup] Requesting HTML for PDF...');
               const res = await api.post('/creator/backup', body);
-              console.log('[Backup] Response keys:', Object.keys(res.data || {}));
-              
               const html = res.data?.html;
               if (!html || html.length < 50) {
-                Alert.alert('Error', 'Server returned empty data. Try again.');
-                setLoading(false);
-                return;
+                Alert.alert('Error', 'No data to export'); setPdfLoading(false); return;
               }
               
-              console.log('[Backup] HTML received, length:', html.length);
+              // Use printAsync — opens print dialog where user can "Save as PDF"
               const Print = require('expo-print');
-              const Sharing = require('expo-sharing');
-              
-              const result = await Print.printToFileAsync({ html, base64: false });
-              console.log('[Backup] PDF generated:', result?.uri);
-              
-              if (result?.uri) {
-                const available = await Sharing.isAvailableAsync();
-                if (available) {
-                  await Sharing.shareAsync(result.uri, { mimeType: 'application/pdf', dialogTitle: 'BookMyShot Backup' });
-                } else {
-                  await Print.printAsync({ html });
-                }
-              } else {
-                // Fallback: just print directly
-                await Print.printAsync({ html });
-              }
+              await Print.printAsync({ html });
             } catch (e: any) {
-              console.log('[Backup] PDF error:', e.message, e.response?.status, e.response?.data?.message);
-              Alert.alert('Error', e.response?.data?.message || e.message || 'Failed to generate PDF. Try Send to Email instead.');
+              const msg = (e.message || '').toLowerCase();
+              if (msg.includes('cancel') || msg.includes('dismiss')) { /* user cancelled */ }
+              else Alert.alert('Error', e.response?.data?.message || e.message || 'Failed. Try Send to Email.');
             }
-            finally { setLoading(false); }
+            finally { setPdfLoading(false); }
           }}
-          disabled={loading}
+          disabled={pdfLoading}
           activeOpacity={0.8}
         >
-          <Ionicons name="document-text-outline" size={18} color="#fff" />
-          <Text style={styles.requestBtnText}>Download as PDF</Text>
+          {pdfLoading ? <ActivityIndicator size="small" color="#fff" /> : (
+            <>
+              <Ionicons name="document-text-outline" size={18} color="#fff" />
+              <Text style={styles.requestBtnText}>Download as PDF</Text>
+            </>
+          )}
         </TouchableOpacity>
 
         {/* Note */}
