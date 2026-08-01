@@ -357,6 +357,117 @@ router.post("/webhook", async (req, res) => {
   }
 });
 
+// ═══ FIX MISSED CASHBACK: Credit cashback for bookings that were confirmed but cashback failed ═══
+router.post("/fix-cashback", async (req, res) => {
+  try {
+    const { secret } = req.body;
+    const validSecrets = [process.env.JWT_SECRET, process.env.RAZORPAY_KEY_SECRET].filter(Boolean);
+    if (!validSecrets.includes(secret)) {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    const MasterSettings = require("../models/MasterSettings");
+    const CashbackTransaction = require("../models/CashbackTransaction");
+    const User = require("../models/User");
+    const CashbackSettings = require("../models/CashbackSettings");
+
+    // Find bookings where: bookingFeePaid=true, paymentConfirmed=true, but no cashback transaction
+    const eligibleBookings = await Booking.find({
+      bookingFeePaid: true,
+      bookingFeePaymentId: { $exists: true, $ne: null },
+      paymentConfirmed: true,
+    });
+
+    const ms = await MasterSettings.findOne();
+    const settings = await CashbackSettings.getSettings();
+    const cashbackPercent = (ms && ms.cashbackPercentage) || settings.percentage || 10;
+    const cashbackEnabled = (ms && ms.cashbackEnabled !== false) || settings.enabled;
+
+    let credited = 0;
+    const results = [];
+
+    for (const booking of eligibleBookings) {
+      // Check if cashback already exists
+      const existingCb = await CashbackTransaction.findOne({ booking: booking._id });
+      if (existingCb) {
+        results.push({ bookingId: booking._id, status: "already_exists", existing: existingCb.status });
+        continue;
+      }
+
+      // Check eligibility
+      const isCustomerInitiated = !booking.createdByCreator && booking.source !== 'creator_manual' && booking.source !== 'walk_in';
+      if (!isCustomerInitiated) {
+        results.push({ bookingId: booking._id, status: "skipped", reason: "creator_initiated" });
+        continue;
+      }
+
+      if (!cashbackEnabled) {
+        results.push({ bookingId: booking._id, status: "skipped", reason: "cashback_disabled" });
+        continue;
+      }
+
+      // Deadline check
+      const deadlineDays = booking.cashbackDeadlineDaysUsed || 30;
+      const deadline = new Date(booking.createdAt);
+      deadline.setDate(deadline.getDate() + deadlineDays);
+      const withinDeadline = new Date() <= deadline;
+
+      const feeAmount = booking.bookingFeeAmount || 0;
+      let cashbackAmount = Math.round((feeAmount * cashbackPercent) / 100);
+      if (settings.maxAmount && cashbackAmount > settings.maxAmount) cashbackAmount = settings.maxAmount;
+      if (feeAmount < (settings.minBookingAmount || 0)) cashbackAmount = 0;
+
+      if (!withinDeadline) {
+        results.push({ bookingId: booking._id, status: "expired", reason: "deadline_exceeded" });
+        continue;
+      }
+
+      if (cashbackAmount <= 0) {
+        results.push({ bookingId: booking._id, status: "skipped", reason: "amount_zero" });
+        continue;
+      }
+
+      // Credit cashback
+      const transaction = await CashbackTransaction.create({
+        user: booking.user,
+        booking: booking._id,
+        amount: cashbackAmount,
+        percentage: cashbackPercent,
+        bookingAmount: feeAmount,
+        status: "credited",
+        creditedAt: new Date(),
+        notes: `Cashback fix: ${cashbackPercent}% of ₹${feeAmount} advance. Auto-recovered.`,
+      });
+
+      // Update booking
+      await Booking.findByIdAndUpdate(booking._id, {
+        $set: { cashbackReleased: true, cashbackReleasedAt: new Date(), cashbackTransactionId: transaction._id },
+      });
+
+      // Credit user wallet
+      if (booking.user) {
+        await User.findByIdAndUpdate(booking.user, { $inc: { walletBalance: cashbackAmount } });
+        
+        // Notification
+        await Notification.create({
+          user: booking.user,
+          title: "🎉 Cashback Credited!",
+          message: `₹${cashbackAmount.toLocaleString('en-IN')} cashback credited to your wallet!`,
+          type: "cashback", targetScreen: "Wallet",
+        });
+      }
+
+      results.push({ bookingId: booking._id.toString(), status: "credited", amount: cashbackAmount, client: booking.clientName });
+      credited++;
+    }
+
+    res.json({ success: true, message: `Fixed ${credited} booking(s)`, total: eligibleBookings.length, credited, results });
+  } catch (e) {
+    console.error("[FixCashback] Error:", e.message);
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
 // ═══ RECONCILIATION: Check Razorpay for missed payments ═══
 // Secured with JWT_SECRET or RAZORPAY_KEY_SECRET as key (no user auth needed — internal tool)
 router.post("/reconcile", async (req, res) => {
