@@ -25,8 +25,8 @@ export default function CreatorSubscription({ navigation }: any) {
   const load = useCallback(async () => {
     try {
       const [dashRes, configRes, autopayRes, leadRes, masterRes] = await Promise.all([
-        api.get('/creator/dashboard'),
-        api.get('/config/public'),
+        api.get('/creator/dashboard').catch(() => ({ data: { subscriptionStatus: 'free', freeLeadsUsed: 0, freeLeadsLimit: 3 } })),
+        api.get('/config/public').catch(() => ({ data: {} })),
         api.get('/razorpay/autopay-status').catch(() => ({ data: { data: {} } })),
         api.get('/leads/my-usage').catch(() => ({ data: { data: {} } })),
         api.get('/master-settings').catch(() => ({ data: { data: {} } })),
@@ -414,11 +414,11 @@ export default function CreatorSubscription({ navigation }: any) {
             const currentPlanType = creator?.subscriptionPlanType || 'monthly';
             const isCurrentPlanSelected = isActive && selectedPlan === currentPlanType;
             
-            // Don't show button if the currently active plan is selected
-            if (isCurrentPlanSelected) return null;
+            // Don't show button if the currently active plan is selected (only for paid active subs)
+            if (isCurrentPlanSelected && subStatus !== 'free') return null;
 
             // Show buy/upgrade button
-            if (isExpired || !subStatus || subStatus === 'inactive' || subStatus === 'pending_payment') {
+            if (isExpired || !subStatus || subStatus === 'inactive' || subStatus === 'free' || subStatus === 'pending_payment') {
               return (
                 <TouchableOpacity style={s.payBtn} onPress={handleSubscribe} disabled={subscribing} activeOpacity={0.85}>
                   {subscribing ? <ActivityIndicator size="small" color={colors.textInverse} /> : (
