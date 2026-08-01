@@ -169,18 +169,30 @@ export default function BookingsScreen({ navigation }: any) {
                 )}
 
                 {/* Cashback Countdown */}
-                {b.bookingFeePaid && remaining > 0 && validDate && eventDate && eventDate > new Date() && (
-                  <View style={s.cashbackCountdown}>
-                    <Ionicons name="gift-outline" size={12} color="#F59E0B" />
-                    <Text style={s.cashbackCountText}>Complete payment before {eventDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} to receive Cashback</Text>
-                  </View>
-                )}
-                {b.bookingFeePaid && validDate && eventDate && eventDate < new Date() && remaining > 0 && (
-                  <View style={[s.cashbackCountdown, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
-                    <Ionicons name="close-circle-outline" size={12} color="#EF4444" />
-                    <Text style={[s.cashbackCountText, { color: '#991B1B' }]}>Cashback Expired — payment not completed before event</Text>
-                  </View>
-                )}
+                {b.bookingFeePaid && remaining > 0 && (() => {
+                  const deadlineDays = b.cashbackDeadlineDaysUsed || 60;
+                  const bookingCreated = b.createdAt ? new Date(b.createdAt) : new Date();
+                  const deadlineDate = new Date(bookingCreated);
+                  deadlineDate.setDate(deadlineDate.getDate() + deadlineDays);
+                  const now = new Date();
+                  const daysLeft = Math.max(0, Math.ceil((deadlineDate.getTime() - now.getTime()) / 86400000));
+                  
+                  if (daysLeft > 0) {
+                    return (
+                      <View style={s.cashbackCountdown}>
+                        <Ionicons name="gift-outline" size={12} color="#F59E0B" />
+                        <Text style={s.cashbackCountText}>Complete payment within {daysLeft} days to receive Cashback (by {deadlineDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })})</Text>
+                      </View>
+                    );
+                  } else {
+                    return (
+                      <View style={[s.cashbackCountdown, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
+                        <Ionicons name="close-circle-outline" size={12} color="#EF4444" />
+                        <Text style={[s.cashbackCountText, { color: '#991B1B' }]}>Cashback Expired — {deadlineDays}-day deadline exceeded</Text>
+                      </View>
+                    );
+                  }
+                })()}
 
                 {/* ═══ PAY BOOKING FEE — Primary CTA for new bookings ═══ */}
                 {!b.bookingFeePaid && (b.status === 'Creator Accepted' || b.status === 'Booking Created') && amount > 0 && (
