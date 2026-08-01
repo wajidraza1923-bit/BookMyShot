@@ -18,7 +18,13 @@ export default function BookingPaymentScreen({ route, navigation }: any) {
   const loadPaymentDetails = async () => {
     try {
       const res = await api.get(`/booking-fee/calculate/${bookingId}`);
-      if (res.data?.data) setData(res.data.data);
+      if (res.data?.data) {
+        setData(res.data.data);
+        // If already paid, set paid state immediately
+        if (res.data.data.feeStatus === 'paid') {
+          setPaid(true);
+        }
+      }
     } catch { Alert.alert('Error', 'Could not load booking details'); }
     finally { setLoading(false); }
   };
@@ -63,16 +69,42 @@ export default function BookingPaymentScreen({ route, navigation }: any) {
 
   const handleRazorpaySuccess = async (paymentData: any) => {
     setShowRazorpay(false);
-    try {
-      await api.post(`/booking-fee/verify/${bookingId}`, {
-        razorpay_payment_id: paymentData.razorpay_payment_id,
-        razorpay_order_id: paymentData.razorpay_order_id,
-        razorpay_signature: paymentData.razorpay_signature,
-      });
-      setPaid(true);
-      Alert.alert('✅ Booking Confirmed!', 'Your advance payment has been received. The booking is now confirmed.');
-    } catch (e: any) {
-      Alert.alert('Error', e.response?.data?.message || 'Payment verification failed. Contact support if amount was deducted.');
+    console.log('[BookingPayment] Razorpay success callback received:', JSON.stringify(paymentData));
+    
+    // Retry verification up to 3 times (WebView → app context switch can cause timing issues)
+    let attempts = 0;
+    const maxAttempts = 3;
+    
+    while (attempts < maxAttempts) {
+      attempts++;
+      try {
+        console.log(`[BookingPayment] Verify attempt ${attempts}/${maxAttempts} for booking ${bookingId}`);
+        const verifyRes = await api.post(`/booking-fee/verify/${bookingId}`, {
+          razorpay_payment_id: paymentData.razorpay_payment_id,
+          razorpay_order_id: paymentData.razorpay_order_id,
+          razorpay_signature: paymentData.razorpay_signature,
+        });
+        console.log('[BookingPayment] Verify success:', JSON.stringify(verifyRes.data));
+        setPaid(true);
+        Alert.alert('✅ Booking Confirmed!', 'Your advance payment has been received. The booking is now confirmed.');
+        setPaying(false);
+        return; // Success — exit retry loop
+      } catch (e: any) {
+        console.log(`[BookingPayment] Verify attempt ${attempts} failed:`, e.response?.status, e.response?.data, e.message);
+        if (attempts < maxAttempts) {
+          // Wait before retrying (1s, 2s)
+          await new Promise(resolve => setTimeout(resolve, attempts * 1000));
+        } else {
+          // All retries failed
+          const msg = e.response?.data?.message || 'Payment verification failed. Contact support if amount was deducted.';
+          if (msg.includes('already paid') || msg.includes('already confirmed')) {
+            setPaid(true);
+            Alert.alert('✅ Booking Confirmed!', 'Payment was already verified successfully.');
+          } else {
+            Alert.alert('⚠️ Verification Pending', `Payment was received (ID: ${paymentData.razorpay_payment_id}) but verification failed. Your booking will be confirmed automatically within a few minutes. If not, contact support with payment ID.`);
+          }
+        }
+      }
     }
     setPaying(false);
   };
