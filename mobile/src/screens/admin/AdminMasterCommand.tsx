@@ -17,6 +17,7 @@ export default function AdminMasterCommand({ navigation }: any) {
   const [discountPercentage, setDiscountPercentage] = useState('');
   const [cashbackDays, setCashbackDays] = useState('');
   const [creatorCbPercent, setCreatorCbPercent] = useState('');
+  const [showGrowth, setShowGrowth] = useState(true);
   const [subPrice, setSubPrice] = useState('');
   const [yearlyPrice, setYearlyPrice] = useState('');
   const [subMode, setSubMode] = useState<'lead' | 'booking'>('lead');
@@ -38,6 +39,7 @@ export default function AdminMasterCommand({ navigation }: any) {
         setDiscountPercentage(String(data.discountPercentage ?? '10'));
         setCashbackDays(String(data.cashbackDeadlineDays ?? '30'));
         setCreatorCbPercent(String(data.creatorCashbackPercent ?? '4'));
+        setShowGrowth(data.showGrowthPromotion !== false);
         setSubPrice(String(data.monthlySubscriptionPrice ?? '199'));
         setYearlyPrice(String(data.yearlySubscriptionPrice ?? '1499'));
         setSubMode(data.subscriptionMode || 'lead');
@@ -300,6 +302,31 @@ export default function AdminMasterCommand({ navigation }: any) {
           }} disabled={savingOffers}>
             {savingOffers ? <ActivityIndicator color="#fff" size="small" /> : <><Ionicons name="checkmark-circle" size={16} color="#fff" /><Text style={s.saveBtnText}>Save Cashback Settings</Text></>}
           </TouchableOpacity>
+        </View>
+
+        {/* Module 5: Creator Dashboard UI */}
+        <View style={s.card}>
+          <View style={s.cardHeader}>
+            <Ionicons name="eye-outline" size={20} color="#3B82F6" />
+            <Text style={s.cardTitle}>Creator Dashboard UI</Text>
+          </View>
+          <Text style={s.cardDesc}>Control which sections are visible on creator dashboard</Text>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, paddingVertical: 12, borderTopWidth: 1, borderTopColor: '#F3F4F6' }}>
+            <View>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: '#1F2937' }}>Growth & Promotion Section</Text>
+              <Text style={{ fontSize: 11, color: '#6B7280', marginTop: 2 }}>Featured, Rankings, Get Featured card</Text>
+            </View>
+            <TouchableOpacity style={{ paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, backgroundColor: showGrowth ? '#10B981' : '#EF4444' }} onPress={async () => {
+              try {
+                await api.put('/master-settings', { showGrowthPromotion: !showGrowth });
+                setShowGrowth(!showGrowth);
+                Alert.alert('✅ Updated', `Growth & Promotion is now ${!showGrowth ? 'visible' : 'hidden'} for creators`);
+              } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
+            }}>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>{showGrowth ? 'Visible ✓' : 'Hidden ✗'}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <Text style={s.footerNote}>All values sync instantly across:{'\n'}Home • Bookings • Dashboard • Invoices • Wallet • FAQ • Footer • Notifications</Text>

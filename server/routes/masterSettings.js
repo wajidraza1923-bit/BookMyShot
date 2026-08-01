@@ -27,6 +27,7 @@ router.get("/", async (req, res, next) => {
       cashbackEnabled: settings.cashbackEnabled,
       creatorCashbackPercent: settings.creatorCashbackPercent,
       customerCashbackPercent: settings.customerCashbackPercent,
+      showGrowthPromotion: settings.showGrowthPromotion !== false,
     }});
   } catch (e) { next(e); }
 });
@@ -55,6 +56,7 @@ router.put("/", protect, authorize("admin"), async (req, res, next) => {
     if (cashbackEnabled !== undefined) settings.cashbackEnabled = cashbackEnabled;
     if (minWithdrawalAmount !== undefined) settings.minWithdrawalAmount = Number(minWithdrawalAmount);
     if (maxWithdrawalAmount !== undefined) settings.maxWithdrawalAmount = Number(maxWithdrawalAmount);
+    if (req.body.showGrowthPromotion !== undefined) settings.showGrowthPromotion = req.body.showGrowthPromotion;
     await settings.save();
     res.json({ success: true, data: settings, message: "Settings updated successfully" });
   } catch (e) { next(e); }

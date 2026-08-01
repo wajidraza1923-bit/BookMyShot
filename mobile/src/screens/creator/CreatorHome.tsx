@@ -21,6 +21,7 @@ export default function CreatorHome({ navigation }: any) {
   const [rpConfig, setRpConfig] = useState<{ keyId: string; orderId: string; amount: number; name: string }>({ keyId: '', orderId: '', amount: 0, name: '' });
   const [commPercent, setCommPercent] = useState(2.5);
   const [walletBalance, setWalletBalance] = useState(0);
+  const [showGrowthSection, setShowGrowthSection] = useState(true);
 
   const loadDashboard = useCallback(async () => {
     try {
@@ -35,6 +36,7 @@ export default function CreatorHome({ navigation }: any) {
       if (dashRes.data) setStats(dashRes.data);
       if (leadRes.data?.data) setLeadUsage(leadRes.data.data);
       if (msRes.data?.data?.bookingCommission) setCommPercent(msRes.data.data.bookingCommission);
+      if (msRes.data?.data?.showGrowthPromotion === false) setShowGrowthSection(false);
       // Fetch wallet balance
       try { const wRes = await api.get('/creator-wallet/my'); setWalletBalance(wRes.data?.data?.walletBalance || 0); } catch {}
       const pending = (requestsRes.data?.data || []).filter((r: any) => r.status === 'pending').length;
@@ -221,6 +223,8 @@ export default function CreatorHome({ navigation }: any) {
         </View>
 
         {/* ═══ GROWTH & PROMOTION ═══ */}
+        {showGrowthSection && (
+        <>
         <Text style={styles.sectionTitle}>Growth & Promotion</Text>
 
         {/* Featured Status */}
@@ -269,6 +273,8 @@ export default function CreatorHome({ navigation }: any) {
           <Ionicons name="star-outline" size={16} color={colors.primary} />
           <Text style={styles.promoteBtnText}>View Promotions & Rankings</Text>
         </TouchableOpacity>
+        </>
+        )}
 
         {/* Activity Summary */}
         <Text style={styles.sectionTitle}>Activity Overview</Text>

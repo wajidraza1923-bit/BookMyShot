@@ -22,6 +22,8 @@ const masterSettingsSchema = new mongoose.Schema({
   cashbackEnabled: { type: Boolean, default: true },
   minWithdrawalAmount: { type: Number, default: 100 },
   maxWithdrawalAmount: { type: Number, default: 50000 },
+  // UI Visibility toggles
+  showGrowthPromotion: { type: Boolean, default: true },
 }, { timestamps: true });
 
 module.exports = mongoose.model("MasterSettings", masterSettingsSchema);
