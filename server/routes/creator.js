@@ -1166,7 +1166,8 @@ router.patch("/bookings/:id/confirm-payment", async (req, res, next) => {
           // Calculate cashback on the advance amount paid (or booking amount if advance not separate)
           const feeAmount = booking.bookingFeeAmount || booking.amount || 0;
           const totalBookingAmount = booking.totalAmount || booking.quotedAmount || booking.amount || 0;
-          let cashbackAmount = Math.round((feeAmount * cashbackPercent) / 100);
+          // Cashback is calculated on TOTAL BOOKING AMOUNT, not just the advance fee
+          let cashbackAmount = Math.round((totalBookingAmount * cashbackPercent) / 100);
           if (settings.maxAmount && cashbackAmount > settings.maxAmount) cashbackAmount = settings.maxAmount;
           // minBookingAmount applies to total booking value, not just the advance fee
           if (totalBookingAmount < (settings.minBookingAmount || 0)) cashbackAmount = 0;
@@ -1184,10 +1185,10 @@ router.patch("/bookings/:id/confirm-payment", async (req, res, next) => {
                 booking: booking._id,
                 amount: cashbackAmount,
                 percentage: cashbackPercent,
-                bookingAmount: feeAmount,
+                bookingAmount: totalBookingAmount,
                 status: "credited",
                 creditedAt: new Date(),
-                notes: `Cashback: ${cashbackPercent}% of ₹${feeAmount} advance booking fee. Creator confirmed payment.`,
+                notes: `Cashback: ${cashbackPercent}% of ₹${totalBookingAmount} total booking. Creator confirmed payment.`,
               });
 
               await Booking.findByIdAndUpdate(booking._id, {
@@ -1240,7 +1241,7 @@ router.patch("/bookings/:id/confirm-payment", async (req, res, next) => {
             const creatorCbPercent = (msCC && msCC.creatorCashbackPercent) || 4;
             const creatorCbAutoCredit = msCC ? msCC.creatorCashbackAutoCredit !== false : true;
             if (creatorCbAutoCredit && creatorCbPercent > 0) {
-              const feeAmountForCreator = booking.bookingFeeAmount || 0;
+              const feeAmountForCreator = booking.totalAmount || booking.quotedAmount || booking.amount || 0;
               const creatorCashbackAmt = Math.round((feeAmountForCreator * creatorCbPercent) / 100);
               if (creatorCashbackAmt > 0) {
                 const CreatorWalletTx = require("../models/CreatorWallet");
@@ -1374,7 +1375,8 @@ router.patch("/bookings/:id/complete", async (req, res, next) => {
             // ✅ All conditions met — Calculate and credit cashback
             const feeAmount = booking.bookingFeeAmount || 0;
             const totalBookingAmount = booking.totalAmount || booking.quotedAmount || booking.amount || 0;
-            let cashbackAmount = Math.round((feeAmount * settings.percentage) / 100);
+            // Cashback is calculated on TOTAL BOOKING AMOUNT, not just the advance fee
+            let cashbackAmount = Math.round((totalBookingAmount * settings.percentage) / 100);
             if (cashbackAmount > settings.maxAmount) cashbackAmount = settings.maxAmount;
             // minBookingAmount applies to total booking value, not just the advance fee
             if (totalBookingAmount < settings.minBookingAmount) cashbackAmount = 0;

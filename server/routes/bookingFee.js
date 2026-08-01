@@ -414,7 +414,8 @@ router.post("/fix-cashback", async (req, res) => {
 
       const feeAmount = booking.bookingFeeAmount || 0;
       const totalBookingAmount = booking.totalAmount || booking.quotedAmount || booking.amount || 0;
-      let cashbackAmount = Math.round((feeAmount * cashbackPercent) / 100);
+      // Cashback = % of TOTAL booking amount (not just the advance fee)
+      let cashbackAmount = Math.round((totalBookingAmount * cashbackPercent) / 100);
       if (settings.maxAmount && cashbackAmount > settings.maxAmount) cashbackAmount = settings.maxAmount;
       // minBookingAmount applies to total booking value, not just the advance fee
       if (totalBookingAmount < (settings.minBookingAmount || 0)) cashbackAmount = 0;
