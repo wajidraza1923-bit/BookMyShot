@@ -358,11 +358,13 @@ router.post("/webhook", async (req, res) => {
 });
 
 // ═══ RECONCILIATION: Check Razorpay for missed payments ═══
-// Secured with JWT_SECRET as key (no user auth needed — internal tool)
+// Secured with JWT_SECRET or RAZORPAY_KEY_SECRET as key (no user auth needed — internal tool)
 router.post("/reconcile", async (req, res) => {
   try {
     const { secret } = req.body;
-    if (secret !== process.env.JWT_SECRET) {
+    // Accept either JWT_SECRET or RAZORPAY_KEY_SECRET for auth
+    const validSecrets = [process.env.JWT_SECRET, process.env.RAZORPAY_KEY_SECRET].filter(Boolean);
+    if (!validSecrets.includes(secret)) {
       return res.status(403).json({ success: false, message: "Unauthorized" });
     }
 
