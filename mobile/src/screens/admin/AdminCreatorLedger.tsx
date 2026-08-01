@@ -57,13 +57,19 @@ export default function AdminCreatorLedger({ route, navigation }: any) {
 
         {/* Summary Cards */}
         <View style={st.grid}>
-          <SummaryCard label="Booking Value" value={fmt(s.totalBookingValue)} color="#fff" />
+          <SummaryCard label="Booking Value" value={fmt(s.totalBookingValue)} color="#6C3BFF" />
           <SummaryCard label="Commission" value={fmt(s.totalCommissionDeducted)} color="#dc2626" />
           <SummaryCard label="Earnings" value={fmt(s.totalCreatorEarnings)} color="#10b981" />
           <SummaryCard label="Subscription" value={fmt(s.totalSubscriptionPaid)} color="#60a5fa" />
           <SummaryCard label="Promotions" value={fmt(s.totalPromotionPaid)} color="#f59e0b" />
-          <SummaryCard label="Bookings" value={String(s.totalBookings)} color="#D4AF37" />
+          <SummaryCard label="Bookings" value={String(s.totalBookings)} color="#1F2937" />
         </View>
+
+        {/* Manual Credit Button */}
+        <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#10B981', borderRadius: 12, paddingVertical: 14, marginBottom: 14 }} onPress={() => navigation.navigate('AdminCreatorWallets', { creatorId, creatorName })}>
+          <Ionicons name="add-circle" size={18} color="#fff" />
+          <Text style={{ fontSize: 14, fontWeight: '700', color: '#FFFFFF' }}>Credit / Debit Wallet</Text>
+        </TouchableOpacity>
 
         {/* Booking Ledger */}
         <Text style={st.sectionTitle}>📋 Booking Ledger ({bookings.length})</Text>
