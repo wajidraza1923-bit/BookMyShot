@@ -3,7 +3,7 @@
  * Shows bookings, commissions, subscriptions, promotions, transactions
  */
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Alert, TextInput, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, radius } from '../../theme';
 import api from '../../services/api';
@@ -13,6 +13,11 @@ export default function AdminCreatorLedger({ route, navigation }: any) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showCreditModal, setShowCreditModal] = useState(false);
+  const [creditAmount, setCreditAmount] = useState('');
+  const [creditReason, setCreditReason] = useState('');
+  const [creditType, setCreditType] = useState<'credit' | 'debit'>('credit');
+  const [creditSaving, setCreditSaving] = useState(false);
 
   const load = async () => {
     try {
@@ -65,8 +70,8 @@ export default function AdminCreatorLedger({ route, navigation }: any) {
           <SummaryCard label="Bookings" value={String(s.totalBookings)} color="#1F2937" />
         </View>
 
-        {/* Manual Credit Button */}
-        <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#10B981', borderRadius: 12, paddingVertical: 14, marginBottom: 14 }} onPress={() => navigation.navigate('AdminCreatorWallets', { creatorId, creatorName })}>
+        {/* Manual Credit/Debit Button */}
+        <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#10B981', borderRadius: 12, paddingVertical: 14, marginBottom: 14 }} onPress={() => setShowCreditModal(true)}>
           <Ionicons name="add-circle" size={18} color="#fff" />
           <Text style={{ fontSize: 14, fontWeight: '700', color: '#FFFFFF' }}>Credit / Debit Wallet</Text>
         </TouchableOpacity>
@@ -111,6 +116,51 @@ export default function AdminCreatorLedger({ route, navigation }: any) {
           </View>
         ))}
       </ScrollView>
+
+      {/* Credit/Debit Modal */}
+      <Modal visible={showCreditModal} transparent animationType="slide">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: 20 }}>
+          <View style={{ backgroundColor: '#fff', borderRadius: 20, padding: 20 }}>
+            <Text style={{ fontSize: 18, fontWeight: '800', color: '#1F2937', marginBottom: 4 }}>💰 Credit / Debit</Text>
+            <Text style={{ fontSize: 12, color: '#6B7280', marginBottom: 16 }}>Manually adjust wallet for: {creatorName}</Text>
+            
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+              <TouchableOpacity style={{ flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center', backgroundColor: creditType === 'credit' ? '#10B981' : '#F3F4F6' }} onPress={() => setCreditType('credit')}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: creditType === 'credit' ? '#fff' : '#6B7280' }}>+ Credit</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={{ flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center', backgroundColor: creditType === 'debit' ? '#EF4444' : '#F3F4F6' }} onPress={() => setCreditType('debit')}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: creditType === 'debit' ? '#fff' : '#6B7280' }}>− Debit</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={{ fontSize: 11, fontWeight: '600', color: '#374151', marginBottom: 4 }}>Amount (₹)</Text>
+            <TextInput style={{ backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10, paddingHorizontal: 12, height: 44, fontSize: 14, color: '#1F2937' }} value={creditAmount} onChangeText={setCreditAmount} placeholder="e.g. 500" keyboardType="number-pad" placeholderTextColor="#9CA3AF" />
+            
+            <Text style={{ fontSize: 11, fontWeight: '600', color: '#374151', marginBottom: 4, marginTop: 10 }}>Reason</Text>
+            <TextInput style={{ backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10, paddingHorizontal: 12, height: 44, fontSize: 13, color: '#1F2937' }} value={creditReason} onChangeText={setCreditReason} placeholder="e.g. Manual cashback credit" placeholderTextColor="#9CA3AF" />
+
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
+              <TouchableOpacity style={{ flex: 1, alignItems: 'center', paddingVertical: 14, borderRadius: 12, backgroundColor: '#F3F4F6' }} onPress={() => { setShowCreditModal(false); setCreditAmount(''); setCreditReason(''); }}>
+                <Text style={{ color: '#6B7280', fontWeight: '600' }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={{ flex: 1, alignItems: 'center', paddingVertical: 14, borderRadius: 12, backgroundColor: creditType === 'credit' ? '#10B981' : '#EF4444' }} onPress={async () => {
+                const amt = parseFloat(creditAmount);
+                if (!amt || amt <= 0) { Alert.alert('Invalid', 'Enter valid amount'); return; }
+                setCreditSaving(true);
+                try {
+                  await api.post('/creator-wallet/admin/adjust', { creatorId, type: creditType, amount: amt, reason: creditReason || `Manual ${creditType} by admin` });
+                  Alert.alert('✅ Done', `₹${amt} ${creditType}ed to ${creatorName}'s wallet`);
+                  setShowCreditModal(false); setCreditAmount(''); setCreditReason('');
+                  await load();
+                } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
+                finally { setCreditSaving(false); }
+              }} disabled={creditSaving}>
+                {creditSaving ? <ActivityIndicator color="#fff" size="small" /> : <Text style={{ color: '#fff', fontWeight: '700' }}>{creditType === 'credit' ? '+ Credit' : '− Debit'}</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
