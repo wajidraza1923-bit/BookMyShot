@@ -1134,7 +1134,7 @@ router.patch("/bookings/:id/confirm-payment", async (req, res, next) => {
       } else {
         // Eligibility checks
         const isCustomerInitiated = !booking.createdByCreator && booking.source !== 'creator_manual' && booking.source !== 'walk_in';
-        const bookingFeePaid = (booking.bookingFeePaid && booking.bookingFeeAmount > 0) || booking.paymentStatus === 'paid' || booking.paymentStatus === 'partial';
+        const bookingFeePaid = booking.bookingFeePaid === true && booking.bookingFeePaymentId;
 
         // 30-day deadline from booking creation date (uses snapshotted value)
         const deadlineDaysForBooking = booking.cashbackDeadlineDaysUsed || 30;
