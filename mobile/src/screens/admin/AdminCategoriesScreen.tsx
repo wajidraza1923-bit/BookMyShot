@@ -52,8 +52,8 @@ export default function AdminCategoriesScreen({ navigation }: any) {
 
   const loadCategories = useCallback(async () => {
     try {
-      // Use the same endpoint as HomeScreen — only main categories (not subcategories mixed in)
-      const res = await api.get('/discover/admin/categories');
+      // Fetch categories with creator counts (same data as public endpoint)
+      const res = await api.get('/discover/categories');
       setCategories(res.data?.data || []);
     } catch (e: any) {
       Alert.alert('Error', e.response?.data?.message || 'Failed to load categories');
@@ -191,7 +191,7 @@ export default function AdminCategoriesScreen({ navigation }: any) {
               )}
               <View style={{ flex: 1 }}>
                 <Text style={s.catName}>{cat.name}</Text>
-                <Text style={s.catMeta}>{cat.group || 'General'} • {cat.creatorCount || 0} creators • Order: {cat.sortOrder}</Text>
+                <Text style={s.catMeta}>{cat.group || 'General'} • {cat.creatorCount || 0} creators</Text>
                 {cat.description ? <Text style={s.catDesc} numberOfLines={1}>{cat.description}</Text> : null}
               </View>
             </View>
