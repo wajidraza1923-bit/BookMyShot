@@ -52,8 +52,9 @@ export default function AdminCategoriesScreen({ navigation }: any) {
 
   const loadCategories = useCallback(async () => {
     try {
-      const res = await api.get('/admin/categories');
-      setCategories(res.data?.categories || res.data?.data || []);
+      // Use the same endpoint as HomeScreen — only main categories (not subcategories mixed in)
+      const res = await api.get('/discover/admin/categories');
+      setCategories(res.data?.data || []);
     } catch (e: any) {
       Alert.alert('Error', e.response?.data?.message || 'Failed to load categories');
     } finally { setLoading(false); }
@@ -89,9 +90,9 @@ export default function AdminCategoriesScreen({ navigation }: any) {
       const slug = form.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
       const payload = { ...form, slug, sortOrder: parseInt(form.sortOrder) || 0 };
       if (editItem) {
-        await api.put(`/admin/categories/${editItem._id}`, payload);
+        await api.put(`/discover/admin/categories/${editItem._id}`, payload);
       } else {
-        await api.post('/admin/categories', payload);
+        await api.post('/discover/admin/categories', payload);
       }
       setShowCatModal(false);
       await loadCategories();
@@ -105,7 +106,7 @@ export default function AdminCategoriesScreen({ navigation }: any) {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
         try {
-          await api.delete(`/admin/categories/${cat._id}`);
+          await api.delete(`/discover/admin/categories/${cat._id}`);
           await loadCategories();
           if (selectedCat?._id === cat._id) { setSelectedCat(null); setSubcategories([]); }
         } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed to delete'); }

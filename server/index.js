@@ -130,6 +130,20 @@ const startServer = async () => {
       await CashbackSettings.updateOne({}, { $set: { minBookingAmount: 0 } }, { upsert: false });
     } catch (e) { /* ignore */ }
 
+    // Clean up categories: keep only 7 main parent categories, remove seeded subcategories from Category collection
+    try {
+      const Category = require("./models/Category");
+      const MAIN_SLUGS = ['photography-videography', 'makeup-artists', 'decoration-floral', 'wedding-planners', 'catering-services', 'venues', 'djs-entertainment'];
+      const totalCats = await Category.countDocuments();
+      if (totalCats > 10) {
+        // Too many categories (old seed mixed subcategories in) — remove non-main ones
+        const removed = await Category.deleteMany({ slug: { $nin: MAIN_SLUGS } });
+        if (removed.deletedCount > 0) {
+          console.log(`[Startup] Cleaned ${removed.deletedCount} subcategories from Category collection (keeping ${MAIN_SLUGS.length} main categories)`);
+        }
+      }
+    } catch (e) { /* ignore */ }
+
     // Auto-seed CMS content collections if empty (Categories, Districts, etc.)
     try {
       const Category = require("./models/Category");
