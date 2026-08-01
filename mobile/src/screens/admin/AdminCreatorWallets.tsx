@@ -9,7 +9,8 @@ const copyText = async (text: string, label: string) => {
   Alert.alert('✅ Copied!', `${label}: ${text}`);
 };
 
-export default function AdminCreatorWallets({ navigation }: any) {
+export default function AdminCreatorWallets({ navigation, route }: any) {
+  const passedCreatorId = route?.params?.creatorId || null;
   const [loading, setLoading] = useState(true);
   const [creators, setCreators] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -38,6 +39,14 @@ export default function AdminCreatorWallets({ navigation }: any) {
   }, []);
 
   useEffect(() => { load(); }, []);
+  
+  // Auto-open specific creator's wallet if navigated with creatorId
+  useEffect(() => {
+    if (passedCreatorId && !loading) {
+      openCreatorDetail(passedCreatorId);
+    }
+  }, [passedCreatorId, loading]);
+
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
   const adjustWallet = async () => {
