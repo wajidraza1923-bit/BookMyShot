@@ -152,6 +152,8 @@ export default function CreatorProfileScreen({ route, navigation }: any) {
   const [saved, setSaved] = useState(false);
   const [stats, setStats] = useState({ likes: 0, saves: 0, shares: 0, views: 0 });
   const [contactUnlocked, setContactUnlocked] = useState(false);
+  const [canReview, setCanReview] = useState(false);
+  const [reviewBookingId, setReviewBookingId] = useState('');
   const scrollRef = React.useRef<ScrollView>(null);
   const [reviewsY, setReviewsY] = useState(0);
 
@@ -170,6 +172,13 @@ export default function CreatorProfileScreen({ route, navigation }: any) {
         try { const m = await api.get(`/profile-interactions/my/${d._id || id}`); if (m.data?.data) { setLiked(m.data.data.liked); setSaved(m.data.data.saved); } } catch {}
         try { await api.post('/profile-interactions/view', { creatorId: d._id || id }); } catch {}
         try { const inq = await api.get(`/inquiries/check/${d._id || id}`); setContactUnlocked(inq.data?.hasAccepted || false); } catch {}
+        // Check if user can write a review (has completed booking with this creator)
+        try {
+          const bRes = await api.get('/bookings');
+          const myBookings = bRes.data?.bookings || [];
+          const completed = myBookings.find((b: any) => (String(b.creator) === String(d._id || id) || String(b.creator?._id) === String(d._id || id)) && (b.status === 'Completed' || b.status === 'completed'));
+          if (completed) { setCanReview(true); setReviewBookingId(completed._id); }
+        } catch {}
       }
     } catch {} finally { setLoading(false); }
   };
@@ -388,7 +397,15 @@ export default function CreatorProfileScreen({ route, navigation }: any) {
 
         {/* ═══ REVIEWS ═══ */}
         <View style={st.sec} onLayout={(e) => setReviewsY(e.nativeEvent.layout.y)}>
-          <Text style={st.secTitle}>Reviews ({reviewCount})</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <Text style={st.secTitle}>Reviews ({reviewCount})</Text>
+            {canReview && (
+              <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F59E0B', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }} onPress={() => navigation.navigate('WriteReview', { creatorId: creator._id || id, creatorName: u.name, bookingId: reviewBookingId })}>
+                <Ionicons name="star" size={12} color="#fff" />
+                <Text style={{ fontSize: 11, fontWeight: '700', color: '#fff' }}>Write Review</Text>
+              </TouchableOpacity>
+            )}
+          </View>
           {reviews.length > 0 ? reviews.slice(0, 5).map((rev: any, i: number) => (
             <View key={i} style={st.revCard}>
               <View style={st.revHead}>
