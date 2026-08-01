@@ -209,21 +209,43 @@ export default function CreatorBackup({ navigation }: any) {
             }
             setLoading(true);
             try {
-              const body: any = { includeBookings, includePayments, includeInquiries, includeWallet };
+              const body: any = { includeBookings, includePayments, includeInquiries, includeWallet, returnHtml: true };
               if (dateFrom) body.dateFrom = dateFrom;
               if (dateTo) body.dateTo = dateTo;
-              body.returnHtml = true;
+              
+              console.log('[Backup] Requesting HTML for PDF...');
               const res = await api.post('/creator/backup', body);
-              const html = res.data?.html || '<h1>No data</h1>';
+              console.log('[Backup] Response keys:', Object.keys(res.data || {}));
+              
+              const html = res.data?.html;
+              if (!html || html.length < 50) {
+                Alert.alert('Error', 'Server returned empty data. Try again.');
+                setLoading(false);
+                return;
+              }
+              
+              console.log('[Backup] HTML received, length:', html.length);
               const Print = require('expo-print');
               const Sharing = require('expo-sharing');
+              
               const result = await Print.printToFileAsync({ html, base64: false });
+              console.log('[Backup] PDF generated:', result?.uri);
+              
               if (result?.uri) {
                 const available = await Sharing.isAvailableAsync();
-                if (available) await Sharing.shareAsync(result.uri, { mimeType: 'application/pdf', dialogTitle: 'BookMyShot Backup' });
-                else await Print.printAsync({ html });
+                if (available) {
+                  await Sharing.shareAsync(result.uri, { mimeType: 'application/pdf', dialogTitle: 'BookMyShot Backup' });
+                } else {
+                  await Print.printAsync({ html });
+                }
+              } else {
+                // Fallback: just print directly
+                await Print.printAsync({ html });
               }
-            } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed to generate PDF'); }
+            } catch (e: any) {
+              console.log('[Backup] PDF error:', e.message, e.response?.status, e.response?.data?.message);
+              Alert.alert('Error', e.response?.data?.message || e.message || 'Failed to generate PDF. Try Send to Email instead.');
+            }
             finally { setLoading(false); }
           }}
           disabled={loading}
