@@ -194,7 +194,7 @@ export default function CreatorSubscription({ navigation }: any) {
           </View>
           <View style={s.planFeatures}>
             <Feature text="Pay ₹199 now + ₹199 auto-deducted monthly" />
-            <Feature text="Cancel anytime from this screen" />
+            <Feature text="Cancel anytime from your chosen platform" />
             <Feature text="Unlimited leads & bookings" />
             <Feature text="Profile visible in search" />
           </View>
