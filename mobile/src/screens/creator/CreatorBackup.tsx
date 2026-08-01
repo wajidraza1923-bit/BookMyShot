@@ -22,6 +22,7 @@ export default function CreatorBackup({ navigation }: any) {
   const [includeWallet, setIncludeWallet] = useState(true);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [pickingDate, setPickingDate] = useState<'from' | 'to' | null>(null);
 
   const requestBackup = async () => {
     if (!includeBookings && !includePayments && !includeInquiries && !includeWallet) {
@@ -96,7 +97,7 @@ export default function CreatorBackup({ navigation }: any) {
         <View style={styles.infoBanner}>
           <Ionicons name="information-circle" size={18} color={colors.info} />
           <Text style={styles.infoText}>
-            Backup will be sent to your registered email as a formatted report.
+            Backup report with all data will be sent to your registered email. You can save/print it as PDF from your email.
           </Text>
         </View>
 
@@ -105,34 +106,39 @@ export default function CreatorBackup({ navigation }: any) {
           <Text style={styles.sectionTitle}>Date Range (Optional)</Text>
           <Text style={styles.sectionSubtitle}>Leave empty for all-time data</Text>
           <View style={styles.dateRow}>
-            <View style={styles.dateField}>
+            <TouchableOpacity style={styles.dateField} onPress={() => { if (!dateFrom) setDateFrom(new Date().toISOString().split('T')[0]); setPickingDate('from'); }}>
               <Text style={styles.dateLabel}>From</Text>
-              <TextInput
-                style={styles.dateInput}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={colors.textMuted}
-                value={dateFrom}
-                onChangeText={setDateFrom}
-                selectionColor={colors.primary}
-                maxLength={10}
-              />
-            </View>
+              <View style={[styles.dateInput, { flexDirection: 'row', alignItems: 'center', gap: 8 }]}>
+                <Ionicons name="calendar-outline" size={16} color={colors.primary} />
+                <Text style={{ flex: 1, fontSize: 13, color: dateFrom ? colors.text : colors.textMuted }}>{dateFrom || 'Select date'}</Text>
+                {dateFrom ? <TouchableOpacity onPress={() => setDateFrom('')}><Ionicons name="close-circle" size={16} color={colors.textMuted} /></TouchableOpacity> : null}
+              </View>
+            </TouchableOpacity>
             <View style={styles.dateSeparator}>
               <Ionicons name="arrow-forward" size={16} color={colors.textMuted} />
             </View>
-            <View style={styles.dateField}>
+            <TouchableOpacity style={styles.dateField} onPress={() => { if (!dateTo) setDateTo(new Date().toISOString().split('T')[0]); setPickingDate('to'); }}>
               <Text style={styles.dateLabel}>To</Text>
-              <TextInput
-                style={styles.dateInput}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={colors.textMuted}
-                value={dateTo}
-                onChangeText={setDateTo}
-                selectionColor={colors.primary}
-                maxLength={10}
-              />
-            </View>
+              <View style={[styles.dateInput, { flexDirection: 'row', alignItems: 'center', gap: 8 }]}>
+                <Ionicons name="calendar-outline" size={16} color={colors.primary} />
+                <Text style={{ flex: 1, fontSize: 13, color: dateTo ? colors.text : colors.textMuted }}>{dateTo || 'Select date'}</Text>
+                {dateTo ? <TouchableOpacity onPress={() => setDateTo('')}><Ionicons name="close-circle" size={16} color={colors.textMuted} /></TouchableOpacity> : null}
+              </View>
+            </TouchableOpacity>
           </View>
+          {/* Simple date editor */}
+          {pickingDate && (
+            <View style={{ marginTop: 12, backgroundColor: colors.surface, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border }}>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: colors.text, marginBottom: 8 }}>Enter {pickingDate === 'from' ? 'From' : 'To'} Date</Text>
+              <TextInput style={[styles.dateInput, { marginBottom: 8 }]} value={pickingDate === 'from' ? dateFrom : dateTo} onChangeText={v => pickingDate === 'from' ? setDateFrom(v) : setDateTo(v)} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textMuted} keyboardType="number-pad" maxLength={10} />
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TouchableOpacity style={{ flex: 1, paddingVertical: 8, borderRadius: 8, backgroundColor: '#F3F4F6', alignItems: 'center' }} onPress={() => { const d = new Date(); d.setDate(d.getDate() - 7); const v = d.toISOString().split('T')[0]; pickingDate === 'from' ? setDateFrom(v) : setDateTo(v); }}><Text style={{ fontSize: 11, color: colors.text }}>7 days ago</Text></TouchableOpacity>
+                <TouchableOpacity style={{ flex: 1, paddingVertical: 8, borderRadius: 8, backgroundColor: '#F3F4F6', alignItems: 'center' }} onPress={() => { const d = new Date(); d.setDate(d.getDate() - 30); const v = d.toISOString().split('T')[0]; pickingDate === 'from' ? setDateFrom(v) : setDateTo(v); }}><Text style={{ fontSize: 11, color: colors.text }}>30 days ago</Text></TouchableOpacity>
+                <TouchableOpacity style={{ flex: 1, paddingVertical: 8, borderRadius: 8, backgroundColor: '#F3F4F6', alignItems: 'center' }} onPress={() => { const v = new Date().toISOString().split('T')[0]; pickingDate === 'from' ? setDateFrom(v) : setDateTo(v); }}><Text style={{ fontSize: 11, color: colors.text }}>Today</Text></TouchableOpacity>
+                <TouchableOpacity style={{ flex: 1, paddingVertical: 8, borderRadius: 8, backgroundColor: colors.primary, alignItems: 'center' }} onPress={() => setPickingDate(null)}><Text style={{ fontSize: 11, color: '#fff', fontWeight: '600' }}>Done</Text></TouchableOpacity>
+              </View>
+            </View>
+          )}
         </View>
 
         {/* Data Categories */}
