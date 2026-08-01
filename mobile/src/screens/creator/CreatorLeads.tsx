@@ -32,6 +32,9 @@ export default function CreatorLeads({ navigation }: any) {
   const [showUnlockRazorpay, setShowUnlockRazorpay] = useState(false);
   const [unlockRpConfig, setUnlockRpConfig] = useState<any>(null);
   const [unlockingLeadId, setUnlockingLeadId] = useState('');
+  // Subscribe monthly (Razorpay)
+  const [showSubRazorpay, setShowSubRazorpay] = useState(false);
+  const [subRpConfig, setSubRpConfig] = useState<any>(null);
   const [editAmount, setEditAmount] = useState('');
 
   const load = useCallback(async () => {
@@ -201,6 +204,37 @@ export default function CreatorLeads({ navigation }: any) {
     }
   };
 
+  // ═══ SUBSCRIBE MONTHLY (directly from leads screen) ═══
+  const handleSubscribeMonthly = async () => {
+    try {
+      const { getRazorpayConfig, createSubscription } = require('../../services/payment');
+      const rpCfg = await getRazorpayConfig();
+      if (!rpCfg.configured) { Alert.alert('Unavailable', 'Payment gateway not configured'); return; }
+      const subRes = await createSubscription('monthly');
+      if (subRes.subscriptionId) {
+        const meRes = await api.get('/auth/me').catch(() => ({ data: { user: {} } }));
+        setSubRpConfig({ keyId: rpCfg.keyId, subscriptionId: subRes.subscriptionId, name: meRes.data?.user?.name || '', email: meRes.data?.user?.email || '' });
+        setShowSubRazorpay(true);
+      } else {
+        Alert.alert('Error', 'Failed to create subscription');
+      }
+    } catch (e: any) {
+      Alert.alert('Error', e.response?.data?.message || e.message || 'Subscription failed');
+    }
+  };
+
+  const onSubSuccess = async (paymentData: any) => {
+    setShowSubRazorpay(false);
+    try {
+      const { verifySubscription } = require('../../services/payment');
+      const verified = await verifySubscription(paymentData.razorpay_subscription_id, paymentData.razorpay_payment_id, paymentData.razorpay_signature);
+      if (verified) {
+        Alert.alert('🎉 Subscribed!', 'Monthly plan activated. Unlimited leads!');
+        await load();
+      } else { Alert.alert('Verification Failed', 'Contact support if charged.'); }
+    } catch (e: any) { Alert.alert('Error', e.message || 'Verification failed'); }
+  };
+
   // Check if a lead is locked (quota exhausted + not individually unlocked)
   const isLeadLocked = (lead: any) => {
     if (subInfo.status === 'active' || subInfo.status === 'trial') return false; // Subscribed = unlimited
@@ -255,7 +289,7 @@ export default function CreatorLeads({ navigation }: any) {
                 <>
                   <Text style={{ fontSize: 13, fontWeight: '700', color: '#EF4444' }}>🔒 Free Quota Exhausted</Text>
                   <Text style={{ fontSize: 11, color: '#6B7280', marginTop: 4 }}>You've used all {subInfo.freeLeadsLimit} free leads. New inquiry details are locked.</Text>
-                  <TouchableOpacity style={{ backgroundColor: '#6C3BFF', borderRadius: 10, paddingVertical: 10, marginTop: 8, alignItems: 'center' }} onPress={() => navigation.navigate('CreatorSubscription')}>
+                  <TouchableOpacity style={{ backgroundColor: '#6C3BFF', borderRadius: 10, paddingVertical: 10, marginTop: 8, alignItems: 'center' }} onPress={handleSubscribeMonthly}>
                     <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>Subscribe ₹{subInfo.monthlyPrice}/month — Unlimited Leads</Text>
                   </TouchableOpacity>
                 </>
@@ -350,7 +384,7 @@ export default function CreatorLeads({ navigation }: any) {
                         <TouchableOpacity style={{ flex: 1, alignItems: 'center', paddingVertical: 11, borderRadius: 10, backgroundColor: '#F59E0B' }} onPress={() => unlockLead(item._id)}>
                           <Text style={{ fontSize: 11, fontWeight: '700', color: '#FFFFFF' }}>🔓 Unlock ₹{subInfo.perLeadPrice}</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={{ flex: 1, alignItems: 'center', paddingVertical: 11, borderRadius: 10, backgroundColor: '#6C3BFF' }} onPress={() => navigation.navigate('CreatorSubscription')}>
+                        <TouchableOpacity style={{ flex: 1, alignItems: 'center', paddingVertical: 11, borderRadius: 10, backgroundColor: '#6C3BFF' }} onPress={handleSubscribeMonthly}>
                           <Text style={{ fontSize: 11, fontWeight: '700', color: '#FFFFFF' }}>Subscribe ₹{subInfo.monthlyPrice}/mo</Text>
                         </TouchableOpacity>
                       </View>
@@ -487,6 +521,22 @@ export default function CreatorLeads({ navigation }: any) {
           onSuccess={onUnlockSuccess}
           onFailure={() => { setShowUnlockRazorpay(false); Alert.alert('Payment Failed', 'Lead unlock payment failed. Try again.'); }}
           onClose={() => setShowUnlockRazorpay(false)}
+        />
+      )}
+
+      {/* ═══ RAZORPAY: Monthly Subscription ═══ */}
+      {showSubRazorpay && subRpConfig && (
+        <RazorpayWebCheckout
+          visible={true}
+          keyId={subRpConfig.keyId}
+          subscriptionId={subRpConfig.subscriptionId}
+          name="BookMyShot Monthly Plan"
+          description={`₹${subInfo.monthlyPrice}/month AutoPay`}
+          prefillName={subRpConfig.name}
+          prefillEmail={subRpConfig.email}
+          onSuccess={onSubSuccess}
+          onFailure={() => { setShowSubRazorpay(false); Alert.alert('Payment Failed', 'Subscription payment failed.'); }}
+          onClose={() => setShowSubRazorpay(false)}
         />
       )}
     </View>
