@@ -403,7 +403,9 @@ router.patch("/booking-requests/:id", async (req, res, next) => {
 
     // ═══ FREE LEADS LIMIT CHECK ═══
     // If creator is on free plan and trying to accept, check if limit reached
-    if (status === "Creator Accepted" && creator.subscriptionStatus === "free") {
+    // Active/trial subscriptions bypass this check entirely (unlimited)
+    const isSubscribed = creator.subscriptionStatus === "active" || creator.subscriptionStatus === "trial";
+    if (status === "Creator Accepted" && !isSubscribed) {
       const freeLimit = creator.freeLeadsLimit || 3;
       if ((creator.freeLeadsUsed || 0) >= freeLimit) {
         return res.status(403).json({
@@ -816,7 +818,7 @@ router.patch("/inquiries/:id/reply", async (req, res, next) => {
       const msLead = await MasterSettingsLead.findOne();
       const freeLimit = (msLead && msLead.freeMonthlyLimit) || 3;
 
-      if (creator.subscriptionStatus === "free" || !creator.subscriptionStatus) {
+      if (creator.subscriptionStatus !== "active" && creator.subscriptionStatus !== "trial") {
         if ((creator.freeLeadsUsed || 0) >= freeLimit) {
           return res.status(403).json({
             success: false,

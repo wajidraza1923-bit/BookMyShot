@@ -198,7 +198,7 @@ export default function CreatorLeads({ navigation }: any) {
       ) : (
         <>
           {/* Free Leads Counter / Subscription Banner */}
-          {subInfo.status === 'free' && (
+          {(subInfo.status === 'free' || subInfo.status === 'expired' || !subInfo.status) && (
             <View style={{ marginHorizontal: 16, marginBottom: 10, backgroundColor: subInfo.freeLeadsUsed >= subInfo.freeLeadsLimit ? '#FEF2F2' : '#F8F6FF', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: subInfo.freeLeadsUsed >= subInfo.freeLeadsLimit ? '#FECACA' : '#EDE9FE' }}>
               {subInfo.freeLeadsUsed >= subInfo.freeLeadsLimit ? (
                 <>
