@@ -412,7 +412,7 @@ export default function CreatorProfileScreen({ route, navigation }: any) {
               </TouchableOpacity>
             )}
           </View>
-          {reviews.length > 0 ? reviews.slice(0, 5).map((rev: any, i: number) => (
+          {reviews.length > 0 ? reviews.slice(0, 3).map((rev: any, i: number) => (
             <View key={i} style={st.revCard}>
               <View style={st.revHead}>
                 <Image source={{ uri: rev.user?.avatar || 'https://via.placeholder.com/28' }} style={st.revAvatar} />
@@ -423,6 +423,11 @@ export default function CreatorProfileScreen({ route, navigation }: any) {
               {rev.reply && <View style={st.revReply}><Text style={st.revReplyLabel}>Creator:</Text><Text style={st.revReplyText}>{rev.reply}</Text></View>}
             </View>
           )) : <Text style={st.empty}>No reviews yet. Be the first to book!</Text>}
+          {reviews.length > 3 && (
+            <TouchableOpacity style={{ alignItems: 'center', paddingVertical: 10, backgroundColor: '#F3E8FF', borderRadius: 10, marginTop: 4 }} onPress={() => navigation.navigate('AllReviews', { creatorId: creator._id || id, creatorName: u.name })}>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: '#6C3BFF' }}>View All {reviews.length} Reviews →</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* ═══ LOCKED CONTACT ═══ */}
