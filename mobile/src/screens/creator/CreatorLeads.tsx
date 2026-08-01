@@ -168,12 +168,12 @@ export default function CreatorLeads({ navigation }: any) {
   const unlockLead = async (leadId: string) => {
     try {
       const orderRes = await api.post('/leads/unlock-order', { inquiryId: leadId });
-      const order = orderRes.data;
-      if (!order.orderId) { Alert.alert('Error', 'Could not create payment order'); return; }
+      const order = orderRes.data?.data || orderRes.data;
+      if (!order?.orderId) { Alert.alert('Error', 'Could not create payment order'); return; }
       
       setUnlockingLeadId(leadId);
       setUnlockRpConfig({
-        keyId: order.keyId || process.env.RAZORPAY_KEY_ID,
+        keyId: order.keyId || '',
         orderId: order.orderId,
         amount: order.amount || subInfo.perLeadPrice,
         name: 'BookMyShot',
