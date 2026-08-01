@@ -169,7 +169,7 @@ export default function CreatorWallet({ navigation }: any) {
           <Text style={s.commTitle}>Commission</Text>
           <View style={s.commGrid}>
             <View style={s.commRow}><Text style={s.commLabel}>Total Earnings</Text><Text style={s.commVal}>₹{totalEarnings.toLocaleString('en-IN')}</Text></View>
-            <View style={s.commRow}><Text style={s.commLabel}>Platform Fee %</Text><Text style={s.commVal}>{bmsPercent}% (from Master Command)</Text></View>
+            <View style={s.commRow}><Text style={s.commLabel}>Platform Fee %</Text><Text style={s.commVal}>{bmsPercent}%</Text></View>
             <View style={s.commRow}><Text style={s.commLabel}>Commission Due</Text><Text style={[s.commVal, { color: colors.error, fontWeight: '700' }]}>₹{commissionDue.toLocaleString('en-IN')}</Text></View>
             <View style={s.commRow}><Text style={s.commLabel}>Commission Paid</Text><Text style={[s.commVal, { color: colors.success }]}>₹{commissionPaid.toLocaleString('en-IN')}</Text></View>
           </View>
