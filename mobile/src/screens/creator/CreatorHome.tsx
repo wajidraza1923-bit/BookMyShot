@@ -171,11 +171,11 @@ export default function CreatorHome({ navigation }: any) {
               <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
                 {(leadUsage as any).enablePerLeadPurchase && (
                   <TouchableOpacity style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: 10, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: '#E5E7EB' }} onPress={() => navigation.navigate('CreatorLeads')}>
-                    <Text style={{ fontSize: 11, fontWeight: '700', color: '#6C3BFF' }}>🔓 Unlock ₹{(leadUsage as any).leadUnlockPrice || 70}</Text>
+                    <Text style={{ fontSize: 11, fontWeight: '700', color: '#6C3BFF' }}>🔓 Unlock Leads ₹{(leadUsage as any).leadUnlockPrice || 70}/each</Text>
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity style={{ flex: 1, backgroundColor: '#6C3BFF', borderRadius: 10, paddingVertical: 10, alignItems: 'center' }} onPress={() => navigation.navigate('CreatorSubscription')}>
-                  <Text style={{ fontSize: 11, fontWeight: '700', color: '#FFFFFF' }}>⭐ Subscribe ₹{(leadUsage as any).monthlyPrice || 199}</Text>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: '#FFFFFF' }}>⭐ Subscribe ₹{(leadUsage as any).monthlyPrice || 0}/mo</Text>
                 </TouchableOpacity>
               </View>
             </View>
