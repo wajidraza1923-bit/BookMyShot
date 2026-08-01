@@ -316,8 +316,12 @@ router.delete("/admin/categories/:id", protect, authorize("admin"), async (req, 
 });
 
 // ═══ ADMIN: Upload category/subcategory image to Cloudinary ═══
-router.post("/admin/upload-image", protect, authorize("admin"), async (req, res, next) => {
+router.post("/admin/upload-image", protect, async (req, res, next) => {
   try {
+    // Allow both admin and creator to upload category images (admin manages, creator for testing)
+    if (req.user.role !== 'admin' && req.user.role !== 'creator') {
+      return res.status(403).json({ success: false, message: "Not authorized" });
+    }
     const { imageBase64 } = req.body;
     if (!imageBase64) return res.status(400).json({ success: false, message: "No image data provided" });
 
@@ -328,7 +332,7 @@ router.post("/admin/upload-image", protect, authorize("admin"), async (req, res,
     res.json({ success: true, url: result.url, publicId: result.publicId });
   } catch (e) {
     console.log("[CategoryUpload] Error:", e.message);
-    next(e);
+    res.status(500).json({ success: false, message: e.message || "Upload failed" });
   }
 });
 

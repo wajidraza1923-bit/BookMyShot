@@ -257,13 +257,26 @@ export default function AdminCategoriesScreen({ navigation }: any) {
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <TextInput style={[s.input, { flex: 1 }]} value={form.imageUrl} onChangeText={v => setForm({ ...form, imageUrl: v })} placeholder="https://... or pick from gallery" placeholderTextColor="#9CA3AF" />
                 <TouchableOpacity style={{ backgroundColor: '#6C3BFF', borderRadius: 10, paddingHorizontal: 12, justifyContent: 'center' }} onPress={async () => {
-                  const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8, base64: true });
+                  const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7, base64: true, allowsEditing: true, aspect: [16, 9] });
                   if (!result.canceled && result.assets[0]) {
                     try {
                       const base64 = `data:image/jpeg;base64,${result.assets[0].base64}`;
-                      const uploadRes = await api.post('/discover/admin/upload-image', { imageBase64: base64 });
-                      if (uploadRes.data?.url) setForm({ ...form, imageUrl: uploadRes.data.url });
-                    } catch { Alert.alert('Upload Failed', 'Could not upload image'); }
+                      // Try dedicated category upload first, fallback to profile image upload
+                      let url = '';
+                      try {
+                        const uploadRes = await api.post('/discover/admin/upload-image', { imageBase64: base64 });
+                        url = uploadRes.data?.url || '';
+                      } catch {
+                        // Fallback: use creator profile image upload (works for any authenticated user)
+                        const uploadRes = await api.post('/creator/upload/profile-image', { imageUrl: base64 });
+                        url = uploadRes.data?.url || '';
+                      }
+                      if (url) {
+                        setForm({ ...form, imageUrl: url });
+                      } else {
+                        Alert.alert('Upload Failed', 'Server did not return image URL');
+                      }
+                    } catch (e: any) { Alert.alert('Upload Failed', e.response?.data?.message || e.message || 'Could not upload image'); }
                   }
                 }}>
                   <Ionicons name="image-outline" size={18} color="#fff" />
@@ -311,13 +324,24 @@ export default function AdminCategoriesScreen({ navigation }: any) {
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <TextInput style={[s.input, { flex: 1 }]} value={subForm.imageUrl} onChangeText={v => setSubForm({ ...subForm, imageUrl: v })} placeholder="https://... or pick from gallery" placeholderTextColor="#9CA3AF" />
                 <TouchableOpacity style={{ backgroundColor: '#6C3BFF', borderRadius: 10, paddingHorizontal: 12, justifyContent: 'center' }} onPress={async () => {
-                  const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8, base64: true });
+                  const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7, base64: true, allowsEditing: true, aspect: [16, 9] });
                   if (!result.canceled && result.assets[0]) {
                     try {
                       const base64 = `data:image/jpeg;base64,${result.assets[0].base64}`;
-                      const uploadRes = await api.post('/discover/admin/upload-image', { imageBase64: base64 });
-                      if (uploadRes.data?.url) setSubForm({ ...subForm, imageUrl: uploadRes.data.url });
-                    } catch { Alert.alert('Upload Failed', 'Could not upload image'); }
+                      let url = '';
+                      try {
+                        const uploadRes = await api.post('/discover/admin/upload-image', { imageBase64: base64 });
+                        url = uploadRes.data?.url || '';
+                      } catch {
+                        const uploadRes = await api.post('/creator/upload/profile-image', { imageUrl: base64 });
+                        url = uploadRes.data?.url || '';
+                      }
+                      if (url) {
+                        setSubForm({ ...subForm, imageUrl: url });
+                      } else {
+                        Alert.alert('Upload Failed', 'Server did not return image URL');
+                      }
+                    } catch (e: any) { Alert.alert('Upload Failed', e.response?.data?.message || e.message || 'Could not upload image'); }
                   }
                 }}>
                   <Ionicons name="image-outline" size={18} color="#fff" />
