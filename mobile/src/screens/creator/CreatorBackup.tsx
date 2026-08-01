@@ -10,6 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Print from 'expo-print';
 import { colors, spacing, typography, radius } from '../../theme';
 import api from '../../services/api';
 
@@ -221,7 +222,6 @@ export default function CreatorBackup({ navigation }: any) {
               }
               
               // Use printAsync — opens print dialog where user can "Save as PDF"
-              const Print = require('expo-print');
               await Print.printAsync({ html });
             } catch (e: any) {
               const msg = (e.message || '').toLowerCase();
