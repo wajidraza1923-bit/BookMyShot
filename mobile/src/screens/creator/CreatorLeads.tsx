@@ -325,17 +325,19 @@ export default function CreatorLeads({ navigation }: any) {
               <Text style={st.emptySub}>New inquiries will appear here</Text>
             </View>
           }
-          renderItem={({ item }) => (
+          renderItem={({ item }) => {
+            const locked = item.status === 'pending' && isLeadLocked(item);
+            return (
             <View style={st.card}>
               {/* Card Header */}
               <View style={st.cardHead}>
                 <View style={st.cardAvatar}>
-                  <Ionicons name="person" size={18} color={colors.primary} />
+                  <Ionicons name="person" size={18} color={locked ? colors.textMuted : colors.primary} />
                 </View>
                 <View style={st.cardInfo}>
-                  <Text style={st.cardName}>{item.name || 'Client'}</Text>
-                  {item.phone && <Text style={st.cardContact}>📞 {item.phone}</Text>}
-                  {item.user?.email && <Text style={st.cardContact}>✉ {item.user.email}</Text>}
+                  <Text style={st.cardName}>{locked ? '●●●●●●●●' : (item.name || 'Client')}</Text>
+                  {item.phone && <Text style={st.cardContact}>{locked ? '📞 ●●●●●●●●●●' : `📞 ${item.phone}`}</Text>}
+                  {item.user?.email && <Text style={st.cardContact}>{locked ? '✉ ●●●●●@●●●.●●●' : `✉ ${item.user.email}`}</Text>}
                 </View>
                 <View style={[st.badge, { backgroundColor: getStatusColor(item.status) + '12' }]}>
                   <View style={[st.badgeDot, { backgroundColor: getStatusColor(item.status) }]} />
@@ -352,9 +354,14 @@ export default function CreatorLeads({ navigation }: any) {
               </View>
 
               {/* Message */}
-              {item.message && (
+              {item.message && !locked && (
                 <View style={st.messageWrap}>
                   <Text style={st.messageText} numberOfLines={3}>"{item.message}"</Text>
+                </View>
+              )}
+              {item.message && locked && (
+                <View style={st.messageWrap}>
+                  <Text style={st.messageText} numberOfLines={2}>"●●●●●● ●●●●● ●●●●●●●● ●●●●●"</Text>
                 </View>
               )}
 
@@ -366,8 +373,8 @@ export default function CreatorLeads({ navigation }: any) {
                 </Text>
               </View>
 
-              {/* Contact Actions */}
-              {item.phone && (
+              {/* Contact Actions — hidden when locked */}
+              {item.phone && !locked && (
                 <View style={st.contactRow}>
                   <TouchableOpacity style={st.contactBtn} onPress={() => Linking.openURL(`tel:${item.phone}`)}>
                     <Ionicons name="call" size={14} color="#3B82F6" />
@@ -424,7 +431,7 @@ export default function CreatorLeads({ navigation }: any) {
                 </View>
               )}
             </View>
-          )}
+          ); }}
         />
         </>
       )}
