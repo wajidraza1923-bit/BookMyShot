@@ -263,6 +263,19 @@ router.post("/verify-yearly-payment", protect, authorize("creator"), async (req,
     creator.lastPaymentDate = now;
     creator.autoRenew = false; // Yearly = no auto-renew
     if (creator.status === "pending") creator.status = "approved";
+
+    // Cancel any existing monthly AutoPay subscription (prevent double-charge)
+    if (creator.razorpaySubscriptionId) {
+      try {
+        await razorpayService.cancelSubscription(creator.razorpaySubscriptionId, true);
+        console.log(`[Razorpay] Cancelled monthly AutoPay ${creator.razorpaySubscriptionId} (upgraded to yearly)`);
+      } catch (cancelErr) {
+        console.log("[Razorpay] Could not cancel old monthly sub:", cancelErr.message);
+      }
+      creator.razorpaySubscriptionId = null;
+      creator.razorpayPlanId = null;
+    }
+
     await creator.save();
 
     // Invoice
