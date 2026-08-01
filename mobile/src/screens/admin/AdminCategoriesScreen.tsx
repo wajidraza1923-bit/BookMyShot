@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, ActivityIndicator, RefreshControl, Modal, ScrollView, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import api from '../../services/api';
 
 interface Category {
@@ -253,8 +254,22 @@ export default function AdminCategoriesScreen({ navigation }: any) {
               <Text style={s.fieldLabel}>Icon (Ionicons name)</Text>
               <TextInput style={s.input} value={form.icon} onChangeText={v => setForm({ ...form, icon: v })} placeholder="e.g. camera-outline, color-palette-outline" placeholderTextColor="#9CA3AF" />
               <Text style={s.fieldLabel}>Image URL</Text>
-              <TextInput style={s.input} value={form.imageUrl} onChangeText={v => setForm({ ...form, imageUrl: v })} placeholder="https://..." placeholderTextColor="#9CA3AF" />
-              {form.imageUrl ? <Image source={{ uri: form.imageUrl }} style={{ width: '100%', height: 100, borderRadius: 8, marginBottom: 10 }} /> : null}
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TextInput style={[s.input, { flex: 1 }]} value={form.imageUrl} onChangeText={v => setForm({ ...form, imageUrl: v })} placeholder="https://... or pick from gallery" placeholderTextColor="#9CA3AF" />
+                <TouchableOpacity style={{ backgroundColor: '#6C3BFF', borderRadius: 10, paddingHorizontal: 12, justifyContent: 'center' }} onPress={async () => {
+                  const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8, base64: true });
+                  if (!result.canceled && result.assets[0]) {
+                    try {
+                      const base64 = `data:image/jpeg;base64,${result.assets[0].base64}`;
+                      const uploadRes = await api.post('/creators/upload/avatar', { imageUrl: base64 });
+                      if (uploadRes.data?.url) setForm({ ...form, imageUrl: uploadRes.data.url });
+                    } catch { Alert.alert('Upload Failed', 'Could not upload image'); }
+                  }
+                }}>
+                  <Ionicons name="image-outline" size={18} color="#fff" />
+                </TouchableOpacity>
+              </View>
+              {form.imageUrl ? <Image source={{ uri: form.imageUrl }} style={{ width: '100%', height: 100, borderRadius: 8, marginTop: 8, marginBottom: 10 }} /> : null}
               <Text style={s.fieldLabel}>Description</Text>
               <TextInput style={[s.input, { height: 60 }]} value={form.description} onChangeText={v => setForm({ ...form, description: v })} placeholder="Short description..." placeholderTextColor="#9CA3AF" multiline />
               <Text style={s.fieldLabel}>Sort Order</Text>
@@ -293,8 +308,22 @@ export default function AdminCategoriesScreen({ navigation }: any) {
               <Text style={s.fieldLabel}>Icon (Ionicons name)</Text>
               <TextInput style={s.input} value={subForm.icon} onChangeText={v => setSubForm({ ...subForm, icon: v })} placeholder="e.g. color-palette-outline" placeholderTextColor="#9CA3AF" />
               <Text style={s.fieldLabel}>Image URL</Text>
-              <TextInput style={s.input} value={subForm.imageUrl} onChangeText={v => setSubForm({ ...subForm, imageUrl: v })} placeholder="https://..." placeholderTextColor="#9CA3AF" />
-              {subForm.imageUrl ? <Image source={{ uri: subForm.imageUrl }} style={{ width: '100%', height: 80, borderRadius: 8, marginBottom: 10 }} /> : null}
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TextInput style={[s.input, { flex: 1 }]} value={subForm.imageUrl} onChangeText={v => setSubForm({ ...subForm, imageUrl: v })} placeholder="https://... or pick from gallery" placeholderTextColor="#9CA3AF" />
+                <TouchableOpacity style={{ backgroundColor: '#6C3BFF', borderRadius: 10, paddingHorizontal: 12, justifyContent: 'center' }} onPress={async () => {
+                  const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8, base64: true });
+                  if (!result.canceled && result.assets[0]) {
+                    try {
+                      const base64 = `data:image/jpeg;base64,${result.assets[0].base64}`;
+                      const uploadRes = await api.post('/creators/upload/avatar', { imageUrl: base64 });
+                      if (uploadRes.data?.url) setSubForm({ ...subForm, imageUrl: uploadRes.data.url });
+                    } catch { Alert.alert('Upload Failed', 'Could not upload image'); }
+                  }
+                }}>
+                  <Ionicons name="image-outline" size={18} color="#fff" />
+                </TouchableOpacity>
+              </View>
+              {subForm.imageUrl ? <Image source={{ uri: subForm.imageUrl }} style={{ width: '100%', height: 80, borderRadius: 8, marginTop: 8, marginBottom: 10 }} /> : null}
               <Text style={s.fieldLabel}>Description</Text>
               <TextInput style={[s.input, { height: 50 }]} value={subForm.description} onChangeText={v => setSubForm({ ...subForm, description: v })} placeholder="Optional description" placeholderTextColor="#9CA3AF" multiline />
               <Text style={s.fieldLabel}>Sort Order</Text>
