@@ -122,7 +122,8 @@ export default function AdminCreatorLedger({ route, navigation }: any) {
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: 20 }}>
           <View style={{ backgroundColor: '#fff', borderRadius: 20, padding: 20 }}>
             <Text style={{ fontSize: 18, fontWeight: '800', color: '#1F2937', marginBottom: 4 }}>💰 Credit / Debit</Text>
-            <Text style={{ fontSize: 12, color: '#6B7280', marginBottom: 16 }}>Manually adjust wallet for: {creatorName}</Text>
+            <Text style={{ fontSize: 12, color: '#6B7280', marginBottom: 8 }}>Manually adjust wallet for: {creatorName}</Text>
+            <Text style={{ fontSize: 14, fontWeight: '700', color: '#10B981', marginBottom: 12 }}>Current Balance: ₹{(p?.walletBalance || data?.summary?.walletBalance || 0).toLocaleString('en-IN')}</Text>
             
             <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
               <TouchableOpacity style={{ flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center', backgroundColor: creditType === 'credit' ? '#10B981' : '#F3F4F6' }} onPress={() => setCreditType('credit')}>
