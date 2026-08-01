@@ -357,4 +357,111 @@ router.post("/webhook", async (req, res) => {
   }
 });
 
+// ═══ RECONCILIATION: Check Razorpay for missed payments ═══
+// Secured with JWT_SECRET as key (no user auth needed — internal tool)
+router.post("/reconcile", async (req, res) => {
+  try {
+    const { secret } = req.body;
+    if (secret !== process.env.JWT_SECRET) {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    const Razorpay = require("razorpay");
+    const MasterSettings = require("../models/MasterSettings");
+    const keyId = process.env.RAZORPAY_KEY_ID;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    if (!keyId || !keySecret) {
+      return res.status(400).json({ success: false, message: "Razorpay not configured" });
+    }
+
+    const razorpay = new Razorpay({ key_id: keyId, key_secret: keySecret });
+
+    // Fetch recent payments (last 60 days to catch old ones)
+    const sixtyDaysAgo = Math.floor((Date.now() - 60 * 86400000) / 1000);
+    let allPayments = [];
+    let skip = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      const result = await razorpay.payments.all({ count: 100, skip, from: sixtyDaysAgo });
+      const items = result.items || [];
+      allPayments = allPayments.concat(items);
+      if (items.length < 100) hasMore = false;
+      else skip += 100;
+    }
+
+    const captured = allPayments.filter(p => p.status === "captured");
+    let reconciled = 0;
+    const details = [];
+
+    for (const payment of captured) {
+      const notes = payment.notes || {};
+      const bookingId = notes.bookingId;
+      const type = notes.type;
+
+      if (type === "booking_fee" && bookingId) {
+        const booking = await Booking.findById(bookingId);
+        if (booking && !booking.bookingFeePaid) {
+          const ms = await MasterSettings.findOne();
+          const BOOKING_FEE_PERCENT = (ms && ms.bookingCommission) || 2.5;
+          const totalAmount = booking.totalAmount || booking.quotedAmount || booking.amount || 0;
+          const bookingFeeAmount = Math.round(totalAmount * BOOKING_FEE_PERCENT / 100) || (payment.amount / 100);
+
+          await Booking.findByIdAndUpdate(bookingId, {
+            $set: {
+              bookingFeePaid: true,
+              bookingFeeAmount,
+              bookingFeePercent: BOOKING_FEE_PERCENT,
+              bookingFeePaymentId: payment.id,
+              bookingFeeOrderId: payment.order_id,
+              bookingFeePaidAt: new Date(payment.created_at * 1000),
+              advancePaid: bookingFeeAmount,
+              remaining: totalAmount - bookingFeeAmount,
+              paymentStatus: 'partial',
+              amountLocked: true,
+              status: "Payment Approved",
+              cashbackDeadlineDaysUsed: (ms && ms.cashbackDeadlineDays) || 30,
+              cashbackPercentUsed: (ms && ms.cashbackPercentage) || 10,
+            },
+          });
+
+          if (booking.user) {
+            await Notification.create({
+              user: booking.user,
+              title: "✅ Booking Confirmed!",
+              message: `Your advance payment of ₹${bookingFeeAmount.toLocaleString('en-IN')} has been verified. Booking confirmed!`,
+              type: "payment", targetScreen: "Bookings", targetId: bookingId.toString(),
+            });
+          }
+          const creator = await Creator.findById(booking.creator).select("user");
+          if (creator) {
+            await Notification.create({
+              user: creator.user,
+              title: "💰 Advance Payment Received!",
+              message: `Customer paid ₹${bookingFeeAmount.toLocaleString('en-IN')} advance. Booking confirmed.`,
+              type: "payment", targetScreen: "CreatorBookings", targetId: bookingId.toString(),
+            });
+          }
+
+          details.push({ paymentId: payment.id, bookingId: bookingId.toString(), amount: bookingFeeAmount, client: booking.clientName });
+          reconciled++;
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Reconciliation complete: ${reconciled} payment(s) recovered`,
+      totalPayments: allPayments.length,
+      captured: captured.length,
+      reconciled,
+      details,
+      allCaptured: captured.map(p => ({ id: p.id, amount: p.amount/100, notes: p.notes, created: new Date(p.created_at*1000).toISOString() })),
+    });
+  } catch (e) {
+    console.error("[Reconciliation] Error:", e.message);
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
 module.exports = router;
