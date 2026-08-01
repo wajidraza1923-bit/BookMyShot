@@ -217,7 +217,7 @@ export default function HomeScreen({ navigation }: any) {
             label: c.name?.length > 12 ? c.name.split(' ')[0] : c.name,
             icon: c.icon ? `${c.icon}${c.icon.includes('-outline') ? '' : '-outline'}` : (match?.icon || 'grid-outline'),
             color: match?.color || '#F3E8FF',
-            image: match?.image || '',
+            image: c.imageUrl || match?.image || '',
             gradient: match?.gradient || ['#6C3BFF', '#A78BFA'],
             count: c.creatorCount || 0,
           };

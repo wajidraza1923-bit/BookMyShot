@@ -20,17 +20,8 @@ export default function RegisterScreen({ navigation }: any) {
   const [selectedGroup, setSelectedGroup] = useState('');
   const [selectedSubcategorySlug, setSelectedSubcategorySlug] = useState('');
   const [selectedSubcategoryName, setSelectedSubcategoryName] = useState('');
-  // Pre-load categories immediately with fallback, then update from API
-  const FALLBACK_CATEGORIES = [
-    { name: 'Photography & Videography', slug: 'photography-videography', group: 'Photography & Video', icon: 'camera-outline' },
-    { name: 'Makeup Artists', slug: 'makeup-artists', group: 'Beauty', icon: 'color-palette-outline' },
-    { name: 'Decoration & Floral', slug: 'decoration-floral', group: 'Decoration', icon: 'flower-outline' },
-    { name: 'Wedding Planners', slug: 'wedding-planners', group: 'Wedding Management', icon: 'clipboard-outline' },
-    { name: 'Catering Services', slug: 'catering-services', group: 'Food', icon: 'restaurant-outline' },
-    { name: 'Venues', slug: 'venues', group: 'Venue', icon: 'business-outline' },
-    { name: 'DJs & Entertainment', slug: 'djs-entertainment', group: 'Entertainment', icon: 'musical-notes-outline' },
-  ];
-  const [categories, setCategories] = useState<any[]>(FALLBACK_CATEGORIES);
+  // Pre-load categories from API (same source admin manages)
+  const [categories, setCategories] = useState<any[]>([]);
   const [subcategories, setSubcategories] = useState<any[]>([]);
   const [showCatPicker, setShowCatPicker] = useState(false);
   const [catPickerStep, setCatPickerStep] = useState<'category' | 'subcategory'>('category');
@@ -41,13 +32,36 @@ export default function RegisterScreen({ navigation }: any) {
     try {
       const res = await api.get('/discover/categories');
       const data = res.data?.data || [];
-      if (data.length > 0) { setCategories(data); }
+      if (data.length > 0) {
+        // Map DB categories to picker format
+        setCategories(data.map((c: any) => ({ name: c.name, slug: c.slug, group: c.group || '', icon: c.icon || 'grid-outline', imageUrl: c.imageUrl })));
+        return;
+      }
     } catch {}
-    // Fallback already set as initial state — no need to set again
+    // Only use fallback if API completely fails
+    setCategories([
+      { name: 'Photography & Videography', slug: 'photography-videography', group: 'Photography & Video', icon: 'camera-outline' },
+      { name: 'Makeup Artists', slug: 'makeup-artists', group: 'Beauty', icon: 'color-palette-outline' },
+      { name: 'Decoration & Floral', slug: 'decoration-floral', group: 'Decoration', icon: 'flower-outline' },
+      { name: 'Wedding Planners', slug: 'wedding-planners', group: 'Wedding Management', icon: 'clipboard-outline' },
+      { name: 'Catering Services', slug: 'catering-services', group: 'Food', icon: 'restaurant-outline' },
+      { name: 'Venues', slug: 'venues', group: 'Venue', icon: 'business-outline' },
+      { name: 'DJs & Entertainment', slug: 'djs-entertainment', group: 'Entertainment', icon: 'musical-notes-outline' },
+    ]);
   };
 
   const loadSubcategories = async (slug: string) => {
-    // Fallback: use local subcategory mapping — show instantly
+    // Always fetch from API first (admin-managed DB)
+    try {
+      const res = await api.get(`/subcategories/${slug}`);
+      const data = res.data?.data || [];
+      if (data.length > 0) {
+        setSubcategories(data.map((s: any) => ({ name: s.name, slug: s.slug, icon: s.icon || 'ellipse-outline' })));
+        return data;
+      }
+    } catch {}
+    
+    // Fallback only if API returns empty or fails
     const LOCAL_SUBS: Record<string, any[]> = {
       'photography-videography': [
         { name: 'Wedding Photography', slug: 'wedding-photography', icon: 'camera-outline' },
@@ -99,14 +113,6 @@ export default function RegisterScreen({ navigation }: any) {
     };
     const fallback = LOCAL_SUBS[slug] || [];
     setSubcategories(fallback);
-
-    // Try API in background (update if newer data exists)
-    try {
-      const res = await api.get(`/subcategories/${slug}`);
-      const data = res.data?.data || [];
-      if (data.length > 0) { setSubcategories(data); return data; }
-    } catch {}
-
     return fallback;
   };
 
