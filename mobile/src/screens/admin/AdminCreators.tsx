@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, Alert, Image, Modal, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, Alert, Image, Modal, ScrollView, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, radius } from '../../theme';
 import api from '../../services/api';
@@ -10,6 +10,7 @@ export default function AdminCreators({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [tab, setTab] = useState('all');
   const [detailCreator, setDetailCreator] = useState<any>(null);
+  const [search, setSearch] = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -36,12 +37,23 @@ export default function AdminCreators({ navigation }: any) {
 
   const safeCreators = Array.isArray(creators) ? creators : [];
   const filtered = safeCreators.filter(c => {
-    if (tab === 'all') return true;
-    if (tab === 'pending') return c.status === 'pending';
-    if (tab === 'approved') return c.status === 'approved';
-    if (tab === 'rejected') return c.status === 'rejected';
-    if (tab === 'suspended') return c.status === 'suspended' || (c.subscriptionStatus === 'suspended' && c.status !== 'rejected');
-    return true;
+    // Tab filter
+    let tabMatch = true;
+    if (tab === 'pending') tabMatch = c.status === 'pending';
+    else if (tab === 'approved') tabMatch = c.status === 'approved';
+    else if (tab === 'rejected') tabMatch = c.status === 'rejected';
+    else if (tab === 'suspended') tabMatch = c.status === 'suspended' || (c.subscriptionStatus === 'suspended' && c.status !== 'rejected');
+    if (!tabMatch) return false;
+    // Search filter
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return (c.user?.name || '').toLowerCase().includes(q) ||
+      (c.user?.email || '').toLowerCase().includes(q) ||
+      (c.user?.phone || '').includes(q) ||
+      (c.city || '').toLowerCase().includes(q) ||
+      (c.specialty || '').toLowerCase().includes(q) ||
+      (c.creatorId || '').toLowerCase().includes(q) ||
+      (c.categorySlug || '').toLowerCase().includes(q);
   });
 
   const updateStatus = (id: string, status: string, label: string) => {
@@ -132,6 +144,13 @@ export default function AdminCreators({ navigation }: any) {
             <Text style={[s.tabText, tab === t && s.tabTextActive]}>{t === 'suspended' ? 'Susp.' : t.charAt(0).toUpperCase() + t.slice(1)}</Text>
           </TouchableOpacity>
         ))}
+      </View>
+
+      {/* Search */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: spacing.xl, marginTop: 10, backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12 }}>
+        <Ionicons name="search" size={16} color={colors.textMuted} />
+        <TextInput style={{ flex: 1, paddingVertical: 10, paddingHorizontal: 8, fontSize: 13, color: colors.text }} placeholder="Search name, email, phone, city..." placeholderTextColor={colors.textMuted} value={search} onChangeText={setSearch} />
+        {search.length > 0 && <TouchableOpacity onPress={() => setSearch('')}><Ionicons name="close-circle" size={16} color={colors.textMuted} /></TouchableOpacity>}
       </View>
 
       {loading ? <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} /> : (
