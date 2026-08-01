@@ -104,7 +104,7 @@ export default function CreatorHome({ navigation }: any) {
     { icon: 'images-outline', label: 'Portfolio', screen: 'CreatorPortfolio' },
     { icon: 'pricetag-outline', label: 'Packages', screen: 'CreatorPackages' },
     { icon: 'wallet-outline', label: 'My Wallet', screen: 'CreatorWalletScreen' },
-    { icon: 'rocket-outline', label: 'Promotions', screen: 'CreatorPromotions' },
+    { icon: 'rocket-outline', label: 'Promotions', screen: '' },
     { icon: 'calendar-clear-outline', label: 'Calendar', screen: 'CreatorCalendar' },
     { icon: 'settings-outline', label: 'Settings', screen: 'CreatorSettings' },
   ];
@@ -213,7 +213,7 @@ export default function CreatorHome({ navigation }: any) {
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.actionsGrid}>
           {quickActions.map((a, i) => (
-            <TouchableOpacity key={i} style={styles.actionCard} activeOpacity={0.7} onPress={() => navigation.navigate(a.screen)}>
+            <TouchableOpacity key={i} style={[styles.actionCard, !a.screen && { opacity: 0.4 }]} activeOpacity={0.7} onPress={() => { if (a.screen) navigation.navigate(a.screen); }} disabled={!a.screen}>
               <View style={styles.actionIcon}>
                 <Ionicons name={a.icon as any} size={20} color={colors.primary} />
               </View>
