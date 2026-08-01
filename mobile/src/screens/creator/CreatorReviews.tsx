@@ -94,6 +94,17 @@ export default function CreatorReviews({ navigation }: any) {
                   <Ionicons name={item.hidden ? 'eye-outline' : 'eye-off-outline'} size={13} color={item.hidden ? '#10B981' : '#6B7280'} />
                   <Text style={[s.hideBtnText, item.hidden && { color: '#10B981' }]}>{item.hidden ? 'Show' : 'Hide'}</Text>
                 </TouchableOpacity>
+                <TouchableOpacity style={[s.hideBtn, { borderColor: 'rgba(239,68,68,0.2)' }]} onPress={() => {
+                  Alert.alert('Delete Review', 'Are you sure you want to permanently delete this review?', [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Delete', style: 'destructive', onPress: async () => {
+                      try { await api.delete(`/reviews/creator/${item._id}`); await load(); } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed to delete'); }
+                    }},
+                  ]);
+                }}>
+                  <Ionicons name="trash-outline" size={13} color="#EF4444" />
+                  <Text style={[s.hideBtnText, { color: '#EF4444' }]}>Delete</Text>
+                </TouchableOpacity>
               </View>
             </View>
           )}
@@ -106,8 +117,8 @@ export default function CreatorReviews({ navigation }: any) {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 56 : 44, paddingBottom: 10, gap: 10 },
-  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.06)', alignItems: 'center', justifyContent: 'center' },
-  title: { flex: 1, fontSize: 17, fontWeight: '700', color: '#fff', textAlign: 'center' },
+  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' },
+  title: { flex: 1, fontSize: 17, fontWeight: '700', color: '#1F2937', textAlign: 'center' },
   // Summary
   summaryCard: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', marginBottom: 16, gap: 16 },
   summaryLeft: { alignItems: 'center', justifyContent: 'center', width: 80 },

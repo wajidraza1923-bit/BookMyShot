@@ -159,6 +159,22 @@ router.patch("/admin/:id", protect, authorize("admin"), async (req, res, next) =
   } catch (e) { next(e); }
 });
 
+// Creator: Delete a review on their profile
+router.delete("/creator/:id", protect, authorize("creator"), async (req, res, next) => {
+  try {
+    const creator = await Creator.findOne({ user: req.user._id });
+    if (!creator) return res.status(404).json({ success: false, message: "Creator not found" });
+    const review = await Review.findOne({ _id: req.params.id, creator: creator._id });
+    if (!review) return res.status(404).json({ success: false, message: "Review not found" });
+    await Review.findByIdAndDelete(req.params.id);
+    // Recalculate rating
+    const remaining = await Review.find({ creator: creator._id, status: "active" });
+    const newAvg = remaining.length > 0 ? remaining.reduce((s, r) => s + r.rating, 0) / remaining.length : 5;
+    await Creator.findByIdAndUpdate(creator._id, { rating: Math.round(newAvg * 10) / 10 });
+    res.json({ success: true, message: "Review deleted" });
+  } catch (e) { next(e); }
+});
+
 // Check if current user can review a specific creator
 router.get("/can-review/:creatorId", protect, async (req, res, next) => {
   try {
