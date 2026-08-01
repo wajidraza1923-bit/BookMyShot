@@ -189,6 +189,7 @@ router.get("/dashboard", async (req, res, next) => {
       subscriptionExpiry: creator.subscriptionEndDate,
       subscriptionStartDate: creator.subscriptionStartDate,
       subscriptionPlanPrice: creator.subscriptionPlanPrice || 0,
+      subscriptionPlanType: creator.subscriptionPlanType || "monthly",
       lastPaymentDate: creator.lastPaymentDate,
       autoRenew: creator.autoRenew !== false,
       // Free leads tracking

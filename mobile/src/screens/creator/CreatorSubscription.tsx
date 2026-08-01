@@ -124,7 +124,7 @@ export default function CreatorSubscription({ navigation }: any) {
   const lastPay = data?.lastPaymentDate ? new Date(data.lastPaymentDate) : null;
   const daysLeft = endDate ? Math.max(0, Math.ceil((endDate.getTime() - Date.now()) / 86400000)) : 0;
   const isActive = status === 'active' || status === 'trial';
-  const autoRenew = data?._autopay?.autopayActive === true || data?._autopay?.autoRenew === true;
+  const autoRenew = data?.autoRenew === true || data?._autopay?.autopayActive === true || data?._autopay?.autoRenew === true;
   const planPrice = data?.subscriptionPlanPrice || config.monthlyPrice;
 
   const formatDate = (d: Date) => d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
