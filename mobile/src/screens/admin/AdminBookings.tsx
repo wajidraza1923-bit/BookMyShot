@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, radius } from '../../theme';
 import api from '../../services/api';
@@ -8,6 +8,7 @@ export default function AdminBookings({ navigation }: any) {
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [search, setSearch] = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -25,17 +26,32 @@ export default function AdminBookings({ navigation }: any) {
 
   const getColor = (s: string) => s?.includes('Complete') ? colors.success : s?.includes('reject') || s?.includes('cancel') ? colors.error : s === 'Booking Created' ? colors.warning : colors.info;
 
+  const filtered = bookings.filter(b => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return (b.clientName || '').toLowerCase().includes(q) || (b.clientEmail || '').toLowerCase().includes(q) || (b.clientPhone || '').includes(q) || (b.eventType || '').toLowerCase().includes(q) || (b.status || '').toLowerCase().includes(q) || (b.invoiceNumber || '').toLowerCase().includes(q);
+  });
+
   return (
     <View style={s.container}>
-      <View style={s.header}><TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}><Ionicons name="arrow-back" size={20} color={colors.text} /></TouchableOpacity><Text style={s.title}>All Bookings</Text></View>
+      <View style={s.header}><TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}><Ionicons name="arrow-back" size={20} color={colors.text} /></TouchableOpacity><Text style={s.title}>All Bookings ({bookings.length})</Text></View>
+      
+      {/* Search */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: spacing.xl, marginBottom: 10, backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12 }}>
+        <Ionicons name="search" size={16} color={colors.textMuted} />
+        <TextInput style={{ flex: 1, paddingVertical: 10, paddingHorizontal: 8, fontSize: 13, color: colors.text }} placeholder="Search name, phone, event, status..." placeholderTextColor={colors.textMuted} value={search} onChangeText={setSearch} />
+        {search.length > 0 && <TouchableOpacity onPress={() => setSearch('')}><Ionicons name="close-circle" size={16} color={colors.textMuted} /></TouchableOpacity>}
+      </View>
+
       {loading ? <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} /> : (
-        <FlatList data={bookings} showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: spacing.xl, paddingBottom: 100 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />} keyExtractor={item => item._id}
+        <FlatList data={filtered} showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: spacing.xl, paddingBottom: 100 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />} keyExtractor={item => item._id}
           ListEmptyComponent={<View style={s.empty}><Text style={s.emptyText}>No bookings found</Text></View>}
           renderItem={({ item }) => (
             <View style={s.card}>
               <View style={s.row}><Text style={s.name}>{item.clientName || 'Client'}</Text><View style={[s.badge, { backgroundColor: getColor(item.status) + '15' }]}><Text style={[s.badgeText, { color: getColor(item.status) }]}>{item.status}</Text></View></View>
-              <Text style={s.meta}>{item.eventType} • {item.eventDate ? new Date(item.eventDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—'} • ₹{(item.amount || 0).toLocaleString('en-IN')}</Text>
-              <Text style={s.meta}>Payment: {item.paymentStatus || 'unpaid'}</Text>
+              <Text style={s.meta}>{item.eventType || 'Service'} • Event: {item.eventDate ? new Date(item.eventDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</Text>
+              <Text style={s.meta}>Amount: ₹{(item.amount || 0).toLocaleString('en-IN')} • Payment: {item.paymentStatus || 'unpaid'}</Text>
+              <Text style={s.meta}>Created: {item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}</Text>
             </View>
           )} />
       )}
