@@ -19,12 +19,13 @@ export default function CreatorWallet({ navigation }: any) {
 
   const load = useCallback(async () => {
     try {
-      const [dashRes, configRes, bookingsRes] = await Promise.all([
+      const [dashRes, configRes, bookingsRes, msRes] = await Promise.all([
         api.get('/creator/dashboard'),
         api.get('/config/public'),
         api.get('/creator/booking-requests').catch(() => ({ data: { bookings: [] } })),
+        api.get('/master-settings').catch(() => ({ data: { data: {} } })),
       ]);
-      setData(dashRes.data);
+      setData({ ...dashRes.data, _ms: msRes.data?.data || {} });
       setConfig(configRes.data);
       // Only bookings with amounts (for revenue breakdown)
       const allBookings = bookingsRes.data?.bookings || [];
@@ -109,9 +110,9 @@ export default function CreatorWallet({ navigation }: any) {
   const subscriptionStatus = data?.subscriptionStatus || '';
   const subscriptionPrice = data?.subscriptionPlanPrice || 0;
 
-  // Commission percentages from config
-  const bmsPercent = config?.commission?.bmsLeadPercent || 5;
-  const creatorPercent = config?.commission?.creatorLeadPercent || 3;
+  // Commission percentage from Master Command (advance booking %)
+  const bmsPercent = data?._ms?.bookingCommission || config?.commission?.bmsLeadPercent || 7;
+  const creatorPercent = data?._ms?.bookingCommission || config?.commission?.creatorLeadPercent || 7;
 
   // Revenue breakdown from bookings
   const bmsBookings = bookings.filter(b => b.leadSource !== 'creator');
@@ -168,7 +169,7 @@ export default function CreatorWallet({ navigation }: any) {
           <Text style={s.commTitle}>Commission</Text>
           <View style={s.commGrid}>
             <View style={s.commRow}><Text style={s.commLabel}>Total Earnings</Text><Text style={s.commVal}>₹{totalEarnings.toLocaleString('en-IN')}</Text></View>
-            <View style={s.commRow}><Text style={s.commLabel}>Commission %</Text><Text style={s.commVal}>{bmsPercent}% / {creatorPercent}%</Text></View>
+            <View style={s.commRow}><Text style={s.commLabel}>Platform Fee %</Text><Text style={s.commVal}>{bmsPercent}% (from Master Command)</Text></View>
             <View style={s.commRow}><Text style={s.commLabel}>Commission Due</Text><Text style={[s.commVal, { color: colors.error, fontWeight: '700' }]}>₹{commissionDue.toLocaleString('en-IN')}</Text></View>
             <View style={s.commRow}><Text style={s.commLabel}>Commission Paid</Text><Text style={[s.commVal, { color: colors.success }]}>₹{commissionPaid.toLocaleString('en-IN')}</Text></View>
           </View>
@@ -197,9 +198,9 @@ export default function CreatorWallet({ navigation }: any) {
         <View style={s.statementCard}>
           <Text style={s.statementTitle}>Monthly Statement — {new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}</Text>
           <StatementRow label={`BookMyShot Leads Revenue`} value={`₹${bmsRevenue.toLocaleString('en-IN')}`} />
-          <StatementRow label={`BookMyShot Commission (${bmsPercent}%)`} value={`₹${bmsCommission.toLocaleString('en-IN')}`} danger />
+          <StatementRow label={`Platform Fee (${bmsPercent}%)`} value={`₹${bmsCommission.toLocaleString('en-IN')}`} danger />
           <StatementRow label={`Creator Leads Revenue`} value={`₹${creatorRevenue.toLocaleString('en-IN')}`} />
-          <StatementRow label={`Creator Commission (${creatorPercent}%)`} value={`₹${creatorCommission.toLocaleString('en-IN')}`} danger />
+          <StatementRow label={`Platform Fee (${bmsPercent}%)`} value={`₹${creatorCommission.toLocaleString('en-IN')}`} danger />
           <View style={[s.statementRow, { borderBottomWidth: 0, paddingTop: spacing.md }]}>
             <Text style={[s.statementLabel, { color: colors.primary, fontWeight: '700' }]}>Total Commission Due</Text>
             <Text style={[s.statementVal, { color: colors.primary, fontWeight: '700' }]}>₹{commissionDue.toLocaleString('en-IN')}</Text>
@@ -209,7 +210,7 @@ export default function CreatorWallet({ navigation }: any) {
         {/* Fee Info */}
         <View style={s.feeInfo}>
           <Ionicons name="information-circle-outline" size={14} color={colors.info} />
-          <Text style={s.feeText}>BMS leads ({bmsPercent}%) = bookings from BookMyShot platform. Creator leads ({creatorPercent}%) = your own clients added via the app. Commission is based on the highest deal amount set.</Text>
+          <Text style={s.feeText}>BookMyShot charges {bmsPercent}% of the total booking amount as advance from the customer. This is the platform fee for connecting you with customers.</Text>
         </View>
       </ScrollView>
 
