@@ -195,7 +195,7 @@ router.get("/dashboard", async (req, res, next) => {
       // Free leads tracking
       freeLeadsUsed: creator.freeLeadsUsed || 0,
       freeLeadsLimit: creator.freeLeadsLimit || 3,
-      unlockedLeads: (creator.unlockedLeads || []).map((id: any) => id.toString()),
+      unlockedLeads: (creator.unlockedLeads || []).map((id) => id.toString()),
       requiresSubscription: creator.subscriptionStatus === "free" && (creator.freeLeadsUsed || 0) >= (creator.freeLeadsLimit || 3),
       // Expiry warning for dashboard
       subscriptionDaysLeft: creator.subscriptionEndDate ? Math.max(0, Math.ceil((creator.subscriptionEndDate - now) / 86400000)) : null,
