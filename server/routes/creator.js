@@ -1134,7 +1134,7 @@ router.patch("/bookings/:id/confirm-payment", async (req, res, next) => {
       } else {
         // Eligibility checks
         const isCustomerInitiated = !booking.createdByCreator && booking.source !== 'creator_manual' && booking.source !== 'walk_in';
-        const bookingFeePaid = booking.bookingFeePaid && booking.bookingFeeAmount > 0;
+        const bookingFeePaid = (booking.bookingFeePaid && booking.bookingFeeAmount > 0) || booking.paymentStatus === 'paid' || booking.paymentStatus === 'partial';
 
         // 30-day deadline from booking creation date (uses snapshotted value)
         const deadlineDaysForBooking = booking.cashbackDeadlineDaysUsed || 30;
@@ -1152,8 +1152,8 @@ router.patch("/bookings/:id/confirm-payment", async (req, res, next) => {
         const cashbackActive = cashbackEnabled && (!settings.startDate || new Date(settings.startDate) <= now) && (!settings.endDate || new Date(settings.endDate) >= now);
 
         if (isCustomerInitiated && bookingFeePaid && cashbackActive && withinDeadline) {
-          // Calculate cashback on the advance amount paid
-          const feeAmount = booking.bookingFeeAmount || 0;
+          // Calculate cashback on the advance amount paid (or booking amount if advance not separate)
+          const feeAmount = booking.bookingFeeAmount || booking.amount || 0;
           let cashbackAmount = Math.round((feeAmount * cashbackPercent) / 100);
           if (settings.maxAmount && cashbackAmount > settings.maxAmount) cashbackAmount = settings.maxAmount;
           if (feeAmount < (settings.minBookingAmount || 0)) cashbackAmount = 0;
