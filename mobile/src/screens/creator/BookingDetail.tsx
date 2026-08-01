@@ -331,10 +331,10 @@ export default function BookingDetail({ route, navigation }: any) {
   }
 
   // ── Computed values ───────────────────────────────────────────────────────
-  const approvedPays = paymentRecords.filter((r: any) => r.status === 'approved');
-  const totalPaid = approvedPays.reduce((s: number, r: any) => s + (r.amount || 0), 0);
   const bookingAmt = booking.amount || 0;
-  const remaining = Math.max(0, bookingAmt - totalPaid);
+  const approvedPays = paymentRecords.filter((r: any) => r.status === 'approved');
+  const totalPaid = booking.paymentConfirmed ? bookingAmt : approvedPays.reduce((s: number, r: any) => s + (r.amount || 0), 0);
+  const remaining = booking.paymentConfirmed ? 0 : Math.max(0, bookingAmt - totalPaid);
   const progress = booking.paymentConfirmed ? 100 : (bookingAmt > 0 ? Math.min(100, Math.round((totalPaid / bookingAmt) * 100)) : 0);
   const feePercent = booking.bookingFeePercent || booking.commissionPercentUsed || 7;
   const advancePaid = booking.bookingFeeAmount || booking.advancePaid || Math.round(bookingAmt * feePercent / 100);
