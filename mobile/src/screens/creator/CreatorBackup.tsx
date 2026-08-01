@@ -194,15 +194,48 @@ export default function CreatorBackup({ navigation }: any) {
             <ActivityIndicator size="small" color="#fff" />
           ) : (
             <>
-              <Ionicons name="cloud-download-outline" size={18} color="#fff" />
-              <Text style={styles.requestBtnText}>Request Backup</Text>
+              <Ionicons name="mail-outline" size={18} color="#fff" />
+              <Text style={styles.requestBtnText}>Send to Email</Text>
             </>
           )}
         </TouchableOpacity>
 
+        {/* Download PDF Button */}
+        <TouchableOpacity
+          style={[styles.requestBtn, { backgroundColor: '#1F2937', marginTop: -8 }]}
+          onPress={async () => {
+            if (!includeBookings && !includePayments && !includeInquiries && !includeWallet) {
+              Alert.alert('Select Data', 'Select at least one category'); return;
+            }
+            setLoading(true);
+            try {
+              const body: any = { includeBookings, includePayments, includeInquiries, includeWallet };
+              if (dateFrom) body.dateFrom = dateFrom;
+              if (dateTo) body.dateTo = dateTo;
+              body.returnHtml = true;
+              const res = await api.post('/creator/backup', body);
+              const html = res.data?.html || '<h1>No data</h1>';
+              const Print = require('expo-print');
+              const Sharing = require('expo-sharing');
+              const result = await Print.printToFileAsync({ html, base64: false });
+              if (result?.uri) {
+                const available = await Sharing.isAvailableAsync();
+                if (available) await Sharing.shareAsync(result.uri, { mimeType: 'application/pdf', dialogTitle: 'BookMyShot Backup' });
+                else await Print.printAsync({ html });
+              }
+            } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed to generate PDF'); }
+            finally { setLoading(false); }
+          }}
+          disabled={loading}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="document-text-outline" size={18} color="#fff" />
+          <Text style={styles.requestBtnText}>Download as PDF</Text>
+        </TouchableOpacity>
+
         {/* Note */}
         <Text style={styles.noteText}>
-          The backup will be sent to your registered email address as an HTML report containing all selected data.
+          Send to Email: delivers backup report to your registered email.{'\n'}Download PDF: generates a PDF file on your device.
         </Text>
       </ScrollView>
     </View>

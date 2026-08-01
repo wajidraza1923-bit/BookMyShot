@@ -1797,7 +1797,11 @@ router.post("/backup", async (req, res, next) => {
     </div>
     `;
 
-    // Send email
+    // Send email or return HTML for PDF
+    if (req.body.returnHtml) {
+      return res.json({ success: true, html });
+    }
+
     await emailService.sendEmail({
       to: req.user.email,
       subject: `📦 Your Data Backup — ${rangeLabel} | BookMyShot`,
