@@ -25,6 +25,7 @@ export default function AdminCreatorWallets({ navigation, route }: any) {
   const [adjReason, setAdjReason] = useState('');
   const [adjType, setAdjType] = useState<'credit' | 'debit'>('credit');
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -95,8 +96,15 @@ export default function AdminCreatorWallets({ navigation, route }: any) {
         <TouchableOpacity style={[s.tab, tab === 'withdrawals' && s.tabActive]} onPress={() => setTab('withdrawals')}><Text style={[s.tabT, tab === 'withdrawals' && s.tabTActive]}>Withdrawals ({withdrawals.filter(w => w.status === 'pending').length})</Text></TouchableOpacity>
       </View>
 
+      {/* Search */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginTop: 8, backgroundColor: '#F9FAFB', borderRadius: 10, borderWidth: 1, borderColor: '#E5E7EB', paddingHorizontal: 12 }}>
+        <Ionicons name="search" size={16} color="#9CA3AF" />
+        <TextInput style={{ flex: 1, paddingVertical: 10, paddingHorizontal: 8, fontSize: 13, color: '#1F2937' }} placeholder="Search by name, email, phone..." placeholderTextColor="#9CA3AF" value={search} onChangeText={setSearch} />
+        {search.length > 0 && <TouchableOpacity onPress={() => setSearch('')}><Ionicons name="close-circle" size={16} color="#9CA3AF" /></TouchableOpacity>}
+      </View>
+
       {tab === 'wallets' ? (
-        <FlatList data={creators} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6C3BFF" />} contentContainerStyle={{ padding: 16, paddingBottom: 100 }} keyExtractor={i => i._id}
+        <FlatList data={creators.filter(c => { if (!search.trim()) return true; const q = search.toLowerCase(); return (c.user?.name || '').toLowerCase().includes(q) || (c.user?.email || '').toLowerCase().includes(q) || (c.user?.phone || '').includes(q) || (c.creatorId || '').toLowerCase().includes(q); })} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6C3BFF" />} contentContainerStyle={{ padding: 16, paddingBottom: 100 }} keyExtractor={i => i._id}
           ListEmptyComponent={<Text style={s.empty}>No creators</Text>}
           renderItem={({ item }) => (
             <View style={s.card}>
