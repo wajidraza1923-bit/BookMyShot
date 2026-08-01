@@ -52,27 +52,84 @@ const SERVICE_MAP: Record<string, { name: string; icon: string; color: string; b
     { name: 'Reception', icon: 'star', color: '#F59E0B', bg: '#FFFBEB' },
     { name: 'Airbrush', icon: 'water', color: '#0EA5E9', bg: '#E0F2FE' },
   ],
-  'decoration': [
-    { name: 'Decoration', icon: 'flower', color: '#10B981', bg: '#ECFDF5' },
-    { name: 'Floral', icon: 'rose', color: '#EC4899', bg: '#FDF2F8' },
-    { name: 'Stage', icon: 'easel', color: '#6366F1', bg: '#EEF2FF' },
-    { name: 'Lighting', icon: 'bulb', color: '#F59E0B', bg: '#FFFBEB' },
-    { name: 'Mandap', icon: 'home', color: '#D97706', bg: '#FEF3C7' },
-    { name: 'Car Decor', icon: 'car', color: '#8B5CF6', bg: '#F3E8FF' },
-    { name: 'Entrance', icon: 'enter', color: '#0EA5E9', bg: '#E0F2FE' },
-    { name: 'LED', icon: 'tv', color: '#F43F5E', bg: '#FFF1F2' },
+  'mehndi': [
+    { name: 'Bridal Mehndi', icon: 'hand-left', color: '#10B981', bg: '#ECFDF5' },
+    { name: 'Arabic Design', icon: 'leaf', color: '#D97706', bg: '#FEF3C7' },
+    { name: 'Full Hand', icon: 'hand-right', color: '#EC4899', bg: '#FDF2F8' },
+    { name: 'Engagement', icon: 'diamond', color: '#6366F1', bg: '#EEF2FF' },
+    { name: 'Glitter Mehndi', icon: 'sparkles', color: '#F59E0B', bg: '#FFFBEB' },
+    { name: 'Leg Mehndi', icon: 'footsteps', color: '#8B5CF6', bg: '#F3E8FF' },
+    { name: 'Baby Shower', icon: 'happy', color: '#F43F5E', bg: '#FFF1F2' },
+    { name: 'Minimal', icon: 'ellipse', color: '#0EA5E9', bg: '#E0F2FE' },
   ],
-  'default': [
-    { name: 'Photography', icon: 'camera', color: '#6366F1', bg: '#EEF2FF' },
-    { name: 'Videography', icon: 'videocam', color: '#EC4899', bg: '#FDF2F8' },
-    { name: 'Drone', icon: 'airplane', color: '#0EA5E9', bg: '#E0F2FE' },
-    { name: 'Cinematography', icon: 'film', color: '#8B5CF6', bg: '#F3E8FF' },
-    { name: 'Wedding', icon: 'diamond', color: '#D97706', bg: '#FEF3C7' },
-    { name: 'Pre Wedding', icon: 'heart', color: '#F43F5E', bg: '#FFF1F2' },
-    { name: 'Events', icon: 'sparkles', color: '#10B981', bg: '#ECFDF5' },
-    { name: 'Albums', icon: 'albums', color: '#F59E0B', bg: '#FFFBEB' },
+  'decoration': [
+    { name: 'Stage Decor', icon: 'easel', color: '#6366F1', bg: '#EEF2FF' },
+    { name: 'Floral', icon: 'rose', color: '#EC4899', bg: '#FDF2F8' },
+    { name: 'Mandap', icon: 'home', color: '#D97706', bg: '#FEF3C7' },
+    { name: 'Lighting', icon: 'bulb', color: '#F59E0B', bg: '#FFFBEB' },
+    { name: 'Tent House', icon: 'cube', color: '#8B5CF6', bg: '#F3E8FF' },
+    { name: 'Car Decor', icon: 'car', color: '#0EA5E9', bg: '#E0F2FE' },
+    { name: 'Entrance', icon: 'enter', color: '#10B981', bg: '#ECFDF5' },
+    { name: 'LED Screens', icon: 'tv', color: '#F43F5E', bg: '#FFF1F2' },
+  ],
+  'catering': [
+    { name: 'Veg Menu', icon: 'leaf', color: '#10B981', bg: '#ECFDF5' },
+    { name: 'Non-Veg', icon: 'restaurant', color: '#EF4444', bg: '#FEF2F2' },
+    { name: 'Multi-Cuisine', icon: 'globe', color: '#6366F1', bg: '#EEF2FF' },
+    { name: 'Live Counter', icon: 'flame', color: '#F59E0B', bg: '#FFFBEB' },
+    { name: 'Desserts', icon: 'ice-cream', color: '#EC4899', bg: '#FDF2F8' },
+    { name: 'Beverages', icon: 'cafe', color: '#D97706', bg: '#FEF3C7' },
+    { name: 'Chaat Counter', icon: 'fast-food', color: '#8B5CF6', bg: '#F3E8FF' },
+    { name: 'Tent & Setup', icon: 'cube', color: '#0EA5E9', bg: '#E0F2FE' },
+  ],
+  'dj': [
+    { name: 'DJ Night', icon: 'musical-notes', color: '#8B5CF6', bg: '#F3E8FF' },
+    { name: 'Sound System', icon: 'volume-high', color: '#6366F1', bg: '#EEF2FF' },
+    { name: 'LED Setup', icon: 'tv', color: '#0EA5E9', bg: '#E0F2FE' },
+    { name: 'Anchor/Host', icon: 'mic', color: '#EC4899', bg: '#FDF2F8' },
+    { name: 'Dhol', icon: 'musical-note', color: '#D97706', bg: '#FEF3C7' },
+    { name: 'Live Band', icon: 'people', color: '#10B981', bg: '#ECFDF5' },
+    { name: 'Sangeet', icon: 'sparkles', color: '#F43F5E', bg: '#FFF1F2' },
+    { name: 'Fog Machine', icon: 'cloud', color: '#F59E0B', bg: '#FFFBEB' },
+  ],
+  'planner': [
+    { name: 'Full Planning', icon: 'clipboard', color: '#6366F1', bg: '#EEF2FF' },
+    { name: 'Day-of Coord', icon: 'calendar', color: '#EC4899', bg: '#FDF2F8' },
+    { name: 'Venue Search', icon: 'search', color: '#10B981', bg: '#ECFDF5' },
+    { name: 'Vendor Mgmt', icon: 'people', color: '#D97706', bg: '#FEF3C7' },
+    { name: 'Budget Plan', icon: 'wallet', color: '#F59E0B', bg: '#FFFBEB' },
+    { name: 'Destination', icon: 'airplane', color: '#0EA5E9', bg: '#E0F2FE' },
+    { name: 'Guest Mgmt', icon: 'list', color: '#8B5CF6', bg: '#F3E8FF' },
+    { name: 'Logistics', icon: 'car', color: '#F43F5E', bg: '#FFF1F2' },
+  ],
+  'venue': [
+    { name: 'Banquet Hall', icon: 'business', color: '#6366F1', bg: '#EEF2FF' },
+    { name: 'Resort', icon: 'bed', color: '#EC4899', bg: '#FDF2F8' },
+    { name: 'Lawn/Garden', icon: 'leaf', color: '#10B981', bg: '#ECFDF5' },
+    { name: 'Farmhouse', icon: 'home', color: '#D97706', bg: '#FEF3C7' },
+    { name: 'Rooftop', icon: 'sunny', color: '#F59E0B', bg: '#FFFBEB' },
+    { name: 'Indoor AC', icon: 'snow', color: '#0EA5E9', bg: '#E0F2FE' },
+    { name: 'Parking', icon: 'car', color: '#8B5CF6', bg: '#F3E8FF' },
+    { name: 'Catering', icon: 'restaurant', color: '#F43F5E', bg: '#FFF1F2' },
   ],
 };
+
+// Map category slugs to SERVICE_MAP keys
+function getServiceKey(creator: any): string {
+  const cat = (creator.categorySlug || creator.category || '').toLowerCase();
+  const sub = (creator.subcategorySlug || '').toLowerCase();
+  
+  if (cat.includes('photography') || cat.includes('video') || sub.includes('photography') || sub.includes('cinematography') || sub.includes('drone')) return 'photography';
+  if (cat.includes('makeup') || sub.includes('makeup') || sub.includes('hair') || sub.includes('bridal-makeup')) return 'makeup';
+  if (cat.includes('mehndi') || sub.includes('mehndi') || sub.includes('mehandi')) return 'mehndi';
+  if (cat.includes('decoration') || cat.includes('floral') || sub.includes('decoration') || sub.includes('tent') || sub.includes('lighting') || sub.includes('mandap')) return 'decoration';
+  if (cat.includes('catering') || sub.includes('catering') || sub.includes('food')) return 'catering';
+  if (cat.includes('dj') || cat.includes('entertainment') || sub.includes('dj') || sub.includes('anchor') || sub.includes('dhol')) return 'dj';
+  if (cat.includes('planner') || sub.includes('planner') || sub.includes('coordinator')) return 'planner';
+  if (cat.includes('venue') || sub.includes('venue') || sub.includes('banquet') || sub.includes('resort')) return 'venue';
+  if (cat.includes('videography') || sub.includes('videography') || sub.includes('film')) return 'videography';
+  return 'photography'; // fallback for unknown categories
+}
 
 // Feature carousel — 4 per row
 const FEATURES = [
@@ -276,7 +333,7 @@ export default function CreatorProfileScreen({ route, navigation }: any) {
         <View style={st.sec}>
           <Text style={st.secTitle}>Services</Text>
           <View style={st.serviceGrid}>
-            {(SERVICE_MAP[(creator.category || '').toLowerCase()] || SERVICE_MAP['default']).map((svc, i) => (
+            {(SERVICE_MAP[getServiceKey(creator)] || SERVICE_MAP['photography']).map((svc, i) => (
               <View key={i} style={[st.serviceCard, { backgroundColor: svc.bg }]}>
                 <Ionicons name={(svc.icon + '-outline') as any} size={20} color={svc.color} />
                 <Text style={[st.serviceName, { color: svc.color }]}>{svc.name}</Text>
