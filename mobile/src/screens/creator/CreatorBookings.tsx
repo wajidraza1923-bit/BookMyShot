@@ -154,9 +154,9 @@ export default function CreatorBookings({ navigation }: any) {
 
   const renderCard = ({ item }: { item: any }) => {
     const isExpanded = expandedId === item._id;
-    const totalPaid = item.advancePaid || item.bookingFeeAmount || 0;
-    const remaining = (item.amount || 0) - totalPaid;
-    const progress = item.amount > 0 ? Math.min(100, Math.round((totalPaid / item.amount) * 100)) : 0;
+    const totalPaid = item.paymentConfirmed ? (item.amount || 0) : (item.advancePaid || item.bookingFeeAmount || 0);
+    const remaining = item.paymentConfirmed ? 0 : Math.max(0, (item.amount || 0) - totalPaid);
+    const progress = item.paymentConfirmed || item.status === 'Completed' ? 100 : (item.amount > 0 ? Math.min(100, Math.round((totalPaid / item.amount) * 100)) : 0);
     const sc = getStatusColor(item.status);
 
     return (
