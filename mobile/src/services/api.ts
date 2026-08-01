@@ -73,9 +73,17 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor — logging + 401 handling
+// Response interceptor — logging + 401 handling + 503 retry
 api.interceptors.response.use(
   (response) => {
+    // Check if transformResponse flagged this as invalid (non-JSON from server)
+    if (response.data && response.data.success === false && response.data.message === 'Server returned invalid response') {
+      console.log('[API] ← Invalid response detected (likely 503 HTML page). Retrying...');
+      if (!(response.config as any).__retried) {
+        (response.config as any).__retried = true;
+        return new Promise(resolve => setTimeout(resolve, 3000)).then(() => api.request(response.config));
+      }
+    }
     console.log(`[API] ← ${response.status} ${response.config.url} OK`);
     return response;
   },
@@ -108,6 +116,14 @@ api.interceptors.response.use(
         await AsyncStorage.removeItem('bms_token');
         await AsyncStorage.removeItem('bms_user');
       } catch {}
+    }
+
+    // ═══ AUTO-RETRY on 503 (cold start / server restarting) ═══
+    if (status === 503 && error.config && !(error.config as any).__retried) {
+      console.log('[API] ← 503 detected (server cold start). Retrying in 3s...');
+      (error.config as any).__retried = true;
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      return api.request(error.config);
     }
 
     return Promise.reject(error);
