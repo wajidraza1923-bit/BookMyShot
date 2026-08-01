@@ -1356,4 +1356,103 @@ router.get("/subscription-analytics", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// ═══ RAZORPAY PAYMENT RECONCILIATION (admin-triggered) ═══
+// Checks Razorpay for captured payments and fixes bookings that were paid but not verified
+router.post("/reconcile-payments", async (req, res, next) => {
+  try {
+    const Razorpay = require("razorpay");
+    const MasterSettings = require("../models/MasterSettings");
+    const keyId = process.env.RAZORPAY_KEY_ID;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    if (!keyId || !keySecret) {
+      return res.status(400).json({ success: false, message: "Razorpay not configured" });
+    }
+
+    const razorpay = new Razorpay({ key_id: keyId, key_secret: keySecret });
+
+    // Fetch recent payments (last 30 days)
+    const thirtyDaysAgo = Math.floor((Date.now() - 30 * 86400000) / 1000);
+    let allPayments = [];
+    let skip = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      const result = await razorpay.payments.all({ count: 100, skip, from: thirtyDaysAgo });
+      const items = result.items || [];
+      allPayments = allPayments.concat(items);
+      if (items.length < 100) hasMore = false;
+      else skip += 100;
+    }
+
+    const captured = allPayments.filter(p => p.status === "captured");
+    let reconciled = 0;
+    const details = [];
+
+    for (const payment of captured) {
+      const notes = payment.notes || {};
+      const bookingId = notes.bookingId;
+      const type = notes.type;
+
+      if (type === "booking_fee" && bookingId) {
+        const booking = await Booking.findById(bookingId);
+        if (booking && !booking.bookingFeePaid) {
+          const ms = await MasterSettings.findOne();
+          const BOOKING_FEE_PERCENT = (ms && ms.bookingCommission) || 2.5;
+          const totalAmount = booking.totalAmount || booking.quotedAmount || booking.amount || 0;
+          const bookingFeeAmount = Math.round(totalAmount * BOOKING_FEE_PERCENT / 100) || (payment.amount / 100);
+
+          await Booking.findByIdAndUpdate(bookingId, {
+            $set: {
+              bookingFeePaid: true,
+              bookingFeeAmount,
+              bookingFeePercent: BOOKING_FEE_PERCENT,
+              bookingFeePaymentId: payment.id,
+              bookingFeeOrderId: payment.order_id,
+              bookingFeePaidAt: new Date(payment.created_at * 1000),
+              advancePaid: bookingFeeAmount,
+              remaining: totalAmount - bookingFeeAmount,
+              paymentStatus: 'partial',
+              amountLocked: true,
+              status: "Payment Approved",
+              cashbackDeadlineDaysUsed: (ms && ms.cashbackDeadlineDays) || 30,
+              cashbackPercentUsed: (ms && ms.cashbackPercentage) || 10,
+            },
+          });
+
+          // Notifications
+          if (booking.user) {
+            await Notification.create({
+              user: booking.user,
+              title: "✅ Booking Confirmed!",
+              message: `Your advance payment of ₹${bookingFeeAmount.toLocaleString('en-IN')} has been verified. Booking confirmed!`,
+              type: "payment", targetScreen: "Bookings", targetId: bookingId.toString(),
+            });
+          }
+          const creator = await Creator.findById(booking.creator).select("user");
+          if (creator) {
+            await Notification.create({
+              user: creator.user,
+              title: "💰 Advance Payment Received!",
+              message: `Customer paid ₹${bookingFeeAmount.toLocaleString('en-IN')} advance. Booking confirmed.`,
+              type: "payment", targetScreen: "CreatorBookings", targetId: bookingId.toString(),
+            });
+          }
+
+          details.push({ paymentId: payment.id, bookingId, amount: bookingFeeAmount, client: booking.clientName });
+          reconciled++;
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Reconciliation complete: ${reconciled} payment(s) recovered`,
+      totalRazorpayPayments: allPayments.length,
+      capturedPayments: captured.length,
+      reconciled,
+      details,
+    });
+  } catch (e) { next(e); }
+});
+
 module.exports = router;
