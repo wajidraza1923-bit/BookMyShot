@@ -250,24 +250,21 @@ export default function BookingDetail({ route, navigation }: any) {
   // ── Download Invoice (completed booking) — opens PDF viewer / print dialog
   const downloadInvoice = async () => {
     try {
-      const html = buildInvoiceHTML(booking, paymentRecords, false);
-      if (!html) { Alert.alert('Error', 'Booking data not loaded'); return; }
+      const html = buildSimpleInvoiceHTML();
+      const result = await Print.printToFileAsync({ html, base64: false });
+      if (!result?.uri) { Alert.alert('Error', 'Could not generate PDF'); return; }
 
-      const docNo = booking.invoiceNumber || ('BMS-' + (booking._id || '').slice(-8).toUpperCase());
-      const uri = await generatePDF(html, 'Invoice_' + docNo + '.pdf');
-      if (!uri) { Alert.alert('Error', 'Could not generate PDF'); return; }
-
-      // Open with viewer (user can save from there)
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) {
-        await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Invoice ' + docNo, UTI: 'com.adobe.pdf' });
+        await Sharing.shareAsync(result.uri, { mimeType: 'application/pdf', dialogTitle: 'Invoice' });
       } else {
         await Print.printAsync({ html });
       }
     } catch (e: any) {
       const msg = (e?.message || '').toLowerCase();
       if (msg.includes('cancel') || msg.includes('dismiss')) return;
-      Alert.alert('Error', 'Could not open invoice: ' + (e.message || ''));
+      // Fallback: just print
+      try { await Print.printAsync({ html: buildSimpleInvoiceHTML() }); } catch {}
     }
   };
 
@@ -306,42 +303,20 @@ export default function BookingDetail({ route, navigation }: any) {
   // ── Send Invoice (Share PDF via WhatsApp, Gmail, etc.) ───────────────────
   const shareInvoicePDF = async () => {
     try {
-      const html = buildInvoiceHTML(booking, paymentRecords, false);
-      if (!html) { Alert.alert('Error', 'Booking data not loaded'); return; }
-
-      const docNo = booking.invoiceNumber || ('BMS-' + (booking._id || '').slice(-8).toUpperCase());
-
-      // Generate PDF without base64 (more reliable on Android)
+      const html = buildSimpleInvoiceHTML();
       const result = await Print.printToFileAsync({ html, base64: false });
       if (!result?.uri) { Alert.alert('Error', 'PDF generation failed'); return; }
 
-      const cacheDir = FileSystem.cacheDirectory || '';
-      const destUri = cacheDir + 'Invoice_' + docNo + '.pdf';
-
-      // Copy to named file
-      try { await FileSystem.copyAsync({ from: result.uri, to: destUri }); }
-      catch { /* use original if copy fails */ }
-
-      const shareUri = (await FileSystem.getInfoAsync(destUri).catch(() => ({ exists: false }))).exists
-        ? destUri
-        : result.uri;
-
-      // Open share sheet
       const available = await Sharing.isAvailableAsync();
       if (available) {
-        await Sharing.shareAsync(shareUri, {
-          mimeType: 'application/pdf',
-          dialogTitle: 'Send Invoice — ' + docNo,
-          UTI: 'com.adobe.pdf',
-        });
+        await Sharing.shareAsync(result.uri, { mimeType: 'application/pdf', dialogTitle: 'Send Invoice' });
       } else {
-        // Fallback: open print dialog
         await Print.printAsync({ html });
       }
     } catch (e: any) {
-      const msg = (e?.message || String(e) || '').toLowerCase();
-      if (msg.includes('cancel') || msg.includes('dismiss') || msg.includes('denied')) return;
-      Alert.alert('Share Failed', e?.message || 'Please use the Invoice button to view/print instead.');
+      const msg = (e?.message || '').toLowerCase();
+      if (msg.includes('cancel') || msg.includes('dismiss')) return;
+      Alert.alert('Share Failed', 'Could not generate PDF. Try the Invoice button instead.');
     }
   };
 
