@@ -131,6 +131,18 @@ router.post("/verify/:bookingId", protect, async (req, res, next) => {
     const totalAmount = existingBooking ? (existingBooking.totalAmount || existingBooking.quotedAmount || existingBooking.amount || 0) : 0;
     const bookingFeeAmount = Math.round(totalAmount * BOOKING_FEE_PERCENT / 100);
 
+    // Check 10-day advance payment deadline — if paid late, no cashback eligibility
+    const ADVANCE_DEADLINE_DAYS = 10;
+    let advancePaidLate = false;
+    if (existingBooking && existingBooking.createdAt) {
+      const bookingCreated = new Date(existingBooking.createdAt);
+      const deadline = new Date(bookingCreated);
+      deadline.setDate(deadline.getDate() + ADVANCE_DEADLINE_DAYS);
+      if (new Date() > deadline) {
+        advancePaidLate = true;
+      }
+    }
+
     // Update booking
     const booking = await Booking.findByIdAndUpdate(req.params.bookingId, {
       $set: {
@@ -145,6 +157,8 @@ router.post("/verify/:bookingId", protect, async (req, res, next) => {
         paymentStatus: 'partial',
         amountLocked: true,
         status: "Payment Approved",
+        // If paid after 10 days, mark as cashback ineligible
+        ...(advancePaidLate ? { cashbackIneligible: true, cashbackIneligibleReason: "Advance paid after 10-day deadline" } : {}),
       },
     }, { new: true });
 

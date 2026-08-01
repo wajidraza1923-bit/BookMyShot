@@ -1147,6 +1147,9 @@ router.patch("/bookings/:id/confirm-payment", async (req, res, next) => {
         // Eligibility checks
         const isCustomerInitiated = !booking.createdByCreator && booking.source !== 'creator_manual' && booking.source !== 'walk_in';
         const bookingFeePaid = booking.bookingFeePaid === true && booking.bookingFeePaymentId;
+        
+        // Check if advance was paid late (after 10 days) — no cashback
+        const advancePaidLate = booking.cashbackIneligible === true;
 
         // 30-day deadline from booking creation date (uses snapshotted value)
         const deadlineDaysForBooking = booking.cashbackDeadlineDaysUsed || 30;
@@ -1163,9 +1166,12 @@ router.patch("/bookings/:id/confirm-payment", async (req, res, next) => {
         const now = new Date();
         const cashbackActive = cashbackEnabled && (!settings.startDate || new Date(settings.startDate) <= now) && (!settings.endDate || new Date(settings.endDate) >= now);
 
-        console.log("[ConfirmPayment] Cashback check:", { isCustomerInitiated, bookingFeePaid, cashbackActive, withinDeadline, cashbackPercent, deadlineDaysForBooking });
+        console.log("[ConfirmPayment] Cashback check:", { isCustomerInitiated, bookingFeePaid, advancePaidLate, cashbackActive, withinDeadline, cashbackPercent, deadlineDaysForBooking });
 
-        if (isCustomerInitiated && bookingFeePaid && cashbackActive && withinDeadline) {
+        if (advancePaidLate) {
+          // Advance paid after 10 days — no cashback for anyone
+          cashbackResult = { status: "ineligible", reason: "Advance paid after 10-day deadline. No cashback." };
+        } else if (isCustomerInitiated && bookingFeePaid && cashbackActive && withinDeadline) {
           // Calculate cashback on the advance amount paid (or booking amount if advance not separate)
           const feeAmount = booking.bookingFeeAmount || booking.amount || 0;
           const totalBookingAmount = booking.totalAmount || booking.quotedAmount || booking.amount || 0;

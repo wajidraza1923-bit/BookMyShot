@@ -195,21 +195,37 @@ export default function BookingsScreen({ navigation }: any) {
                 })()}
 
                 {/* ═══ PAY BOOKING FEE — Primary CTA for new bookings ═══ */}
-                {!b.bookingFeePaid && (b.status === 'Creator Accepted' || b.status === 'Booking Created') && amount > 0 && (
-                  <View style={s.feeCard}>
-                    <View style={s.feeInfo}>
-                      <Ionicons name="card" size={16} color="#6C3BFF" />
-                      <View style={{ flex: 1, marginLeft: 8 }}>
-                        <Text style={s.feeTitle}>Pay Advance to Confirm Booking</Text>
-                        <Text style={s.feeSub}>Pay advance booking amount to BookMyShot. Remaining goes directly to the creator.</Text>
+                {!b.bookingFeePaid && (b.status === 'Creator Accepted' || b.status === 'Booking Created') && amount > 0 && (() => {
+                  const createdAt = b.createdAt ? new Date(b.createdAt) : new Date();
+                  const advanceDeadline = new Date(createdAt);
+                  advanceDeadline.setDate(advanceDeadline.getDate() + 10);
+                  const now = new Date();
+                  const advanceDaysLeft = Math.max(0, Math.ceil((advanceDeadline.getTime() - now.getTime()) / 86400000));
+                  const advanceExpired = advanceDaysLeft === 0;
+                  
+                  return (
+                    <View style={s.feeCard}>
+                      <View style={s.feeInfo}>
+                        <Ionicons name="card" size={16} color="#6C3BFF" />
+                        <View style={{ flex: 1, marginLeft: 8 }}>
+                          <Text style={s.feeTitle}>Pay Advance to Confirm Booking</Text>
+                          <Text style={s.feeSub}>Pay advance booking amount to BookMyShot. Remaining goes directly to the creator.</Text>
+                        </View>
                       </View>
+                      {/* 10-day deadline notice */}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: advanceExpired ? '#FEF2F2' : '#FFFBEB', borderRadius: 8, padding: 8, marginVertical: 8, borderWidth: 1, borderColor: advanceExpired ? '#FECACA' : '#FDE68A' }}>
+                        <Ionicons name={advanceExpired ? 'alert-circle' : 'time-outline'} size={13} color={advanceExpired ? '#EF4444' : '#F59E0B'} />
+                        <Text style={{ fontSize: 10, color: advanceExpired ? '#991B1B' : '#92400E', flex: 1 }}>
+                          {advanceExpired ? 'Advance payment deadline passed. Payment still accepted but cashback will not apply.' : `Pay within ${advanceDaysLeft} day${advanceDaysLeft > 1 ? 's' : ''} to be eligible for cashback`}
+                        </Text>
+                      </View>
+                      <TouchableOpacity style={s.feeBtn} onPress={() => navigation.navigate('BookingPayment', { bookingId: b._id })} activeOpacity={0.85}>
+                        <Ionicons name="lock-closed" size={14} color="#FFFFFF" />
+                        <Text style={s.feeBtnText}>Pay Advance Now</Text>
+                      </TouchableOpacity>
                     </View>
-                    <TouchableOpacity style={s.feeBtn} onPress={() => navigation.navigate('BookingPayment', { bookingId: b._id })} activeOpacity={0.85}>
-                      <Ionicons name="lock-closed" size={14} color="#FFFFFF" />
-                      <Text style={s.feeBtnText}>Pay Advance Now</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
+                  );
+                })()}
 
                 {/* Booking Fee Paid Badge */}
                 {b.bookingFeePaid && (
