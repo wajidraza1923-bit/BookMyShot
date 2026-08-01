@@ -536,7 +536,7 @@ export default function HomeScreen({ navigation }: any) {
                   <TouchableOpacity style={st.tcHeart}><Ionicons name="heart-outline" size={16} color="#9CA3AF" /></TouchableOpacity>
                   <View style={st.tcInfo}>
                     <Text style={st.tcName} numberOfLines={1}>{item.user?.name || 'Creator'}</Text>
-                    <Text style={st.tcSpec}>{item.specialty || 'Photographer'} • {item.experience === 'Fresher' ? 'Fresher' : `${item.experience || '5+'} Exp`}</Text>
+                    <Text style={st.tcSpec}>{item.specialty || item.subcategorySlug?.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) || item.categorySlug?.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) || 'Creator'} • {item.experience === 'Fresher' ? 'Fresher' : `${item.experience || '5+'} Exp`}</Text>
                     <View style={st.tcMeta}><Ionicons name="location" size={9} color="#6C3BFF" /><Text style={st.tcMetaT}>{item.distance != null ? `${item.distance} km away` : (item.city || 'Near You')}</Text></View>
                     <Text style={st.tcPrice}>Starts from ₹{(item.startingPrice || item.budgetMin || 25000).toLocaleString('en-IN')}</Text>
                   </View>

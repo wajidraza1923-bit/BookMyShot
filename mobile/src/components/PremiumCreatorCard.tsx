@@ -49,7 +49,7 @@ export default function PremiumCreatorCard({ item, onPress, onGetQuote, onWishli
           {/* Name overlay */}
           <View style={st.overlay}>
             <Text style={st.overlayName} numberOfLines={1}>{item.user?.name || 'Creator'}</Text>
-            <Text style={st.overlayMeta}>{item.specialty || 'Photographer'} • {item.baseCity || item.city || 'India'}</Text>
+            <Text style={st.overlayMeta}>{item.specialty || item.subcategorySlug?.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) || item.categorySlug?.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) || item.category?.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) || 'Creator'} • {item.baseCity || item.city || 'India'}</Text>
           </View>
         </View>
       </TouchableOpacity>

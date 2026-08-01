@@ -36,7 +36,7 @@ export default function CreatorCard({ creator, onPress, variant = 'default' }: C
           style={styles.compactAvatar}
         />
         <Text style={styles.compactName} numberOfLines={1}>{name}</Text>
-        <Text style={styles.compactSpec} numberOfLines={1}>{creator.specialty || 'Photographer'}</Text>
+        <Text style={styles.compactSpec} numberOfLines={1}>{creator.specialty || creator.subcategorySlug?.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) || creator.categorySlug?.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) || 'Creator'}</Text>
       </TouchableOpacity>
     );
   }
