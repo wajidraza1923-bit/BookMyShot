@@ -1586,12 +1586,19 @@ router.post("/backup", async (req, res, next) => {
       const query = { creator: creator._id };
       if (hasDateFilter) query.createdAt = dateFilter;
       bookings = await Booking.find(query).populate("user", "name email phone").sort("-createdAt").lean();
+      console.log(`[Backup] Bookings found for creator ${creator._id}: ${bookings.length}`);
     }
 
     if (includePayments) {
       const query = { creator: creator._id };
       if (hasDateFilter) query.createdAt = dateFilter;
       payments = await PaymentRecord.find(query).sort("-createdAt").lean();
+      // Also check with booking lookup
+      if (payments.length === 0 && bookings.length > 0) {
+        const bookingIds = bookings.map(b => b._id);
+        payments = await PaymentRecord.find({ booking: { $in: bookingIds } }).sort("-createdAt").lean();
+      }
+      console.log(`[Backup] Payments found: ${payments.length}`);
     }
 
     if (includeInquiries) {
