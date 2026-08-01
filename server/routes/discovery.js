@@ -157,6 +157,7 @@ router.get("/creators-by-area", async (req, res, next) => {
           const selDists = (c.selectedDistricts || []).map((d) => d.toLowerCase().trim());
           if (selDists.length > 0) {
             if (customerDistrict && selDists.includes(customerDistrict)) return true;
+            if (customerCity && selDists.includes(customerCity)) return true;
             return false;
           }
           // Fallback to serviceAreas
@@ -165,19 +166,28 @@ router.get("/creators-by-area", async (req, res, next) => {
           return false;
 
         case 'entire_state':
-          // Visible anywhere in their home state
-          return customerState && creatorState === customerState;
+          // Visible anywhere in their home state — BUT only if same state
+          if (customerState && creatorState === customerState) {
+            // Tag as state-level match (will be sorted lower)
+            c._stateLevel = true;
+            return true;
+          }
+          return false;
 
         case 'multiple_states':
           // Visible in selected states
           const selStates = (c.selectedStates || []).map((s) => s.toLowerCase().trim());
           if (selStates.length > 0) {
-            return customerState && selStates.includes(customerState);
+            if (customerState && selStates.includes(customerState)) {
+              c._stateLevel = true;
+              return true;
+            }
           }
           return false;
 
         case 'pan_india':
-          // Visible everywhere
+          // Visible everywhere but tagged as lowest priority
+          c._stateLevel = true;
           return true;
 
         default:
@@ -195,12 +205,33 @@ router.get("/creators-by-area", async (req, res, next) => {
     else if (sort === 'newest') creators.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     else if (sort === 'featured') creators.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
     else {
-      // Default: exact city match first, then others
+      // Default: prioritize locality. Same city > same district > same state (entire_state)
       creators.sort((a, b) => {
-        const aExact = customerCity && (a.baseCity || a.city || '').toLowerCase() === customerCity;
-        const bExact = customerCity && (b.baseCity || b.city || '').toLowerCase() === customerCity;
-        if (aExact && !bExact) return -1;
-        if (!aExact && bExact) return 1;
+        const aCity = (a.baseCity || a.city || '').toLowerCase();
+        const bCity = (b.baseCity || b.city || '').toLowerCase();
+        const aDistrict = (a.district || '').toLowerCase();
+        const bDistrict = (b.district || '').toLowerCase();
+        
+        // Priority 1: Exact city match
+        const aCityMatch = customerCity && aCity === customerCity ? 3 : 0;
+        const bCityMatch = customerCity && bCity === customerCity ? 3 : 0;
+        
+        // Priority 2: Same district
+        const aDistMatch = customerDistrict && aDistrict === customerDistrict ? 2 : 0;
+        const bDistMatch = customerDistrict && bDistrict === customerDistrict ? 2 : 0;
+        
+        // Priority 3: In service areas
+        const aAreas = (a.serviceAreas || []).map(x => x.toLowerCase());
+        const aInAreas = (customerCity && aAreas.includes(customerCity)) || (customerDistrict && aAreas.includes(customerDistrict)) ? 1 : 0;
+        const bAreas = (b.serviceAreas || []).map(x => x.toLowerCase());
+        const bInAreas = (customerCity && bAreas.includes(customerCity)) || (customerDistrict && bAreas.includes(customerDistrict)) ? 1 : 0;
+        
+        const aScore = aCityMatch + aDistMatch + aInAreas;
+        const bScore = bCityMatch + bDistMatch + bInAreas;
+        
+        if (aScore !== bScore) return bScore - aScore;
+        // Featured + rating as tiebreaker
+        if (a.featured !== b.featured) return b.featured ? 1 : -1;
         return (b.rating || 0) - (a.rating || 0);
       });
     }
