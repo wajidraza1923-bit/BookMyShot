@@ -79,20 +79,20 @@ export default function CreatorLeads({ navigation }: any) {
   const executeAccept = async () => {
     const lead = confirmModal.lead;
     setConfirmModal({ visible: false, lead: null, action: 'accept' });
-    setProcessing(true);
+    
+    // ═══ OPTIMISTIC UPDATE — immediately remove from pending list ═══
+    setLeads(prev => prev.map(l => l._id === lead._id ? { ...l, status: 'accepted' } : l));
+    setToast({ visible: true, type: 'success', title: '✅ Accepted', message: 'Booking created! View in Bookings tab.' });
+    
+    // API call in background (don't block UI)
     try {
       const res = await api.patch(`/creator/inquiries/${lead._id}/reply`, { status: 'accepted' });
-      await load();
-      setResultModal({
-        visible: true,
-        type: 'success',
-        title: '🎉 Booking Created Successfully',
-        message: 'The inquiry has been accepted and the booking has been created successfully.',
-        bookingCreated: !!res.data?.booking,
-      });
+      // Silently refresh to sync real data
+      load();
     } catch (e: any) {
+      // Revert optimistic update on failure
+      setLeads(prev => prev.map(l => l._id === lead._id ? { ...l, status: 'pending' } : l));
       if (e.response?.data?.requiresSubscription) {
-        // Free quota exhausted — show upgrade prompt
         setResultModal({
           visible: true,
           type: 'error',
@@ -107,26 +107,32 @@ export default function CreatorLeads({ navigation }: any) {
           message: e.response?.data?.message || 'Something went wrong. Please try again.',
         });
       }
-    } finally { setProcessing(false); }
+    }
   };
 
   // Execute reject
   const executeReject = async () => {
     const lead = confirmModal.lead;
     setConfirmModal({ visible: false, lead: null, action: 'reject' });
-    setProcessing(true);
+    
+    // Optimistic update — immediately mark as rejected
+    setLeads(prev => prev.map(l => l._id === lead._id ? { ...l, status: 'rejected' } : l));
+    setToast({ visible: true, type: 'info', title: 'Inquiry Rejected', message: `${lead.name}'s inquiry has been declined.` });
+    
+    // Background API call
     try {
       await api.patch(`/creator/inquiries/${lead._id}/reply`, { status: 'rejected' });
-      await load();
-      setToast({ visible: true, type: 'info', title: 'Inquiry Rejected', message: `${lead.name}'s inquiry has been declined.` });
+      load();
     } catch (e: any) {
+      // Revert on failure
+      setLeads(prev => prev.map(l => l._id === lead._id ? { ...l, status: 'pending' } : l));
       setResultModal({
         visible: true,
         type: 'error',
         title: 'Failed to Reject',
         message: e.response?.data?.message || 'Something went wrong.',
       });
-    } finally { setProcessing(false); }
+    }
   };
 
   const getStatusColor = (s: string) => s === 'accepted' ? colors.success : s === 'rejected' ? colors.error : colors.warning;
