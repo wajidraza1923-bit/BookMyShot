@@ -285,6 +285,21 @@ export default function AdminMasterCommand({ navigation }: any) {
           </View>
 
           <Text style={s.hint}>If customer pays on time → gets {cashbackPercentage}% cashback. If late → Creator gets {creatorCbPercent}% cashback instead.</Text>
+
+          <TouchableOpacity style={[s.saveBtn, { backgroundColor: '#10B981' }, savingOffers && { opacity: 0.6 }]} onPress={async () => {
+            const cb = parseFloat(cashbackPercentage);
+            const ccb = parseFloat(creatorCbPercent);
+            if (isNaN(cb) || cb < 0 || cb > 100) { Alert.alert('Invalid', 'Customer cashback must be 0-100%'); return; }
+            if (isNaN(ccb) || ccb < 0 || ccb > 100) { Alert.alert('Invalid', 'Creator cashback must be 0-100%'); return; }
+            setSavingOffers(true);
+            try {
+              await api.put('/master-settings', { cashbackPercentage: cb, creatorCashbackPercent: ccb, customerCashbackPercent: cb });
+              Alert.alert('✅ Saved', `Cashback updated:\n• Customer: ${cb}%\n• Creator (deadline missed): ${ccb}%`);
+            } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
+            finally { setSavingOffers(false); }
+          }} disabled={savingOffers}>
+            {savingOffers ? <ActivityIndicator color="#fff" size="small" /> : <><Ionicons name="checkmark-circle" size={16} color="#fff" /><Text style={s.saveBtnText}>Save Cashback Settings</Text></>}
+          </TouchableOpacity>
         </View>
 
         <Text style={s.footerNote}>All values sync instantly across:{'\n'}Home • Bookings • Dashboard • Invoices • Wallet • FAQ • Footer • Notifications</Text>
