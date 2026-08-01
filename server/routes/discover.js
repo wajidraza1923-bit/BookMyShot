@@ -280,10 +280,10 @@ router.get("/admin/categories", protect, authorize("admin"), async (req, res, ne
 });
 router.post("/admin/categories", protect, authorize("admin"), async (req, res, next) => {
   try {
-    const { name, icon, imageUrl, sortOrder, isActive } = req.body;
+    const { name, icon, imageUrl, sortOrder, isActive, group, description, showOnHomepage } = req.body;
     if (!name) return res.status(400).json({ success: false, message: "Category name is required" });
-    const slug = (name || '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-    res.status(201).json({ success: true, data: await Category.create({ name, slug, icon: icon || "camera-outline", imageUrl: imageUrl || "", sortOrder: sortOrder || 0, isActive: isActive !== false }) });
+    const slug = req.body.slug || (name || '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    res.status(201).json({ success: true, data: await Category.create({ name, slug, icon: icon || "camera-outline", imageUrl: imageUrl || "", sortOrder: sortOrder || 0, isActive: isActive !== false, group: group || "Other", description: description || "", showOnHomepage: showOnHomepage !== false }) });
   } catch (e) {
     if (e.code === 11000) return res.status(400).json({ success: false, message: "Category with this slug already exists" });
     next(e);
@@ -294,12 +294,15 @@ router.put("/admin/categories/:id", protect, authorize("admin"), async (req, res
     const update = {};
     if (req.body.name !== undefined) {
       update.name = req.body.name;
-      update.slug = req.body.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      update.slug = req.body.slug || req.body.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
     }
     if (req.body.icon !== undefined) update.icon = req.body.icon;
     if (req.body.imageUrl !== undefined) update.imageUrl = req.body.imageUrl;
     if (req.body.sortOrder !== undefined) update.sortOrder = Number(req.body.sortOrder) || 0;
     if (req.body.isActive !== undefined) update.isActive = req.body.isActive;
+    if (req.body.group !== undefined) update.group = req.body.group;
+    if (req.body.description !== undefined) update.description = req.body.description;
+    if (req.body.showOnHomepage !== undefined) update.showOnHomepage = req.body.showOnHomepage;
     const item = await Category.findByIdAndUpdate(req.params.id, { $set: update }, { new: true });
     if (!item) return res.status(404).json({ success: false, message: "Not found" });
     res.json({ success: true, data: item });

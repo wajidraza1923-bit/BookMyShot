@@ -39,9 +39,12 @@ const CONTENT_CONFIGS: ContentConfig[] = [
     id: 'categories', label: 'Categories', icon: 'grid', endpoint: '/discover/admin/categories',
     fields: [
       { key: 'name', label: 'Category Name', type: 'text', required: true, placeholder: 'e.g. Wedding Photography' },
+      { key: 'group', label: 'Group', type: 'text', placeholder: 'e.g. Photography & Video' },
       { key: 'icon', label: 'Icon (Ionicons)', type: 'icon', placeholder: 'e.g. camera, film, videocam' },
       { key: 'imageUrl', label: 'Cover Image URL', type: 'image', placeholder: 'https://...' },
+      { key: 'description', label: 'Description', type: 'multiline', placeholder: 'Short description...' },
       { key: 'sortOrder', label: 'Display Order', type: 'number', placeholder: '0' },
+      { key: 'showOnHomepage', label: 'Show on Homepage', type: 'boolean' },
       { key: 'isActive', label: 'Active', type: 'boolean' },
     ],
   },
