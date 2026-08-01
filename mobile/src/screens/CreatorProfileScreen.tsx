@@ -253,7 +253,7 @@ export default function CreatorProfileScreen({ route, navigation }: any) {
             <Text style={st.profileSpec}>{creator.specialty || 'Photographer'}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
               <Ionicons name="location" size={11} color="#6C3BFF" /><Text style={st.metaText}>{creator.city || 'India'}</Text>
-              <Text style={st.metaText}>•</Text><Text style={st.metaText}>{creator.experience || '2+'} Yrs</Text>
+              <Text style={st.metaText}>•</Text><Text style={st.metaText}>{creator.experience === 'Fresher' ? 'Fresher' : `${creator.experience || '2+'} Yrs`}</Text>
             </View>
           </View>
         </View>

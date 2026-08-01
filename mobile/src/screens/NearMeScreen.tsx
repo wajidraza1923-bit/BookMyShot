@@ -202,7 +202,7 @@ export default function NearMeScreen({ navigation }: any) {
           </View>
 
           {/* Specialty + Experience */}
-          <Text style={s.cardSpec}>{item.specialty || 'Photographer'}{item.experience ? ` • ${item.experience} Yrs` : ''}</Text>
+          <Text style={s.cardSpec}>{item.specialty || 'Photographer'}{item.experience ? (item.experience === 'Fresher' ? ' • Fresher' : ` • ${item.experience} Yrs`) : ''}</Text>
 
           {/* Location + Service Areas */}
           <View style={s.locationRow}>
