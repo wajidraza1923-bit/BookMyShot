@@ -141,8 +141,7 @@ export default function CreatorProfile({ navigation }: any) {
     if (!permission.granted) { Alert.alert('Permission Required', 'Allow photo library access.'); return; }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [3, 1],
+      allowsEditing: false,
       quality: 0.85,
     });
     if (result.canceled || !result.assets?.length) return;
