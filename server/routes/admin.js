@@ -198,7 +198,7 @@ router.patch("/creators/:id/status", async (req, res, next) => {
       let title = "Account Update";
       let type = "creator";
       if (req.body.status === "approved") {
-        title = "Creator Approved!";
+        title = "🎉 Creator Approved!";
       } else if (req.body.status === "rejected") {
         title = "Creator Application Update";
       } else if (req.body.status === "suspended") {
@@ -206,6 +206,60 @@ router.patch("/creators/:id/status", async (req, res, next) => {
         type = "warning";
       }
       await createNotification(creator.user._id, title, note, type);
+
+      // ═══ PUSH NOTIFICATION ═══
+      try {
+        const pushService = require("../services/pushService");
+        if (req.body.status === "approved") {
+          pushService.sendToUser(creator.user._id, "BookMyShot — You're Approved! 🎉", "Congratulations! Your creator profile has been approved. You can now receive bookings and inquiries from customers. Complete your portfolio to attract more clients!");
+        } else if (req.body.status === "rejected") {
+          pushService.sendToUser(creator.user._id, "BookMyShot — Application Update", note || "Your creator application needs some changes. Please update your profile and resubmit.");
+        } else if (req.body.status === "suspended") {
+          pushService.sendToUser(creator.user._id, "BookMyShot — Account Suspended", note || "Your account has been suspended. Please contact support for details.");
+        }
+      } catch (pushErr) { console.log("[Admin] Push notification error:", pushErr.message); }
+
+      // ═══ EMAIL NOTIFICATION ═══
+      try {
+        const emailService = require("../services/emailService");
+        if (creator.user.email && !creator.user.email.endsWith("@bookmyshot.app")) {
+          if (req.body.status === "approved") {
+            await emailService.sendEmail({
+              to: creator.user.email,
+              subject: "🎉 Your BookMyShot Creator Profile is Approved!",
+              html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+                <h2 style="color:#6C3BFF;">Welcome to BookMyShot! 🎉</h2>
+                <p>Hi ${creator.user.name},</p>
+                <p>Great news! Your creator profile has been <strong>approved</strong>. You are now live on BookMyShot and customers can find and book you.</p>
+                <h3>Next steps:</h3>
+                <ul>
+                  <li>Complete your portfolio (add photos & videos)</li>
+                  <li>Set your pricing packages</li>
+                  <li>Share your profile link with clients</li>
+                </ul>
+                <p>Start receiving bookings today!</p>
+                <p style="margin-top:20px;color:#6B7280;font-size:12px;">— Team BookMyShot<br>bookmyshott@gmail.com</p>
+              </div>`,
+              type: "creator_approved",
+              userId: creator.user._id,
+            });
+          } else if (req.body.status === "rejected") {
+            await emailService.sendEmail({
+              to: creator.user.email,
+              subject: "BookMyShot — Application Update",
+              html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+                <h2 style="color:#1F2937;">Application Update</h2>
+                <p>Hi ${creator.user.name},</p>
+                <p>${note || "Your creator application needs some changes. Please update your profile details and resubmit for review."}</p>
+                <p>If you have questions, contact us at <a href="mailto:bookmyshott@gmail.com">bookmyshott@gmail.com</a>.</p>
+                <p style="margin-top:20px;color:#6B7280;font-size:12px;">— Team BookMyShot</p>
+              </div>`,
+              type: "creator_rejected",
+              userId: creator.user._id,
+            });
+          }
+        }
+      } catch (emailErr) { console.log("[Admin] Email notification error:", emailErr.message); }
     }
     res.json({ success: true, creator });
   } catch (e) {
