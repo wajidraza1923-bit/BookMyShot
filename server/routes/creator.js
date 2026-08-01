@@ -15,7 +15,15 @@ const { protect, authorize } = require("../middleware/auth");
 const router = express.Router();
 router.use(protect, authorize("creator"));
 
-const getCreator = async (userId) => Creator.findOne({ user: userId });
+const getCreator = async (userId) => {
+  const creator = await Creator.findOne({ user: userId });
+  if (!creator) {
+    const err = new Error("Creator profile not found. Please complete registration.");
+    err.statusCode = 404;
+    throw err;
+  }
+  return creator;
+};
 
 // Dashboard analytics
 router.get("/analytics", async (req, res, next) => {

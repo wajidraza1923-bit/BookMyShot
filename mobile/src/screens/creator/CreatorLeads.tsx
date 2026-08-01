@@ -32,7 +32,7 @@ export default function CreatorLeads({ navigation }: any) {
   const load = useCallback(async () => {
     try {
       const [leadsRes, dashRes, msRes] = await Promise.all([
-        api.get('/creator/leads'),
+        api.get('/creator/leads').catch(() => ({ data: { inquiries: [] } })),
         api.get('/creator/dashboard').catch(() => ({ data: {} })),
         api.get('/master-settings').catch(() => ({ data: { data: {} } })),
       ]);
@@ -47,7 +47,10 @@ export default function CreatorLeads({ navigation }: any) {
         unlockedLeads: dashRes.data?.unlockedLeads || [],
       });
     } catch (e: any) {
-      setToast({ visible: true, type: 'error', title: 'Failed to load', message: e.response?.data?.message || 'Check your connection' });
+      // Don't show error for new creators with no profile yet
+      if (e.response?.status !== 404) {
+        setToast({ visible: true, type: 'error', title: 'Failed to load', message: e.response?.data?.message || 'Check your connection' });
+      }
     } finally { setLoading(false); }
   }, []);
 
