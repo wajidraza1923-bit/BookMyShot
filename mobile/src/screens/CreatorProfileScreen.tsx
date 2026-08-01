@@ -174,11 +174,17 @@ export default function CreatorProfileScreen({ route, navigation }: any) {
         try { const inq = await api.get(`/inquiries/check/${d._id || id}`); setContactUnlocked(inq.data?.hasAccepted || false); } catch {}
         // Check if user can write a review (has completed booking with this creator)
         try {
-          const bRes = await api.get('/bookings');
-          const myBookings = bRes.data?.bookings || [];
-          const completed = myBookings.find((b: any) => (String(b.creator) === String(d._id || id) || String(b.creator?._id) === String(d._id || id)) && (b.status === 'Completed' || b.status === 'completed'));
-          if (completed) { setCanReview(true); setReviewBookingId(completed._id); }
-        } catch {}
+          const revCheck = await api.get(`/reviews/can-review/${d._id || id}`);
+          if (revCheck.data?.canReview) { setCanReview(true); setReviewBookingId(revCheck.data.bookingId || ''); }
+        } catch {
+          // Fallback: check user bookings directly
+          try {
+            const bRes = await api.get('/user/bookings');
+            const myBookings = bRes.data?.bookings || [];
+            const completed = myBookings.find((b: any) => (String(b.creator) === String(d._id || id) || String(b.creator?._id) === String(d._id || id)) && (b.status === 'Completed' || b.status === 'completed'));
+            if (completed) { setCanReview(true); setReviewBookingId(completed._id); }
+          } catch {}
+        }
       }
     } catch {} finally { setLoading(false); }
   };

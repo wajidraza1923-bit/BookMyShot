@@ -154,4 +154,30 @@ router.patch("/admin/:id", protect, authorize("admin"), async (req, res, next) =
   } catch (e) { next(e); }
 });
 
+// Check if current user can review a specific creator
+router.get("/can-review/:creatorId", protect, async (req, res, next) => {
+  try {
+    const Booking = require("../models/Booking");
+    const Creator = require("../models/Creator");
+    const creator = await Creator.findById(req.params.creatorId).select("_id");
+    if (!creator) return res.json({ success: true, canReview: false });
+    
+    // Check if user has a completed booking with this creator
+    const completedBooking = await Booking.findOne({
+      user: req.user._id,
+      creator: creator._id,
+      status: { $in: ["Completed", "completed"] },
+    }).select("_id");
+    
+    if (!completedBooking) return res.json({ success: true, canReview: false });
+    
+    // Check if already reviewed
+    const Review = require("../models/Review");
+    const existingReview = await Review.findOne({ user: req.user._id, creator: creator._id });
+    if (existingReview) return res.json({ success: true, canReview: false, alreadyReviewed: true });
+    
+    res.json({ success: true, canReview: true, bookingId: completedBooking._id });
+  } catch (e) { next(e); }
+});
+
 module.exports = router;
