@@ -86,6 +86,11 @@ router.post("/", protect, async (req, res, next) => {
     const creator = await Creator.findById(targetCreatorId).select("user");
     if (creator) {
       await Notification.create({ user: creator.user, title: "⭐ New Review", message: `You received a ${rating}-star review!`, type: "review", targetScreen: "CreatorReviews" });
+      // Push notification
+      try {
+        const pushService = require("../services/pushService");
+        pushService.sendToUser(creator.user, "BookMyShot — New Review ⭐", `You received a ${rating}-star review from a customer! Check your reviews.`);
+      } catch {}
     }
 
     res.status(201).json({ success: true, review });
