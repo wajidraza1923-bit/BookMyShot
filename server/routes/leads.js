@@ -22,6 +22,13 @@ router.get("/my-usage", protect, authorize("creator"), async (req, res, next) =>
 
     const settings = await LeadSettings.getSettings();
 
+    // Real prices from Master Settings
+    const MasterSettings = require("../models/MasterSettings");
+    const ms = await MasterSettings.findOne();
+    const realMonthlyPrice = (ms && ms.monthlySubscriptionPrice) || settings.monthlyPrice || 199;
+    const realYearlyPrice = (ms && ms.yearlySubscriptionPrice) || settings.yearlyPrice || 1999;
+    const realLeadUnlockPrice = (ms && ms.perLeadUnlockPrice) || settings.leadUnlockPrice || 70;
+
     const freeUsed = creator.freeLeadsUsed || 0;
     const freeLimit = creator.freeLeadsLimit || settings.freeLeadLimit || 3;
     const isSubscribed = (creator.subscriptionStatus === "active" || creator.subscriptionStatus === "trial") && 
@@ -48,9 +55,9 @@ router.get("/my-usage", protect, authorize("creator"), async (req, res, next) =>
         // Admin-configured settings
         activeMode,
         leadCountMode: settings.leadCountMode || 'booking',
-        leadUnlockPrice: settings.leadUnlockPrice || 70,
-        monthlyPrice: settings.monthlyPrice || 199,
-        yearlyPrice: settings.yearlyPrice || 1999,
+        leadUnlockPrice: realLeadUnlockPrice,
+        monthlyPrice: realMonthlyPrice,
+        yearlyPrice: realYearlyPrice,
         enableLeadLimit: settings.enableLeadLimit !== false,
         enablePerLeadPurchase: settings.enablePerLeadPurchase !== false,
         enableSubscription: settings.enableSubscription !== false,
