@@ -968,7 +968,6 @@ router.patch("/inquiries/:id/reply", async (req, res, next) => {
         pushService.sendToUser(inquiry.user.toString(), pushTitle, pushMsg);
       }
     } catch (e2) {}
-    } catch (e) {}
 
     res.json({ success: true, inquiry, booking: createdBooking });
   } catch (e) {
