@@ -489,6 +489,16 @@ router.patch("/booking-requests/:id", async (req, res, next) => {
       type: "booking",
     });
 
+    // ═══ PUSH NOTIFICATION ═══
+    try {
+      const pushService = require("../services/pushService");
+      if (status === "Creator Accepted") {
+        pushService.sendToUser(booking.user.toString(), "BookMyShot — Booking Accepted! 🎉", "Your booking has been accepted!");
+      } else if (status === "Creator Rejected" || status === "Rejected") {
+        pushService.sendToUser(booking.user.toString(), "BookMyShot — Booking Declined", "Your booking was declined.");
+      }
+    } catch (pushErr) { console.log("[BookingRequests] Push error:", pushErr.message); }
+
     res.json({ success: true, booking });
   } catch (e) {
     next(e);
@@ -1311,6 +1321,12 @@ router.patch("/bookings/:id/confirm-payment", async (req, res, next) => {
         type: "booking", targetScreen: "Bookings", targetId: booking._id.toString(),
       });
     } catch {}
+
+    // ═══ PUSH NOTIFICATION to customer ═══
+    try {
+      const pushService = require("../services/pushService");
+      pushService.sendToUser(booking.user.toString(), "BookMyShot — Payment Confirmed! ✅", "Payment confirmed! Your booking is complete.");
+    } catch (pushErr) { console.log("[ConfirmPayment] Push to customer error:", pushErr.message); }
 
     // Socket.IO
     try {

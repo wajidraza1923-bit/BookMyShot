@@ -240,6 +240,16 @@ router.post("/verify/:bookingId", protect, async (req, res, next) => {
       console.log("[BookingFee] Invoice email error (non-fatal):", emailErr.message);
     }
 
+    // ═══ PUSH NOTIFICATIONS ═══
+    try {
+      const pushService = require("../services/pushService");
+      pushService.sendToUser(booking.user.toString(), "BookMyShot — Booking Confirmed! ✅", "Advance payment received! Your booking is confirmed.");
+    } catch (pushErr) { console.log("[BookingFee] Push to customer error:", pushErr.message); }
+    try {
+      const pushService = require("../services/pushService");
+      if (creator) pushService.sendToUser(creator.user.toString(), "BookMyShot — Advance Received! 💰", "Customer paid advance. Booking confirmed!");
+    } catch (pushErr) { console.log("[BookingFee] Push to creator error:", pushErr.message); }
+
     // ═══ REAL-TIME SOCKET.IO ═══
     try {
       const socketService = require("../services/socketService");

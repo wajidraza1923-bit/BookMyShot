@@ -437,6 +437,12 @@ router.post("/verify-subscription", protect, async (req, res, next) => {
     const creatorName = req.user.name || req.user.email || "A creator";
     notifyAdmins(`🎉 New Monthly Subscription`, `${creatorName} activated monthly AutoPay subscription (₹${amount}/month).`);
 
+    // ═══ PUSH NOTIFICATION to creator ═══
+    try {
+      const pushService = require("../services/pushService");
+      pushService.sendToUser(req.user._id, "BookMyShot — Subscription Activated! 🎉", "Subscription activated! Unlimited leads now.");
+    } catch (pushErr) { console.log("[Subscription] Push to creator error:", pushErr.message); }
+
     res.json({ 
       success: true, 
       message: "Subscription activated! ₹" + amount + "/month AutoPay enabled.",

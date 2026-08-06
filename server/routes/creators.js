@@ -407,6 +407,14 @@ router.post("/complete-onboarding", protect, authorize("creator"), async (req, r
           targetScreen: "AdminCreators",
         });
       }
+      // ═══ PUSH NOTIFICATION to admins ═══
+      try {
+        const pushService = require("../services/pushService");
+        const adminIds = admins.map(a => a._id.toString());
+        for (const adminId of adminIds) {
+          pushService.sendToUser(adminId, "BookMyShot — New Creator Application 🆕", `New creator application submitted by ${req.body.name || req.user.name}.`);
+        }
+      } catch (pushErr) { console.log("[Onboarding] Push to admins error:", pushErr.message); }
     } catch (e) { /* non-fatal */ }
 
     res.json({
