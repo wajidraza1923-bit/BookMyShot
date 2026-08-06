@@ -154,8 +154,11 @@ export default function HomeScreen({ navigation }: any) {
     try {
       // ═══ LOCATION: From shared context (no AsyncStorage read needed) ═══
 
+      const locationParams = savedLocation.district || savedLocation.city || savedLocation.state
+        ? `&district=${encodeURIComponent(savedLocation.district || '')}&city=${encodeURIComponent(savedLocation.city || '')}&state=${encodeURIComponent(savedLocation.state || '')}`
+        : '';
       const [catsRes, statsRes, creatorsRes, homeConfigRes] = await Promise.all([
-        api.get('/discover/categories?homepage=true').catch(() => ({ data: { data: [] } })),
+        api.get(`/discover/categories?homepage=true${locationParams}`).catch(() => ({ data: { data: [] } })),
         api.get('/live-stats').catch(() => ({ data: { stats: null } })),
         creatorsAPI.getAll().catch(() => ({ data: { data: [] } })),
         api.get('/homepage-config').catch(() => ({ data: { data: null } })),

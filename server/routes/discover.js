@@ -38,13 +38,26 @@ router.get("/categories", async (req, res, next) => {
       try {
         let count = 0;
         if (c.slug) {
+          // Build location filter if provided
+          const locationFilter = {};
+          const userDistrict = (req.query.district || '').trim();
+          const userCity = (req.query.city || '').trim();
+          const userState = (req.query.state || '').trim();
+          if (userDistrict || userCity || userState) {
+            const locConditions = [];
+            if (userDistrict) locConditions.push({ serviceAreas: { $elemMatch: { $regex: new RegExp(`^${userDistrict}$`, 'i') } } }, { district: new RegExp(`^${userDistrict}$`, 'i') });
+            if (userCity) locConditions.push({ serviceAreas: { $elemMatch: { $regex: new RegExp(`^${userCity}$`, 'i') } } }, { city: new RegExp(`^${userCity}$`, 'i') }, { baseCity: new RegExp(`^${userCity}$`, 'i') });
+            if (userState) locConditions.push({ state: new RegExp(`^${userState}$`, 'i') }, { travelPreference: 'pan_india' }, { travelPreference: 'entire_state', state: new RegExp(`^${userState}$`, 'i') });
+            if (locConditions.length > 0) locationFilter.$or = locConditions;
+          }
           count = await Creator.countDocuments({
             categorySlug: c.slug,
             status: "approved",
-            $or: [{ subscriptionStatus: { $in: ["free", "active", "trial"] } }, { subscriptionStatus: { $exists: false } }, { subscriptionStatus: null }]
+            $or: [{ subscriptionStatus: { $in: ["free", "active", "trial"] } }, { subscriptionStatus: { $exists: false } }, { subscriptionStatus: null }],
+            ...locationFilter,
           });
           // Fallback to category text match for legacy creators
-          if (count === 0) {
+          if (count === 0 && !Object.keys(locationFilter).length) {
             const safeSlug = c.slug.replace(/[-\s]+/g, '.*').replace(/[^a-z0-9.*]/gi, '');
             count = await Creator.countDocuments({
               category: new RegExp(safeSlug, "i"),
