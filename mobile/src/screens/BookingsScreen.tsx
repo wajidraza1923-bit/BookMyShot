@@ -6,6 +6,7 @@ import { colors, spacing, typography, radius } from '../theme';
 import { useAuth } from '../context/AuthContext';
 import { bookingsAPI } from '../services/api';
 import { useAutoRefresh } from '../hooks/useRealTimeUpdates';
+import { useFocusEffect } from '@react-navigation/native';
 import api from '../services/api';
 
 const tabs = ['Pending', 'Upcoming', 'Completed', 'Cancelled'];
@@ -37,6 +38,9 @@ export default function BookingsScreen({ navigation }: any) {
 
   useEffect(() => { loadBookings(); }, [loadBookings]);
   const onRefresh = async () => { setRefreshing(true); await loadBookings(); setRefreshing(false); };
+
+  // Re-fetch when screen comes into focus (e.g. returning from payment screen)
+  useFocusEffect(useCallback(() => { loadBookings(); }, [loadBookings]));
 
   // Real-time: auto-refresh when booking status or payment changes
   useAutoRefresh(['booking:updated', 'payment:updated', 'inquiry:updated'], loadBookings);
@@ -125,7 +129,7 @@ export default function BookingsScreen({ navigation }: any) {
           {/* ═══ PENDING INQUIRIES TAB ═══ */}
           {activeTab === 'Pending' ? (
             pendingInquiries.length > 0 ? pendingInquiries.map((inq: any) => (
-              <View key={inq._id} style={[s.bookingCard, { borderLeftWidth: 3, borderLeftColor: '#F59E0B' }]}>
+              <View key={inq._id} style={[s.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B' }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
                   <Ionicons name="time-outline" size={16} color="#F59E0B" />
                   <Text style={{ fontSize: 13, fontWeight: '700', color: '#1F2937', marginLeft: 8, flex: 1 }}>Pending — Waiting for creator</Text>
@@ -156,10 +160,10 @@ export default function BookingsScreen({ navigation }: any) {
                 </TouchableOpacity>
               </View>
             )) : (
-              <View style={s.emptyState}>
+              <View style={{ alignItems: 'center', paddingTop: 40 }}>
                 <Ionicons name="mail-outline" size={40} color="#D1D5DB" />
                 <Text style={s.emptyTitle}>No Pending Inquiries</Text>
-                <Text style={s.emptySubtitle}>Send an inquiry to a creator to see it here</Text>
+                <Text style={{ fontSize: 13, color: '#9CA3AF', marginTop: 4 }}>Send an inquiry to a creator to see it here</Text>
               </View>
             )
           ) : filtered.length > 0 ? filtered.map(b => {
@@ -168,11 +172,14 @@ export default function BookingsScreen({ navigation }: any) {
             const eventDate = b.eventDate ? new Date(b.eventDate) : null;
             const validDate = eventDate && eventDate.getFullYear() > 2000;
             const amount = b.amount || b.budget || 0;
-            const paid = b.advancePaid || b.bookingFeeAmount || 0;
-            const remaining = amount - paid;
-            const paymentPct = amount > 0 ? Math.min(100, Math.round((paid / amount) * 100)) : 0;
             const statusColor = getStatusColor(b.status);
             const isOnlinePaid = b.bookingFeePaid && b.bookingFeePaymentId;
+            // Dynamic advance/remaining calculation from backend fields
+            const feePercent = b.bookingFeePercent || b.commissionPercentUsed || 7;
+            const advancePaid = b.bookingFeeAmount || (b.bookingFeePaid ? Math.round(amount * feePercent / 100) : 0);
+            const paid = b.paymentConfirmed ? amount : advancePaid;
+            const remaining = b.paymentConfirmed ? 0 : Math.max(0, amount - paid);
+            const paymentPct = b.paymentConfirmed ? 100 : (amount > 0 ? Math.min(100, Math.round((paid / amount) * 100)) : 0);
 
             return (
               <View key={b._id} style={s.card}>
@@ -193,10 +200,11 @@ export default function BookingsScreen({ navigation }: any) {
                   <DetailRow icon="calendar" label="Event Date" value={validDate ? eventDate!.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'} />
                   {b.eventLocation ? <DetailRow icon="location" label="Location" value={b.eventLocation} /> : null}
                   <DetailRow icon="wallet" label="Total Amount" value={`₹${amount.toLocaleString('en-IN')}`} highlight />
-                  {b.bookingFeeAmount > 0 && <DetailRow icon="card" label="Booking Fee" value={`₹${b.bookingFeeAmount.toLocaleString('en-IN')}`} color="#6C3BFF" />}
-                  {paid > 0 && <DetailRow icon="checkmark-circle" label="Paid" value={`₹${paid.toLocaleString('en-IN')}`} color="#10B981" />}
+                  {advancePaid > 0 && <DetailRow icon="card" label={`Advance (${feePercent}%)`} value={`₹${advancePaid.toLocaleString('en-IN')}`} color="#6C3BFF" />}
+                  {paid > 0 && <DetailRow icon="checkmark-circle" label={b.paymentConfirmed ? "Total Paid" : "Paid"} value={`₹${paid.toLocaleString('en-IN')}`} color="#10B981" />}
                   {remaining > 0 && <DetailRow icon="alert-circle" label="Remaining" value={`₹${remaining.toLocaleString('en-IN')}`} color="#F59E0B" />}
-                  <DetailRow icon="card" label="Payment" value={b.paymentStatus || 'unpaid'} />
+                  {b.paymentConfirmed && <DetailRow icon="checkmark-circle" label="Status" value="Fully Paid" color="#10B981" />}
+                  <DetailRow icon="card" label="Payment" value={b.paymentConfirmed ? 'Fully Paid' : (b.paymentStatus || 'unpaid')} />
                   <DetailRow icon="gift" label="Cashback" value={b.bookingFeePaid ? 'Eligible' : 'Pay booking fee first'} color={b.bookingFeePaid ? '#10B981' : '#9CA3AF'} />
                 </View>
 
@@ -242,8 +250,8 @@ export default function BookingsScreen({ navigation }: any) {
                   }
                 })()}
 
-                {/* ═══ PAY BOOKING FEE — Primary CTA for new bookings ═══ */}
-                {!b.bookingFeePaid && (b.status === 'Creator Accepted' || b.status === 'Booking Created') && amount > 0 && (() => {
+                {/* ═══ PAY BOOKING FEE — Primary CTA for new bookings (hidden once confirmed) ═══ */}
+                {!b.bookingFeePaid && !b.paymentConfirmed && (b.status === 'Creator Accepted' || b.status === 'Booking Created') && amount > 0 && (() => {
                   const createdAt = b.createdAt ? new Date(b.createdAt) : new Date();
                   const advanceDeadline = new Date(createdAt);
                   advanceDeadline.setDate(advanceDeadline.getDate() + 10);
@@ -368,9 +376,11 @@ export default function BookingsScreen({ navigation }: any) {
 }
 
 function DetailRow({ icon, label, value, highlight, color }: any) {
+  // Safe icon — only append -outline if not already has it
+  const iconName = icon && !icon.includes('-') ? `${icon}-outline` : (icon || 'information-circle-outline');
   return (
     <View style={s.detailRow}>
-      <Ionicons name={icon + '-outline'} size={13} color={color || colors.textMuted} />
+      <Ionicons name={iconName as any} size={13} color={color || colors.textMuted} />
       <Text style={s.detailLabel}>{label}</Text>
       <Text style={[s.detailValue, highlight && { color: colors.primary, fontWeight: '700' }, color && { color }]}>{value}</Text>
     </View>
