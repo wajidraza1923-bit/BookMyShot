@@ -523,7 +523,21 @@ export default function HomeScreen({ navigation }: any) {
         </View>
 
         {/* ═══ TOP CREATORS ═══ */}
-        {filteredTopCreators.length > 0 && (
+        {!isLocationSet ? (
+          <View style={{ marginHorizontal: 20, marginBottom: 20 }}>
+            <View style={st.secHead}><Text style={st.secTitle}>🔥 Top Creators Near You</Text></View>
+            <TouchableOpacity style={{ backgroundColor: '#F8F6FF', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: '#EDE9FE', flexDirection: 'row', alignItems: 'center', gap: 12 }} onPress={() => { setShowLocationPicker(true); setPickerStep('state'); if (pickerStates.length === 0) api.get('/discovery/states').then(r => setPickerStates(r.data?.states || [])).catch(() => {}); }} activeOpacity={0.8}>
+              <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#EDE9FE', alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="location" size={22} color="#6C3BFF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, fontWeight: '700', color: '#1F2937' }}>Choose Your Location</Text>
+                <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>Set your city to see creators near you</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#6C3BFF" />
+            </TouchableOpacity>
+          </View>
+        ) : filteredTopCreators.length > 0 && (
           <View>
             <View style={st.secHead}><Text style={st.secTitle}>🔥 Top Creators Near You</Text><TouchableOpacity onPress={() => navigation.navigate('Near Me')}><Text style={st.viewAll}>View All →</Text></TouchableOpacity></View>
             {filtersApplied && <Text style={{ paddingHorizontal: 20, fontSize: 11, color: '#6B7280', marginBottom: 8 }}>{filteredTopCreators.length} creators match your filters</Text>}
