@@ -959,6 +959,17 @@ router.patch("/inquiries/:id/reply", async (req, res, next) => {
       socketService.emitToRole("admin", "dashboard:refresh", { type: "inquiry" });
     } catch (e) {}
 
+    // Push notification to customer
+    try {
+      const pushService = require("../services/pushService");
+      if (inquiry.user && (inquiry.status === "accepted" || inquiry.status === "rejected")) {
+        const pushTitle = inquiry.status === "accepted" ? "BookMyShot \u2014 Inquiry Accepted! \uD83C\uDF89" : "BookMyShot \u2014 Inquiry Declined";
+        const pushMsg = inquiry.status === "accepted" ? "Your inquiry has been accepted! Tap to pay advance and confirm booking." : "Your inquiry has been declined by the creator.";
+        pushService.sendToUser(inquiry.user.toString(), pushTitle, pushMsg);
+      }
+    } catch (e2) {}
+    } catch (e) {}
+
     res.json({ success: true, inquiry, booking: createdBooking });
   } catch (e) {
     next(e);

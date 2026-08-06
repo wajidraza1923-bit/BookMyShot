@@ -97,13 +97,17 @@ router.post("/", optionalAuth, async (req, res, next) => {
       contactUnlocked: true,
     });
 
-    // Notify creator
+    // Notify creator (in-app + push)
     await Notification.create({
       user: creator.user,
       title: "📩 New Inquiry",
       message: `${name} sent you an inquiry for ${eventType}`,
       type: "inquiry",
     });
+    try {
+      const pushService = require("../services/pushService");
+      pushService.sendToUser(creator.user, "BookMyShot — New Inquiry 📩", `${name} sent an inquiry for ${eventType}. Tap to view and respond.`);
+    } catch {}
 
     // ═══ LEAD COUNT (Inquiry Mode) ═══
     try {
