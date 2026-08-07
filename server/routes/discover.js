@@ -48,6 +48,9 @@ router.get("/categories", async (req, res, next) => {
             if (userDistrict) {
               locConditions.push({ serviceAreas: { $elemMatch: { $regex: new RegExp(`^${userDistrict}$`, 'i') } } });
               locConditions.push({ district: new RegExp(`^${userDistrict}$`, 'i') });
+              // Legacy creators: city field may contain the district name (e.g. city:'poonch')
+              locConditions.push({ city: new RegExp(`^${userDistrict}$`, 'i') });
+              locConditions.push({ baseCity: new RegExp(`^${userDistrict}$`, 'i') });
             }
             if (userCity) {
               locConditions.push({ serviceAreas: { $elemMatch: { $regex: new RegExp(`^${userCity}$`, 'i') } } });

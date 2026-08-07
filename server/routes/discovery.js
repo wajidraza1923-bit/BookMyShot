@@ -207,9 +207,11 @@ router.get("/creators-by-area", async (req, res, next) => {
           return true;
 
         default:
-          // No preference set — only show if creator's city/district matches
+          // No preference set — handle legacy creators who only have city set
           if (customerCity && creatorCity === customerCity) return true;
           if (customerDistrict && creatorDistrict === customerDistrict) return true;
+          // Legacy: creator.city might equal customer's district name (e.g. city='poonch', district='poonch')
+          if (customerDistrict && creatorCity === customerDistrict) return true;
           return false;
       }
     });

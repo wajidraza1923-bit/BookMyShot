@@ -20,7 +20,19 @@ const SERVICE_RADIUS = ['My City', 'My District', 'My State', 'Multi-State', 'Pa
 const EQUIPMENT_LEVELS = ['Basic', 'Professional', 'Premium'];
 const DELIVERY_TIMES = ['3 Days', '7 Days', '15 Days', '30 Days'];
 const LANGUAGES = ['Hindi', 'English', 'Punjabi', 'Urdu', 'Kashmiri', 'Dogri', 'Tamil', 'Telugu', 'Bengali', 'Marathi', 'Gujarati', 'Kannada', 'Malayalam', 'Odia'];
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 5;
+
+// Category options — slug must match Category collection slugs in DB
+const CATEGORIES = [
+  { slug: 'photography-videography', label: 'Photography & Videography', emoji: '📷', desc: 'Wedding, candid, pre-wedding, cinematic videos' },
+  { slug: 'makeup-artists', label: 'Makeup Artist', emoji: '💄', desc: 'Bridal makeup, hair styling, mehndi' },
+  { slug: 'decoration-floral', label: 'Decoration & Floral', emoji: '🌸', desc: 'Mandap, stage, floral, lighting' },
+  { slug: 'catering-services', label: 'Catering Services', emoji: '🍽️', desc: 'Veg, non-veg, multi-cuisine, bakers' },
+  { slug: 'venues', label: 'Venues', emoji: '🏛️', desc: 'Banquet halls, hotels, farm houses' },
+  { slug: 'djs-entertainment', label: 'DJ & Entertainment', emoji: '🎧', desc: 'DJs, live bands, singers, anchors' },
+  { slug: 'wedding-planners', label: 'Wedding Planner', emoji: '💍', desc: 'Full planning, coordination, budgeting' },
+  { slug: 'mehndi-artist', label: 'Mehndi Artist', emoji: '🤲', desc: 'Bridal mehndi, traditional designs' },
+];
 
 export default function CreatorOnboardingScreen({ navigation }: any) {
   const { user, refreshUser } = useAuth();
@@ -34,6 +46,9 @@ export default function CreatorOnboardingScreen({ navigation }: any) {
   const [studioName, setStudioName] = useState('');
   const [experience, setExperience] = useState('');
   const [phone, setPhone] = useState('');
+
+  // Step 2 - Category (NEW — required)
+  const [selectedCategory, setSelectedCategory] = useState('');
 
   // Step 2 - Location (REQUIRED)
   const [selectedState, setSelectedState] = useState('');
@@ -80,6 +95,10 @@ export default function CreatorOnboardingScreen({ navigation }: any) {
     return true;
   };
   const validateStep2 = () => {
+    if (!selectedCategory) { Alert.alert('Required', 'Please select your service category'); return false; }
+    return true;
+  };
+  const validateStep3 = () => {
     if (!selectedState) { Alert.alert('Required', 'Select your state'); return false; }
     if (!selectedDistrict) { Alert.alert('Required', 'Select your district'); return false; }
     return true;
@@ -88,15 +107,23 @@ export default function CreatorOnboardingScreen({ navigation }: any) {
   const handleSubmit = async () => {
     if (!validateStep1()) { setStep(1); return; }
     if (!validateStep2()) { setStep(2); return; }
+    if (!validateStep3()) { setStep(3); return; }
     setLoading(true);
     try {
       const travelPrefMap: Record<string, string> = { 'Pan India': 'pan_india', 'My State': 'entire_state', 'My District': 'my_district', 'My City': 'only_my_city', 'Multi-State': 'multiple_states' };
+      const catObj = CATEGORIES.find(c => c.slug === selectedCategory);
       const payload = {
         name: user?.name || '', phone, studioName, experience,
+        // Category — critical for Browse filtering
+        categorySlug: selectedCategory,
+        category: catObj?.label || selectedCategory,
+        specialty: catObj?.label || selectedCategory,
+        // Location
         state: selectedState, district: selectedDistrict,
         baseCity: selectedCity || selectedDistrict, city: selectedCity || selectedDistrict,
-        serviceAreas: [selectedCity || selectedDistrict],
+        serviceAreas: [selectedCity || selectedDistrict, selectedDistrict].filter(Boolean),
         travelPreference: travelPrefMap[serviceRadius] || 'my_district',
+        // Business details
         businessType: businessType.toLowerCase(),
         teamSize: teamSize === 'Solo' ? 'solo' : teamSize === '2–5 Members' ? '2-5' : teamSize === '6–10 Members' ? '6-10' : teamSize === '10+ Members' ? '10+' : '',
         priceRange, budgetMin: budgetMin ? parseInt(budgetMin) : 0,
@@ -120,6 +147,7 @@ export default function CreatorOnboardingScreen({ navigation }: any) {
   const nextStep = () => {
     if (step === 1 && !validateStep1()) return;
     if (step === 2 && !validateStep2()) return;
+    if (step === 3 && !validateStep3()) return;
     if (step < TOTAL_STEPS) setStep(step + 1);
     else handleSubmit();
   };
@@ -137,9 +165,10 @@ export default function CreatorOnboardingScreen({ navigation }: any) {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={st.scroll}>
         {step === 1 && renderStep1()}
-        {step === 2 && renderStep2()}
-        {step === 3 && renderStep3()}
-        {step === 4 && renderStep4()}
+        {step === 2 && renderStep2Category()}
+        {step === 3 && renderStep3Location()}
+        {step === 4 && renderStep4Business()}
+        {step === 5 && renderStep5About()}
       </ScrollView>
 
       <PickerModal visible={showStatePicker} title="Select State" data={states} onSelect={(s) => { setSelectedState(s); setSelectedDistrict(''); setSelectedCity(''); setShowStatePicker(false); loadDistricts(s); }} onClose={() => setShowStatePicker(false)} />
@@ -199,14 +228,41 @@ export default function CreatorOnboardingScreen({ navigation }: any) {
       </View>
 
       <TouchableOpacity style={[st.nextBtn, !isPhoneValid && st.nextBtnDisabled]} onPress={nextStep} disabled={!isPhoneValid}>
+        <Text style={st.nextBtnText}>Next → Your Category</Text>
+        <Ionicons name="arrow-forward" size={16} color="#fff" />
+      </TouchableOpacity>
+    </>);
+  }
+
+  // ═══ STEP 2: Category Selection (NEW — required for Browse filtering) ═══
+  function renderStep2Category() {
+    return (<>
+      <Text style={st.secTitle}>🎯 What do you offer?</Text>
+      <Text style={st.secDesc}>Select your main service category. This determines where you appear in Browse.</Text>
+      {CATEGORIES.map(cat => (
+        <TouchableOpacity
+          key={cat.slug}
+          style={[st.catOption, selectedCategory === cat.slug && st.catOptionActive]}
+          onPress={() => setSelectedCategory(cat.slug)}
+          activeOpacity={0.8}
+        >
+          <Text style={st.catEmoji}>{cat.emoji}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={[st.catLabel, selectedCategory === cat.slug && st.catLabelActive]}>{cat.label}</Text>
+            <Text style={st.catDesc}>{cat.desc}</Text>
+          </View>
+          {selectedCategory === cat.slug && <Ionicons name="checkmark-circle" size={22} color="#6C3BFF" />}
+        </TouchableOpacity>
+      ))}
+      <TouchableOpacity style={[st.nextBtn, !selectedCategory && st.nextBtnDisabled]} onPress={nextStep} disabled={!selectedCategory}>
         <Text style={st.nextBtnText}>Next → Location</Text>
         <Ionicons name="arrow-forward" size={16} color="#fff" />
       </TouchableOpacity>
     </>);
   }
 
-  // ═══ STEP 2: Location ═══
-  function renderStep2() {
+  // ═══ STEP 3: Location ═══
+  function renderStep3Location() {
     return (<>
       <Text style={st.secTitle}>📍 Location (Required)</Text>
       <Text style={st.secDesc}>Where do you operate? This helps customers find you.</Text>
@@ -233,8 +289,8 @@ export default function CreatorOnboardingScreen({ navigation }: any) {
     </>);
   }
 
-  // ═══ STEP 3: Business Details ═══
-  function renderStep3() {
+  // ═══ STEP 4: Business Details ═══
+  function renderStep4Business() {
     return (<>
       <Text style={st.secTitle}>💼 Business Details</Text>
       <Text style={st.secDesc}>Help us understand your work setup</Text>
@@ -258,8 +314,8 @@ export default function CreatorOnboardingScreen({ navigation }: any) {
     </>);
   }
 
-  // ═══ STEP 4: About + Submit ═══
-  function renderStep4() {
+  // ═══ STEP 5: About + Submit ═══
+  function renderStep5About() {
     return (<>
       <Text style={st.secTitle}>✍️ About You</Text>
       <Text style={st.secDesc}>A short intro and languages you speak</Text>
@@ -352,6 +408,13 @@ const st = StyleSheet.create({
   submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#7C3AED', borderRadius: 14, paddingVertical: 16, marginTop: 16, elevation: 3, shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 8 },
   submitBtnText: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
   note: { fontSize: 11, color: '#6B7280', textAlign: 'center', marginTop: 12, lineHeight: 16 },
+  // Category selection styles
+  catOption: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#F9FAFB', borderWidth: 1.5, borderColor: '#E5E7EB', borderRadius: 14, padding: 14, marginBottom: 10 },
+  catOptionActive: { borderColor: '#6C3BFF', backgroundColor: '#F5F3FF' },
+  catEmoji: { fontSize: 28 },
+  catLabel: { fontSize: 14, fontWeight: '700', color: '#1F2937' },
+  catLabelActive: { color: '#6C3BFF' },
+  catDesc: { fontSize: 11, color: '#9CA3AF', marginTop: 2 },
   // Success Modal
   successOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 24 },
   successCard: { backgroundColor: '#fff', borderRadius: 20, padding: 28, width: '100%', alignItems: 'center', elevation: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 20 },

@@ -360,8 +360,8 @@ router.post("/complete-onboarding", protect, authorize("creator"), async (req, r
       'yearsInBusiness', 'priceRange', 'budgetMin', 'budgetMax',
       'travelPref', 'destinationWeddings', 'languages', 'servicesOffered',
       'equipmentLevel', 'editingIncluded', 'droneAvailable', 'liveStreaming',
-      'deliveryTime', 'bio', 'categorySlug', 'subcategorySlug', 'categoryGroup',
-      'selectedDistricts', 'selectedStates', 'maxTravelDistance', 'pincode',
+      'deliveryTime', 'bio', 'category', 'categorySlug', 'subcategorySlug', 'categoryGroup',
+      'specialty', 'selectedDistricts', 'selectedStates', 'maxTravelDistance', 'pincode',
     ];
 
     const update = {};
