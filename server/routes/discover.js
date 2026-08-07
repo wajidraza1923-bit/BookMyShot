@@ -1,3 +1,4 @@
+// v2 — location-aware counts with city fallback for legacy creators
 const express = require("express");
 const District = require("../models/District");
 const TrendingSearch = require("../models/TrendingSearch");
