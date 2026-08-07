@@ -151,6 +151,116 @@ const startServer = async () => {
       }
     } catch (e) { /* ignore */ }
 
+    // ═══ CREATOR CATEGORY MIGRATION — runs on every startup, safe to re-run ═══
+    // Fixes legacy creators who have subcategory slugs instead of parent category slugs
+    try {
+      const Creator = require("./models/Creator");
+      const SLUG_MAP = {
+        'wedding-photographer': 'photography-videography',
+        'photographer': 'photography-videography',
+        'photography': 'photography-videography',
+        'videographer': 'photography-videography',
+        'videography': 'photography-videography',
+        'cinematography': 'photography-videography',
+        'candid-photography': 'photography-videography',
+        'pre-wedding': 'photography-videography',
+        'wedding-films': 'photography-videography',
+        'drone-coverage': 'photography-videography',
+        'bridal-shoot': 'photography-videography',
+        'wedding-photographer-videographer': 'photography-videography',
+        'makeup-artist': 'makeup-artists',
+        'bridal-makeup': 'makeup-artists',
+        'party-makeup': 'makeup-artists',
+        'hair-styling': 'makeup-artists',
+        'mehndi-artist': 'makeup-artists',
+        'mehndi': 'makeup-artists',
+        'decoration': 'decoration-floral',
+        'floral': 'decoration-floral',
+        'stage-decoration': 'decoration-floral',
+        'mandap-decoration': 'decoration-floral',
+        'catering': 'catering-services',
+        'veg-catering': 'catering-services',
+        'non-veg-catering': 'catering-services',
+        'tent-house': 'catering-services',
+        'dj': 'djs-entertainment',
+        'anchors-djs': 'djs-entertainment',
+        'wedding-dj': 'djs-entertainment',
+        'live-band': 'djs-entertainment',
+        'wedding': 'photography-videography',
+      };
+      const SLUG_LABEL = {
+        'photography-videography': 'Photography & Videography',
+        'makeup-artists': 'Makeup Artist',
+        'decoration-floral': 'Decoration & Floral',
+        'catering-services': 'Catering Services',
+        'venues': 'Venues',
+        'djs-entertainment': 'DJ & Entertainment',
+        'wedding-planners': 'Wedding Planner',
+        'mehndi-artist': 'Mehndi Artist',
+      };
+      const CITY_LOC = {
+        'poonch': { district: 'Poonch', state: 'Jammu & Kashmir' },
+        'surankote': { district: 'Poonch', state: 'Jammu & Kashmir' },
+        'mendhar': { district: 'Poonch', state: 'Jammu & Kashmir' },
+        'jammu': { district: 'Jammu', state: 'Jammu & Kashmir' },
+        'srinagar': { district: 'Srinagar', state: 'Jammu & Kashmir' },
+        'rajouri': { district: 'Rajouri', state: 'Jammu & Kashmir' },
+        'kathua': { district: 'Kathua', state: 'Jammu & Kashmir' },
+        'udhampur': { district: 'Udhampur', state: 'Jammu & Kashmir' },
+        'anantnag': { district: 'Anantnag', state: 'Jammu & Kashmir' },
+        'baramulla': { district: 'Baramulla', state: 'Jammu & Kashmir' },
+        'doda': { district: 'Doda', state: 'Jammu & Kashmir' },
+      };
+      const VALID_SLUGS = new Set(Object.keys(SLUG_LABEL));
+
+      // Find creators needing migration: legacy slug OR missing district
+      const legacyCreators = await Creator.find({
+        status: { $in: ['approved', 'pending'] },
+        $or: [
+          { categorySlug: { $in: Object.keys(SLUG_MAP) } },
+          { district: { $in: [null, '', 'undefined', undefined] } },
+          { district: /^[a-z]/ }, // lowercase district
+        ]
+      }).lean();
+
+      let migratedCount = 0;
+      for (const c of legacyCreators) {
+        const upd = {};
+        // Fix category slug
+        const slug = (c.categorySlug || '').toLowerCase();
+        if (slug && !VALID_SLUGS.has(slug) && SLUG_MAP[slug]) {
+          upd.categorySlug = SLUG_MAP[slug];
+          upd.subcategorySlug = slug;
+          upd.category = SLUG_LABEL[SLUG_MAP[slug]] || SLUG_MAP[slug];
+          upd.specialty = upd.specialty || SLUG_LABEL[SLUG_MAP[slug]];
+        }
+        // Fix district/state from city
+        const cityKey = (c.city || c.baseCity || '').toLowerCase().trim();
+        const badDistrict = !c.district || c.district === '' || c.district === 'undefined';
+        if (cityKey && badDistrict && CITY_LOC[cityKey]) {
+          const loc = CITY_LOC[cityKey];
+          upd.district = loc.district;
+          upd.state = loc.state;
+          upd.baseCity = c.city || c.baseCity;
+          upd.serviceAreas = [...new Set([...(c.serviceAreas || []), c.city || '', loc.district].filter(Boolean))];
+          if (!c.travelPreference) upd.travelPreference = 'my_district';
+        }
+        // Fix lowercase district
+        if (c.district && c.district === c.district.toLowerCase() && c.district.length > 1) {
+          upd.district = c.district.charAt(0).toUpperCase() + c.district.slice(1);
+        }
+        if (Object.keys(upd).length > 0) {
+          await Creator.updateOne({ _id: c._id }, { $set: upd });
+          migratedCount++;
+        }
+      }
+      if (migratedCount > 0) {
+        console.log(`[Startup] ✅ Migrated ${migratedCount} creators (category slugs + location data)`);
+      }
+    } catch (migErr) {
+      console.log('[Startup] Creator migration error:', migErr.message);
+    }
+
     // Auto-seed CMS content collections if empty (Categories, Districts, etc.)
     try {
       const Category = require("./models/Category");
