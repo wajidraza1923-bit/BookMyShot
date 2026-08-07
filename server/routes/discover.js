@@ -71,14 +71,24 @@ router.get("/categories", async (req, res, next) => {
             { category: new RegExp(safeSlug, 'i') },
             { specialty: new RegExp(safeSlug, 'i') },
           ];
-          // Also match common aliases (e.g. photography-videography → photographer/videographer)
+          // Match common aliases / subcategory slugs under each parent category
+          const ALIASES = {
+            'photography-videography': ['videography', 'cinematography', 'wedding-photographer', 'photographer', 'pre-wedding', 'candid-photography', 'bridal-shoot', 'wedding-films', 'drone-coverage'],
+            'makeup-artists': ['makeup-artist', 'bridal-makeup', 'party-makeup', 'hair-styling', 'mehndi-artist', 'mehndi'],
+            'decoration-floral': ['decoration', 'floral', 'stage-decoration', 'mandap-decoration', 'lighting-led', 'car-decoration'],
+            'catering-services': ['catering', 'veg-catering', 'non-veg-catering', 'tent-house', 'bakery-cakes', 'multi-cuisine'],
+            'djs-entertainment': ['dj', 'anchors-djs', 'wedding-dj', 'live-band', 'singer-performer', 'anchor-emcee', 'dhol-brass-band'],
+            'wedding-planners': ['wedding-planner', 'event-planner', 'coordinator', 'full-wedding-planning'],
+            'venues': ['venue', 'banquet-halls', 'hotels-resorts', 'farm-houses', 'open-lawns'],
+          };
           if (c.slug === 'photography-videography') {
-            catConditions.push({ categorySlug: 'videography' });
-            catConditions.push({ category: /photo/i });
-            catConditions.push({ category: /video/i });
-            catConditions.push({ specialty: /photo/i });
-            catConditions.push({ specialty: /video/i });
+            catConditions.push({ category: /photo/i }, { category: /video/i }, { specialty: /photo/i }, { specialty: /video/i });
           }
+          const aliases = ALIASES[c.slug] || [];
+          aliases.forEach(alias => {
+            catConditions.push({ categorySlug: alias });
+            catConditions.push({ subcategorySlug: alias });
+          });
 
           const query = {
             status: "approved",
