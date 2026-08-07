@@ -148,12 +148,15 @@ export default function SubCategoriesScreen({ navigation, route }: any) {
   };
 
   const handleSubcategoryPress = (item: any) => {
-    // Navigate to AllCreators with category + subcategory filter
+    // Navigate to AllCreators with category + subcategory filter + location
     navigation.navigate('AllCreators', {
       categorySlug: slug,
       subcategorySlug: item.slug,
       subcategoryName: item.name,
       categoryName: name,
+      district: savedLocation.district || '',
+      city: savedLocation.city || '',
+      state: savedLocation.state || '',
     });
   };
 

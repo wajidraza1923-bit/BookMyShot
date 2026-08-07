@@ -21,6 +21,10 @@ export default function AllCreatorsScreen({ navigation, route }: any) {
   const initialCategory = route?.params?.categorySlug || '';
   const initialSubcategory = route?.params?.subcategorySlug || '';
   const screenTitle = route?.params?.subcategoryName || route?.params?.categoryName || 'All Creators';
+  // Location from route params (passed by SubCategoriesScreen) or from saved location
+  const routeDistrict = route?.params?.district || '';
+  const routeCity = route?.params?.city || '';
+  const routeState = route?.params?.state || '';
 
   const [creators, setCreators] = useState<any[]>([]);
   const [districts, setDistricts] = useState<any[]>([]);
@@ -52,17 +56,22 @@ export default function AllCreatorsScreen({ navigation, route }: any) {
         ? api.get('/discovery/districts', { params: { state: savedLocation.state } }).catch(() => ({ data: { districts: [] } }))
         : api.get('/discover/districts').catch(() => ({ data: { data: [] } }));
 
-      // Load creators from discovery API (state-filtered)
+      // Load creators from discovery API (location-filtered)
+      const effectiveDistrict = routeDistrict || savedLocation.district || '';
+      const effectiveCity = routeCity || savedLocation.city || '';
+      const effectiveState = routeState || savedLocation.state || '';
+      
       const crParams: any = {};
-      if (savedLocation.district) crParams.district = savedLocation.district;
-      if (savedLocation.state) crParams.state = savedLocation.state;
+      if (effectiveDistrict) crParams.district = effectiveDistrict;
+      if (effectiveCity) crParams.city = effectiveCity;
+      if (effectiveState) crParams.state = effectiveState;
       if (initialCategory) crParams.category = initialCategory;
       if (initialSubcategory) crParams.subcategory = initialSubcategory;
 
       const [crRes, distRes] = await Promise.all([
-        (savedLocation.state || savedLocation.district)
+        (effectiveState || effectiveDistrict || effectiveCity)
           ? api.get('/discovery/creators-by-area', { params: crParams })
-          : api.get('/creators/search', { params: { q: initialCategory || initialSubcategory || 'all', state: savedLocation.state || undefined, category: initialCategory || undefined } }).catch(() => creatorsAPI.getAll({ category: initialCategory, subcategory: initialSubcategory })),
+          : api.get('/creators/search', { params: { q: initialCategory || initialSubcategory || 'all', state: effectiveState || undefined, category: initialCategory || undefined } }).catch(() => creatorsAPI.getAll({ category: initialCategory, subcategory: initialSubcategory })),
         distPromise,
       ]);
 
