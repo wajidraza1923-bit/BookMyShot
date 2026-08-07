@@ -386,7 +386,14 @@ router.post("/complete-onboarding", protect, authorize("creator"), async (req, r
     // Update user fields (name, phone, state, district)
     const userUpdate = {};
     if (req.body.name) userUpdate.name = req.body.name;
-    if (req.body.phone) userUpdate.phone = req.body.phone;
+    if (req.body.phone) {
+      const phone = req.body.phone.replace(/\D/g, '');
+      if (phone.length < 10) return res.status(400).json({ success: false, message: "Valid 10-digit phone number is required" });
+      userUpdate.phone = phone;
+    } else {
+      // Phone is mandatory for creators
+      return res.status(400).json({ success: false, message: "Phone number is required to complete onboarding" });
+    }
     if (req.body.state) userUpdate.state = req.body.state;
     if (req.body.district) userUpdate.district = req.body.district;
     if (req.body.city) userUpdate.city = req.body.city;
