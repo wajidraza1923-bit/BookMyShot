@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, RefreshControl, ActivityIndicator, Alert, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, RefreshControl, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
+import { Paths, File as FSFile } from 'expo-file-system';
 import { colors, spacing, typography, radius } from '../theme';
 import { useAuth } from '../context/AuthContext';
 import { bookingsAPI } from '../services/api';
@@ -311,43 +314,76 @@ export default function BookingsScreen({ navigation }: any) {
                 {/* Invoice buttons — only for completed bookings */}
                 {(b.status === 'Completed' || b.status === 'completed') && (
                   <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+                    {/* Download / Print Invoice */}
                     <TouchableOpacity style={[s.chatBtn, { flex: 1 }]} onPress={async () => {
                       try {
                         const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-                        const Print = require('expo-print');
                         const tkn = await AsyncStorage.getItem('bms_token');
                         const baseUrl = (api.defaults.baseURL || '').replace(/\/api$/, '') + '/api';
-                        const resp = await fetch(`${baseUrl}/invoice/${b._id}?token=${encodeURIComponent(tkn || '')}`, { headers: { 'Authorization': `Bearer ${tkn}`, 'x-access-token': tkn || '' } });
+                        const resp = await fetch(`${baseUrl}/invoice/${b._id}`, {
+                          headers: { 'Authorization': `Bearer ${tkn}`, 'x-access-token': tkn || '' },
+                        });
                         const htm = await resp.text();
-                        if (!resp.ok || htm.includes('"success":false')) { Alert.alert('Error', 'Failed to load invoice'); return; }
+                        if (!resp.ok || htm.includes('"success":false')) {
+                          Alert.alert('Error', 'Failed to load invoice'); return;
+                        }
                         await Print.printAsync({ html: htm });
-                      } catch { Alert.alert('Error', 'Invoice download failed'); }
+                      } catch (e: any) {
+                        Alert.alert('Error', 'Invoice download failed');
+                      }
                     }} activeOpacity={0.7}>
                       <Ionicons name="document-text-outline" size={16} color={colors.primary} />
                       <Text style={s.chatBtnText}>Download Invoice</Text>
                     </TouchableOpacity>
+
+                    {/* Share PDF — copies file to cacheDirectory first to fix Android permission */}
                     <TouchableOpacity style={[s.chatBtn, { flex: 1, borderColor: 'rgba(34,197,94,0.3)', backgroundColor: 'rgba(34,197,94,0.04)' }]} onPress={async () => {
                       try {
                         const AsyncStorage = require('@react-native-async-storage/async-storage').default;
                         const tkn = await AsyncStorage.getItem('bms_token');
                         const baseUrl = (api.defaults.baseURL || '').replace(/\/api$/, '') + '/api';
-                        const invoiceUrl = `${baseUrl}/invoice/${b._id}?token=${encodeURIComponent(tkn || '')}`;
-                        let shared = false;
-                        try {
-                          const Print = require('expo-print');
-                          const Sharing = require('expo-sharing');
-                          if (Print?.printToFileAsync && Sharing?.shareAsync) {
-                            const resp = await fetch(invoiceUrl, { headers: { 'Authorization': `Bearer ${tkn}`, 'x-access-token': tkn || '' } });
-                            let htm = await resp.text();
-                            if (resp.ok && htm && !htm.includes('"success":false')) {
-                              htm = htm.replace(/<button[^>]*class="print-btn"[^>]*>.*?<\/button>/gi, '');
-                              const result = await Print.printToFileAsync({ html: htm });
-                              if (await Sharing.isAvailableAsync()) { await Sharing.shareAsync(result.uri, { mimeType: 'application/pdf', dialogTitle: 'Share Invoice' }); shared = true; }
-                            }
-                          }
-                        } catch {}
-                        if (!shared) { Linking.openURL(invoiceUrl); }
-                      } catch { Alert.alert('Error', 'Share failed'); }
+                        const invoiceUrl = `${baseUrl}/invoice/${b._id}`;
+
+                        // Fetch the HTML invoice
+                        const resp = await fetch(invoiceUrl, {
+                          headers: { 'Authorization': `Bearer ${tkn}`, 'x-access-token': tkn || '' },
+                        });
+                        if (!resp.ok) { Alert.alert('Error', 'Failed to load invoice'); return; }
+                        let htm = await resp.text();
+                        if (htm.includes('"success":false')) { Alert.alert('Error', 'Failed to load invoice'); return; }
+
+                        // Strip print buttons from HTML
+                        htm = htm.replace(/<button[^>]*class="print-btn"[^>]*>[\s\S]*?<\/button>/gi, '');
+
+                        // Generate PDF from HTML
+                        const printResult = await Print.printToFileAsync({ html: htm, base64: false });
+
+                        // Use new expo-file-system v56 API: copy to named cache file, get contentUri for Android sharing
+                        const srcFile = new FSFile(printResult.uri);
+                        const destFile = new FSFile(Paths.cache, `invoice_${b._id}.pdf`);
+                        // Delete existing first to avoid conflict
+                        if (destFile.exists) { destFile.delete(); }
+                        // Copy src to the cache directory then rename to our filename
+                        await srcFile.copy(destFile);
+
+                        // On Android use contentUri; on iOS use the file URI
+                        const Platform = require('react-native').Platform;
+                        const shareUri = Platform.OS === 'android' ? destFile.contentUri : destFile.uri;
+
+                        // Share the file
+                        const canShare = await Sharing.isAvailableAsync();
+                        if (canShare) {
+                          await Sharing.shareAsync(shareUri, {
+                            mimeType: 'application/pdf',
+                            dialogTitle: 'Share Invoice',
+                            UTI: 'com.adobe.pdf',
+                          });
+                        } else {
+                          Alert.alert('Sharing not available', 'Your device does not support sharing.');
+                        }
+                      } catch (e: any) {
+                        Alert.alert('Error', 'Failed to generate PDF. Please try again.');
+                      }
                     }} activeOpacity={0.7}>
                       <Ionicons name="share-outline" size={16} color="#22C55E" />
                       <Text style={[s.chatBtnText, { color: '#22C55E' }]}>Share PDF</Text>
