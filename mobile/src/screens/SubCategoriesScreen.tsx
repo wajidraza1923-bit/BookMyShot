@@ -6,6 +6,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import api from '../services/api';
+import { useServiceLocation } from '../context/LocationContext';
 
 const { width } = Dimensions.get('window');
 const CARD_W = (width - 20 * 2 - 12) / 2; // 2 columns
@@ -110,6 +111,7 @@ const FALLBACK_SUBCATEGORIES: Record<string, any[]> = {
 
 export default function SubCategoriesScreen({ navigation, route }: any) {
   const { slug, name, icon } = route.params || {};
+  const { location: savedLocation } = useServiceLocation();
   const [subcategories, setSubcategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -122,7 +124,10 @@ export default function SubCategoriesScreen({ navigation, route }: any) {
     setLoading(true);
     setError(false);
     try {
-      const res = await api.get(`/subcategories/${slug}`);
+      const locParams = savedLocation.district || savedLocation.city || savedLocation.state
+        ? `?district=${encodeURIComponent(savedLocation.district || '')}&city=${encodeURIComponent(savedLocation.city || '')}&state=${encodeURIComponent(savedLocation.state || '')}`
+        : '';
+      const res = await api.get(`/subcategories/${slug}${locParams}`);
       const apiData = res.data?.data || [];
       const fallback = FALLBACK_SUBCATEGORIES[slug] || [];
       
