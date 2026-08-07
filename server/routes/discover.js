@@ -58,9 +58,9 @@ router.get("/categories", async (req, res, next) => {
               locConditions.push({ city: new RegExp(`^${userCity}$`, 'i') });
               locConditions.push({ baseCity: new RegExp(`^${userCity}$`, 'i') });
             }
-            if (userState) {
-              locConditions.push({ state: new RegExp(`^${userState}$`, 'i') });
-            }
+            // NOTE: do NOT add state to locConditions — state alone is too broad and would
+            // match ALL creators in the state regardless of their category/district.
+            // State filter is only used for discovery (AllCreators screen), not for counts.
             if (locConditions.length > 0) locationFilter.$or = locConditions;
           }
 

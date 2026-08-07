@@ -128,9 +128,7 @@ router.get("/:categorySlug", async (req, res, next) => {
               locConditions.push({ city: new RegExp(`^${userCity}$`, 'i') });
               locConditions.push({ baseCity: new RegExp(`^${userCity}$`, 'i') });
             }
-            if (userState) {
-              locConditions.push({ state: new RegExp(`^${userState}$`, 'i') });
-            }
+            // No state in locConditions — state is too broad for subcategory counts
             if (locConditions.length > 0) locationFilter.$or = locConditions;
           }
 
