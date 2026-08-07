@@ -116,29 +116,46 @@ router.get("/:categorySlug", async (req, res, next) => {
           const userState = (req.query.state || '').trim();
           if (userDistrict || userCity || userState) {
             const locConditions = [];
-            if (userDistrict) { locConditions.push({ serviceAreas: { $elemMatch: { $regex: new RegExp(`^${userDistrict}$`, 'i') } } }); locConditions.push({ district: new RegExp(`^${userDistrict}$`, 'i') }); }
-            if (userCity) { locConditions.push({ serviceAreas: { $elemMatch: { $regex: new RegExp(`^${userCity}$`, 'i') } } }); locConditions.push({ city: new RegExp(`^${userCity}$`, 'i') }); locConditions.push({ baseCity: new RegExp(`^${userCity}$`, 'i') }); }
-            if (userState) { locConditions.push({ state: new RegExp(`^${userState}$`, 'i'), travelPreference: { $in: ['entire_state', 'pan_india'] } }); }
+            if (userDistrict) {
+              locConditions.push({ serviceAreas: { $elemMatch: { $regex: new RegExp(`^${userDistrict}$`, 'i') } } });
+              locConditions.push({ district: new RegExp(`^${userDistrict}$`, 'i') });
+            }
+            if (userCity) {
+              locConditions.push({ serviceAreas: { $elemMatch: { $regex: new RegExp(`^${userCity}$`, 'i') } } });
+              locConditions.push({ city: new RegExp(`^${userCity}$`, 'i') });
+              locConditions.push({ baseCity: new RegExp(`^${userCity}$`, 'i') });
+            }
+            if (userState) {
+              locConditions.push({ state: new RegExp(`^${userState}$`, 'i') });
+            }
             if (locConditions.length > 0) locationFilter.$or = locConditions;
           }
-          // Match creators who have this subcategory via any of these fields
-          count = await Creator.countDocuments({
+
+          // Match creators who have this subcategory via subcategorySlug, categorySlug, specialty, or category (text)
+          const subNameSafe = sub.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // escape for regex
+          const catConditions = [
+            { subcategorySlug: sub.slug },
+            { categorySlug: sub.slug },
+            { specialty: new RegExp(subNameSafe, 'i') },
+            { category: new RegExp(subNameSafe, 'i') },
+          ];
+
+          const query = {
             status: "approved",
-            ...locationFilter,
+            $or: catConditions,
             $and: [
-              { $or: [
-                { subcategorySlug: sub.slug },
-                { categorySlug: sub.slug },
-                { specialty: new RegExp(sub.name.replace(/[-\s]+/g, '.*'), 'i') },
-                { category: new RegExp(sub.name.replace(/[-\s]+/g, '.*'), 'i') },
-              ]},
               { $or: [
                 { subscriptionStatus: { $in: ["free", "active", "trial"] } },
                 { subscriptionStatus: { $exists: false } },
                 { subscriptionStatus: null },
               ]},
             ],
-          });
+          };
+          if (Object.keys(locationFilter).length > 0) {
+            query.$and.push(locationFilter);
+          }
+
+          count = await Creator.countDocuments(query);
         } catch {}
         return { ...sub, creatorCount: count };
       })

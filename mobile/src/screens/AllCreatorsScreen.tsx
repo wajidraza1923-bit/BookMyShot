@@ -65,13 +65,29 @@ export default function AllCreatorsScreen({ navigation, route }: any) {
       if (effectiveDistrict) crParams.district = effectiveDistrict;
       if (effectiveCity) crParams.city = effectiveCity;
       if (effectiveState) crParams.state = effectiveState;
-      if (initialCategory) crParams.category = initialCategory;
-      if (initialSubcategory) crParams.subcategory = initialSubcategory;
+      // Pass both category and subcategory so server can filter correctly
+      if (initialSubcategory) {
+        crParams.subcategory = initialSubcategory;
+        // Also pass the parent category for broader matching
+        if (initialCategory) crParams.category = initialCategory;
+      } else if (initialCategory) {
+        crParams.category = initialCategory;
+      }
+
+      const hasLocation = effectiveState || effectiveDistrict || effectiveCity;
 
       const [crRes, distRes] = await Promise.all([
-        (effectiveState || effectiveDistrict || effectiveCity)
+        hasLocation
           ? api.get('/discovery/creators-by-area', { params: crParams })
-          : api.get('/creators/search', { params: { q: initialCategory || initialSubcategory || 'all', state: effectiveState || undefined, category: initialCategory || undefined } }).catch(() => creatorsAPI.getAll({ category: initialCategory, subcategory: initialSubcategory })),
+          : (initialSubcategory || initialCategory)
+            // No location but have category/subcategory — use search param so API accepts it
+            ? api.get('/discovery/creators-by-area', {
+                params: {
+                  ...crParams,
+                  search: (initialSubcategory || initialCategory).replace(/-/g, ' '),
+                },
+              }).catch(() => creatorsAPI.getAll({ category: initialCategory }))
+            : creatorsAPI.getAll({ category: initialCategory }),
         distPromise,
       ]);
 

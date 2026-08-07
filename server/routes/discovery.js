@@ -80,27 +80,43 @@ router.get("/creators-by-area", async (req, res, next) => {
         'venues': ['venues', 'venue', 'banquet-hall', 'resort', 'hotel', 'destination'],
       };
 
-      const subcats = CATEGORY_MAP[category.toLowerCase()] || [category];
-      // Build regex OR conditions for all subcategory slugs
-      const catConditions = [];
-      subcats.forEach(s => {
-        const r = new RegExp(s, 'i');
-        catConditions.push({ categorySlug: r });
-        catConditions.push({ subcategorySlug: r });
-        catConditions.push({ category: r });
-      });
-      catConditions.push({ specialty: new RegExp(category.replace(/[-\s]+/g, '.*'), "i") });
-
       if (subcategory) {
+        // Specific subcategory selected — match by slug + specialty/category text
+        const subNameSafe = subcategory.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const subSlugHuman = subcategory.replace(/-/g, ' ');
         baseFilter.$or = [
-          { categorySlug: category, subcategorySlug: subcategory },
-          { categorySlug: subcategory },
           { subcategorySlug: subcategory },
-          { specialty: new RegExp(subcategory.replace(/[-\s]+/g, '.*'), "i") },
+          { categorySlug: subcategory },
+          { specialty: new RegExp(subNameSafe, 'i') },
+          { category: new RegExp(subNameSafe, 'i') },
+          { specialty: new RegExp(subSlugHuman, 'i') },
+          { category: new RegExp(subSlugHuman, 'i') },
         ];
       } else {
+        const subcats = CATEGORY_MAP[category.toLowerCase()] || [category];
+        // Build regex OR conditions for all subcategory slugs
+        const catConditions = [];
+        subcats.forEach(s => {
+          const r = new RegExp(s, 'i');
+          catConditions.push({ categorySlug: r });
+          catConditions.push({ subcategorySlug: r });
+          catConditions.push({ category: r });
+        });
+        catConditions.push({ specialty: new RegExp(category.replace(/[-\s]+/g, '.*'), "i") });
         baseFilter.$or = catConditions;
       }
+    } else if (subcategory && subcategory !== 'all') {
+      // subcategory passed without category — still filter by it
+      const subNameSafe = subcategory.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const subSlugHuman = subcategory.replace(/-/g, ' ');
+      baseFilter.$or = [
+        { subcategorySlug: subcategory },
+        { categorySlug: subcategory },
+        { specialty: new RegExp(subNameSafe, 'i') },
+        { category: new RegExp(subNameSafe, 'i') },
+        { specialty: new RegExp(subSlugHuman, 'i') },
+        { category: new RegExp(subSlugHuman, 'i') },
+      ];
     }
     if (minPrice) baseFilter.budgetMin = { $gte: Number(minPrice) };
     if (maxPrice) baseFilter.budgetMax = { $lte: Number(maxPrice) };
