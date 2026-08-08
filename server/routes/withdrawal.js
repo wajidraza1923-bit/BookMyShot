@@ -150,9 +150,39 @@ router.put("/admin/approve/:id", protect, authorize("admin"), async (req, res, n
 router.put("/admin/pay/:id", protect, authorize("admin"), async (req, res, next) => {
   try {
     const { utrNumber, paymentDate, adminNotes } = req.body;
-    if (!utrNumber) return res.status(400).json({ success: false, message: "UTR number required" });
-    const request = await WithdrawalRequest.findByIdAndUpdate(req.params.id, { status: "paid", utrNumber, paymentDate: paymentDate || new Date(), adminNotes: adminNotes || "", paidAt: new Date() }, { new: true });
-    res.json({ success: true, data: request, message: "Withdrawal marked as paid" });
+    // UTR is now optional — admin can mark paid without UTR and add it later
+    const request = await WithdrawalRequest.findByIdAndUpdate(
+      req.params.id,
+      {
+        status: "paid",
+        utrNumber: utrNumber || "",
+        paymentDate: paymentDate || new Date(),
+        adminNotes: adminNotes || "",
+        paidAt: new Date(),
+        paidBy: req.user._id,
+      },
+      { new: true }
+    ).populate("user", "name email phone");
+
+    if (!request) return res.status(404).json({ success: false, message: "Withdrawal not found" });
+
+    // Send push notification to user
+    try {
+      const User = require("../models/User");
+      const pushService = require("../services/pushService");
+      const userDoc = await User.findById(request.user?._id || request.user).select("pushToken pushPlatform");
+      if (userDoc?.pushToken) {
+        await pushService.sendPush(
+          userDoc.pushToken,
+          "BookMyShot — Withdrawal Paid 💸",
+          `₹${request.amount.toLocaleString('en-IN')} has been transferred to your bank account.${utrNumber ? ` UTR: ${utrNumber}` : ''}`,
+          { screen: "Wallet" },
+          userDoc.pushPlatform
+        );
+      }
+    } catch {}
+
+    res.json({ success: true, data: request, message: `₹${request.amount} marked as paid successfully` });
   } catch (e) { next(e); }
 });
 

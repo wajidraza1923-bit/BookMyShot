@@ -67,13 +67,20 @@ export default function AdminWithdrawals({ navigation }: any) {
   };
 
   const submitPay = async () => {
-    if (!utr.trim()) { Alert.alert('Error', 'UTR number is required'); return; }
+    // UTR is optional — confirm and mark paid directly
     try {
       await api.put(`/withdrawal/admin/pay/${selectedReq._id}`, {
-        utrNumber: utr.trim(), adminNotes: payNotes.trim() || undefined,
+        utrNumber: utr.trim() || undefined,
+        adminNotes: payNotes.trim() || undefined,
       });
-      setPayModal(false); setUtr(''); setPayNotes(''); loadData();
-    } catch (e: any) { Alert.alert('Error', e.message || 'Failed'); }
+      setPayModal(false);
+      setUtr('');
+      setPayNotes('');
+      Alert.alert('✅ Marked as Paid', `₹${selectedReq?.amount?.toLocaleString('en-IN')} withdrawal marked as paid.${utr.trim() ? `\nUTR: ${utr.trim()}` : ''}`);
+      loadData();
+    } catch (e: any) {
+      Alert.alert('Error', e.response?.data?.message || e.message || 'Failed to mark as paid');
+    }
   };
 
   const submitReject = async () => {
@@ -198,14 +205,50 @@ export default function AdminWithdrawals({ navigation }: any) {
       <Modal visible={payModal} transparent animationType="fade">
         <View style={s.modalOverlay}>
           <View style={s.modal}>
-            <Text style={s.modalTitle}>💳 Mark as Paid</Text>
-            <Text style={s.fieldLabel}>UTR / Transaction Number *</Text>
-            <TextInput style={s.input} value={utr} onChangeText={setUtr} placeholder="Enter UTR number" />
-            <Text style={s.fieldLabel}>Admin Notes (optional)</Text>
-            <TextInput style={[s.input, { height: 70, textAlignVertical: 'top' }]} value={payNotes} onChangeText={setPayNotes} placeholder="Notes..." multiline />
+            <Text style={s.modalTitle}>💳 Confirm Payment</Text>
+
+            {/* Summary card */}
+            {selectedReq && (
+              <View style={{ backgroundColor: '#F8F6FF', borderRadius: 12, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: '#EDE9FE' }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#1F2937', marginBottom: 8 }}>
+                  ₹{selectedReq.amount?.toLocaleString('en-IN')} → {selectedReq.user?.name || 'User'}
+                </Text>
+                <Text style={{ fontSize: 11, color: '#6B7280' }}>Account: {selectedReq.bankAccountNumber}</Text>
+                <Text style={{ fontSize: 11, color: '#6B7280' }}>IFSC: {selectedReq.ifscCode}</Text>
+                {selectedReq.upiId ? <Text style={{ fontSize: 11, color: '#6B7280' }}>UPI: {selectedReq.upiId}</Text> : null}
+              </View>
+            )}
+
+            <Text style={s.fieldLabel}>UTR / Transaction Number (optional)</Text>
+            <TextInput
+              style={s.input}
+              value={utr}
+              onChangeText={setUtr}
+              placeholder="Enter UTR if available"
+              placeholderTextColor="#9CA3AF"
+            />
+            <Text style={s.fieldLabel}>Notes (optional)</Text>
+            <TextInput
+              style={[s.input, { height: 60, textAlignVertical: 'top' }]}
+              value={payNotes}
+              onChangeText={setPayNotes}
+              placeholder="Any notes..."
+              multiline
+              placeholderTextColor="#9CA3AF"
+            />
+
+            <Text style={{ fontSize: 11, color: '#6B7280', marginTop: 10, marginBottom: 4, lineHeight: 16 }}>
+              Clicking "Mark as Paid" will mark this withdrawal as completed and notify the user.
+            </Text>
+
             <View style={s.modalBtns}>
-              <TouchableOpacity style={s.cancelBtn} onPress={() => setPayModal(false)}><Text style={s.cancelText}>Cancel</Text></TouchableOpacity>
-              <TouchableOpacity style={s.submitBtn} onPress={submitPay}><Text style={s.submitText}>Mark as Paid</Text></TouchableOpacity>
+              <TouchableOpacity style={s.cancelBtn} onPress={() => { setPayModal(false); setUtr(''); setPayNotes(''); }}>
+                <Text style={s.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[s.submitBtn, { backgroundColor: '#10B981' }]} onPress={submitPay}>
+                <Ionicons name="checkmark-circle" size={14} color="#fff" />
+                <Text style={[s.submitText, { marginLeft: 4 }]}>Mark as Paid</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
