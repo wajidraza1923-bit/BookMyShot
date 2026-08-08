@@ -227,7 +227,14 @@ export default function CreatorBookings({ navigation }: any) {
         </TouchableOpacity>
 
         {/* ═══ EXPANDED VIEW ═══ */}
-        {isExpanded && (
+        {isExpanded && (() => {
+          // Rule: if booking came from customer inquiry (not creator-created),
+          // Record Pay and Confirm Payment are locked until customer pays advance via Razorpay
+          const isCreatorCreated = item.createdByCreator || item.source === 'creator_manual' || item.source === 'walk_in';
+          const advancePaid = item.bookingFeePaid && item.bookingFeePaymentId;
+          const paymentActionsLocked = !isCreatorCreated && !advancePaid;
+
+          return (
           <View style={styles.expanded}>
             {/* Quick Actions — Completed vs Active */}
             {item.status === 'Completed' || item.status === 'completed' ? (
@@ -251,10 +258,34 @@ export default function CreatorBookings({ navigation }: any) {
               <>
                 <View style={styles.quickActions}>
                   <ActionBtn icon="cash-outline" label="Set Amount" onPress={() => { setActiveBookingId(item._id); setAmountInput(String(item.amount || '')); setShowAmountModal(true); }} />
-                  <ActionBtn icon="card-outline" label="Record Pay" onPress={() => { setActiveBookingId(item._id); setShowPaymentModal(true); }} />
+                  {/* Record Pay — locked until customer pays advance via Razorpay (for customer inquiries) */}
+                  <ActionBtn
+                    icon="card-outline"
+                    label="Record Pay"
+                    onPress={() => {
+                      if (paymentActionsLocked) {
+                        setToast({ visible: true, type: 'warning', title: 'Advance Not Paid', message: 'Customer must pay advance via BookMyShot before you can record additional payments.' });
+                        return;
+                      }
+                      setActiveBookingId(item._id);
+                      setShowPaymentModal(true);
+                    }}
+                    locked={paymentActionsLocked}
+                  />
                   <ActionBtn icon="checkmark-done" label="Mark Paid" onPress={() => markPaid(item._id)} />
                   <ActionBtn icon="chatbubble-outline" label="Chat" onPress={() => navigation.navigate('BookingChat', { bookingId: item._id })} />
                 </View>
+
+                {/* Advance not paid warning */}
+                {paymentActionsLocked && (
+                  <View style={styles.advanceLockBanner}>
+                    <Ionicons name="lock-closed" size={13} color="#D97706" />
+                    <Text style={styles.advanceLockText}>
+                      Waiting for customer to pay advance via BookMyShot. Record Pay & Confirm Payment will unlock after advance is paid.
+                    </Text>
+                  </View>
+                )}
+
                 {(item.amount || 0) > 0 && ((item.amount || 0) - (item.advancePaid || item.bookingFeeAmount || 0)) > 0 && (
                   <View style={[styles.quickActions, { marginTop: 6 }]}>
                     <ActionBtn icon="logo-whatsapp" label="Remind" onPress={() => {
@@ -277,12 +308,21 @@ export default function CreatorBookings({ navigation }: any) {
               </View>
             )}
 
-            {/* ═══ CONFIRM PAYMENT RECEIVED — Only for completed bookings without payment confirmation ═══ */}
+            {/* ═══ CONFIRM PAYMENT RECEIVED — locked until advance paid (for customer inquiries) ═══ */}
             {(item.status === 'Completed' || item.status === 'completed' || ['Creator Accepted', 'Payment Approved', 'Event Scheduled'].includes(item.status)) && !item.paymentConfirmed && (
-              <TouchableOpacity style={styles.confirmPayBtn} onPress={() => confirmPaymentReceived(item._id)} activeOpacity={0.85}>
-                <Ionicons name="checkmark-circle" size={16} color="#FFFFFF" />
-                <Text style={styles.confirmPayText}>Confirm Full Payment Received</Text>
-              </TouchableOpacity>
+              paymentActionsLocked ? (
+                <View style={[styles.advanceLockBanner, { marginTop: 8 }]}>
+                  <Ionicons name="lock-closed" size={13} color="#D97706" />
+                  <Text style={styles.advanceLockText}>
+                    "Confirm Full Payment Received" is available after customer pays advance via BookMyShot.
+                  </Text>
+                </View>
+              ) : (
+                <TouchableOpacity style={styles.confirmPayBtn} onPress={() => confirmPaymentReceived(item._id)} activeOpacity={0.85}>
+                  <Ionicons name="checkmark-circle" size={16} color="#FFFFFF" />
+                  <Text style={styles.confirmPayText}>Confirm Full Payment Received</Text>
+                </TouchableOpacity>
+              )
             )}
 
             {/* Payment Already Confirmed Badge */}
@@ -301,7 +341,8 @@ export default function CreatorBookings({ navigation }: any) {
               <Text style={styles.detailsBtnText}>View Full Details</Text><Ionicons name="arrow-forward" size={14} color={colors.primary} />
             </TouchableOpacity>
           </View>
-        )}
+          );
+        })()}
       </View>
     );
   };
@@ -411,8 +452,13 @@ export default function CreatorBookings({ navigation }: any) {
   );
 }
 
-function ActionBtn({ icon, label, onPress }: { icon: string; label: string; onPress: () => void }) {
-  return <TouchableOpacity style={styles.actionBtn} onPress={onPress}><Ionicons name={icon as any} size={16} color={colors.primary} /><Text style={styles.actionLabel}>{label}</Text></TouchableOpacity>;
+function ActionBtn({ icon, label, onPress, locked = false }: { icon: string; label: string; onPress: () => void; locked?: boolean }) {
+  return (
+    <TouchableOpacity style={[styles.actionBtn, locked && { opacity: 0.45 }]} onPress={onPress}>
+      <Ionicons name={locked ? 'lock-closed-outline' : icon as any} size={16} color={locked ? colors.textMuted : colors.primary} />
+      <Text style={[styles.actionLabel, locked && { color: colors.textMuted }]}>{label}</Text>
+    </TouchableOpacity>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -461,6 +507,8 @@ const styles = StyleSheet.create({
   completeText: { ...typography.labelMd, color: colors.success, fontWeight: '600' },
   confirmPayBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingVertical: spacing.md, borderRadius: radius.md, backgroundColor: '#10B981', marginBottom: spacing.md, elevation: 2, shadowColor: '#10B981', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 6 },
   confirmPayText: { ...typography.labelLg, color: '#FFFFFF', fontWeight: '700' },
+  advanceLockBanner: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, padding: spacing.md, backgroundColor: '#FFFBEB', borderRadius: radius.md, borderWidth: 1, borderColor: '#FDE68A', marginBottom: spacing.md },
+  advanceLockText: { ...typography.caption, color: '#92400E', flex: 1, lineHeight: 16 },
   confirmedBadge: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, backgroundColor: '#ECFDF5', borderRadius: radius.md, borderWidth: 1, borderColor: '#D1FAE5', marginBottom: spacing.md },
   confirmedTitle: { ...typography.labelMd, color: '#065F46', fontWeight: '700' },
   confirmedSub: { ...typography.caption, color: '#6B7280', marginTop: 1 },
