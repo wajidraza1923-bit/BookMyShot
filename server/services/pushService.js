@@ -18,12 +18,23 @@ const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
  * @param {string} title - Notification title
  * @param {string} body - Notification body
  * @param {object} data - Custom data payload (type, targetScreen, targetId)
+ * @param {string} [skipIfSameAs] - Optional: skip if this userId matches target (prevents admin self-notify)
  */
-async function sendToUser(userId, title, body, data = {}) {
+async function sendToUser(userId, title, body, data = {}, skipIfSameAs = null) {
   try {
-    const user = await User.findById(userId).select("pushToken pushPlatform");
+    // Skip if target is same as the action performer (e.g. admin marking their own withdrawal)
+    if (skipIfSameAs && String(userId) === String(skipIfSameAs)) {
+      console.log(`[Push] Skipped — target ${userId} is same as action performer`);
+      return false;
+    }
+    const user = await User.findById(userId).select("pushToken pushPlatform role");
     if (!user || !user.pushToken) {
       console.log(`[Push] No token for user ${userId}`);
+      return false;
+    }
+    // Never push to admin users (they manage the system, not receive user notifications)
+    if (user.role === "admin") {
+      console.log(`[Push] Skipped — target ${userId} is admin`);
       return false;
     }
     return await sendPush(user.pushToken, title, body, data, user.pushPlatform);
@@ -41,6 +52,7 @@ async function sendToUsers(userIds, title, body, data = {}) {
     const users = await User.find({
       _id: { $in: userIds },
       pushToken: { $exists: true, $ne: "" },
+      role: { $ne: "admin" }, // Never push to admin accounts
     }).select("pushToken pushPlatform");
     const tokens = users.map(u => u.pushToken).filter(Boolean);
     if (tokens.length === 0) return false;
@@ -190,4 +202,4 @@ async function sendPushBatch(tokens, title, body, data = {}) {
   return successCount > 0;
 }
 
-module.exports = { sendToUser, sendToUsers, sendToRole, broadcast };
+module.exports = { sendToUser, sendToUsers, sendToRole, broadcast, sendPush };

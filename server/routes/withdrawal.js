@@ -166,20 +166,19 @@ router.put("/admin/pay/:id", protect, authorize("admin"), async (req, res, next)
 
     if (!request) return res.status(404).json({ success: false, message: "Withdrawal not found" });
 
-    // Send push notification to user
+    // Send push notification to user (not to admin if same device)
     try {
-      const User = require("../models/User");
       const pushService = require("../services/pushService");
-      const userDoc = await User.findById(request.user?._id || request.user).select("pushToken pushPlatform");
-      if (userDoc?.pushToken) {
-        await pushService.sendPush(
-          userDoc.pushToken,
-          "BookMyShot — Withdrawal Paid 💸",
-          `₹${request.amount.toLocaleString('en-IN')} has been transferred to your bank account.${utrNumber ? ` UTR: ${utrNumber}` : ''}`,
-          { screen: "Wallet" },
-          userDoc.pushPlatform
-        );
-      }
+      const withdrawalUserId = String(request.user?._id || request.user);
+      const adminUserId = String(req.user._id);
+      // sendToUser already skips admin roles — also skip if same user
+      await pushService.sendToUser(
+        withdrawalUserId,
+        "BookMyShot — Withdrawal Paid 💸",
+        `₹${request.amount.toLocaleString('en-IN')} has been transferred to your bank account.${utrNumber ? ` UTR: ${utrNumber}` : ''}`,
+        { screen: "Wallet" },
+        adminUserId // skip if same as admin
+      );
     } catch {}
 
     res.json({ success: true, data: request, message: `₹${request.amount} marked as paid successfully` });
