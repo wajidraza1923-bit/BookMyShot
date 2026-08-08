@@ -27,14 +27,24 @@ export default function CreatorBookings({ navigation }: any) {
   const [eventForm, setEventForm] = useState({ name: '', date: '', location: '' });
   const [savingPayment, setSavingPayment] = useState(false);
 
+  // Master Command commission % — used for advance/commission display (never hardcode 5%)
+  const [masterCommission, setMasterCommission] = useState(7);
+
   // Premium feedback states (replacing Alert.alert)
   const [toast, setToast] = useState<{ visible: boolean; type: 'success' | 'error' | 'info' | 'warning'; title: string; message?: string }>({ visible: false, type: 'info', title: '' });
   const [confirmModal, setConfirmModal] = useState<{ visible: boolean; title: string; message: string; onConfirm: () => void; confirmText?: string; destructive?: boolean }>({ visible: false, title: '', message: '', onConfirm: () => {} });
 
   const load = useCallback(async () => {
     try {
-      const res = await api.get('/creator/booking-requests');
-      setBookings(res.data?.bookings || []);
+      const [bookingsRes, msRes] = await Promise.all([
+        api.get('/creator/booking-requests'),
+        api.get('/master-settings').catch(() => ({ data: { data: null } })),
+      ]);
+      setBookings(bookingsRes.data?.bookings || []);
+      // Set master commission % — this IS the advance/booking fee percentage
+      const ms = msRes.data?.data;
+      if (ms?.bookingFeePercent) setMasterCommission(ms.bookingFeePercent);
+      else if (ms?.bookingCommission) setMasterCommission(ms.bookingCommission);
     } catch {} finally { setLoading(false); }
   }, []);
 
@@ -193,11 +203,18 @@ export default function CreatorBookings({ navigation }: any) {
             </View>
           )}
 
-          {/* Commission + Net */}
-          {item.commissionAmount > 0 && (
+          {/* Commission = Advance for Booking — always show, dynamic from Master Command */}
+          {item.amount > 0 && (
             <View style={styles.commRow}>
-              <Text style={styles.commText}>Commission ({item.commissionPercent || 5}%): <Text style={{ color: colors.error }}>-₹{item.commissionAmount.toLocaleString('en-IN')}</Text></Text>
-              <Text style={styles.commText}>You receive: <Text style={{ color: colors.primary, fontWeight: '700' }}>₹{(item.creatorReceivable || 0).toLocaleString('en-IN')}</Text></Text>
+              {(() => {
+                const commPct = item.bookingFeePercent || item.commissionPercentUsed || item.commissionPercent || masterCommission;
+                const advanceAmt = item.bookingFeeAmount || item.commissionAmount || Math.round((item.amount || 0) * commPct / 100);
+                const youReceive = (item.amount || 0) - advanceAmt;
+                return (<>
+                  <Text style={styles.commText}>Advance ({commPct}%): <Text style={{ color: colors.warning }}>₹{advanceAmt.toLocaleString('en-IN')}</Text></Text>
+                  <Text style={styles.commText}>You receive: <Text style={{ color: colors.primary, fontWeight: '700' }}>₹{youReceive.toLocaleString('en-IN')}</Text></Text>
+                </>);
+              })()}
             </View>
           )}
 
@@ -326,7 +343,12 @@ export default function CreatorBookings({ navigation }: any) {
           <Text style={styles.modalTitle}>Set Project Amount</Text>
           <Text style={styles.modalSub}>Commission calculated on highest amount (never decreases)</Text>
           <TextInput style={styles.modalInput} value={amountInput} onChangeText={setAmountInput} keyboardType="numeric" placeholder="₹ Amount" placeholderTextColor={colors.textMuted} selectionColor={colors.primary} autoFocus />
-          {parseInt(amountInput) > 0 && <Text style={styles.modalCalc}>Commission (5%): ₹{Math.round(parseInt(amountInput) * 0.05).toLocaleString('en-IN')} • You: ₹{Math.round(parseInt(amountInput) * 0.95).toLocaleString('en-IN')}</Text>}
+          {parseInt(amountInput) > 0 && (() => {
+            const amt = parseInt(amountInput);
+            const commPct = masterCommission;
+            const advance = Math.round(amt * commPct / 100);
+            return <Text style={styles.modalCalc}>Advance ({commPct}%): ₹{advance.toLocaleString('en-IN')} • You receive: ₹{(amt - advance).toLocaleString('en-IN')}</Text>;
+          })()}
           <View style={styles.modalBtns}>
             <TouchableOpacity style={styles.modalCancel} onPress={() => setShowAmountModal(false)}><Text style={styles.modalCancelText}>Cancel</Text></TouchableOpacity>
             <TouchableOpacity style={styles.modalConfirm} onPress={() => { const b = bookings.find(x => x._id === activeBookingId); b?.status === 'Booking Created' ? acceptBooking() : setProjectAmount(); }}><Text style={styles.modalConfirmText}>{bookings.find(x => x._id === activeBookingId)?.status === 'Booking Created' ? 'Accept' : 'Save'}</Text></TouchableOpacity>

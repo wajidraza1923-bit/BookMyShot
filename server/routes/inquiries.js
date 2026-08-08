@@ -217,23 +217,51 @@ router.get("/creator", protect, async (req, res, next) => {
   }
 });
 
-// Update inquiry status (creator)
+// Update inquiry status (creator accepts/rejects)
 router.patch("/:id/status", protect, async (req, res, next) => {
   try {
     const creator = await Creator.findOne({ user: req.user._id });
-    const inquiry = await Inquiry.findOne({ _id: req.params.id, creator: creator?._id });
+    const inquiry = await Inquiry.findOne({ _id: req.params.id, creator: creator?._id })
+      .populate("user", "name email phone");
     if (!inquiry) return res.status(404).json({ success: false, message: "Inquiry not found" });
 
-    inquiry.status = req.body.status || inquiry.status;
+    const newStatus = req.body.status || inquiry.status;
+    inquiry.status = newStatus;
     await inquiry.save();
 
-    // Notify user
-    await Notification.create({
-      user: inquiry.user,
-      title: "📋 Inquiry Update",
-      message: `Your inquiry status has been updated to "${inquiry.status}"`,
-      type: "inquiry",
-    });
+    // Notify user — in-app
+    if (inquiry.user) {
+      await Notification.create({
+        user: inquiry.user._id || inquiry.user,
+        title: newStatus === "accepted" ? "🎉 Inquiry Accepted!" : "📋 Inquiry Update",
+        message: newStatus === "accepted"
+          ? `Great news! A creator has accepted your inquiry for ${inquiry.eventType}. You can now proceed to booking.`
+          : `Your inquiry status has been updated to "${newStatus}"`,
+        type: "inquiry",
+      });
+
+      // ═══ PUSH NOTIFICATION to customer ═══
+      try {
+        const pushService = require("../services/pushService");
+        const userId = (inquiry.user._id || inquiry.user).toString();
+        const creatorName = (await User.findById(req.user._id).select("name"))?.name || "Creator";
+        if (newStatus === "accepted") {
+          pushService.sendToUser(
+            userId,
+            "BookMyShot — Inquiry Accepted! 🎉",
+            `${creatorName} accepted your ${inquiry.eventType} inquiry. Tap to view and confirm booking.`,
+            { screen: "Bookings" }
+          );
+        } else if (newStatus === "rejected" || newStatus === "declined") {
+          pushService.sendToUser(
+            userId,
+            "BookMyShot — Inquiry Update",
+            `Your ${inquiry.eventType} inquiry was declined. Try another creator.`,
+            { screen: "Bookings" }
+          );
+        }
+      } catch (pushErr) { console.log("[Inquiry status push] error:", pushErr.message); }
+    }
 
     res.json({ success: true, inquiry });
   } catch (e) {
