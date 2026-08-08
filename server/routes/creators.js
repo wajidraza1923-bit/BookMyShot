@@ -417,10 +417,11 @@ router.post("/complete-onboarding", protect, authorize("creator"), async (req, r
       // ═══ PUSH NOTIFICATION to admins ═══
       try {
         const pushService = require("../services/pushService");
-        const adminIds = admins.map(a => a._id.toString());
-        for (const adminId of adminIds) {
-          pushService.sendToUser(adminId, "BookMyShot — New Creator Application 🆕", `New creator application submitted by ${req.body.name || req.user.name}.`);
-        }
+        pushService.sendToAdmins(
+          "BookMyShot — New Creator Application 🆕",
+          `${req.body.name || req.user.name} has submitted their profile for verification.`,
+          { screen: "AdminCreators" }
+        );
       } catch (pushErr) { console.log("[Onboarding] Push to admins error:", pushErr.message); }
     } catch (e) { /* non-fatal */ }
 

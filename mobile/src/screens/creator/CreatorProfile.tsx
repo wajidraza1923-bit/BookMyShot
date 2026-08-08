@@ -7,7 +7,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput,
-  RefreshControl, ActivityIndicator, Alert, Image, Platform,
+  RefreshControl, ActivityIndicator, Alert, Image, Platform, Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -289,11 +289,11 @@ export default function CreatorProfile({ navigation }: any) {
         {/* SOCIAL LINKS */}
         <SectionHeader title="Social Links" icon="globe-outline" />
         <View style={s.fieldGroup}>
-          <Field label="Instagram" value={form.instagram} onChange={(v: string) => setForm({...form, instagram: v})} icon="logo-instagram" placeholder="https://instagram.com/..." />
-          <Field label="YouTube" value={form.youtube} onChange={(v: string) => setForm({...form, youtube: v})} icon="logo-youtube" placeholder="https://youtube.com/..." />
-          <Field label="Website" value={form.website} onChange={(v: string) => setForm({...form, website: v})} icon="globe-outline" placeholder="https://yoursite.com" />
-          <Field label="Twitter / X" value={form.twitter} onChange={(v: string) => setForm({...form, twitter: v})} icon="logo-twitter" placeholder="https://x.com/..." />
-          <Field label="Facebook" value={form.facebook} onChange={(v: string) => setForm({...form, facebook: v})} icon="logo-facebook" placeholder="https://facebook.com/..." />
+          <SocialField label="Instagram" value={form.instagram} onChange={(v: string) => setForm({...form, instagram: v})} icon="logo-instagram" placeholder="https://instagram.com/yourprofile" />
+          <SocialField label="YouTube" value={form.youtube} onChange={(v: string) => setForm({...form, youtube: v})} icon="logo-youtube" placeholder="https://youtube.com/@yourchannel" />
+          <SocialField label="Website" value={form.website} onChange={(v: string) => setForm({...form, website: v})} icon="globe-outline" placeholder="https://yoursite.com" />
+          <SocialField label="Twitter / X" value={form.twitter} onChange={(v: string) => setForm({...form, twitter: v})} icon="logo-twitter" placeholder="https://x.com/yourhandle" />
+          <SocialField label="Facebook" value={form.facebook} onChange={(v: string) => setForm({...form, facebook: v})} icon="logo-facebook" placeholder="https://facebook.com/yourpage" />
         </View>
 
         {/* QUICK LINKS */}
@@ -342,6 +342,40 @@ function Field({ label, value, onChange, icon, multiline, keyboard, placeholder 
           keyboardType={keyboard || 'default'}
           autoCapitalize="none"
         />
+      </View>
+    </View>
+  );
+}
+
+// Social link field — same as Field but with a tap-to-open button when URL is entered
+function SocialField({ label, value, onChange, icon, placeholder }: any) {
+  const openUrl = () => {
+    if (!value?.trim()) return;
+    const url = value.trim().startsWith('http') ? value.trim() : `https://${value.trim()}`;
+    Linking.openURL(url).catch(() => Alert.alert('Error', 'Could not open this link'));
+  };
+  return (
+    <View style={s.field}>
+      <Text style={s.fieldLabel}>{label}</Text>
+      <View style={s.fieldInput}>
+        <Ionicons name={icon} size={14} color="#6C3BFF" />
+        <TextInput
+          style={s.fieldText}
+          value={value}
+          onChangeText={onChange}
+          placeholder={placeholder || ''}
+          placeholderTextColor="#9CA3AF"
+          selectionColor="#6C3BFF"
+          keyboardType="url"
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+        {/* Open link button — only shown when URL is entered */}
+        {value?.trim().length > 4 && (
+          <TouchableOpacity onPress={openUrl} style={{ padding: 4 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="open-outline" size={16} color="#6C3BFF" />
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );

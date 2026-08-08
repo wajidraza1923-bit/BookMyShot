@@ -17,12 +17,12 @@ const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
  * @param {string} userId - User._id
  * @param {string} title - Notification title
  * @param {string} body - Notification body
- * @param {object} data - Custom data payload (type, targetScreen, targetId)
- * @param {string} [skipIfSameAs] - Optional: skip if this userId matches target (prevents admin self-notify)
+ * @param {object} data - Custom data payload
+ * @param {string} [skipIfSameAs] - Optional: skip if this userId matches target
+ * @param {boolean} [allowAdmin] - If true, sends even if target is admin (for system-to-admin notifications)
  */
-async function sendToUser(userId, title, body, data = {}, skipIfSameAs = null) {
+async function sendToUser(userId, title, body, data = {}, skipIfSameAs = null, allowAdmin = false) {
   try {
-    // Skip if target is same as the action performer (e.g. admin marking their own withdrawal)
     if (skipIfSameAs && String(userId) === String(skipIfSameAs)) {
       console.log(`[Push] Skipped — target ${userId} is same as action performer`);
       return false;
@@ -32,9 +32,9 @@ async function sendToUser(userId, title, body, data = {}, skipIfSameAs = null) {
       console.log(`[Push] No token for user ${userId}`);
       return false;
     }
-    // Never push to admin users (they manage the system, not receive user notifications)
-    if (user.role === "admin") {
-      console.log(`[Push] Skipped — target ${userId} is admin`);
+    // Never push to admin users UNLESS it's explicitly a system-to-admin notification
+    if (user.role === "admin" && !allowAdmin) {
+      console.log(`[Push] Skipped — target ${userId} is admin (use allowAdmin=true for system notifications)`);
       return false;
     }
     return await sendPush(user.pushToken, title, body, data, user.pushPlatform);
@@ -202,4 +202,25 @@ async function sendPushBatch(tokens, title, body, data = {}) {
   return successCount > 0;
 }
 
-module.exports = { sendToUser, sendToUsers, sendToRole, broadcast, sendPush };
+/**
+ * Send push notification to all admin users (system-to-admin)
+ */
+async function sendToAdmins(title, body, data = {}) {
+  try {
+    const admins = await User.find({ role: "admin", pushToken: { $exists: true, $ne: "" } }).select("pushToken pushPlatform");
+    let sent = 0;
+    for (const admin of admins) {
+      if (admin.pushToken) {
+        await sendPush(admin.pushToken, title, body, data, admin.pushPlatform);
+        sent++;
+      }
+    }
+    console.log(`[Push] Sent to ${sent} admin(s): ${title}`);
+    return sent > 0;
+  } catch (e) {
+    console.error("[Push] sendToAdmins error:", e.message);
+    return false;
+  }
+}
+
+module.exports = { sendToUser, sendToUsers, sendToRole, broadcast, sendPush, sendToAdmins };

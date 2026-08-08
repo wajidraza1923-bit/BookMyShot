@@ -137,6 +137,18 @@ router.post("/register", async (req, res, next) => {
           : "Welcome to BookMyShot! Explore verified photographers and cinematographers near you.",
         targetScreen: user.role === "creator" ? "CreatorSettings" : "Home",
       });
+
+      // ═══ PUSH NOTIFICATION to admins on new registration ═══
+      if (user.role === "user") {
+        try {
+          const pushService = require("../services/pushService");
+          pushService.sendToAdmins(
+            "BookMyShot — New Customer 👤",
+            `${user.name} just registered as a new customer.`,
+            { screen: "AdminUsers" }
+          );
+        } catch {} // non-fatal
+      }
     } catch (e) { /* non-fatal */ }
 
     // Send verification OTP in background (don't block response)
