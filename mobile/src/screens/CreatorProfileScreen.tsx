@@ -430,6 +430,45 @@ export default function CreatorProfileScreen({ route, navigation }: any) {
           )}
         </View>
 
+        {/* ═══ SOCIAL LINKS ═══ */}
+        {(social.instagram || social.youtube || social.facebook || social.website || social.twitter) && (
+          <View style={st.sec}>
+            <Text style={st.secTitle}>Follow & Connect</Text>
+            <View style={st.contactGrid}>
+              {social.instagram && (
+                <TouchableOpacity style={st.contactCard} onPress={() => Linking.openURL(social.instagram.startsWith('http') ? social.instagram : `https://${social.instagram}`)}>
+                  <Ionicons name="logo-instagram" size={22} color="#E4405F" />
+                  <Text style={st.contactCardText}>Instagram</Text>
+                </TouchableOpacity>
+              )}
+              {social.youtube && (
+                <TouchableOpacity style={st.contactCard} onPress={() => Linking.openURL(social.youtube.startsWith('http') ? social.youtube : `https://${social.youtube}`)}>
+                  <Ionicons name="logo-youtube" size={22} color="#FF0000" />
+                  <Text style={st.contactCardText}>YouTube</Text>
+                </TouchableOpacity>
+              )}
+              {social.facebook && (
+                <TouchableOpacity style={st.contactCard} onPress={() => Linking.openURL(social.facebook.startsWith('http') ? social.facebook : `https://${social.facebook}`)}>
+                  <Ionicons name="logo-facebook" size={22} color="#1877F2" />
+                  <Text style={st.contactCardText}>Facebook</Text>
+                </TouchableOpacity>
+              )}
+              {social.website && (
+                <TouchableOpacity style={st.contactCard} onPress={() => Linking.openURL(social.website.startsWith('http') ? social.website : `https://${social.website}`)}>
+                  <Ionicons name="globe-outline" size={22} color="#6C3BFF" />
+                  <Text style={st.contactCardText}>Website</Text>
+                </TouchableOpacity>
+              )}
+              {social.twitter && (
+                <TouchableOpacity style={st.contactCard} onPress={() => Linking.openURL(social.twitter.startsWith('http') ? social.twitter : `https://${social.twitter}`)}>
+                  <Ionicons name="logo-twitter" size={22} color="#1DA1F2" />
+                  <Text style={st.contactCardText}>Twitter / X</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        )}
+
         {/* ═══ LOCKED CONTACT ═══ */}
         <View style={st.sec}>
           <Text style={st.secTitle}>Contact</Text>
@@ -437,7 +476,6 @@ export default function CreatorProfileScreen({ route, navigation }: any) {
             <View style={st.contactGrid}>
               {phone && <TouchableOpacity style={st.contactCard} onPress={() => Linking.openURL(`https://wa.me/${phone.replace(/\D/g, '')}`)}><Ionicons name="logo-whatsapp" size={22} color="#25D366" /><Text style={st.contactCardText}>WhatsApp</Text></TouchableOpacity>}
               {phone && <TouchableOpacity style={st.contactCard} onPress={() => Linking.openURL(`tel:${phone}`)}><Ionicons name="call" size={22} color="#3B82F6" /><Text style={st.contactCardText}>Call</Text></TouchableOpacity>}
-              {social.instagram && <TouchableOpacity style={st.contactCard} onPress={() => Linking.openURL(social.instagram)}><Ionicons name="logo-instagram" size={22} color="#E4405F" /><Text style={st.contactCardText}>Instagram</Text></TouchableOpacity>}
             </View>
           ) : (
             <LinearGradient colors={['#F8F6FF', '#FFFFFF']} style={st.lockedCard}>
