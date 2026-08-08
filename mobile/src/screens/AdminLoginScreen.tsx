@@ -66,6 +66,11 @@ export default function AdminLoginScreen({ navigation }: any) {
         await AsyncStorage.setItem('bms_token', data.token);
         await AsyncStorage.setItem('bms_user', JSON.stringify(normalizedUser));
         setAuthDirect(data.token, normalizedUser);
+        // Register push token so admin receives push notifications
+        try {
+          const { registerForPushNotifications } = require('../services/pushNotifications');
+          await registerForPushNotifications();
+        } catch {}
         // Auto-navigates to AdminDashboard via RootNavigator
       } else {
         Alert.alert('Error', data.message || 'Verification failed');

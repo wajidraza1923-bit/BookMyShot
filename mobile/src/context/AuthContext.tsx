@@ -220,6 +220,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Connect Socket.IO for real-time updates
       try { const { connect } = require('../services/socket'); connect(); } catch {}
 
+      // Register push token for this user (works for all roles including admin)
+      registerPush();
+
       return { success: true };
     } catch (e: any) {
       console.log('═══ LOGIN EXCEPTION ═══');
