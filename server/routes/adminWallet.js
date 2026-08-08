@@ -105,20 +105,22 @@ router.post("/user/:userId/wallet/credit", async (req, res, next) => {
     if (!reason)
       return res.status(400).json({ success: false, message: "Reason is required" });
 
-    const user = await User.findById(req.params.userId);
+    const user = await User.findById(req.params.userId).select("_id name email walletBalance");
     if (!user)
       return res.status(404).json({ success: false, message: "User not found" });
 
     const balanceBefore = user.walletBalance || 0;
-    user.walletBalance = balanceBefore + Number(amount);
-    await user.save();
+    const newBalance = balanceBefore + Number(amount);
+
+    // Use findByIdAndUpdate to avoid password validation on save
+    await User.findByIdAndUpdate(req.params.userId, { walletBalance: newBalance });
 
     const tx = await WalletTransaction.create({
       user: user._id,
       type: type || "credit",
       amount: Number(amount),
       balanceBefore,
-      balanceAfter: user.walletBalance,
+      balanceAfter: newBalance,
       reason,
       adminId: req.user._id,
       adminName: req.user.name || "Admin",
@@ -128,7 +130,7 @@ router.post("/user/:userId/wallet/credit", async (req, res, next) => {
       success: true,
       message: `₹${amount} credited successfully`,
       transaction: tx,
-      newBalance: user.walletBalance,
+      newBalance,
     });
   } catch (e) {
     next(e);
@@ -144,20 +146,22 @@ router.post("/user/:userId/wallet/debit", async (req, res, next) => {
     if (!reason)
       return res.status(400).json({ success: false, message: "Reason is required" });
 
-    const user = await User.findById(req.params.userId);
+    const user = await User.findById(req.params.userId).select("_id name email walletBalance");
     if (!user)
       return res.status(404).json({ success: false, message: "User not found" });
 
     const balanceBefore = user.walletBalance || 0;
-    user.walletBalance = Math.max(0, balanceBefore - Number(amount));
-    await user.save();
+    const newBalance = Math.max(0, balanceBefore - Number(amount));
+
+    // Use findByIdAndUpdate to avoid password validation on save
+    await User.findByIdAndUpdate(req.params.userId, { walletBalance: newBalance });
 
     const tx = await WalletTransaction.create({
       user: user._id,
       type: type || "debit",
       amount: Number(amount),
       balanceBefore,
-      balanceAfter: user.walletBalance,
+      balanceAfter: newBalance,
       reason,
       adminId: req.user._id,
       adminName: req.user.name || "Admin",
@@ -167,7 +171,7 @@ router.post("/user/:userId/wallet/debit", async (req, res, next) => {
       success: true,
       message: `₹${amount} debited successfully`,
       transaction: tx,
-      newBalance: user.walletBalance,
+      newBalance,
     });
   } catch (e) {
     next(e);

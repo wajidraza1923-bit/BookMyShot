@@ -90,33 +90,34 @@ export default function AdminUsers({ navigation }: any) {
   };
 
   const submitCashback = async () => {
-    if (!detail?.user?._id) return;
+    if (!detail?.user?._id) {
+      Alert.alert('Error', 'No user selected. Please close and reopen the user detail.');
+      return;
+    }
     const amt = Number(cbAmount);
     if (!amt || amt <= 0) { Alert.alert('Error', 'Enter a valid amount'); return; }
     if (!cbReason.trim()) { Alert.alert('Error', 'Reason is required'); return; }
 
     setCbSaving(true);
     try {
-      const endpoint = cbType === 'credit' ? '/admin/customers/' + detail.user._id + '/add-cashback' : '/admin/customers/' + detail.user._id + '/deduct-cashback';
+      const endpoint = cbType === 'credit'
+        ? `/admin/customers/${detail.user._id}/add-cashback`
+        : `/admin/customers/${detail.user._id}/deduct-cashback`;
+
       const res = await api.post(endpoint, { amount: amt, reason: cbReason.trim() });
-      const data = res.data || res;
-      if (data.success) {
-        Alert.alert('Success', data.message || `₹${amt} ${cbType === 'credit' ? 'credited' : 'debited'} successfully`);
+
+      if (res.data?.success) {
+        Alert.alert('Success ✅', res.data.message || `₹${amt} ${cbType === 'credit' ? 'credited' : 'debited'} successfully`);
         setCashbackModal(false);
-        // Reload both the detail view and the user list
         await load();
         openDetail(detail.user._id);
       } else {
-        // Show real server error including raw response if available
-        const errMsg = data.message || 'Operation failed';
-        const rawHint = data._raw ? '\n\nServer response: ' + data._raw.substring(0, 150) : '';
-        Alert.alert('Failed', errMsg + rawHint);
+        Alert.alert('Failed', res.data?.message || 'Operation failed. Please try again.');
       }
     } catch (e: any) {
-      const errData = e.response?.data;
-      const msg = errData?.message || e.message || 'Network error';
-      const rawHint = errData?._raw ? '\n\nRaw: ' + errData._raw.substring(0, 150) : '';
-      Alert.alert('Error', msg + rawHint);
+      const status = e.response?.status;
+      const msg = e.response?.data?.message || e.message || 'Network error';
+      Alert.alert(`Error (${status || 'unknown'})`, msg);
     } finally { setCbSaving(false); }
   };
 
