@@ -30,7 +30,7 @@ const API_BASE = 'https://site--bookmyshot--ykz2mr8mzlrv.code.run/api';
 
 // Fallback version name if expo-application is not available
 const FALLBACK_VERSION_NAME = '2.3.0';
-const FALLBACK_BUILD_CODE = 8;
+const FALLBACK_BUILD_CODE = 12;
 
 function getNativeVersion(): { versionName: string; buildCode: number } {
   if (Application) {
