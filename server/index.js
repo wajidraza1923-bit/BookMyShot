@@ -417,6 +417,36 @@ const startServer = async () => {
       // Start automated cron jobs
       const { initScheduler } = require("./services/scheduler");
       initScheduler();
+
+      // ═══ PERIODIC CLEANUP: Delete unverified accounts older than 30 minutes ═══
+      // These are accounts where the user typed a wrong email and never verified.
+      const cleanupUnverifiedAccounts = async () => {
+        try {
+          const User = require("./models/User");
+          const Creator = require("./models/Creator");
+          const cutoff = new Date(Date.now() - 30 * 60 * 1000); // 30 minutes ago
+          const stale = await User.find({
+            emailVerified: false,
+            role: { $ne: "admin" },
+            createdAt: { $lt: cutoff },
+            // Only delete if email is a real email (not phone-only accounts)
+            email: { $not: /^user_\d+@bookmyshot\.app$/ },
+          }).select("_id email").lean();
+
+          if (stale.length > 0) {
+            const ids = stale.map(u => u._id);
+            await Creator.deleteMany({ user: { $in: ids } });
+            await User.deleteMany({ _id: { $in: ids } });
+            console.log(`[Cleanup] Deleted ${stale.length} unverified accounts older than 30 min`);
+          }
+        } catch (e) {
+          console.log("[Cleanup] Error:", e.message);
+        }
+      };
+
+      // Run once on startup, then every 30 minutes
+      cleanupUnverifiedAccounts();
+      setInterval(cleanupUnverifiedAccounts, 30 * 60 * 1000);
     });
     server.on("error", (err) => {
       console.error("Server failed to start:", err.message);

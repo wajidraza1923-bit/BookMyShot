@@ -16,8 +16,15 @@ router.use(protect, authorize("admin"));
 // ═══ GET ALL CUSTOMERS (with summary stats) ═══
 router.get("/", async (req, res, next) => {
   try {
-    const { search, page = 1, limit = 50 } = req.query;
+    const { search, page = 1, limit = 50, showUnverified } = req.query;
     const filter = { role: "user" };
+
+    // By default, only show verified users — they're the real customers.
+    // Pass ?showUnverified=true to include pending-verification accounts.
+    if (showUnverified !== "true") {
+      filter.emailVerified = true;
+    }
+
     if (search) {
       filter.$or = [
         { name: new RegExp(search, "i") },

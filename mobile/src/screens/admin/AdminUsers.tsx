@@ -27,6 +27,7 @@ export default function AdminUsers({ navigation }: any) {
 
   const load = useCallback(async () => {
     try {
+      // Only load verified users by default (emailVerified=true)
       const url = '/admin/customers' + (search ? '?search=' + encodeURIComponent(search) : '');
       const res = await api.get(url);
       const data = res.data?.data || res.data?.users || [];
@@ -36,7 +37,7 @@ export default function AdminUsers({ navigation }: any) {
       try {
         const res2 = await api.get('/admin/users');
         const users2 = res2.data?.users || [];
-        setUsers(users2.map((u: any) => ({ ...u, walletBalance: 0, bookingCount: 0, totalEarned: 0 })));
+        setUsers(users2.filter((u: any) => u.emailVerified !== false).map((u: any) => ({ ...u, walletBalance: 0, bookingCount: 0, totalEarned: 0 })));
       } catch { setUsers([]); }
     }
     finally { setLoading(false); }
